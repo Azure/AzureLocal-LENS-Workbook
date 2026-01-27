@@ -57,7 +57,7 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 4. **Save the Workbook**
    - Click **Done Editing** to exit edit mode
    - Click **Save** or **Save As** in the toolbar
-   - Provide a name (e.g., "Azure Local - Managing Updates At Scale")
+   - Provide a name (e.g., "Azure Local LENS Workbook")
    - Select a subscription, resource group, and location to save the workbook
    - Click **Save**
 

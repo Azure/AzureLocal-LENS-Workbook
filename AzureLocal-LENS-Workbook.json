@@ -7166,6 +7166,14 @@
             "name": "update-duration-statistics"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** Use the 'Time Period' and 'Solution Update' filters to view Azure Local Update Insights for your environment.",
+              "style": "upsell"
+            },
+            "name": "update-filters-tip-2"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",

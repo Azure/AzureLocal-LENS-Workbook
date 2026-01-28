@@ -8519,6 +8519,113 @@
           {
             "type": 1,
             "content": {
+              "json": "---\r\n### 📊 Azure Local Nodes Summary"
+            },
+            "name": "arc-nodes-summary-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| summarize Total = count()",
+              "size": 1,
+              "title": "Total Azure Local Nodes",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "tile-total-nodes",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on id\r\n| summarize Total = count()",
+              "size": 1,
+              "title": "Total Extensions on Nodes",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": false
+              }
+            },
+            "customWidth": "25",
+            "name": "tile-total-extensions",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### 📋 All Azure Local Nodes"
+            },
+            "name": "arc-nodes-table-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend MachineName = name\r\n| extend Status = tostring(properties.status)\r\n| extend OSSku = tostring(properties.osSku)\r\n| extend OsVersion = tostring(properties.osVersion)\r\n| extend ResourceGroupName = resourceGroup\r\n| extend SubscriptionId = subscriptionId\r\n| project machineLink = strcat('[', MachineName, '](', 'https://portal.azure.com/resource', id, ')'), MachineName, Status, OsSku, OsVersion, ResourceGroupName, SubscriptionId\r\n| sort by Status desc, MachineName asc",
+              "size": 0,
+              "title": "Azure Local Nodes",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "machineLink",
+                    "label": "Machine Name"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "OsSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "OsVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "ResourceGroupName",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "SubscriptionId",
+                    "label": "Subscription"
+                  }
+                ],
+                "noDataMessage": "❌ No Azure Local nodes found. Ensure you have Azure Local (AzSHCI) nodes registered with Azure Arc."
+              }
+            },
+            "name": "azure-local-nodes-table"
+          },
+          {
+            "type": 1,
+            "content": {
               "json": "---\r\n### 📊 Azure Local Node Extensions Status Summary"
             },
             "name": "arc-ext-summary-header"

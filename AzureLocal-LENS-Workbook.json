@@ -672,7 +672,7 @@
                   "columnMatch": "OfflineARB",
                   "formatter": 12,
                   "formatOptions": {
-                    "palette": "orange"
+                    "palette": "redBright"
                   }
                 },
                 "secondaryContent": {
@@ -2570,7 +2570,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## �️ Azure Local Physical Machines\r\nPhysical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "## 🖥️ Azure Local Physical Machines\r\nPhysical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
             },
             "name": "text-nodes-header"
           },

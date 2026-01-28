@@ -55,6 +55,17 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 ### Bug Fixes
 
+- **Clusters Currently Updating Query** (Update Progress tab):
+  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
+  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
+
+- **Dark Mode Readability** (All tabs):
+  - Fixed version banner text being unreadable in dark mode
+  - Added explicit text colors to ensure visibility in both light and dark themes
+
+- **Azure Local Physical Machines Section Header** (Physical Machines tab):
+  - Fixed corrupted emoji icon in section header (now displays 🖥️)
+
 - **AKS Arc Network Details Table** (AKS Arc Clusters tab):
   - Fixed **IPs Used** and **IPs Available** columns not populating
   - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema

@@ -6396,17 +6396,12 @@
                   "id": "4f902e36-2dbc-4bdf-89aa-44d2bb919cc6",
                   "version": "KqlParameterItem/1.0",
                   "name": "healthState",
-                  "label": "Health Check State",
+                  "label": "Health State",
                   "type": 2,
                   "multiSelect": true,
                   "quote": "'",
                   "delimiter": ",",
                   "typeSettings": {
-                    "resourceTypeFilter": {
-                      "microsoft.azurestackhci/clusters": true,
-                      "microsoft.azurestackhci/clusters/updatesummaries": true,
-                      "microsoft.azurestackhci/clusters/updates/updateruns": true
-                    },
                     "additionalResourceOptions": [
                       "value::all"
                     ],
@@ -6418,54 +6413,7 @@
                   },
                   "defaultValue": "value::all",
                   "value": [
-                    "Failure",
-                    "Warning"
-                  ]
-                },
-                {
-                  "id": "206daa04-0fef-4254-9233-fc840e7f32b7",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "stepStatus",
-                  "label": "Health Check Step Status",
-                  "type": 2,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "jsonData": "[\"Succeeded\", \"Failed\"]",
-                  "timeContext": {
-                    "durationMs": 86400000
-                  },
-                  "defaultValue": "value::all",
-                  "value": [
-                    "Failed"
-                  ]
-                },
-                {
-                  "id": "5494563c-316b-4db1-beb0-183308801d74",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "severity",
-                  "label": "Severity",
-                  "type": 2,
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ]
-                  },
-                  "jsonData": "[\"Critical\", \"Warning\", \"Informational\"]",
-                  "defaultValue": "value::all",
-                  "value": [
-                    "Warning",
-                    "Critical"
+                    "value::all"
                   ]
                 }
               ],

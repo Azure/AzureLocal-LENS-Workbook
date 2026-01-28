@@ -12,6 +12,17 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 ### New Features
 
+- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
+  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
+  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
+  - Provides better discoverability of available tags and reduces input errors
+
+- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
+  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
+  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
+  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
+  - Previously, tag filtering was not supported for ARB resources
+
 - **Update Duration Statistics by Solution Update Table** (Update Progress tab):
   - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
   - Enables comparison of update performance across different solution versions

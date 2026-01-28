@@ -8527,7 +8527,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Status\r\n| union (resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Status = tostring(properties.provisioningState)\r\n| summarize TotalCount = count()\r\n| project Status = \"Total\", Count = TotalCount)",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Status = tostring(properties.provisioningState)\r\n| summarize Count = count() by Status",
               "size": 3,
               "title": "Extension Status Distribution",
               "queryType": 1,
@@ -8553,10 +8553,6 @@
                   {
                     "seriesName": "Updating",
                     "color": "yellow"
-                  },
-                  {
-                    "seriesName": "Total",
-                    "color": "blue"
                   }
                 ]
               }
@@ -8572,7 +8568,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Publisher\r\n| order by Count desc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Publisher\r\n| order by Count desc",
               "size": 3,
               "title": "Extensions by Publisher",
               "queryType": 1,
@@ -8593,7 +8589,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend ExtensionType = tostring(properties.type)\r\n| summarize Count = count() by ExtensionType\r\n| order by Count desc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend ExtensionType = tostring(properties.type)\r\n| summarize Count = count() by ExtensionType\r\n| order by Count desc",
               "size": 3,
               "title": "Extensions by Type",
               "queryType": 1,
@@ -8621,7 +8617,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend AutoUpgradeMinorVersion = tostring(properties.autoUpgradeMinorVersion)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, Status, AutoUpgradeMinorVersion, ResourceGroupName\r\n| sort by Status desc, machineLink asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend AutoUpgradeMinorVersion = tostring(properties.autoUpgradeMinorVersion)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, Status, AutoUpgradeMinorVersion, ResourceGroupName\r\n| sort by Status desc, machineLink asc",
               "size": 0,
               "title": "Arc Extensions Detail",
               "queryType": 1,
@@ -8680,7 +8676,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where properties.provisioningState == \"Failed\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend ErrorMessage = tostring(properties.error.message)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, ErrorMessage, ResourceGroupName\r\n| sort by machineLink asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.provisioningState == \"Failed\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend ErrorMessage = tostring(properties.error.message)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, ErrorMessage, ResourceGroupName\r\n| sort by machineLink asc",
               "size": 0,
               "title": "Failed Extensions",
               "queryType": 1,

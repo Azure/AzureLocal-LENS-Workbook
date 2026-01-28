@@ -8662,7 +8662,42 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n### 📋 All Azure Local Nodes"
+              "json": "---\r\n### � OS SKU Values in Your Machines (Debug)"
+            },
+            "name": "arc-os-sku-debug-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend MachineName = name\r\n| extend OSSku = tostring(properties.osSku)\r\n| extend OsVersion = tostring(properties.osVersion)\r\n| project MachineName, OSSku, OsVersion\r\n| distinct OSSku, OsVersion\r\n| sort by OSSku asc",
+              "size": 0,
+              "title": "Distinct OS SKU Values",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "OSSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "OsVersion",
+                    "label": "OS Version"
+                  }
+                ]
+              }
+            },
+            "name": "os-sku-debug-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### �📋 All Azure Local Nodes"
             },
             "name": "arc-nodes-table-header"
           },

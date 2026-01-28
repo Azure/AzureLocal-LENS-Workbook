@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.5
+## Latest Version: v0.7.6
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,9 +8,20 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 **Important:** This is a community driven project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.5)
+## Recent Changes (v0.7.6)
 
 ### New Features
+
+- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
+  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
+  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
+  - Provides better discoverability of available tags and reduces input errors
+
+- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
+  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
+  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
+  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
+  - Previously, tag filtering was not supported for ARB resources
 
 - **Update Duration Statistics by Solution Update Table** (Update Progress tab):
   - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
@@ -43,6 +54,17 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
 
 ### Bug Fixes
+
+- **Clusters Currently Updating Query** (Update Progress tab):
+  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
+  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
+
+- **Dark Mode Readability** (All tabs):
+  - Fixed version banner text being unreadable in dark mode
+  - Added explicit text colors to ensure visibility in both light and dark themes
+
+- **Azure Local Physical Machines Section Header** (Physical Machines tab):
+  - Fixed corrupted emoji icon in section header (now displays 🖥️)
 
 - **AKS Arc Network Details Table** (AKS Arc Clusters tab):
   - Fixed **IPs Used** and **IPs Available** columns not populating

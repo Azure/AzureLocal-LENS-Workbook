@@ -20,6 +20,13 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Respects all existing filters (Time Range, Solution Update, Resource Group)
   - Export to Excel and refresh buttons available
 
+### Improvements
+
+- **Success Rate Column Thresholds** (Update Progress tab):
+  - Updated color thresholds in both "Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
+  - New thresholds: 🟢 Green (85-100%), 🟡 Amber (60-84%), 🔴 Red (0-59%)
+  - Previously 100% success rate was incorrectly displayed in red
+
 ### Bug Fixes
 
 - **AKS Arc Network Details Table** (AKS Arc Clusters tab):

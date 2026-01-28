@@ -7141,13 +7141,13 @@
                       "thresholdsGrid": [
                         {
                           "operator": ">=",
-                          "thresholdValue": "85",
+                          "thresholdValue": "90",
                           "representation": "green",
                           "text": "{0}{1}%"
                         },
                         {
                           "operator": ">=",
-                          "thresholdValue": "60",
+                          "thresholdValue": "70",
                           "representation": "yellow",
                           "text": "{0}{1}%"
                         },
@@ -7224,13 +7224,13 @@
                       "thresholdsGrid": [
                         {
                           "operator": ">=",
-                          "thresholdValue": "85",
+                          "thresholdValue": "90",
                           "representation": "green",
                           "text": "{0}{1}%"
                         },
                         {
                           "operator": ">=",
-                          "thresholdValue": "60",
+                          "thresholdValue": "70",
                           "representation": "yellow",
                           "text": "{0}{1}%"
                         },

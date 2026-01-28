@@ -22,6 +22,17 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 ### Improvements
 
+- **Detailed Health Check Results Section** (Update Readiness tab):
+  - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
+  - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
+  - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
+  - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
+  - Documentation and knowledge links now appear between the section header and filters
+
+- **System Health Check Filters** (Update Readiness tab):
+  - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
+  - Improved visual consistency with other tabs
+
 - **Success Rate Column Thresholds** (Update Progress tab):
   - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
   - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)

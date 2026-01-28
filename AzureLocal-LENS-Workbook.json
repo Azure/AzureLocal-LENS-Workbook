@@ -106,7 +106,7 @@
     {
       "type": 1,
       "content": {
-        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px;\">\r\n<span style=\"font-size: 16px;\">📋 <strong>Workbook Version: v0.7.4</strong></span><br/>\r\n<span style=\"font-size: 13px;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then apply to update if needed</span>\r\n</div>",
+        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px;\">\r\n<span style=\"font-size: 16px;\">📋 <strong>Workbook Version: v0.7.5</strong></span><br/>\r\n<span style=\"font-size: 13px;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then apply to update if needed</span>\r\n</div>",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -5142,7 +5142,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterResourceId = tolower(id)\r\n| project ClusterName = name, clusterLink, clusterResourceId, resourceGroup, location\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend podCidr = tostring(properties.networkProfile.podCidr)\r\n    | extend controlPlaneHostIP = tostring(properties.controlPlane.controlPlaneEndpoint.hostIP)\r\n    | extend vnetSubnetIds = properties.cloudProviderProfile.infraNetworkProfile.vnetSubnetIds\r\n    | mv-expand vnetSubnetId = vnetSubnetIds\r\n    | extend logicalNetworkId = tolower(tostring(vnetSubnetId))\r\n    | summarize podCidr = max(podCidr), controlPlaneHostIP = max(controlPlaneHostIP), logicalNetworkIds = make_set(logicalNetworkId) by clusterResourceId\r\n    | project clusterResourceId, podCidr, controlPlaneHostIP, logicalNetworkIds\r\n) on clusterResourceId\r\n| mv-expand logicalNetworkId = logicalNetworkIds\r\n| extend logicalNetworkId = tostring(logicalNetworkId)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/logicalnetworks\"\r\n    | extend logicalNetworkId = tolower(id)\r\n    | extend logicalNetworkLink = strcat('https://portal.azure.com/#@/resource', id)\r\n    | extend logicalNetworkState = tostring(properties.status.provisioningStatus.status)\r\n    | extend subnets = properties.subnets\r\n    | mv-expand subnet = subnets\r\n    | extend addressPrefix = tostring(subnet.properties.addressPrefix)\r\n    | extend vlanId = tostring(subnet.properties.vlan)\r\n    | extend ipPools = subnet.properties.ipPools\r\n    | mv-expand ipPool = ipPools\r\n    | extend ipPoolStart = tostring(ipPool.start)\r\n    | extend ipPoolEnd = tostring(ipPool.['end'])\r\n    | extend ipPoolUsed = tostring(ipPool.info.usedIPCount)\r\n    | extend ipPoolAvailable = tostring(ipPool.info.availableIPCount)\r\n    | extend dnsServers = strcat_array(properties.dhcpOptions.dnsServers, ', ')\r\n    | project logicalNetworkId, logicalNetworkName = name, logicalNetworkLink, logicalNetworkState, addressPrefix, vlanId, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, dnsServers\r\n) on logicalNetworkId\r\n| project ClusterName, clusterLink, clusterResourceId, resourceGroup, location, podCidr, controlPlaneHostIP, logicalNetworkName, logicalNetworkLink, logicalNetworkState, addressPrefix, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, vlanId, dnsServers\r\n| order by ClusterName asc",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterResourceId = tolower(id)\r\n| project ClusterName = name, clusterLink, clusterResourceId, resourceGroup, location\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend podCidr = tostring(properties.networkProfile.podCidr)\r\n    | extend controlPlaneHostIP = tostring(properties.controlPlane.controlPlaneEndpoint.hostIP)\r\n    | extend vnetSubnetIds = properties.cloudProviderProfile.infraNetworkProfile.vnetSubnetIds\r\n    | mv-expand vnetSubnetId = vnetSubnetIds\r\n    | extend logicalNetworkId = tolower(tostring(vnetSubnetId))\r\n    | summarize podCidr = max(podCidr), controlPlaneHostIP = max(controlPlaneHostIP), logicalNetworkIds = make_set(logicalNetworkId) by clusterResourceId\r\n    | project clusterResourceId, podCidr, controlPlaneHostIP, logicalNetworkIds\r\n) on clusterResourceId\r\n| mv-expand logicalNetworkId = logicalNetworkIds\r\n| extend logicalNetworkId = tostring(logicalNetworkId)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/logicalnetworks\"\r\n    | extend logicalNetworkId = tolower(id)\r\n    | extend logicalNetworkLink = strcat('https://portal.azure.com/#@/resource', id)\r\n    | extend logicalNetworkState = tostring(properties.status.provisioningStatus.status)\r\n    | extend subnets = properties.subnets\r\n    | mv-expand subnet = subnets\r\n    | extend addressPrefix = tostring(subnet.properties.addressPrefix)\r\n    | extend vlanId = tostring(subnet.properties.vlan)\r\n    | extend ipPools = subnet.properties.ipPools\r\n    | mv-expand ipPool = ipPools\r\n    | extend ipPoolStart = tostring(ipPool.start)\r\n    | extend ipPoolEnd = tostring(ipPool.['end'])\r\n    | extend ipPoolUsed = tostring(ipPool.info.used)\r\n    | extend ipPoolAvailable = tostring(ipPool.info.available)\r\n    | extend dnsServers = strcat_array(properties.dhcpOptions.dnsServers, ', ')\r\n    | project logicalNetworkId, logicalNetworkName = name, logicalNetworkLink, logicalNetworkState, addressPrefix, vlanId, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, dnsServers\r\n) on logicalNetworkId\r\n| project ClusterName, clusterLink, clusterResourceId, resourceGroup, location, podCidr, controlPlaneHostIP, logicalNetworkName, logicalNetworkLink, logicalNetworkState, addressPrefix, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, vlanId, dnsServers\r\n| order by ClusterName asc",
               "size": 0,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -7164,6 +7164,89 @@
               }
             },
             "name": "update-duration-statistics"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| extend timeEnded = todatetime(properties.lastUpdatedTime)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| extend duration = iff(state == 'Succeeded' and isnotempty(timeEnded) and timeEnded > timeStarted, timeEnded - timeStarted, timespan(null))\r\n| extend durationMinutes = iff(isnotnull(duration), todouble(duration / 1m), double(null))\r\n| summarize \r\n    TotalRuns = count(),\r\n    SucceededRuns = countif(state == 'Succeeded'),\r\n    FailedRuns = countif(state == 'Failed'),\r\n    InProgressRuns = countif(state == 'InProgress'),\r\n    AvgDurationMinutes = avg(durationMinutes),\r\n    StdDevDurationMinutes = stdev(durationMinutes),\r\n    MinDurationMinutes = min(durationMinutes),\r\n    MaxDurationMinutes = max(durationMinutes),\r\n    P95DurationMinutes = percentile(durationMinutes, 95),\r\n    P99DurationMinutes = percentile(durationMinutes, 99),\r\n    CompletedDurationCount = countif(isnotnull(durationMinutes))\r\n    by solutionUpdate\r\n| extend SuccessRate = round(100.0 * SucceededRuns / TotalRuns, 1)\r\n| extend FailureRate = round(100.0 * FailedRuns / TotalRuns, 1)\r\n| extend AvgDurationFormatted = iff(isnotnull(AvgDurationMinutes), strcat(tolong(AvgDurationMinutes / 60), 'h ', tolong(AvgDurationMinutes % 60), 'm'), 'N/A')\r\n| extend StdDevFormatted = iff(isnotnull(StdDevDurationMinutes), strcat(tolong(StdDevDurationMinutes / 60), 'h ', tolong(StdDevDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MinDurationFormatted = iff(isnotnull(MinDurationMinutes), strcat(tolong(MinDurationMinutes / 60), 'h ', tolong(MinDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MaxDurationFormatted = iff(isnotnull(MaxDurationMinutes), strcat(tolong(MaxDurationMinutes / 60), 'h ', tolong(MaxDurationMinutes % 60), 'm'), 'N/A')\r\n| extend P95DurationFormatted = iff(isnotnull(P95DurationMinutes), strcat(tolong(P95DurationMinutes / 60), 'h ', tolong(P95DurationMinutes % 60), 'm'), 'N/A')\r\n| extend P99DurationFormatted = iff(isnotnull(P99DurationMinutes), strcat(tolong(P99DurationMinutes / 60), 'h ', tolong(P99DurationMinutes % 60), 'm'), 'N/A')\r\n| project \r\n    ['Solution Update'] = solutionUpdate,\r\n    ['Total Runs'] = TotalRuns,\r\n    ['Succeeded'] = SucceededRuns,\r\n    ['Failed'] = FailedRuns,\r\n    ['In Progress'] = InProgressRuns,\r\n    ['Success Rate'] = strcat(tostring(SuccessRate), '%'),\r\n    ['Average Duration'] = AvgDurationFormatted,\r\n    ['Standard Deviation'] = StdDevFormatted,\r\n    ['95th Percentile'] = P95DurationFormatted,\r\n    ['99th Percentile'] = P99DurationFormatted,\r\n    ['Min Duration'] = MinDurationFormatted,\r\n    ['Max Duration'] = MaxDurationFormatted\r\n| order by ['Solution Update'] desc",
+              "size": 0,
+              "title": "Update Duration Statistics by Solution Update",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Solution Update",
+                    "formatter": 0,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "18ch"
+                    }
+                  },
+                  {
+                    "columnMatch": "Total Runs",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "blue"
+                    }
+                  },
+                  {
+                    "columnMatch": "Succeeded",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "green"
+                    }
+                  },
+                  {
+                    "columnMatch": "Failed",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "red"
+                    }
+                  },
+                  {
+                    "columnMatch": "In Progress",
+                    "formatter": 4,
+                    "formatOptions": {
+                      "palette": "orange"
+                    }
+                  },
+                  {
+                    "columnMatch": "Success Rate",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "70",
+                          "representation": "yellow",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "red",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "update-duration-statistics-by-solution"
           },
           {
             "type": 3,

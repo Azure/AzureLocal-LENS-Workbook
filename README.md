@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.4
+## Latest Version: v0.7.5
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,31 +8,23 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 **Important:** This is a community driven project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.4)
+## Recent Changes (v0.7.5)
 
 ### New Features
 
+- **Update Duration Statistics by Solution Update Table** (Update Progress tab):
+  - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
+  - Enables comparison of update performance across different solution versions
+  - **Columns**: Solution Update, Total Runs, Succeeded, Failed, In Progress, Success Rate (color-coded), Average Duration, Standard Deviation, 95th Percentile, 99th Percentile, Min Duration, Max Duration
+  - Helps identify problematic updates or version-specific performance issues
+  - Respects all existing filters (Time Range, Solution Update, Resource Group)
+  - Export to Excel and refresh buttons available
+
+### Bug Fixes
+
 - **AKS Arc Network Details Table** (AKS Arc Clusters tab):
-  - New table showing comprehensive network configuration for each AKS Arc cluster
-  - **Columns**: AKS Cluster Name (linked), Resource Group, Location, Pod CIDR, Control Plane IP, Logical Network (linked), Network State (with status icons), Load Balancers, Address Prefix, IP Pool Start, IP Pool End, IPs Used, IPs Available, VLAN ID, DNS Servers
-  - Data sourced from:
-    - `microsoft.kubernetes/connectedclusters` for cluster info
-    - `microsoft.hybridcontainerservice/provisionedclusterinstances` for pod CIDR, control plane IP, and logical network IDs
-    - `microsoft.azurestackhci/logicalnetworks` for network details (subnets, IP pools, VLAN, DNS)
-    - `microsoft.kubernetesruntime/loadbalancers` for load balancer names
-
-- **Load Balancers Table** (AKS Arc Clusters tab):
-  - New table showing Kubernetes Runtime load balancer details per AKS Arc cluster
-  - **Columns**: AKS Cluster Name (linked), Resource Group, Load Balancer name, Provisioning State (with status icons), Advertise Mode, Addresses
-  - Data sourced from `microsoft.kubernetesruntime/loadbalancers` joined with `microsoft.kubernetes/connectedclusters`
-
-- **Duration Statistics Table Improvements** (Update Progress tab):
-  - Expanded column names for clarity: "Avg Duration" → "Average Duration", "Std Dev" → "Standard Deviation"
-  - Added **95th Percentile** and **99th Percentile** duration columns for better statistical analysis of update durations
-
-- **Update Success Analysis Table Improvements** (Update Progress tab):
-  - Added **Percentage** column showing the proportion of each outcome category relative to total unique updates
-  - Uses ARG `join kind=inner` with subquery to calculate percentages server-side
+  - Fixed **IPs Used** and **IPs Available** columns not populating
+  - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -312,6 +304,32 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.7.4
+
+#### New Features
+
+- **AKS Arc Network Details Table** (AKS Arc Clusters tab):
+  - New table showing comprehensive network configuration for each AKS Arc cluster
+  - **Columns**: AKS Cluster Name (linked), Resource Group, Location, Pod CIDR, Control Plane IP, Logical Network (linked), Network State (with status icons), Load Balancers, Address Prefix, IP Pool Start, IP Pool End, IPs Used, IPs Available, VLAN ID, DNS Servers
+  - Data sourced from:
+    - `microsoft.kubernetes/connectedclusters` for cluster info
+    - `microsoft.hybridcontainerservice/provisionedclusterinstances` for pod CIDR, control plane IP, and logical network IDs
+    - `microsoft.azurestackhci/logicalnetworks` for network details (subnets, IP pools, VLAN, DNS)
+    - `microsoft.kubernetesruntime/loadbalancers` for load balancer names
+
+- **Load Balancers Table** (AKS Arc Clusters tab):
+  - New table showing Kubernetes Runtime load balancer details per AKS Arc cluster
+  - **Columns**: AKS Cluster Name (linked), Resource Group, Load Balancer name, Provisioning State (with status icons), Advertise Mode, Addresses
+  - Data sourced from `microsoft.kubernetesruntime/loadbalancers` joined with `microsoft.kubernetes/connectedclusters`
+
+- **Duration Statistics Table Improvements** (Update Progress tab):
+  - Expanded column names for clarity: "Avg Duration" → "Average Duration", "Std Dev" → "Standard Deviation"
+  - Added **95th Percentile** and **99th Percentile** duration columns for better statistical analysis of update durations
+
+- **Update Success Analysis Table Improvements** (Update Progress tab):
+  - Added **Percentage** column showing the proportion of each outcome category relative to total unique updates
+  - Uses ARG `join kind=inner` with subquery to calculate percentages server-side
 
 ### v0.7.3
 

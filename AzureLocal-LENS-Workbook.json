@@ -271,6 +271,14 @@
             "linkLabel": "☸️ AKS Arc Clusters",
             "subTarget": "4",
             "style": "link"
+          },
+          {
+            "id": "arc-extensions-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔌 Arc Extensions",
+            "subTarget": "7",
+            "style": "link"
           }
         ]
       },
@@ -8493,6 +8501,238 @@
         "value": "5"
       },
       "name": "grp-update-progress"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Arc Extensions",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔌 Arc Extensions\r\nMonitor Arc extensions deployed to Azure Local clusters, their deployment status, and configuration.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+            },
+            "name": "arc-extensions-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### 📊 Extension Status Summary"
+            },
+            "name": "arc-ext-summary-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Status\r\n| union (resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Status = tostring(properties.provisioningState)\r\n| summarize TotalCount = count()\r\n| project Status = \"Total\", Count = TotalCount)",
+              "size": 3,
+              "title": "Extension Status Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Succeeded",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Failed",
+                    "color": "red"
+                  },
+                  {
+                    "seriesName": "Creating",
+                    "color": "yellow"
+                  },
+                  {
+                    "seriesName": "Updating",
+                    "color": "yellow"
+                  },
+                  {
+                    "seriesName": "Total",
+                    "color": "blue"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "pie-extension-status",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Publisher\r\n| order by Count desc",
+              "size": 3,
+              "title": "Extensions by Publisher",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "33",
+            "name": "bar-extensions-by-publisher",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend ExtensionType = tostring(properties.type)\r\n| summarize Count = count() by ExtensionType\r\n| order by Count desc",
+              "size": 3,
+              "title": "Extensions by Type",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart"
+            },
+            "customWidth": "33",
+            "name": "bar-extensions-by-type",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### 📋 All Arc Extensions"
+            },
+            "name": "arc-ext-table-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend AutoUpgradeMinorVersion = tostring(properties.autoUpgradeMinorVersion)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, Status, AutoUpgradeMinorVersion, ResourceGroupName\r\n| sort by Status desc, machineLink asc",
+              "size": 0,
+              "title": "Arc Extensions Detail",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "machineLink",
+                    "label": "Machine Name"
+                  },
+                  {
+                    "columnId": "ExtensionName",
+                    "label": "Extension Name"
+                  },
+                  {
+                    "columnId": "Publisher",
+                    "label": "Publisher"
+                  },
+                  {
+                    "columnId": "ExtensionType",
+                    "label": "Type"
+                  },
+                  {
+                    "columnId": "Version",
+                    "label": "Version"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "AutoUpgradeMinorVersion",
+                    "label": "Auto Upgrade"
+                  },
+                  {
+                    "columnId": "ResourceGroupName",
+                    "label": "Resource Group"
+                  }
+                ]
+              }
+            },
+            "name": "arc-extensions-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### ❌ Failed Extensions"
+            },
+            "name": "arc-ext-failed-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where properties.provisioningState == \"Failed\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tostring(split(id, '/extensions/')[0])\r\n| extend machineName = tostring(split(machineId, '/')[-1])\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend ErrorMessage = tostring(properties.error.message)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), ExtensionName, Publisher, ExtensionType, Version, ErrorMessage, ResourceGroupName\r\n| sort by machineLink asc",
+              "size": 0,
+              "title": "Failed Extensions",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "machineLink",
+                    "label": "Machine Name"
+                  },
+                  {
+                    "columnId": "ExtensionName",
+                    "label": "Extension Name"
+                  },
+                  {
+                    "columnId": "Publisher",
+                    "label": "Publisher"
+                  },
+                  {
+                    "columnId": "ExtensionType",
+                    "label": "Type"
+                  },
+                  {
+                    "columnId": "Version",
+                    "label": "Version"
+                  },
+                  {
+                    "columnId": "ErrorMessage",
+                    "label": "Error Message"
+                  },
+                  {
+                    "columnId": "ResourceGroupName",
+                    "label": "Resource Group"
+                  }
+                ],
+                "noDataMessage": "✅ No failed extensions found"
+              }
+            },
+            "name": "arc-extensions-failed"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "7"
+      },
+      "name": "grp-arc-extensions"
     }
   ],
   "fallbackResourceIds": [

@@ -8527,7 +8527,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| summarize Total = count()",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| summarize Total = count()",
               "size": 1,
               "title": "Total Azure Local Nodes",
               "queryType": 1,
@@ -8551,7 +8551,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| summarize Total = count()",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| summarize Total = count()",
               "size": 1,
               "title": "Total Extensions on Nodes",
               "queryType": 1,
@@ -8757,7 +8757,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend Status = tostring(properties.provisioningState)\r\n| summarize Count = count() by Status",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend Status = tostring(properties.provisioningState)\r\n| summarize Count = count() by Status",
               "size": 3,
               "title": "Extension Status Distribution",
               "queryType": 1,
@@ -8798,7 +8798,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Publisher\r\n| order by Count desc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend Publisher = tostring(properties.publisher)\r\n| summarize Count = count() by Publisher\r\n| order by Count desc",
               "size": 3,
               "title": "Extensions by Publisher",
               "queryType": 1,
@@ -8819,7 +8819,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionType = tostring(properties.type)\r\n| summarize Count = count() by ExtensionType\r\n| order by Count desc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionType = tostring(properties.type)\r\n| summarize Count = count() by ExtensionType\r\n| order by Count desc",
               "size": 3,
               "title": "Extensions by Type",
               "queryType": 1,
@@ -8847,7 +8847,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id, machineName = name\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend AutoUpgradeMinorVersion = tostring(properties.autoUpgradeMinorVersion)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), machineName, ExtensionName, Publisher, ExtensionType, Version, Status, AutoUpgradeMinorVersion, ResourceGroupName\r\n| sort by Status desc, machineName asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id, machineName = name\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend AutoUpgradeMinorVersion = tostring(properties.autoUpgradeMinorVersion)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), machineName, ExtensionName, Publisher, ExtensionType, Version, Status, AutoUpgradeMinorVersion, ResourceGroupName\r\n| sort by Status desc, machineName asc",
               "size": 0,
               "title": "Azure Local Node Extensions Detail",
               "queryType": 1,
@@ -8906,7 +8906,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) contains \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id, machineName = name\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where properties.provisioningState == \"Failed\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend ErrorMessage = tostring(properties.error.message)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), machineName, ExtensionName, Publisher, ExtensionType, Version, ErrorMessage, ResourceGroupName\r\n| sort by machineName asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project machineId = id, machineName = name\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where properties.provisioningState == \"Failed\"\r\n) on $left.machineId == $right.id\r\n| extend ExtensionName = tostring(name)\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend ExtensionType = tostring(properties.type)\r\n| extend Version = tostring(properties.typeHandlerVersion)\r\n| extend ErrorMessage = tostring(properties.error.message)\r\n| extend ResourceGroupName = tostring(resourceGroup)\r\n| project machineLink = strcat('[', machineName, '](', 'https://portal.azure.com/resource', machineId, ')'), machineName, ExtensionName, Publisher, ExtensionType, Version, ErrorMessage, ResourceGroupName\r\n| sort by machineName asc",
               "size": 0,
               "title": "Failed Extensions",
               "queryType": 1,

@@ -23,9 +23,13 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 ### Improvements
 
 - **Success Rate Column Thresholds** (Update Progress tab):
-  - Updated color thresholds in both "Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
+  - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
   - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)
   - Fixed threshold comparison logic by outputting numeric values for proper color coding
+
+- **Table Improvements** (Update Progress tab):
+  - Renamed "Update Duration - Analytical Statistics" to "Overall Update Duration - Analytical Statistics" for clarity
+  - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
 
 ### Bug Fixes
 

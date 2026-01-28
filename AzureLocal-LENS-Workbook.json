@@ -8574,6 +8574,94 @@
           {
             "type": 1,
             "content": {
+              "json": "---\r\n### 📋 All Hybrid Compute Machines (Debug)"
+            },
+            "name": "arc-all-machines-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend MachineName = name\r\n| extend Status = tostring(properties.status)\r\n| extend Provider = tostring(properties.cloudMetadata.provider)\r\n| extend ResourceGroupName = resourceGroup\r\n| project machineLink = strcat('[', MachineName, '](', 'https://portal.azure.com/resource', id, ')'), MachineName, Status, Provider, ResourceGroupName\r\n| sort by Provider desc, MachineName asc",
+              "size": 0,
+              "title": "All Hybrid Compute Machines",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "machineLink",
+                    "label": "Machine Name"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "Provider",
+                    "label": "Cloud Provider"
+                  },
+                  {
+                    "columnId": "ResourceGroupName",
+                    "label": "Resource Group"
+                  }
+                ],
+                "noDataMessage": "❌ No hybrid compute machines found in subscriptions."
+              }
+            },
+            "name": "all-hybrid-machines-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### 📊 All Extensions (Any Source)"
+            },
+            "name": "arc-all-extensions-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend ExtensionName = name\r\n| extend Publisher = tostring(properties.publisher)\r\n| extend Status = tostring(properties.provisioningState)\r\n| extend ResourceGroupName = resourceGroup\r\n| project ExtensionName, Publisher, Status, ResourceGroupName\r\n| sort by Status desc, ExtensionName asc",
+              "size": 0,
+              "title": "All Extensions",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ExtensionName",
+                    "label": "Extension Name"
+                  },
+                  {
+                    "columnId": "Publisher",
+                    "label": "Publisher"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "ResourceGroupName",
+                    "label": "Resource Group"
+                  }
+                ],
+                "noDataMessage": "❌ No extensions found in subscriptions."
+              }
+            },
+            "name": "all-extensions-table"
+          },
+          {
+            "type": 1,
+            "content": {
               "json": "---\r\n### 📋 All Azure Local Nodes"
             },
             "name": "arc-nodes-table-header"

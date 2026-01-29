@@ -8527,8 +8527,8 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| summarize Total = count()",
-              "size": 1,
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| summarize Total = count()\r\n| extend Label = 'Azure Local Nodes'",
+              "size": 4,
               "title": "Total Azure Local Nodes",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -8537,7 +8537,19 @@
               ],
               "visualization": "tiles",
               "tileSettings": {
-                "showBorder": false
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Total",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
               }
             },
             "customWidth": "25",
@@ -8551,8 +8563,8 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| extend machineId = substring(id, 0, indexof(id, \"/extensions\"))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project machineId = id\r\n) on $left.machineId == $right.machineId\r\n| summarize Total = count()",
-              "size": 1,
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines/extensions\"\r\n| extend machineId = substring(id, 0, indexof(id, \"/extensions\"))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where tostring(properties.osSku) == \"Azure Stack HCI\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project machineId = id\r\n) on $left.machineId == $right.machineId\r\n| summarize Total = count()\r\n| extend Label = 'Arc Extensions'",
+              "size": 4,
               "title": "Total Extensions on Nodes",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -8561,7 +8573,19 @@
               ],
               "visualization": "tiles",
               "tileSettings": {
-                "showBorder": false
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Total",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
               }
             },
             "customWidth": "25",

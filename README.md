@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.6
+## Latest Version: v0.8.0
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,9 +8,23 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 **Important:** This is a community driven project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.6)
+## Recent Changes (v0.8.0)
 
 ### New Features
+
+- **🔌 Arc Extensions Tab**: New dedicated tab for monitoring Azure Arc extensions deployed to Azure Local nodes
+  - Overview tiles showing total Azure Local nodes and total extensions count
+  - Extension status distribution pie chart with provisioning state breakdown (Succeeded, Failed, Creating, Updating)
+  - Publisher and type distribution bar charts to visualize extension ecosystem
+  - Detailed extensions table with direct links to machine resources in Azure portal
+  - Failed extensions table with error messages for troubleshooting deployment issues
+  - Diagnostic tables for debugging and validating data integrity
+  - Respects existing Resource Group and Subscription filters for scoped analysis
+  - Properly identifies Azure Local nodes by OS SKU ("Azure Stack HCI") filtering
+
+## Previous Changes (v0.7.6)
+
+### Features from v0.7.6
 
 - **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
   - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
@@ -122,9 +136,9 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 ## Features
 
-The workbook is organized into seven tabs:
+The workbook is organized into eight tabs:
 
-📊 Summary Dashboard | 📋 Update Readiness | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Summary Dashboard | 📋 Update Readiness | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔌 Arc Extensions | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Summary Dashboard
 A high-level overview of your entire Azure Local estate, including:
@@ -227,7 +241,34 @@ Comprehensive view of physical server machines in Azure Local clusters:
 
 ![Physical Machine Extensions](images/physical-nodes-extensions-screenshot.png)
 
-### 🔗 ARB Status
+### � Arc Extensions
+Monitor Azure Arc extensions deployed to Azure Local nodes:
+- **Azure Local Nodes Summary**:
+  - Total Azure Local Nodes tile showing count of physical servers in Azure Local clusters
+  - Total Arc Extensions tile showing count of all extensions deployed across Azure Local nodes
+- **Extension Status Summary**:
+  - Extension Status Distribution pie chart showing breakdown by provisioning state (Succeeded, Failed, Creating, Updating)
+  - Extensions by Publisher bar chart identifying which Azure extension publishers are deployed
+  - Extensions by Type bar chart showing types of extensions deployed (e.g., WindowsAgent.AzureMonitoring, WindowsAgent.SqlServer, etc.)
+- **Detailed Arc Extensions Table** showing:
+  - Machine name with direct link to Azure portal machine resource
+  - Extension name and publisher
+  - Extension type and version
+  - Provisioning state with color coding (green for Succeeded, red for Failed)
+  - Auto-upgrade setting status
+  - Resource group and subscription association
+- **Failed Extensions Table** with:
+  - Machine name and extension details (name, publisher, type, version)
+  - Error messages from failed deployment attempts
+  - Machine links for quick portal access to troubleshoot
+  - Helps identify problematic extensions or deployment issues
+- **Diagnostic Tables** (for troubleshooting):
+  - All Hybrid Compute Machines table showing all hybrid machines with provider metadata
+  - All Extensions table showing all extensions across subscriptions
+  - OS SKU debug table showing actual OS SKU values for proper filtering
+- Respects Resource Group and Subscription filters for scoped analysis
+
+### �🔗 ARB Status
 Monitor the status of Azure Resource Bridge appliances:
 - Warning banner about 45-day offline limit (displayed below Offline ARBs section) with link to troubleshooting documentation
 - ARB status summary per Azure Local instance with pie chart

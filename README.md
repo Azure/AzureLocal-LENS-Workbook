@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.6
+## Latest Version: v0.7.7
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,10 +8,24 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 **Important:** This is a community driven project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.6)
+## Recent Changes (v0.7.7)
 
 ### New Features
+- **AKS Arc GitOps / Flux Status Section** ([PR #12](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/12)) (AKS Arc Clusters tab):
+  - New section to monitor Flux configurations and compliance status across AKS Arc clusters on Azure Local
+  - **Flux Compliance Status Pie Chart**: Visual breakdown of configuration compliance states (Compliant, Non-Compliant, Pending, Suspended)
+  - **Flux Configuration Summary Tiles**: Quick stats showing Total, Compliant, Non-Compliant, Pending, Suspended counts with compliance rate percentage
+  - **All Flux Configurations Table**: Comprehensive view of all Flux configurations with columns for AKS Cluster Name (linked), Configuration Name, Compliance State (with status icons), Source Kind, Source URL, Branch, Namespace, Last Synced, Resource Group, Subscription ID
+  - **Non-Compliant Flux Configurations Table**: Filtered view showing only Non-Compliant and Pending configurations with Error Message column for troubleshooting
+  - Documentation link to [GitOps with Flux v2](https://learn.microsoft.com/azure/azure-arc/kubernetes/conceptual-gitops-flux2)
+  - Supports Subscription and Resource Group filters (Parent Cluster Tag filter not supported due to Azure Resource Graph query limitations)
 
+- **Azure Local Instances Tab Enhancements**:
+  - **Total Cores by Billing Model Pie Chart**: Shows distribution of CPU cores across Standard and Trial billing models
+  - **Node Count Distribution Pie Chart**: Shows distribution of clusters by node count (e.g., "3 Nodes", "4 Nodes")
+  - **Cluster Details Section Moved**: The "📋 Cluster Details" section with all 6 pie charts has been moved to the bottom of the tab for improved layout
+
+### Previous Release (v0.7.6)
 - **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
   - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
   - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
@@ -72,6 +86,8 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
+---
+
 ## How to Import the Workbook
 
 1. **Navigate to Azure Monitor Workbooks**
@@ -112,9 +128,13 @@ You can also import directly from the Workbooks gallery:
 
 ## Prerequisites
 
-- Access to Azure subscriptions containing Azure Local clusters
-- Reader permissions on the resources you want to monitor
-- Azure Monitor Workbooks access in the Azure portal
+- Access to Azure subscriptions containing Azure Local clusters:
+- **Reader permissions** on the resources you want to monitor
+  - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant.
+  - You will only see data for resources where you have at least Reader access
+  - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant.
+  - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) - you cannot query resources in other tenants without Lighthouse delegation
+- Access to Azure Monitor Workbooks in the Azure portal.
 
 ## Overview
 

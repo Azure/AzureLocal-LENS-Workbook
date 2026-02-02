@@ -1,88 +1,51 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.7
+## Latest Version: v0.7.8
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
-An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azure Stack HCI) clusters at scale. This workbook provides comprehensive visibility into cluster health, update readiness, and workload status across your entire Azure Local fleet.
+An Azure Monitor Workbook for managing Azure Local (formerly Azure Stack HCI) clusters at scale. This workbook provides comprehensive visibility into cluster health, update readiness, and workload status across your entire Azure Local fleet.
 
-**Important:** This is a community driven project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
+**Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.7)
+## Recent Changes (v0.7.8)
 
 ### New Features
-- **AKS Arc GitOps / Flux Status Section** ([PR #12](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/12)) (AKS Arc Clusters tab):
-  - New section to monitor Flux configurations and compliance status across AKS Arc clusters on Azure Local
-  - **Flux Compliance Status Pie Chart**: Visual breakdown of configuration compliance states (Compliant, Non-Compliant, Pending, Suspended)
-  - **Flux Configuration Summary Tiles**: Quick stats showing Total, Compliant, Non-Compliant, Pending, Suspended counts with compliance rate percentage
-  - **All Flux Configurations Table**: Comprehensive view of all Flux configurations with columns for AKS Cluster Name (linked), Configuration Name, Compliance State (with status icons), Source Kind, Source URL, Branch, Namespace, Last Synced, Resource Group, Subscription ID
-  - **Non-Compliant Flux Configurations Table**: Filtered view showing only Non-Compliant and Pending configurations with Error Message column for troubleshooting
-  - Documentation link to [GitOps with Flux v2](https://learn.microsoft.com/azure/azure-arc/kubernetes/conceptual-gitops-flux2)
-  - Supports Subscription and Resource Group filters (Parent Cluster Tag filter not supported due to Azure Resource Graph query limitations)
+- **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
+  - **Nodes** column now links to the cluster's Machines page in Azure Portal
+  - **VMs** column now links to the cluster's Virtual Machines page in Azure Portal
+  - **AKS Arc** column now links to the cluster's Kubernetes Clusters page in Azure Portal
 
-- **Azure Local Instances Tab Enhancements**:
-  - **Total Cores by Billing Model Pie Chart**: Shows distribution of CPU cores across Standard and Trial billing models
-  - **Node Count Distribution Pie Chart**: Shows distribution of clusters by node count (e.g., "3 Nodes", "4 Nodes")
-  - **Cluster Details Section Moved**: The "📋 Cluster Details" section with all 6 pie charts has been moved to the bottom of the tab for improved layout
+- **VM Count and AKS Arc Count Columns Relocated** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
+  - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
+  - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
 
-### Previous Release (v0.7.6)
-- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
-  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
-  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
-  - Provides better discoverability of available tags and reduces input errors
+- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Readiness tab):
+  - Added new **Update Dependency** column to the "System Health Checks Overview" table after the "State" column
+  - Shows additional status information when an update's "Ready" state doesn't tell the full story
+  - Displays statuses like "Health check failed", "Additional content required", "Has prerequisite" (with package names), "Downloading", etc.
+  - Includes warning/error icons for states that require attention before updating
+  - Helps identify clusters that need remediation before updates can be installed
+  - Properly parses prerequisite JSON to show friendly package names instead of raw JSON
 
-- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
-  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
-  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
-  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
-  - Previously, tag filtering was not supported for ARB resources
-
-- **Update Duration Statistics by Solution Update Table** (Update Progress tab):
-  - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
-  - Enables comparison of update performance across different solution versions
-  - **Columns**: Solution Update, Total Runs, Succeeded, Failed, In Progress, Success Rate (color-coded), Average Duration, Standard Deviation, 95th Percentile, 99th Percentile, Min Duration, Max Duration
-  - Helps identify problematic updates or version-specific performance issues
-  - Respects all existing filters (Time Range, Solution Update, Resource Group)
-  - Export to Excel and refresh buttons available
+- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)):
+  - Added **Filter by Update Available** multi-select dropdown to "📦 Clusters with Updates Available" table (Update Progress tab) - filters clusters by specific available update versions
+  - Added **Update Dependency** filter to "System Health Check Filters" section (Update Readiness tab) - filters the System Health Checks Overview table by update dependency status
 
 ### Improvements
+- **Increased Table Row Limits**: All tables now support up to 2,000 rows (previously 250) to prevent "Results were limited to the first 250 rows" warnings
+- **Column Label Improvements** (Azure Local Instances tab):
+  - Renamed "Node Count" to "Nodes"
+  - Renamed "VM Count" to "VMs"
+  - Renamed "AKS Arc Count" to "AKS Arc"
+  - Renamed "Total Cores" to "Cores"
+  - Renamed "Total Memory (GB)" to "Memory (GB)"
 
-- **Detailed Health Check Results Section** (Update Readiness tab):
-  - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
-  - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
-  - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
-  - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
-  - Documentation and knowledge links now appear between the section header and filters
+- **Update Run History Improvements** (Update Progress tab):
+  - Improved **Current Step** detection for failed updates - now correctly identifies the failing step from error messages
+  - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
 
-- **System Health Check Filters** (Update Readiness tab):
-  - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
-  - Improved visual consistency with other tabs
-
-- **Success Rate Column Thresholds** (Update Progress tab):
-  - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
-  - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)
-  - Fixed threshold comparison logic by outputting numeric values for proper color coding
-
-- **Table Improvements** (Update Progress tab):
-  - Renamed "Update Duration - Analytical Statistics" to "Overall Update Duration - Analytical Statistics" for clarity
-  - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
-
-### Bug Fixes
-
-- **Clusters Currently Updating Query** (Update Progress tab):
-  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
-  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
-
-- **Dark Mode Readability** (All tabs):
-  - Fixed version banner text being unreadable in dark mode
-  - Added explicit text colors to ensure visibility in both light and dark themes
-
-- **Azure Local Physical Machines Section Header** (Physical Machines tab):
-  - Fixed corrupted emoji icon in section header (now displays 🖥️)
-
-- **AKS Arc Network Details Table** (AKS Arc Clusters tab):
-  - Fixed **IPs Used** and **IPs Available** columns not populating
-  - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema
+- **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -144,9 +107,9 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 The workbook is organized into seven tabs:
 
-📊 Summary Dashboard | 📋 Update Readiness | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 📋 Update Readiness | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
-### 📊 Summary Dashboard
+### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
 - **Visual Summary Charts**: Pie charts showing cluster connectivity, health status, and Azure Resource Bridge (ARB) status
 - **Azure Local Totals and Connectivity**: Tile metrics for total clusters, connected/disconnected clusters, connection percentage, total machines, and offline ARBs
@@ -165,9 +128,9 @@ A high-level overview of your entire Azure Local estate, including:
 - **All Clusters Table**: Comprehensive list with solution version, node count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, and registration date
 - **Stale Clusters Warning**: Table showing clusters that haven't synced in 24+ hours with color-coded severity
 
-![Summary Dashboard](images/summary-dashboard-screenshot.png)
+![Azure Local Instances](images/summary-dashboard-screenshot.png)
 
-![Summary Dashboard - Clusters](images/summary-dashboard-2-screenshot.png)
+![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
 
 ### 📋 Update Readiness
 Detailed view of cluster update readiness:
@@ -369,6 +332,68 @@ See the repository's LICENSE file for details.
 
 ## Appendix: Previous Version Changes
 
+### v0.7.7
+
+#### New Features
+
+- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
+  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
+  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
+  - Provides better discoverability of available tags and reduces input errors
+
+- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
+  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
+  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
+  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
+  - Previously, tag filtering was not supported for ARB resources
+
+- **Update Duration Statistics by Solution Update Table** (Update Progress tab):
+  - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
+  - Enables comparison of update performance across different solution versions
+  - **Columns**: Solution Update, Total Runs, Succeeded, Failed, In Progress, Success Rate (color-coded), Average Duration, Standard Deviation, 95th Percentile, 99th Percentile, Min Duration, Max Duration
+  - Helps identify problematic updates or version-specific performance issues
+  - Respects all existing filters (Time Range, Solution Update, Resource Group)
+  - Export to Excel and refresh buttons available
+
+#### Improvements
+
+- **Detailed Health Check Results Section** (Update Readiness tab):
+  - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
+  - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
+  - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
+  - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
+  - Documentation and knowledge links now appear between the section header and filters
+
+- **System Health Check Filters** (Update Readiness tab):
+  - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
+  - Improved visual consistency with other tabs
+
+- **Success Rate Column Thresholds** (Update Progress tab):
+  - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
+  - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)
+  - Fixed threshold comparison logic by outputting numeric values for proper color coding
+
+- **Table Improvements** (Update Progress tab):
+  - Renamed "Update Duration - Analytical Statistics" to "Overall Update Duration - Analytical Statistics" for clarity
+  - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
+
+#### Bug Fixes
+
+- **Clusters Currently Updating Query** (Update Progress tab):
+  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
+  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
+
+- **Dark Mode Readability** (All tabs):
+  - Fixed version banner text being unreadable in dark mode
+  - Added explicit text colors to ensure visibility in both light and dark themes
+
+- **Azure Local Physical Machines Section Header** (Physical Machines tab):
+  - Fixed corrupted emoji icon in section header (now displays 🖥️)
+
+- **AKS Arc Network Details Table** (AKS Arc Clusters tab):
+  - Fixed **IPs Used** and **IPs Available** columns not populating
+  - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema
+
 ### v0.7.4
 
 #### New Features
@@ -548,7 +573,7 @@ See the repository's LICENSE file for details.
 - **Cluster Tag Filter Support**: Added comprehensive cluster tag filtering across all tabs
   - All feasible queries now honor the ClusterTagName and ClusterTagValue filter parameters
   - AKS Arc clusters and VMs in the same resource group as matching clusters are also filtered
-  - Updated ~35+ queries across Summary Dashboard, Update Readiness, Update Progress, Azure Local VMs, and AKS Arc Clusters tabs
+  - Updated ~35+ queries across Azure Local Instances, Update Readiness, Update Progress, Azure Local VMs, and AKS Arc Clusters tabs
   - Note: ARB tables and NIC Status tables cannot support tag filtering due to Azure Resource Graph join limitations
 
 - **Filter Instructions Updated**: Clarified that cluster tag filter now applies to AKS Arc clusters and VMs via resource group association
@@ -618,7 +643,7 @@ See the repository's LICENSE file for details.
   - **Azure Local Machines Tab**: Connection Status, Hardware Vendor, OS Version, Arc Agent Version, License Type
   - **Azure Local Machines Tab - NIC Section**: NIC Status Distribution
   - **Update Progress Tab**: Update Attempts by Status Percentages
-  - **Summary Dashboard - Cluster Details**: Changed from 1x4 to 2x2 layout for better visibility
+  - **Azure Local Instances - Cluster Details**: Changed from 1x4 to 2x2 layout for better visibility
 
 - **Empty State Messages** (noDataMessage for better UX):
   - Disconnected Nodes table: "✅ All nodes are connected"
@@ -644,13 +669,13 @@ See the repository's LICENSE file for details.
 ### v0.6.8
 
 - **Pie Chart Improvements** (consistent auto-sizing and legend placement across all tabs):
-  - **Summary Dashboard - Cluster Details**: OS Version, Hardware Class, Billing Model, Hardware Vendor/Model
+  - **Azure Local Instances - Cluster Details**: OS Version, Hardware Class, Billing Model, Hardware Vendor/Model
   - **Azure Local Virtual Machines**: VM Connection Status, OS Distribution, VMs by Resource Group
   - **AKS Arc Clusters**: Connectivity Status, Kubernetes Version Distribution, Provisioning State
 
 - **New Knowledge Links**:
   - **AKS Arc Clusters Tab**: Added [Troubleshoot extension issues for AKS Arc Kubernetes clusters](https://learn.microsoft.com/azure/azure-arc/kubernetes/extensions-troubleshooting) above Failed AKS Extensions table
-  - **Summary Dashboard**: Added [Send Diagnostic Logs to Microsoft](https://learn.microsoft.com/azure/azure-local/manage/collect-logs?tabs=azureportal#collect-logs-for-azure-local) below Clusters Not Synced Recently table
+  - **Azure Local Instances**: Added [Send Diagnostic Logs to Microsoft](https://learn.microsoft.com/azure/azure-local/manage/collect-logs?tabs=azureportal#collect-logs-for-azure-local) below Clusters Not Synced Recently table
 
 ### v0.6.7
 

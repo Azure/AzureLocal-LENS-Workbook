@@ -45,65 +45,6 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 
 - **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
 
-### Previous Release (v0.7.7)
-- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
-  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
-  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
-  - Provides better discoverability of available tags and reduces input errors
-
-- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
-  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
-  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
-  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
-  - Previously, tag filtering was not supported for ARB resources
-
-- **Update Duration Statistics by Solution Update Table** (Update Progress tab):
-  - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
-  - Enables comparison of update performance across different solution versions
-  - **Columns**: Solution Update, Total Runs, Succeeded, Failed, In Progress, Success Rate (color-coded), Average Duration, Standard Deviation, 95th Percentile, 99th Percentile, Min Duration, Max Duration
-  - Helps identify problematic updates or version-specific performance issues
-  - Respects all existing filters (Time Range, Solution Update, Resource Group)
-  - Export to Excel and refresh buttons available
-
-### Improvements
-
-- **Detailed Health Check Results Section** (Update Readiness tab):
-  - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
-  - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
-  - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
-  - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
-  - Documentation and knowledge links now appear between the section header and filters
-
-- **System Health Check Filters** (Update Readiness tab):
-  - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
-  - Improved visual consistency with other tabs
-
-- **Success Rate Column Thresholds** (Update Progress tab):
-  - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
-  - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)
-  - Fixed threshold comparison logic by outputting numeric values for proper color coding
-
-- **Table Improvements** (Update Progress tab):
-  - Renamed "Update Duration - Analytical Statistics" to "Overall Update Duration - Analytical Statistics" for clarity
-  - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
-
-### Bug Fixes
-
-- **Clusters Currently Updating Query** (Update Progress tab):
-  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
-  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
-
-- **Dark Mode Readability** (All tabs):
-  - Fixed version banner text being unreadable in dark mode
-  - Added explicit text colors to ensure visibility in both light and dark themes
-
-- **Azure Local Physical Machines Section Header** (Physical Machines tab):
-  - Fixed corrupted emoji icon in section header (now displays 🖥️)
-
-- **AKS Arc Network Details Table** (AKS Arc Clusters tab):
-  - Fixed **IPs Used** and **IPs Available** columns not populating
-  - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema
-
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---
@@ -388,6 +329,68 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.7.7
+
+#### New Features
+
+- **Auto-populated Tag Name and Tag Value Filters** ([Issue #9](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/9)):
+  - Tag Name and Tag Value filters are now dropdown lists instead of text inputs
+  - Dropdown values are auto-populated from Azure Resource Graph based on tags applied to Azure Local clusters
+  - Provides better discoverability of available tags and reduces input errors
+
+- **ARB Filtering by Cluster Tags** ([Issue #10](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/10)):
+  - Azure Resource Bridge (ARB) status tables now respect Cluster Tag filters
+  - When filtering by cluster tags, only ARBs associated with matching clusters are shown
+  - Applies to: ARB Status Summary, Offline ARBs table, and All ARBs table
+  - Previously, tag filtering was not supported for ARB resources
+
+- **Update Duration Statistics by Solution Update Table** (Update Progress tab):
+  - New table showing duration statistics aggregated per Solution Update version ([Issue #6](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/6))
+  - Enables comparison of update performance across different solution versions
+  - **Columns**: Solution Update, Total Runs, Succeeded, Failed, In Progress, Success Rate (color-coded), Average Duration, Standard Deviation, 95th Percentile, 99th Percentile, Min Duration, Max Duration
+  - Helps identify problematic updates or version-specific performance issues
+  - Respects all existing filters (Time Range, Solution Update, Resource Group)
+  - Export to Excel and refresh buttons available
+
+#### Improvements
+
+- **Detailed Health Check Results Section** (Update Readiness tab):
+  - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
+  - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
+  - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
+  - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
+  - Documentation and knowledge links now appear between the section header and filters
+
+- **System Health Check Filters** (Update Readiness tab):
+  - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
+  - Improved visual consistency with other tabs
+
+- **Success Rate Column Thresholds** (Update Progress tab):
+  - Updated color thresholds in both "Overall Update Duration - Analytical Statistics" and "Update Duration Statistics by Solution Update" tables
+  - New thresholds: 🟢 Green (90-100%), 🟡 Amber (70-89%), 🔴 Red (0-69%)
+  - Fixed threshold comparison logic by outputting numeric values for proper color coding
+
+- **Table Improvements** (Update Progress tab):
+  - Renamed "Update Duration - Analytical Statistics" to "Overall Update Duration - Analytical Statistics" for clarity
+  - Solution Update column in "Update Duration Statistics by Solution Update" table now auto-expands to show full version text
+
+#### Bug Fixes
+
+- **Clusters Currently Updating Query** (Update Progress tab):
+  - Fixed case-sensitivity bug in update run ID extraction (`/updateruns` → `/updateRuns`)
+  - Clusters with active update runs now correctly appear in the "Clusters Currently Updating" table
+
+- **Dark Mode Readability** (All tabs):
+  - Fixed version banner text being unreadable in dark mode
+  - Added explicit text colors to ensure visibility in both light and dark themes
+
+- **Azure Local Physical Machines Section Header** (Physical Machines tab):
+  - Fixed corrupted emoji icon in section header (now displays 🖥️)
+
+- **AKS Arc Network Details Table** (AKS Arc Clusters tab):
+  - Fixed **IPs Used** and **IPs Available** columns not populating
+  - Corrected IP pool property paths from `ipPool.info.usedIPCount`/`availableIPCount` to `ipPool.info.used`/`available` to match the Azure Stack HCI API schema
 
 ### v0.7.4
 

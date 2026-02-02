@@ -8835,49 +8835,11 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend state = tostring(properties.state)\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend lastChecked = todatetime(properties.lastChecked)\r\n| extend clusterId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n| extend packageVersions = properties.packageVersions\r\n| mv-expand pkg = packageVersions\r\n| extend pkgType = tostring(pkg.packageType)\r\n| extend pkgVersion = tostring(pkg.version)\r\n| summarize sbeVersion = maxif(pkgVersion, pkgType =~ 'SBE') by clusterName, hciClusterName, state, currentVersion, lastChecked, clusterId, resourceGroup\r\n| where state == \"UpdateAvailable\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId, '/updates')\r\n| extend clusterIdEncoded = replace_string(replace_string(replace_string(clusterId, '/', '%2F'), '\"', '%22'), ' ', '%20')\r\n| extend clusterIdsJson = strcat('%5B%7B%22id%22%3A%22', clusterIdEncoded, '%22%2C%22oemFamily%22%3A%22%22%7D%5D')\r\n| extend oneTimeUpdateLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/InstallUpdates.ReactView/clusterIds~/', clusterIdsJson)\r\n| project clusterName, hciClusterName, currentVersion, lastChecked, sbeVersion, clusterLink, oneTimeUpdateLink, resourceGroup",
-              "size": 0,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ]
-            },
-            "conditionalVisibility": {
-              "parameterName": "AlwaysHidden",
-              "comparison": "isEqualTo",
-              "value": "__never_visible__"
-            },
-            "name": "updates-available-base"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend updateState = tostring(properties.state)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName) by clusterName, name, updateState\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState), UpdateDependencies = make_list(updateDependency) by clusterName\r\n| extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n| extend UpdateState = strcat_array(UpdateStates, ', ')\r\n| extend UpdateDependency = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend UpdateDependency = trim(',', trim(' ', replace_string(replace_string(UpdateDependency, ', ,', ','), ', ,', ',')))\r\n| project clusterName, UpdateAvailable, UpdateState, UpdateDependency",
-              "size": 0,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ]
-            },
-            "conditionalVisibility": {
-              "parameterName": "AlwaysHidden",
-              "comparison": "isEqualTo",
-              "value": "__never_visible__"
-            },
-            "name": "updates-available-dependency"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"updates-available-merge\",\"mergeType\":\"inner\",\"leftTable\":\"updates-available-base\",\"rightTable\":\"updates-available-dependency\",\"leftColumn\":\"clusterName\",\"rightColumn\":\"clusterName\"}],\"projectRename\":[{\"originalName\":\"[updates-available-base].hciClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].currentVersion\",\"mergedName\":\"CurrentVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-dependency].UpdateAvailable\",\"mergedName\":\"UpdateAvailable\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-dependency].UpdateState\",\"mergedName\":\"UpdateState\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-dependency].UpdateDependency\",\"mergedName\":\"UpdateDependency\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].sbeVersion\",\"mergedName\":\"SBEVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].lastChecked\",\"mergedName\":\"LastChecked\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].oneTimeUpdateLink\",\"mergedName\":\"oneTimeUpdateLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].resourceGroup\"},{\"originalName\":\"[updates-available-base].clusterName\"},{\"originalName\":\"[updates-available-dependency].clusterName\"}]}",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tostring(split(id, '/')[8])\r\n| extend clusterRG = resourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on clusterName, clusterRG\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updates\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend updateClusterName = tostring(split(id, '/')[8])\r\n    | extend updateState = tostring(properties.state)\r\n    | where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n    | summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState) by updateClusterName\r\n    | extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n    | extend UpdateState = strcat_array(UpdateStates, ', ')\r\n    | project updateClusterName, UpdateAvailable, UpdateState\r\n) on $left.clusterName == $right.updateClusterName\r\n| extend state = tostring(properties.state)\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend lastChecked = todatetime(properties.lastChecked)\r\n| extend clusterId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n| extend packageVersions = properties.packageVersions\r\n| mv-expand pkg = packageVersions\r\n| extend pkgType = tostring(pkg.packageType)\r\n| extend pkgVersion = tostring(pkg.version)\r\n| summarize sbeVersion = maxif(pkgVersion, pkgType =~ 'SBE') by clusterName, state, currentVersion, lastChecked, clusterId, resourceGroup, UpdateAvailable, UpdateState\r\n| where state == \"UpdateAvailable\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId, '/updates')\r\n| extend clusterIdEncoded = replace_string(replace_string(replace_string(clusterId, '/', '%2F'), '\"', '%22'), ' ', '%20')\r\n| extend clusterIdsJson = strcat('%5B%7B%22id%22%3A%22', clusterIdEncoded, '%22%2C%22oemFamily%22%3A%22%22%7D%5D')\r\n| extend oneTimeUpdateLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/InstallUpdates.ReactView/clusterIds~/', clusterIdsJson)\r\n| project ClusterName = clusterName, clusterLink, CurrentVersion = currentVersion, UpdateAvailable, UpdateState, SBEVersion = coalesce(sbeVersion, ''), LastChecked = lastChecked, oneTimeUpdateLink, resourceGroup\r\n| order by ClusterName asc",
               "size": 0,
               "showRefreshButton": true,
               "showExportToExcel": true,
-              "queryType": 7,
+              "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscriptions}"
@@ -8899,55 +8861,6 @@
                     "formatOptions": {
                       "linkTarget": "Url",
                       "linkLabel": "🔄 Install Update"
-                    }
-                  },
-                  {
-                    "columnMatch": "UpdateDependency",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Additional content",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "prerequisite",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "failed",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "recalled",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Invalid",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "isNotNull",
-                          "representation": "Blank",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "Default",
-                          "representation": "Blank",
-                          "text": ""
-                        }
-                      ]
                     }
                   }
                 ],
@@ -8972,10 +8885,6 @@
                   {
                     "columnId": "UpdateState",
                     "label": "Update State"
-                  },
-                  {
-                    "columnId": "UpdateDependency",
-                    "label": "Update Dependency"
                   },
                   {
                     "columnId": "SBEVersion",

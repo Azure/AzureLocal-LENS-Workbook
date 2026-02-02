@@ -20,6 +20,13 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
   - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
 
+- **Update Dependency Column** (Update Progress tab):
+  - Added new **Update Dependency** column to the "📦 Clusters with Updates Available" table
+  - Shows additional status information when an update's "Ready" state doesn't tell the full story
+  - Displays statuses like "Health check failed", "Additional content required", "Has prerequisite", "Downloading", etc.
+  - Includes warning/error icons for states that require attention before updating
+  - Helps identify clusters that need remediation before updates can be installed
+
 ### Improvements
 - **Increased Table Row Limits**: All tables now support up to 2,000 rows (previously 250) to prevent "Results were limited to the first 250 rows" warnings
 - **Column Label Improvements** (Azure Local Instances tab):

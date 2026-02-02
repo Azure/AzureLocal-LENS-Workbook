@@ -20,19 +20,17 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
   - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
 
-- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Progress tab & Update Readiness tab):
-  - Added new **Update Dependency** column to the "📦 Clusters with Updates Available" table (Update Progress tab)
-  - Added new **Update Dependency** column to the "System Health Checks Overview" table (Update Readiness tab) after the "State" column
+- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Readiness tab):
+  - Added new **Update Dependency** column to the "System Health Checks Overview" table after the "State" column
   - Shows additional status information when an update's "Ready" state doesn't tell the full story
   - Displays statuses like "Health check failed", "Additional content required", "Has prerequisite" (with package names), "Downloading", etc.
   - Includes warning/error icons for states that require attention before updating
   - Helps identify clusters that need remediation before updates can be installed
   - Properly parses prerequisite JSON to show friendly package names instead of raw JSON
 
-- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Progress tab & Update Readiness tab):
-  - Added **Filter by Solution Update** dropdown to "📦 Clusters with Updates Available" table - filters clusters by available solution update version
-  - Added **Filter by Update Dependency** dropdown to "📦 Clusters with Updates Available" table - filters clusters by dependency status (Additional content required, Has prerequisite, Health check failed, etc.)
-  - Added **Update Dependency** filter to "System Health Check Filters" section - filters the System Health Checks Overview table by update dependency status
+- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)):
+  - Added **Filter by Update Available** multi-select dropdown to "📦 Clusters with Updates Available" table (Update Progress tab) - filters clusters by specific available update versions
+  - Added **Update Dependency** filter to "System Health Check Filters" section (Update Readiness tab) - filters the System Health Checks Overview table by update dependency status
 
 ### Improvements
 - **Increased Table Row Limits**: All tables now support up to 2,000 rows (previously 250) to prevent "Results were limited to the first 250 rows" warnings
@@ -42,6 +40,10 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Renamed "AKS Arc Count" to "AKS Arc"
   - Renamed "Total Cores" to "Cores"
   - Renamed "Total Memory (GB)" to "Memory (GB)"
+
+- **Update Run History Improvements** (Update Progress tab):
+  - Improved **Current Step** detection for failed updates - now correctly identifies the failing step from error messages
+  - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
 
 - **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
 

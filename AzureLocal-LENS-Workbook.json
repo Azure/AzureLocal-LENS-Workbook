@@ -7043,7 +7043,8 @@
             },
             "conditionalVisibility": {
               "parameterName": "AlwaysHidden",
-              "comparison": "isNotEqualTo"
+              "comparison": "isEqualTo",
+              "value": "__never_visible__"
             },
             "name": "health-overview-base"
           },
@@ -7061,7 +7062,8 @@
             },
             "conditionalVisibility": {
               "parameterName": "AlwaysHidden",
-              "comparison": "isNotEqualTo"
+              "comparison": "isEqualTo",
+              "value": "__never_visible__"
             },
             "name": "health-overview-dependency"
           },
@@ -8896,7 +8898,8 @@
             },
             "conditionalVisibility": {
               "parameterName": "AlwaysHidden",
-              "comparison": "isNotEqualTo"
+              "comparison": "isEqualTo",
+              "value": "__never_visible__"
             },
             "name": "updates-available-base"
           },
@@ -8914,7 +8917,8 @@
             },
             "conditionalVisibility": {
               "parameterName": "AlwaysHidden",
-              "comparison": "isNotEqualTo"
+              "comparison": "isEqualTo",
+              "value": "__never_visible__"
             },
             "name": "updates-available-dependency"
           },

@@ -8929,6 +8929,10 @@
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 7,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
               "gridSettings": {
                 "rowLimit": 2000,
                 "formatters": [

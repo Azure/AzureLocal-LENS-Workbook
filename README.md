@@ -11,16 +11,16 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
 ## Recent Changes (v0.7.8)
 
 ### New Features
-- **Clickable Count Columns** (Azure Local Instances tab):
+- **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
   - **Nodes** column now links to the cluster's Machines page in Azure Portal
   - **VMs** column now links to the cluster's Virtual Machines page in Azure Portal
   - **AKS Arc** column now links to the cluster's Kubernetes Clusters page in Azure Portal
 
-- **VM Count and AKS Arc Count Columns Relocated** (Azure Local Instances tab):
+- **VM Count and AKS Arc Count Columns Relocated** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
   - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
   - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
 
-- **Update Dependency Column** (Update Progress tab & Update Readiness tab):
+- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Progress tab & Update Readiness tab):
   - Added new **Update Dependency** column to the "📦 Clusters with Updates Available" table (Update Progress tab)
   - Added new **Update Dependency** column to the "System Health Checks Overview" table (Update Readiness tab) after the "State" column
   - Shows additional status information when an update's "Ready" state doesn't tell the full story
@@ -29,7 +29,7 @@ An Azure Monitor Workbook for monitoring and managing Azure Local (formerly Azur
   - Helps identify clusters that need remediation before updates can be installed
   - Properly parses prerequisite JSON to show friendly package names instead of raw JSON
 
-- **Update Filters** (Update Progress tab & Update Readiness tab):
+- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Progress tab & Update Readiness tab):
   - Added **Filter by Solution Update** dropdown to "📦 Clusters with Updates Available" table - filters clusters by available solution update version
   - Added **Filter by Update Dependency** dropdown to "📦 Clusters with Updates Available" table - filters clusters by dependency status (Additional content required, Has prerequisite, Health check failed, etc.)
   - Added **Update Dependency** filter to "System Health Check Filters" section - filters the System Health Checks Overview table by update dependency status

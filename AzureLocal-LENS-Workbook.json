@@ -8832,59 +8832,6 @@
             "name": "text-updates-available"
           },
           {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "updates-available-solution-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "UpdatesAvailableSolutionFilter",
-                  "label": "Filter by Solution Update",
-                  "type": 2,
-                  "description": "Filter clusters by available solution update version",
-                  "isRequired": false,
-                  "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| extend updateState = tostring(properties.state)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| where name startswith \"Solution\"\r\n| distinct name\r\n| order by name desc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
-                {
-                  "id": "updates-available-dependency-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "UpdatesAvailableDependencyFilter",
-                  "label": "Filter by Update Dependency",
-                  "type": 2,
-                  "description": "Filter clusters by update dependency status",
-                  "isRequired": false,
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "jsonData": "[\r\n  { \"value\": \"value::all\", \"label\": \"All\" },\r\n  { \"value\": \"Additional content required\", \"label\": \"Additional content required\" },\r\n  { \"value\": \"Requires:\", \"label\": \"Has prerequisite\" },\r\n  { \"value\": \"Health check failed\", \"label\": \"Health check failed\" },\r\n  { \"value\": \"Downloading\", \"label\": \"Downloading\" },\r\n  { \"value\": \"Health checking\", \"label\": \"Health checking\" },\r\n  { \"value\": \"Preparing\", \"label\": \"Preparing\" }\r\n]",
-                  "defaultValue": "value::all",
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                }
-              ],
-              "style": "pills",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources"
-            },
-            "name": "updates-available-filters"
-          },
-          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -8907,7 +8854,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend updateState = tostring(properties.state)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName) by clusterName, name, updateState\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| where '{UpdatesAvailableSolutionFilter}' == 'value::all' or name contains '{UpdatesAvailableSolutionFilter}'\r\n| summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState), UpdateDependencies = make_list(updateDependency) by clusterName\r\n| extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n| extend UpdateState = strcat_array(UpdateStates, ', ')\r\n| extend UpdateDependency = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend UpdateDependency = trim(',', trim(' ', replace_string(replace_string(UpdateDependency, ', ,', ','), ', ,', ',')))\r\n| where '{UpdatesAvailableDependencyFilter}' == 'value::all' or UpdateDependency contains '{UpdatesAvailableDependencyFilter}'\r\n| project clusterName, UpdateAvailable, UpdateState, UpdateDependency",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend updateState = tostring(properties.state)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName) by clusterName, name, updateState\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState), UpdateDependencies = make_list(updateDependency) by clusterName\r\n| extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n| extend UpdateState = strcat_array(UpdateStates, ', ')\r\n| extend UpdateDependency = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend UpdateDependency = trim(',', trim(' ', replace_string(replace_string(UpdateDependency, ', ,', ','), ', ,', ',')))\r\n| project clusterName, UpdateAvailable, UpdateState, UpdateDependency",
               "size": 0,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",

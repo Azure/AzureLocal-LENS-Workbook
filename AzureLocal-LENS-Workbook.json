@@ -6507,7 +6507,12 @@
                     "columnMatch": "errorMessage",
                     "formatter": 1,
                     "formatOptions": {
-                      "customColumnWidthSetting": "400px"
+                      "linkTarget": "CellDetails",
+                      "linkIsContextBlade": true,
+                      "customColumnWidthSetting": "45ch"
+                    },
+                    "tooltipFormat": {
+                      "tooltip": "Click to view full error details"
                     }
                   },
                   {
@@ -6539,7 +6544,7 @@
                   },
                   {
                     "columnId": "errorMessage",
-                    "label": "Error Message"
+                    "label": "Error Details"
                   },
                   {
                     "columnId": "lastSourceSyncedAt",

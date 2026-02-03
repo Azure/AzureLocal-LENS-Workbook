@@ -45,6 +45,10 @@ An Azure Monitor Workbook for managing Azure Local (formerly Azure Stack HCI) cl
   - Improved **Current Step** detection for failed updates - now correctly identifies the failing step from error messages
   - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
 
+- **Non-Compliant Flux Configurations Table** (AKS Arc Clusters tab):
+  - Renamed **Error Message** column to **Error Details** for consistency
+  - Made **Error Details** column clickable - displays full error message in a flyout blade (matching the Update Run History table pattern)
+
 - **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
 
 ### Bug Fixes

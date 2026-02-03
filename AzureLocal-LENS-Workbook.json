@@ -7159,6 +7159,63 @@
                     "formatter": 5
                   },
                   {
+                    "columnMatch": "state",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateAvailable",
+                          "representation": "info",
+                          "text": "Updates available"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "NeedsAttention",
+                          "representation": "warning",
+                          "text": "Needs attention"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "AppliedSuccessfully",
+                          "representation": "success",
+                          "text": "Up to date"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateInProgress",
+                          "representation": "pending",
+                          "text": "Update in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateFailed",
+                          "representation": "critical",
+                          "text": "Update failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationInProgress",
+                          "representation": "pending",
+                          "text": "Preparation in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationFailed",
+                          "representation": "critical",
+                          "text": "Preparation failed"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}"
+                        }
+                      ]
+                    }
+                  },
+                  {
                     "columnMatch": "UpdateDependency",
                     "formatter": 18,
                     "formatOptions": {

@@ -7237,6 +7237,14 @@
           {
             "type": 1,
             "content": {
+              "json": "💡 **Tip:** Review the '📦 Clusters with Updates Available' table in the '🔄 Update Progress' tab for more information on available updates, including SBE (Solution Builder Extension) dependency details.",
+              "style": "info"
+            },
+            "name": "health-overview-tip"
+          },
+          {
+            "type": 1,
+            "content": {
               "json": "## 🔍 Detailed Health Check Results"
             },
             "name": "detailed-health-check-results-header"
@@ -8843,7 +8851,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend updateClusterName = tostring(split(id, '/')[8])\r\n| extend packageType = tostring(properties.packageType)\r\n| where packageType =~ 'SBE'\r\n| extend updateState = tostring(properties.state)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| extend sbeUpdateVersion = tostring(properties.version)\r\n| extend additionalProps = todynamic(tostring(properties.additionalProperties))\r\n| extend sbePublisher = tostring(additionalProps.SBEPublisher)\r\n| extend sbeFamily = tostring(additionalProps.SBEFamily)\r\n| extend sbeReleaseLink = tostring(additionalProps.SBEReleaseLink)\r\n| project updateClusterName, sbeUpdateVersion, sbePublisher, sbeFamily, sbeReleaseLink\r\n| summarize sbeUpdateVersion = max(sbeUpdateVersion), sbePublisher = max(sbePublisher), sbeFamily = max(sbeFamily), sbeReleaseLink = max(sbeReleaseLink) by updateClusterName",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend updateClusterName = tostring(split(id, '/')[8])\r\n| extend packageType = tostring(properties.packageType)\r\n| where packageType =~ 'SBE'\r\n| extend updateState = tostring(properties.state)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| extend sbeUpdateVersion = tostring(properties.version)\r\n| extend additionalProps = todynamic(tostring(properties.additionalProperties))\r\n| extend sbePublisher = tostring(additionalProps.SBEPublisher)\r\n| extend sbeFamily = tostring(additionalProps.SBEFamily)\r\n| extend sbeReleaseLink = tostring(additionalProps.SBEReleaseLink)\r\n| project updateClusterName, sbeUpdateVersion, sbePublisher, sbeFamily, sbeReleaseLink\r\n| summarize sbeUpdateVersion = max(sbeUpdateVersion), sbePublisher = max(sbePublisher), sbeFamily = max(sbeFamily), sbeReleaseLink = max(sbeReleaseLink) by updateClusterName\r\n| extend DependencyInfo = strcat('## SBE Update Details\\n\\n| Property | Value |\\n|:--|:--|\\n| **Publisher** | ', coalesce(sbePublisher, 'N/A'), ' |\\n| **Family** | ', coalesce(sbeFamily, 'N/A'), ' |\\n| **Version** | ', coalesce(sbeUpdateVersion, 'N/A'), ' |\\n| **Release Notes** | ', iff(isnotempty(sbeReleaseLink), strcat('[View Release Notes](', sbeReleaseLink, ')'), 'N/A'), ' |')",
               "size": 0,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -8862,7 +8870,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"updates-available-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"updates-available-base\",\"rightTable\":\"updates-available-sbe\",\"leftColumn\":\"ClusterName\",\"rightColumn\":\"updateClusterName\"}],\"projectRename\":[{\"originalName\":\"[updates-available-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].CurrentVersion\",\"mergedName\":\"CurrentVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].CurrentSBEVersion\",\"mergedName\":\"CurrentSBEVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeUpdateVersion\",\"mergedName\":\"DependencyLabel\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbePublisher\",\"mergedName\":\"sbePublisher\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeFamily\",\"mergedName\":\"sbeFamily\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeReleaseLink\",\"mergedName\":\"sbeReleaseLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].UpdateAvailable\",\"mergedName\":\"UpdateAvailable\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].UpdateState\",\"mergedName\":\"UpdateState\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].LastChecked\",\"mergedName\":\"LastChecked\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].oneTimeUpdateLink\",\"mergedName\":\"oneTimeUpdateLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].updateClusterName\"}]}",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"updates-available-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"updates-available-base\",\"rightTable\":\"updates-available-sbe\",\"leftColumn\":\"ClusterName\",\"rightColumn\":\"updateClusterName\"}],\"projectRename\":[{\"originalName\":\"[updates-available-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].CurrentVersion\",\"mergedName\":\"CurrentVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].CurrentSBEVersion\",\"mergedName\":\"CurrentSBEVersion\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].UpdateAvailable\",\"mergedName\":\"UpdateAvailable\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].UpdateState\",\"mergedName\":\"UpdateState\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeUpdateVersion\",\"mergedName\":\"DependencyLabel\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].DependencyInfo\",\"mergedName\":\"DependencyInfo\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbePublisher\",\"mergedName\":\"sbePublisher\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeFamily\",\"mergedName\":\"sbeFamily\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].sbeReleaseLink\",\"mergedName\":\"sbeReleaseLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].LastChecked\",\"mergedName\":\"LastChecked\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].oneTimeUpdateLink\",\"mergedName\":\"oneTimeUpdateLink\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"updates-available-merge\"},{\"originalName\":\"[updates-available-sbe].updateClusterName\"}]}",
               "size": 0,
               "showRefreshButton": true,
               "showExportToExcel": true,
@@ -8888,48 +8896,16 @@
                     "formatOptions": {
                       "linkTarget": "CellDetails",
                       "linkIsContextBlade": true,
-                      "templateRunContext": {
-                        "componentIdSource": "cell",
-                        "templateUriSource": "static"
-                      },
-                      "customColumnWidthSetting": "auto",
-                      "view": {
-                        "name": "CellBladeDisplay",
-                        "inputs": [
-                          {
-                            "name": "bladeTitle",
-                            "source": "static",
-                            "value": "SBE Update Details"
-                          },
-                          {
-                            "name": "metadata",
-                            "source": "static",
-                            "value": [
-                              {
-                                "name": "Publisher",
-                                "source": "column",
-                                "value": "sbePublisher"
-                              },
-                              {
-                                "name": "Family",
-                                "source": "column",
-                                "value": "sbeFamily"
-                              },
-                              {
-                                "name": "Version",
-                                "source": "column",
-                                "value": "DependencyLabel"
-                              },
-                              {
-                                "name": "Release Notes",
-                                "source": "column",
-                                "value": "sbeReleaseLink"
-                              }
-                            ]
-                          }
-                        ]
-                      }
+                      "linkColumn": "DependencyInfo",
+                      "customColumnWidthSetting": "auto"
+                    },
+                    "tooltipFormat": {
+                      "tooltip": "Click for SBE update details"
                     }
+                  },
+                  {
+                    "columnMatch": "DependencyInfo",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "sbePublisher",
@@ -8971,16 +8947,16 @@
                     "label": "Current SBE Version"
                   },
                   {
-                    "columnId": "DependencyLabel",
-                    "label": "Dependency Information"
-                  },
-                  {
                     "columnId": "UpdateAvailable",
                     "label": "Update Available"
                   },
                   {
                     "columnId": "UpdateState",
                     "label": "Update State"
+                  },
+                  {
+                    "columnId": "DependencyLabel",
+                    "label": "Dependency Information"
                   },
                   {
                     "columnId": "LastChecked",

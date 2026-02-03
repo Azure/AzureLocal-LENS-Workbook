@@ -119,14 +119,14 @@
     {
       "type": 1,
       "content": {
-        "json": "## 🖥️ Azure Local - LENS (Lifecycle, Events & Notification Status) Workbook\r\n\r\nThis example Workbook is a community driven project, (not officially supported by Microsoft). If you encounter any issues or have feedback, please [raise an Issue on GitHub](https://aka.ms/AzureLocalLENS/issues)."
+        "json": "## 🖥️ Azure Local LENS (Lifecycle, Events & Notification Status) Workbook\r\n\r\nThis workbook is a community-driven / open-source project, it is not a Microsoft-supported service offering. If you encounter any issues, have feedback or a new feature request, please [raise an Issue on GitHub](https://aka.ms/AzureLocalLENS/issues)."
       },
       "name": "workbook-title-version"
     },
     {
       "type": 1,
       "content": {
-        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.7.8</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
+        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.7.81</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -6328,7 +6328,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| parse id with * \"ManagedClusters/\" aksClusterName \"/\" *\r\n| parse id with * \"ConnectedClusters/\" arcClusterName \"/\" *\r\n| extend clusterName = iff(isempty(aksClusterName), arcClusterName, aksClusterName)\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend clusterLink = strcat(\"https://portal.azure.com/#@/resource\", aksId)\r\n| extend configName = name\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| extend sourceKind = tostring(properties.sourceKind)\r\n| extend url = iff(sourceKind =~ \"GitRepository\", tostring(properties.gitRepository.url), iff(sourceKind =~ \"AzureBlob\", tostring(properties.azureBlob.url), tostring(properties.bucket.url)))\r\n| extend branch = tostring(properties.gitRepository.repositoryRef.branch)\r\n| extend namespace = tostring(properties.namespace)\r\n| extend lastSourceSyncedAt = todatetime(properties.statuses[0].lastTransitionTime)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| project clusterName, clusterLink, configName, complianceState, sourceKind, url, branch, namespace, lastSourceSyncedAt, resourceGroup, subscriptionId\r\n| order by complianceState asc, clusterName asc",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| parse id with * \"ManagedClusters/\" aksClusterName \"/\" *\r\n| parse id with * \"ConnectedClusters/\" arcClusterName \"/\" *\r\n| extend clusterName = iff(isempty(aksClusterName), arcClusterName, aksClusterName)\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend clusterLink = strcat(\"https://portal.azure.com/#@/resource\", aksId)\r\n| extend configName = name\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| extend sourceKind = tostring(properties.sourceKind)\r\n| extend url = iff(sourceKind =~ \"GitRepository\", tostring(properties.gitRepository.url), iff(sourceKind =~ \"AzureBlob\", tostring(properties.azureBlob.url), tostring(properties.bucket.url)))\r\n| extend branch = tostring(properties.gitRepository.repositoryRef.branch)\r\n| extend namespace = tostring(properties.configNamespace)\r\n| extend lastSourceSyncedAt = todatetime(properties.statuses[0].lastTransitionTime)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| project clusterName, clusterLink, configName, complianceState, sourceKind, url, branch, namespace, lastSourceSyncedAt, resourceGroup, subscriptionId\r\n| order by complianceState asc, clusterName asc",
               "size": 0,
               "showAnalytics": true,
               "title": "All Flux Configurations",
@@ -6504,10 +6504,22 @@
                     }
                   },
                   {
+                    "columnMatch": "url",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url"
+                    }
+                  },
+                  {
                     "columnMatch": "errorMessage",
                     "formatter": 1,
                     "formatOptions": {
-                      "customColumnWidthSetting": "400px"
+                      "linkTarget": "CellDetails",
+                      "linkIsContextBlade": true,
+                      "customColumnWidthSetting": "45ch"
+                    },
+                    "tooltipFormat": {
+                      "tooltip": "Click to view full error details"
                     }
                   },
                   {
@@ -6539,7 +6551,7 @@
                   },
                   {
                     "columnId": "errorMessage",
-                    "label": "Error Message"
+                    "label": "Error Details"
                   },
                   {
                     "columnId": "lastSourceSyncedAt",

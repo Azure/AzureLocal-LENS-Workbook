@@ -21,57 +21,6 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ---
 
-## Previous Changes (v0.7.81)
-
-### New Features
-- **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
-  - **Nodes** column now links to the cluster's Machines page in Azure Portal
-  - **VMs** column now links to the cluster's Virtual Machines page in Azure Portal
-  - **AKS Arc** column now links to the cluster's Kubernetes Clusters page in Azure Portal
-
-- **VM Count and AKS Arc Count Columns Relocated** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
-  - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
-  - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
-
-- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Readiness tab):
-  - Added new **Update Dependency** column to the "System Health Checks Overview" table after the "State" column
-  - Shows additional status information when an update's "Ready" state doesn't tell the full story
-  - Displays statuses like "Health check failed", "Additional content required", "Has prerequisite" (with package names), "Downloading", etc.
-  - Includes warning/error icons for states that require attention before updating
-  - Helps identify clusters that need remediation before updates can be installed
-  - Properly parses prerequisite JSON to show friendly package names instead of raw JSON
-
-- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)):
-  - Added **Filter by Update Available** multi-select dropdown to "📦 Clusters with Updates Available" table (Update Progress tab) - filters clusters by specific available update versions
-  - Added **Update Dependency** filter to "System Health Check Filters" section (Update Readiness tab) - filters the System Health Checks Overview table by update dependency status
-
-### Improvements
-- **Increased Table Row Limits**: All tables now support up to 2,000 rows (previously 250) to prevent "Results were limited to the first 250 rows" warnings
-- **Column Label Improvements** (Azure Local Instances tab):
-  - Renamed "Node Count" to "Nodes"
-  - Renamed "VM Count" to "VMs"
-  - Renamed "AKS Arc Count" to "AKS Arc"
-  - Renamed "Total Cores" to "Cores"
-  - Renamed "Total Memory (GB)" to "Memory (GB)"
-
-- **Update Run History Improvements** (Update Progress tab):
-  - Improved **Current Step** detection for failed updates - now correctly identifies the failing step from error messages
-  - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
-
-- **Non-Compliant Flux Configurations Table** (AKS Arc Clusters tab):
-  - Renamed **Error Message** column to **Error Details** for consistency
-  - Made **Error Details** column clickable - displays full error message in a flyout blade (matching the Update Run History table pattern)
-  - Made **Source URL** column clickable - opens the Git repository URL directly
-
-- **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
-
-### Bug Fixes
-- **Flux Configurations Namespace Column** ([Issue #18](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/18)): Fixed the "All Flux Configurations" table to correctly display the Namespace column (was using incorrect property path `properties.namespace` instead of `properties.configNamespace`)
-
-> See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
-
----
-
 ## How to Import the Workbook
 
 1. **Navigate to Azure Monitor Workbooks**
@@ -352,6 +301,56 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.7.81
+
+#### New Features
+
+- **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
+  - **Nodes** column now links to the cluster's Machines page in Azure Portal
+  - **VMs** column now links to the cluster's Virtual Machines page in Azure Portal
+  - **AKS Arc** column now links to the cluster's Kubernetes Clusters page in Azure Portal
+
+- **VM Count and AKS Arc Count Columns Relocated** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
+  - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
+  - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
+
+- **Update Dependency Column** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)) (Update Readiness tab):
+  - Added new **Update Dependency** column to the "System Health Checks Overview" table after the "State" column
+  - Shows additional status information when an update's "Ready" state doesn't tell the full story
+  - Displays statuses like "Health check failed", "Additional content required", "Has prerequisite" (with package names), "Downloading", etc.
+  - Includes warning/error icons for states that require attention before updating
+  - Helps identify clusters that need remediation before updates can be installed
+  - Properly parses prerequisite JSON to show friendly package names instead of raw JSON
+
+- **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)):
+  - Added **Filter by Update Available** multi-select dropdown to "📦 Clusters with Updates Available" table (Update Progress tab) - filters clusters by specific available update versions
+  - Added **Update Dependency** filter to "System Health Check Filters" section (Update Readiness tab) - filters the System Health Checks Overview table by update dependency status
+
+#### Improvements
+
+- **Increased Table Row Limits**: All tables now support up to 2,000 rows (previously 250) to prevent "Results were limited to the first 250 rows" warnings
+- **Column Label Improvements** (Azure Local Instances tab):
+  - Renamed "Node Count" to "Nodes"
+  - Renamed "VM Count" to "VMs"
+  - Renamed "AKS Arc Count" to "AKS Arc"
+  - Renamed "Total Cores" to "Cores"
+  - Renamed "Total Memory (GB)" to "Memory (GB)"
+
+- **Update Run History Improvements** (Update Progress tab):
+  - Improved **Current Step** detection for failed updates - now correctly identifies the failing step from error messages
+  - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
+
+- **Non-Compliant Flux Configurations Table** (AKS Arc Clusters tab):
+  - Renamed **Error Message** column to **Error Details** for consistency
+  - Made **Error Details** column clickable - displays full error message in a flyout blade (matching the Update Run History table pattern)
+  - Made **Source URL** column clickable - opens the Git repository URL directly
+
+- **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
+
+#### Bug Fixes
+
+- **Flux Configurations Namespace Column** ([Issue #18](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/18)): Fixed the "All Flux Configurations" table to correctly display the Namespace column (was using incorrect property path `properties.namespace` instead of `properties.configNamespace`)
 
 ### v0.7.7
 

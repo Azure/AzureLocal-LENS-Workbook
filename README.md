@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.81
+## Latest Version: v0.7.9
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,7 +8,20 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.81)
+## Recent Changes (v0.7.9)
+
+### Improvements
+- **SBE Details Flyout for Update Dependency** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Readiness tab): When a cluster has "Additional content required" status in the Update Dependency column, clicking on it now opens a flyout showing Solution Builder Extension (SBE) details:
+  - **SBE Publisher**: The OEM/hardware vendor name
+  - **SBE Family**: The SBE family identifier
+  - **Release Notes**: Link to SBE release documentation
+  - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
+
+> See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
+
+---
+
+## Previous Changes (v0.7.81)
 
 ### New Features
 - **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):

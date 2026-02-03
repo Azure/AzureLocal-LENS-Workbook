@@ -17,6 +17,18 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **Release Notes**: Link to SBE release documentation
   - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
 
+- **Separate Update Dependency and Dependency Diagnostics Columns** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Readiness tab):
+  - **Update Dependency** column now shows simplified state: "Additional content required", "Has prerequisite", or "Health check failed"
+  - **Dependency Diagnostics** column (renamed from the original Update Dependency) shows detailed diagnostic info including prerequisite package names
+
+- **State Column Icons** (Update Readiness tab): Added visual icons to the State column in the System Health Checks Overview table:
+  - 🔄 **Updates available** - Updates are available for the cluster
+  - ⚠️ **Needs attention** - Cluster requires attention before updating
+  - ✅ **Up to date** - Cluster is fully updated
+  - ⏳ **Update in progress** - Update is currently being applied
+  - ❌ **Update failed** - Update failed to apply
+  - ⏳ **Preparation in progress** / ❌ **Preparation failed** - Update preparation states
+
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---

@@ -12,7 +12,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### New Features
 - **Dependency Information Column with SBE Details** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Progress tab): Added a new **Dependency Information** column to the "📦 Clusters with Updates Available" table:
-  - Shows SBE version as a clickable link only when the update state is **AdditionalContentRequired** or **HasPrerequisite**
+  - Shows SBE version with ⚠️ warning icon as a clickable link only when the update state is **AdditionalContentRequired** or **HasPrerequisite**
   - Clicking the link opens a flyout showing Solution Builder Extension (SBE) details:
     - **Publisher**: The OEM/hardware vendor name
     - **Family**: The SBE family identifier
@@ -20,7 +20,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
     - **Release Notes**: Link to SBE release documentation
   - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
 
-- **Update State Column with Emoji Icons** (Update Readiness tab): Added visual emoji icons to the "Update State" column in the "System Health Checks Overview" table:
+- **Update Status Column with Emoji Icons** (Update Readiness tab): Added visual emoji icons to the "Update Status" column in both the "System Health Checks Overview" and "Update Readiness Summary" tables:
   - 🔄 Updates available
   - ⚠️ Needs attention
   - ✅ Up to date / Applied successfully
@@ -30,7 +30,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Tip for Update Progress Tab** (Update Readiness tab): Added a tip below the "System Health Checks Overview" table recommending users review the "📦 Clusters with Updates Available" table in the Update Progress tab for more details
 
 ### Improvements
-- **Renamed "State" to "Update State"** (Update Readiness tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update State" for clarity
+- **Renamed "State" to "Update Status"** (Update Readiness tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update Status" for clarity and consistency with the "Update Readiness Summary" table
 
 - **Renamed "SBE Version" to "Current SBE Version"** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
 

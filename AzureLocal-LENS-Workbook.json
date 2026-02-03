@@ -7167,8 +7167,8 @@
                         {
                           "operator": "==",
                           "thresholdValue": "UpdateAvailable",
-                          "representation": "Blank",
-                          "text": "🔄Updates available"
+                          "representation": "info",
+                          "text": "Updates available"
                         },
                         {
                           "operator": "==",

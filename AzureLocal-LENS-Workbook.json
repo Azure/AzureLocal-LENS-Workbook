@@ -7126,6 +7126,12 @@
                         },
                         {
                           "operator": "==",
+                          "thresholdValue": "AppliedSuccessfully",
+                          "representation": "Blank",
+                          "text": "✅ Applied successfully"
+                        },
+                        {
+                          "operator": "==",
                           "thresholdValue": "UpdateInProgress",
                           "representation": "Blank",
                           "text": "⏳ Update in progress"

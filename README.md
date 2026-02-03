@@ -48,6 +48,7 @@ An Azure Monitor Workbook for managing Azure Local (formerly Azure Stack HCI) cl
 - **Non-Compliant Flux Configurations Table** (AKS Arc Clusters tab):
   - Renamed **Error Message** column to **Error Details** for consistency
   - Made **Error Details** column clickable - displays full error message in a flyout blade (matching the Update Run History table pattern)
+  - Made **Source URL** column clickable - opens the Git repository URL directly
 
 - **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
 

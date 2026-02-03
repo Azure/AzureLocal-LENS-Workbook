@@ -6695,26 +6695,50 @@
                         {
                           "operator": "==",
                           "thresholdValue": "AppliedSuccessfully",
-                          "representation": "success",
-                          "text": "{0}{1}"
+                          "representation": "Blank",
+                          "text": "✅ Applied successfully"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpToDate",
+                          "representation": "Blank",
+                          "text": "✅ Up to date"
                         },
                         {
                           "operator": "==",
                           "thresholdValue": "UpdateFailed",
-                          "representation": "4",
-                          "text": "{0}{1}"
+                          "representation": "Blank",
+                          "text": "❌ Update failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationFailed",
+                          "representation": "Blank",
+                          "text": "❌ Preparation failed"
                         },
                         {
                           "operator": "==",
                           "thresholdValue": "NeedsAttention",
-                          "representation": "warning",
-                          "text": "{0}{1}"
+                          "representation": "Blank",
+                          "text": "⚠️ Needs attention"
                         },
                         {
                           "operator": "==",
                           "thresholdValue": "UpdateAvailable",
-                          "representation": "pending",
-                          "text": "{0}{1}"
+                          "representation": "Blank",
+                          "text": "🔄 Updates available"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Update in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Preparation in progress"
                         },
                         {
                           "operator": "Default",
@@ -7205,7 +7229,7 @@
                   },
                   {
                     "columnId": "state",
-                    "label": "Update State"
+                    "label": "Update Status"
                   },
                   {
                     "columnId": "currentVersion",

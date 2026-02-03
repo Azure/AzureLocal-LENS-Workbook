@@ -7101,6 +7101,63 @@
                     "formatter": 5
                   },
                   {
+                    "columnMatch": "state",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateAvailable",
+                          "representation": "Blank",
+                          "text": "🔄 Updates available"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "NeedsAttention",
+                          "representation": "Blank",
+                          "text": "⚠️ Needs attention"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpToDate",
+                          "representation": "Blank",
+                          "text": "✅ Up to date"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Update in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateFailed",
+                          "representation": "Blank",
+                          "text": "❌ Update failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Preparation in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationFailed",
+                          "representation": "Blank",
+                          "text": "❌ Preparation failed"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Blank",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
                     "columnMatch": "HealthResultsAge",
                     "formatter": 18,
                     "formatOptions": {
@@ -7142,7 +7199,7 @@
                   },
                   {
                     "columnId": "state",
-                    "label": "State"
+                    "label": "Update State"
                   },
                   {
                     "columnId": "currentVersion",

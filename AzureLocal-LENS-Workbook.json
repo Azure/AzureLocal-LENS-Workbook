@@ -6504,6 +6504,13 @@
                     }
                   },
                   {
+                    "columnMatch": "url",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url"
+                    }
+                  },
+                  {
                     "columnMatch": "errorMessage",
                     "formatter": 1,
                     "formatOptions": {

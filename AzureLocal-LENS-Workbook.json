@@ -7359,7 +7359,7 @@
                   },
                   {
                     "columnId": "state",
-                    "label": "State"
+                    "label": "Update State"
                   },
                   {
                     "columnId": "UpdateDependency",

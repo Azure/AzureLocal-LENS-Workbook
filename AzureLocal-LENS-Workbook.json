@@ -7010,7 +7010,7 @@
                   "id": "health-overview-dependency-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "HealthOverviewDependencyFilter",
-                  "label": "Dependency Diagnostics",
+                  "label": "Update Dependency",
                   "type": 2,
                   "description": "Filter clusters by update dependency status",
                   "isRequired": false,
@@ -7064,7 +7064,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend updateClusterName = tostring(split(id, '/')[8])\r\n| extend updateState = tostring(properties.state)\r\n| extend packageType = tostring(properties.packageType)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| extend additionalPropsStr = tostring(properties.additionalProperties)\r\n| extend sbePublisher = extract('\"SBEPublisher\":\"([^\"]+)\"', 1, additionalPropsStr)\r\n| extend sbeFamily = extract('\"SBEFamily\":\"([^\"]+)\"', 1, additionalPropsStr)\r\n| extend sbeReleaseLink = extract('\"SBEReleaseLink\":\"([^\"]+)\"', 1, additionalPropsStr)\r\n| extend releaseLink = tostring(properties.releaseLink)\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName), sbePublisher = max(sbePublisher), sbeFamily = max(sbeFamily), sbeReleaseLink = max(sbeReleaseLink), releaseLink = max(releaseLink) by updateClusterName, name, updateState, packageType\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| extend SBEDetails = iff(updateState == 'AdditionalContentRequired' and packageType == 'Solution' and isnotempty(sbePublisher), strcat('SBE Publisher: ', sbePublisher, '\\nSBE Family: ', coalesce(sbeFamily, 'N/A'), '\\nRelease Notes: ', coalesce(sbeReleaseLink, releaseLink, 'N/A')), '')\r\n| summarize UpdateDependencies = make_list(updateDependency), UpdateStates = make_set(updateState), SBEDetails = max(SBEDetails) by updateClusterName\r\n| extend DependencyDiagnostics = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend DependencyDiagnostics = trim(',', trim(' ', replace_string(replace_string(DependencyDiagnostics, ', ,', ','), ', ,', ',')))\r\n| extend UpdateDependency = case(array_length(set_intersect(UpdateStates, dynamic(['AdditionalContentRequired']))) > 0, 'Additional content required', array_length(set_intersect(UpdateStates, dynamic(['HasPrerequisite']))) > 0, 'Has prerequisite', array_length(set_intersect(UpdateStates, dynamic(['HealthCheckFailed']))) > 0, 'Health check failed', '')\r\n| project clusterName = updateClusterName, UpdateDependency, DependencyDiagnostics, SBEDetails",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend updateClusterName = tostring(split(id, '/')[8])\r\n| extend updateState = tostring(properties.state)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName) by updateClusterName, name, updateState\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| summarize UpdateDependencies = make_list(updateDependency) by updateClusterName\r\n| extend UpdateDependency = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend UpdateDependency = trim(',', trim(' ', replace_string(replace_string(UpdateDependency, ', ,', ','), ', ,', ',')))\r\n| project clusterName = updateClusterName, UpdateDependency",
               "size": 0,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -7083,7 +7083,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"health-overview-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"health-overview-base\",\"rightTable\":\"health-overview-dependency\",\"leftColumn\":\"clusterName\",\"rightColumn\":\"clusterName\"}],\"projectRename\":[{\"originalName\":\"[health-overview-base].clusterName\",\"mergedName\":\"clusterName\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthStatus\",\"mergedName\":\"HealthStatus\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].healthState\",\"mergedName\":\"healthState\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].state\",\"mergedName\":\"state\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].UpdateDependency\",\"mergedName\":\"UpdateDependency\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].DependencyDiagnostics\",\"mergedName\":\"DependencyDiagnostics\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].SBEDetails\",\"mergedName\":\"SBEDetails\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].currentVersion\",\"mergedName\":\"currentVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].azureConnection\",\"mergedName\":\"azureConnection\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].sbeVersion\",\"mergedName\":\"sbeVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].lastChecked\",\"mergedName\":\"lastChecked\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthResultsAge\",\"mergedName\":\"HealthResultsAge\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].clusterName\"},{\"originalName\":\"[health-overview-base].subscriptionId\"}]}",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"health-overview-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"health-overview-base\",\"rightTable\":\"health-overview-dependency\",\"leftColumn\":\"clusterName\",\"rightColumn\":\"clusterName\"}],\"projectRename\":[{\"originalName\":\"[health-overview-base].clusterName\",\"mergedName\":\"clusterName\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthStatus\",\"mergedName\":\"HealthStatus\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].healthState\",\"mergedName\":\"healthState\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].state\",\"mergedName\":\"state\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].UpdateDependency\",\"mergedName\":\"UpdateDependency\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].currentVersion\",\"mergedName\":\"currentVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].azureConnection\",\"mergedName\":\"azureConnection\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].sbeVersion\",\"mergedName\":\"sbeVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].lastChecked\",\"mergedName\":\"lastChecked\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthResultsAge\",\"mergedName\":\"HealthResultsAge\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].clusterName\"},{\"originalName\":\"[health-overview-base].subscriptionId\"}]}",
               "size": 0,
               "showAnalytics": true,
               "title": "System Health Checks Overview",
@@ -7159,107 +7159,7 @@
                     "formatter": 5
                   },
                   {
-                    "columnMatch": "state",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "==",
-                          "thresholdValue": "UpdateAvailable",
-                          "representation": "Blank",
-                          "text": "🔄 Updates available"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "NeedsAttention",
-                          "representation": "Blank",
-                          "text": "⚠️ Needs attention"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "AppliedSuccessfully",
-                          "representation": "Blank",
-                          "text": "✅ Up to date"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "UpdateInProgress",
-                          "representation": "Blank",
-                          "text": "⏳ Update in progress"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "UpdateFailed",
-                          "representation": "Blank",
-                          "text": "❌ Update failed"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "PreparationInProgress",
-                          "representation": "Blank",
-                          "text": "⏳ Preparation in progress"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "PreparationFailed",
-                          "representation": "Blank",
-                          "text": "❌ Preparation failed"
-                        },
-                        {
-                          "operator": "Default",
-                          "thresholdValue": null,
-                          "representation": "Blank",
-                          "text": "❓ {0}"
-                        }
-                      ]
-                    }
-                  },
-                  {
                     "columnMatch": "UpdateDependency",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "linkTarget": "CellDetails",
-                      "linkIsContextBlade": true,
-                      "linkColumn": "SBEDetails",
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Additional content",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "prerequisite",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "failed",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "isNotNull",
-                          "representation": "Blank",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "Default",
-                          "representation": "Blank",
-                          "text": ""
-                        }
-                      ]
-                    },
-                    "tooltipFormat": {
-                      "tooltip": "Click for SBE details when Additional content required"
-                    }
-                  },
-                  {
-                    "columnMatch": "DependencyDiagnostics",
                     "formatter": 18,
                     "formatOptions": {
                       "thresholdsOptions": "icons",
@@ -7314,10 +7214,6 @@
                     }
                   },
                   {
-                    "columnMatch": "SBEDetails",
-                    "formatter": 5
-                  },
-                  {
                     "columnMatch": "HealthResultsAge",
                     "formatter": 18,
                     "formatOptions": {
@@ -7359,15 +7255,11 @@
                   },
                   {
                     "columnId": "state",
-                    "label": "Update State"
+                    "label": "State"
                   },
                   {
                     "columnId": "UpdateDependency",
                     "label": "Update Dependency"
-                  },
-                  {
-                    "columnId": "DependencyDiagnostics",
-                    "label": "Dependency Diagnostics"
                   },
                   {
                     "columnId": "currentVersion",
@@ -8992,7 +8884,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tostring(split(id, '/')[8])\r\n| extend clusterRG = resourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on clusterName, clusterRG\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updates\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend updateClusterName = tostring(split(id, '/')[8])\r\n    | extend updateState = tostring(properties.state)\r\n    | where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n    | where '{UpdatesAvailableFilter:label}' == 'All' or name in~ ({UpdatesAvailableFilter})\r\n    | summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState) by updateClusterName\r\n    | extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n    | extend UpdateState = strcat_array(UpdateStates, ', ')\r\n    | project updateClusterName, UpdateAvailable, UpdateState\r\n) on $left.clusterName == $right.updateClusterName\r\n| extend state = tostring(properties.state)\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend lastChecked = todatetime(properties.lastChecked)\r\n| extend clusterId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n| extend packageVersions = properties.packageVersions\r\n| mv-expand pkg = packageVersions\r\n| extend pkgType = tostring(pkg.packageType)\r\n| extend pkgVersion = tostring(pkg.version)\r\n| summarize sbeVersion = maxif(pkgVersion, pkgType =~ 'SBE') by clusterName, state, currentVersion, lastChecked, clusterId, resourceGroup, UpdateAvailable, UpdateState\r\n| where state == \"UpdateAvailable\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId, '/updates')\r\n| extend clusterIdEncoded = replace_string(replace_string(replace_string(clusterId, '/', '%2F'), '\"', '%22'), ' ', '%20')\r\n| extend clusterIdsJson = strcat('%5B%7B%22id%22%3A%22', clusterIdEncoded, '%22%2C%22oemFamily%22%3A%22%22%7D%5D')\r\n| extend oneTimeUpdateLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/InstallUpdates.ReactView/clusterIds~/', clusterIdsJson)\r\n| project ClusterName = clusterName, clusterLink, CurrentVersion = currentVersion, UpdateAvailable, UpdateState, SBEVersion = coalesce(sbeVersion, ''), LastChecked = lastChecked, oneTimeUpdateLink, resourceGroup\r\n| order by ClusterName asc",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tostring(split(id, '/')[8])\r\n| extend clusterRG = resourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on clusterName, clusterRG\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updates\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend updateClusterName = tostring(split(id, '/')[8])\r\n    | extend updateState = tostring(properties.state)\r\n    | extend packageType = tostring(properties.packageType)\r\n    | extend additionalPropsStr = tostring(properties.additionalProperties)\r\n    | extend sbePublisher = extract('\\\"SBEPublisher\\\":\\\"([^\\\"]+)\\\"', 1, additionalPropsStr)\r\n    | extend sbeFamily = extract('\\\"SBEFamily\\\":\\\"([^\\\"]+)\\\"', 1, additionalPropsStr)\r\n    | extend sbeReleaseLink = extract('\\\"SBEReleaseLink\\\":\\\"([^\\\"]+)\\\"', 1, additionalPropsStr)\r\n    | extend releaseLink = tostring(properties.releaseLink)\r\n    | where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n    | where '{UpdatesAvailableFilter:label}' == 'All' or name in~ ({UpdatesAvailableFilter})\r\n    | summarize AvailableUpdates = make_list(name), UpdateStates = make_list(updateState), sbePublisher = max(sbePublisher), sbeFamily = max(sbeFamily), sbeReleaseLink = max(sbeReleaseLink), releaseLink = max(releaseLink) by updateClusterName\r\n    | extend UpdateAvailable = strcat_array(AvailableUpdates, ', ')\r\n    | extend UpdateState = strcat_array(UpdateStates, ', ')\r\n    | extend DependencyInfo = iff(array_length(set_intersect(UpdateStates, dynamic(['AdditionalContentRequired']))) > 0 and isnotempty(sbePublisher), strcat('SBE Publisher: ', sbePublisher, '\\nSBE Family: ', coalesce(sbeFamily, 'N/A'), '\\nRelease Notes: ', coalesce(sbeReleaseLink, releaseLink, 'N/A')), '')\r\n    | project updateClusterName, UpdateAvailable, UpdateState, DependencyInfo\r\n) on $left.clusterName == $right.updateClusterName\r\n| extend state = tostring(properties.state)\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend lastChecked = todatetime(properties.lastChecked)\r\n| extend clusterId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n| extend packageVersions = properties.packageVersions\r\n| mv-expand pkg = packageVersions\r\n| extend pkgType = tostring(pkg.packageType)\r\n| extend pkgVersion = tostring(pkg.version)\r\n| summarize sbeVersion = maxif(pkgVersion, pkgType =~ 'SBE') by clusterName, state, currentVersion, lastChecked, clusterId, resourceGroup, UpdateAvailable, UpdateState, DependencyInfo\r\n| where state == \\\"UpdateAvailable\\\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId, '/updates')\r\n| extend clusterIdEncoded = replace_string(replace_string(replace_string(clusterId, '/', '%2F'), '\\\"', '%22'), ' ', '%20')\r\n| extend clusterIdsJson = strcat('%5B%7B%22id%22%3A%22', clusterIdEncoded, '%22%2C%22oemFamily%22%3A%22%22%7D%5D')\r\n| extend oneTimeUpdateLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/InstallUpdates.ReactView/clusterIds~/', clusterIdsJson)\r\n| project ClusterName = clusterName, clusterLink, CurrentVersion = currentVersion, CurrentSBEVersion = coalesce(sbeVersion, ''), UpdateAvailable, UpdateState, DependencyInfo, LastChecked = lastChecked, oneTimeUpdateLink, resourceGroup\r\n| order by ClusterName asc",
               "size": 0,
               "showRefreshButton": true,
               "showExportToExcel": true,
@@ -9010,6 +8902,15 @@
                     "formatOptions": {
                       "linkTarget": "Url",
                       "linkLabel": "View Updates"
+                    }
+                  },
+                  {
+                    "columnMatch": "DependencyInfo",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "CellDetails",
+                      "linkIsContextBlade": true,
+                      "linkLabel": "🔗 View SBE Details"
                     }
                   },
                   {
@@ -9036,6 +8937,10 @@
                     "label": "Current Version"
                   },
                   {
+                    "columnId": "CurrentSBEVersion",
+                    "label": "Current SBE Version"
+                  },
+                  {
                     "columnId": "UpdateAvailable",
                     "label": "Update Available"
                   },
@@ -9044,8 +8949,8 @@
                     "label": "Update State"
                   },
                   {
-                    "columnId": "SBEVersion",
-                    "label": "SBE Version"
+                    "columnId": "DependencyInfo",
+                    "label": "Dependency Information"
                   },
                   {
                     "columnId": "LastChecked",

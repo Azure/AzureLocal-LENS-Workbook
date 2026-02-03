@@ -10,24 +10,17 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ## Recent Changes (v0.7.9)
 
-### Improvements
-- **SBE Details Flyout for Update Dependency** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Readiness tab): When a cluster has "Additional content required" status in the Update Dependency column, clicking on it now opens a flyout showing Solution Builder Extension (SBE) details:
-  - **SBE Publisher**: The OEM/hardware vendor name
-  - **SBE Family**: The SBE family identifier
-  - **Release Notes**: Link to SBE release documentation
+### New Features
+- **Dependency Information Column with SBE Details** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Progress tab): Added a new **Dependency Information** column to the "📦 Clusters with Updates Available" table:
+  - When a cluster has "AdditionalContentRequired" in the Update State, the column shows a "🔗 View SBE Details" link
+  - Clicking the link opens a flyout showing Solution Builder Extension (SBE) details:
+    - **SBE Publisher**: The OEM/hardware vendor name
+    - **SBE Family**: The SBE family identifier  
+    - **Release Notes**: Link to SBE release documentation
   - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
 
-- **Separate Update Dependency and Dependency Diagnostics Columns** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Readiness tab):
-  - **Update Dependency** column now shows simplified state: "Additional content required", "Has prerequisite", or "Health check failed"
-  - **Dependency Diagnostics** column (renamed from the original Update Dependency) shows detailed diagnostic info including prerequisite package names
-
-- **Update State Column Icons** (Update Readiness tab): Added visual emoji icons to the Update State column in the System Health Checks Overview table:
-  - 🔄 **Updates available** - Updates are available for the cluster
-  - ⚠️ **Needs attention** - Cluster requires attention before updating
-  - ✅ **Up to date** - Cluster is fully updated
-  - ⏳ **Update in progress** - Update is currently being applied
-  - ❌ **Update failed** - Update failed to apply
-  - ⏳ **Preparation in progress** / ❌ **Preparation failed** - Update preparation states
+### Improvements
+- **Renamed SBE Version to Current SBE Version** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

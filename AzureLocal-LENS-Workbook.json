@@ -228,7 +228,7 @@
             "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "📋 Update Readiness",
+            "linkLabel": "📋 System Health",
             "subTarget": "3",
             "style": "link"
           },
@@ -423,7 +423,7 @@
           {
             "type": 1,
             "content": {
-              "json": "📋 *See Update Readiness tab*"
+              "json": "📋 *See System Health tab*"
             },
             "customWidth": "33",
             "name": "link-row-health",
@@ -6580,12 +6580,12 @@
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
-        "title": "Update Readiness",
+        "title": "System Health",
         "items": [
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local Update Readiness\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "## 📋 Azure Local System Health\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
             },
             "name": "text - 0"
           },

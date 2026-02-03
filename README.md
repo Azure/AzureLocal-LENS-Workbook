@@ -12,15 +12,18 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### New Features
 - **Dependency Information Column with SBE Details** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Progress tab): Added a new **Dependency Information** column to the "📦 Clusters with Updates Available" table:
-  - When a cluster has "AdditionalContentRequired" in the Update State, the column shows a "🔗 View SBE Details" link
+  - When an SBE update is available, the column shows the pending SBE version (e.g., "🔗 SBE 5.0.2601.1002") as a clickable link
   - Clicking the link opens a flyout showing Solution Builder Extension (SBE) details:
     - **SBE Publisher**: The OEM/hardware vendor name
-    - **SBE Family**: The SBE family identifier  
+    - **SBE Family**: The SBE family identifier
+    - **Pending SBE Version**: The version that will be installed
     - **Release Notes**: Link to SBE release documentation
   - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
 
 ### Improvements
 - **Renamed SBE Version to Current SBE Version** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
+
+- **Removed Update Dependency Column** (Update Readiness tab): The "Update Dependency" column has been removed from the "System Health Checks Overview" table as this information is now shown in the "📦 Clusters with Updates Available" table in the Update Progress tab
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

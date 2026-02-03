@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.8
+## Latest Version: v0.7.81
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,7 +8,7 @@ An Azure Monitor Workbook for managing Azure Local (formerly Azure Stack HCI) cl
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.8)
+## Recent Changes (v0.7.81)
 
 ### New Features
 - **Clickable Count Columns** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
@@ -46,6 +46,9 @@ An Azure Monitor Workbook for managing Azure Local (formerly Azure Stack HCI) cl
   - Made **Cluster Name** column clickable - links directly to the cluster's Updates page in Azure Portal
 
 - **AKS Arc Clusters Tab Tip**: Added informational tip explaining that Tag filters do not work when tags are only present on the parent Azure Local cluster (due to Azure Resource Graph query limitations)
+
+### Bug Fixes
+- **Flux Configurations Namespace Column** ([Issue #18](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/18)): Fixed the "All Flux Configurations" table to correctly display the Namespace column (was using incorrect property path `properties.namespace` instead of `properties.configNamespace`)
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

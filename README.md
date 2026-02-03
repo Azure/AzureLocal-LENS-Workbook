@@ -21,8 +21,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **Update Dependency** column now shows simplified state: "Additional content required", "Has prerequisite", or "Health check failed"
   - **Dependency Diagnostics** column (renamed from the original Update Dependency) shows detailed diagnostic info including prerequisite package names
 
-- **Update State Column Icons** (Update Readiness tab): Added visual icons to the Update State column in the System Health Checks Overview table:
-  - ℹ️ **Updates available** - Updates are available for the cluster (blue info icon)
+- **Update State Column Icons** (Update Readiness tab): Added visual emoji icons to the Update State column in the System Health Checks Overview table:
+  - 🔄 **Updates available** - Updates are available for the cluster
   - ⚠️ **Needs attention** - Cluster requires attention before updating
   - ✅ **Up to date** - Cluster is fully updated
   - ⏳ **Update in progress** - Update is currently being applied

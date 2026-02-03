@@ -119,7 +119,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## 🖥️ Azure Local LENS (Lifecycle, Events & Notification Status) Workbook\r\n\r\nThis example Workbook is a community driven project, (not officially supported by Microsoft). If you encounter any issues or have feedback, please [raise an Issue on GitHub](https://aka.ms/AzureLocalLENS/issues)."
+        "json": "## 🖥️ Azure Local LENS (Lifecycle, Events & Notification Status) Workbook\r\n\r\nThis workbook is a community-driven / open-source project, it is not a Microsoft-supported service offering. If you encounter any issues, have feedback or a new feature request, please [raise an Issue on GitHub](https://aka.ms/AzureLocalLENS/issues)."
       },
       "name": "workbook-title-version"
     },

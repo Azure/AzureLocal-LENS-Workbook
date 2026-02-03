@@ -7005,26 +7005,6 @@
                   "value": [
                     "value::all"
                   ]
-                },
-                {
-                  "id": "health-overview-dependency-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "HealthOverviewDependencyFilter",
-                  "label": "Update Dependency",
-                  "type": 2,
-                  "description": "Filter clusters by update dependency status",
-                  "isRequired": false,
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "jsonData": "[\r\n  { \"value\": \"value::all\", \"label\": \"All\" },\r\n  { \"value\": \"Additional content required\", \"label\": \"Additional content required\" },\r\n  { \"value\": \"Requires:\", \"label\": \"Has prerequisite\" },\r\n  { \"value\": \"Health check failed\", \"label\": \"Health check failed\" },\r\n  { \"value\": \"Downloading\", \"label\": \"Downloading\" },\r\n  { \"value\": \"Health checking\", \"label\": \"Health checking\" },\r\n  { \"value\": \"Preparing\", \"label\": \"Preparing\" }\r\n]",
-                  "timeContext": {
-                    "durationMs": 86400000
-                  },
-                  "defaultValue": "value::all"
                 }
               ],
               "style": "pills",
@@ -7064,26 +7044,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend updateClusterName = tostring(split(id, '/')[8])\r\n| extend updateState = tostring(properties.state)\r\n| extend updatePrerequisites = properties.prerequisites\r\n| mv-expand prereq = updatePrerequisites limit 3\r\n| extend prereqName = coalesce(tostring(prereq.packageName), tostring(prereq))\r\n| summarize prereqNames = make_set(prereqName) by updateClusterName, name, updateState\r\n| extend prerequisiteInfo = iff(array_length(prereqNames) > 0 and tostring(prereqNames[0]) != '', strcat('Requires: ', strcat_array(prereqNames, ', ')), '')\r\n| extend updateDependency = case(\r\n    updateState == 'AdditionalContentRequired', 'Additional content required',\r\n    updateState == 'HasPrerequisite', coalesce(prerequisiteInfo, 'Has prerequisite'),\r\n    updateState == 'HealthCheckFailed', 'Health check failed',\r\n    updateState == 'Invalid', 'Invalid for this system',\r\n    updateState == 'Downloading', 'Downloading',\r\n    updateState == 'DownloadFailed', 'Download failed',\r\n    updateState == 'Preparing', 'Preparing',\r\n    updateState == 'PreparationFailed', 'Preparation failed',\r\n    updateState == 'HealthChecking', 'Health checking',\r\n    updateState == 'ScanInProgress', 'Scan in progress',\r\n    updateState == 'ScanFailed', 'Scan failed',\r\n    updateState == 'Recalled', 'Update recalled',\r\n    updateState == 'Obsolete', 'Obsolete',\r\n    updateState == 'NotApplicableBecauseAnotherUpdateIsInProgress', 'Another update in progress',\r\n    updateState in ('Ready', 'ReadyToInstall'), '',\r\n    updateState)\r\n| where updateState in ('Ready', 'ReadyToInstall', 'AdditionalContentRequired', 'HasPrerequisite', 'HealthCheckFailed', 'Downloading', 'Preparing', 'HealthChecking')\r\n| summarize UpdateDependencies = make_list(updateDependency) by updateClusterName\r\n| extend UpdateDependency = strcat_array(array_sort_desc(UpdateDependencies), ', ')\r\n| extend UpdateDependency = trim(',', trim(' ', replace_string(replace_string(UpdateDependency, ', ,', ','), ', ,', ',')))\r\n| project clusterName = updateClusterName, UpdateDependency",
-              "size": 0,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ]
-            },
-            "conditionalVisibility": {
-              "parameterName": "AlwaysHidden",
-              "comparison": "isEqualTo",
-              "value": "__never_visible__"
-            },
-            "name": "health-overview-dependency"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"health-overview-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"health-overview-base\",\"rightTable\":\"health-overview-dependency\",\"leftColumn\":\"clusterName\",\"rightColumn\":\"clusterName\"}],\"projectRename\":[{\"originalName\":\"[health-overview-base].clusterName\",\"mergedName\":\"clusterName\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthStatus\",\"mergedName\":\"HealthStatus\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].healthState\",\"mergedName\":\"healthState\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].state\",\"mergedName\":\"state\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].UpdateDependency\",\"mergedName\":\"UpdateDependency\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].currentVersion\",\"mergedName\":\"currentVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].azureConnection\",\"mergedName\":\"azureConnection\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].sbeVersion\",\"mergedName\":\"sbeVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].lastChecked\",\"mergedName\":\"lastChecked\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthResultsAge\",\"mergedName\":\"HealthResultsAge\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-dependency].clusterName\"},{\"originalName\":\"[health-overview-base].subscriptionId\"}]}",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"health-overview-merge\",\"mergeType\":\"inner\",\"leftTable\":\"health-overview-base\",\"rightTable\":\"health-overview-base\",\"leftColumn\":\"clusterName\",\"rightColumn\":\"clusterName\"}],\"projectRename\":[{\"originalName\":\"[health-overview-base].clusterName\",\"mergedName\":\"clusterName\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthStatus\",\"mergedName\":\"HealthStatus\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].healthState\",\"mergedName\":\"healthState\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].state\",\"mergedName\":\"state\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].currentVersion\",\"mergedName\":\"currentVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].azureConnection\",\"mergedName\":\"azureConnection\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].sbeVersion\",\"mergedName\":\"sbeVersion\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].lastChecked\",\"mergedName\":\"lastChecked\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].HealthResultsAge\",\"mergedName\":\"HealthResultsAge\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"health-overview-merge\"},{\"originalName\":\"[health-overview-base].subscriptionId\"}]}",
               "size": 0,
               "showAnalytics": true,
               "title": "System Health Checks Overview",
@@ -7159,61 +7120,6 @@
                     "formatter": 5
                   },
                   {
-                    "columnMatch": "UpdateDependency",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Additional content",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Requires:",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "prerequisite",
-                          "representation": "warning",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "failed",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "recalled",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "contains",
-                          "thresholdValue": "Invalid",
-                          "representation": "3",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "isNotNull",
-                          "representation": "Blank",
-                          "text": "{0}"
-                        },
-                        {
-                          "operator": "Default",
-                          "representation": "Blank",
-                          "text": ""
-                        }
-                      ]
-                    }
-                  },
-                  {
                     "columnMatch": "HealthResultsAge",
                     "formatter": 18,
                     "formatOptions": {
@@ -7256,10 +7162,6 @@
                   {
                     "columnId": "state",
                     "label": "State"
-                  },
-                  {
-                    "columnId": "UpdateDependency",
-                    "label": "Update Dependency"
                   },
                   {
                     "columnId": "currentVersion",

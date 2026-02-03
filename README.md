@@ -20,21 +20,23 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
     - **Release Notes**: Link to SBE release documentation
   - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
 
-- **Update Status Column with Emoji Icons** (Update Readiness tab): Added visual emoji icons to the "Update Status" column in both the "System Health Checks Overview" and "Update Readiness Summary" tables:
+- **Update Status Column with Emoji Icons** (System Health tab): Added visual emoji icons to the "Update Status" column in both the "System Health Checks Overview" and "Update Readiness Summary" tables:
   - 🔄 Updates available
   - ⚠️ Needs attention
   - ✅ Up to date / Applied successfully
   - ⏳ Update in progress / Preparation in progress
   - ❌ Update failed / Preparation failed
 
-- **Tip for Update Progress Tab** (Update Readiness tab): Added a tip below the "System Health Checks Overview" table recommending users review the "📦 Clusters with Updates Available" table in the Update Progress tab for more details
+- **Tip for Update Progress Tab** (System Health tab): Added a tip below the "System Health Checks Overview" table recommending users review the "📦 Clusters with Updates Available" table in the Update Progress tab for more details
 
 ### Improvements
-- **Renamed "State" to "Update Status"** (Update Readiness tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update Status" for clarity and consistency with the "Update Readiness Summary" table
+- **Renamed "Update Readiness" tab to "System Health"**: The tab has been renamed to better reflect its purpose of showing overall cluster system health status, not just update readiness
+
+- **Renamed "State" to "Update Status"** (System Health tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update Status" for clarity and consistency with the "Update Readiness Summary" table
 
 - **Renamed "SBE Version" to "Current SBE Version"** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
 
-- **Removed Update Dependency Column** (Update Readiness tab): The "Update Dependency" column has been removed from the "System Health Checks Overview" table as this information is now shown in the "📦 Clusters with Updates Available" table in the Update Progress tab
+- **Removed Update Dependency Column** (System Health tab): The "Update Dependency" column has been removed from the "System Health Checks Overview" table as this information is now shown in the "📦 Clusters with Updates Available" table in the Update Progress tab
 
 - **Column Order Update** (Update Progress tab): In the "📦 Clusters with Updates Available" table, "Update State" now appears before "Dependency Information"
 
@@ -98,7 +100,7 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 The workbook is organized into seven tabs:
 
-📊 Azure Local Instances | 📋 Update Readiness | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 📋 System Health | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
@@ -123,8 +125,8 @@ A high-level overview of your entire Azure Local estate, including:
 
 ![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
 
-### 📋 Update Readiness
-Detailed view of cluster update readiness:
+### 📋 System Health
+Detailed view of cluster system health and update readiness:
 - Health state distribution chart
 - Version distribution across clusters
 - Summary of health states by update status
@@ -136,7 +138,7 @@ Detailed view of cluster update readiness:
   - Detailed failure reason summaries showing affected clusters and occurrence counts
 - Link to Microsoft documentation for troubleshooting Azure Local updates
 
-![Update Readiness](images/update-readiness-and-system-health-screenshot.png)
+![System Health](images/update-readiness-and-system-health-screenshot.png)
 
 ### 🔄 Update Progress
 Track the progress of ongoing updates across your clusters with detailed status information:
@@ -306,7 +308,7 @@ The workbook provides several filtering options to help you focus on specific re
 ## Usage Tips
 
 - Use the subscription filter to focus on specific environments (e.g., production vs. development)
-- Regularly check the Update Readiness tab before scheduling maintenance windows
+- Regularly check the System Health tab before scheduling maintenance windows
 - Monitor the ARB Status tab to ensure Azure Arc connectivity is healthy
 - Export data to Excel using the export button on grids for reporting purposes
 - Set up Azure Monitor alerts based on the queries in this workbook for proactive monitoring
@@ -333,7 +335,7 @@ See the repository's LICENSE file for details.
   - **AKS Arc** column now links to the cluster's Kubernetes Clusters page in Azure Portal
 
 - **VM Count and AKS Arc Count Columns Relocated** ([Issue #16](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/16)) (Azure Local Instances tab):
-  - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (Update Readiness tab) to the "📊 All Azure Local Clusters" table
+  - Moved **VMs** and **AKS Arc** columns from "System Health Checks Overview" table (System Health tab) to the "📊 All Azure Local Clusters" table
   - Counts now use proper relationship chain through Custom Location and Arc Resource Bridge for improved accuracy when resources are in different resource groups
 
 - **Update Filters** ([Issue #15](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/15)):
@@ -389,14 +391,14 @@ See the repository's LICENSE file for details.
 
 #### Improvements
 
-- **Detailed Health Check Results Section** (Update Readiness tab):
+- **Detailed Health Check Results Section** (System Health tab):
   - Added dedicated "🔍 Detailed Health Check Results" section header with icon for visual consistency
   - Added separate filter controls directly above the Detailed Health Check Results table for improved usability
   - Filters include: Cluster Name, Health Check State, Health Check Step Status, and Severity
   - Severity filter defaults to "Critical" only (previously shared filters defaulted to Critical and Warning)
   - Documentation and knowledge links now appear between the section header and filters
 
-- **System Health Check Filters** (Update Readiness tab):
+- **System Health Check Filters** (System Health tab):
   - Changed filter style from "formHorizontal" to "pills" for narrower, more compact dropdown boxes
   - Improved visual consistency with other tabs
 
@@ -478,23 +480,23 @@ See the repository's LICENSE file for details.
     - Azure Local Machines: 🗄️ (file cabinet)
     - Azure Local VMs: 💻 (laptop)
 
-- **All Cluster Update Status Table Improvements** (Update Readiness tab):
+- **All Cluster Update Status Table Improvements** (System Health tab):
   - Renamed **"Days Since Update"** column to **"Last Update Installed"**
   - Updated format from "X days" to "X days ago" for clearer time indication
 
-- **System Health Checks Overview Table Improvements** (Update Readiness tab):
+- **System Health Checks Overview Table Improvements** (System Health tab):
   - Renamed **"Days Since Last Check"** column to **"Age of Health Results"**
   - Added explanatory tip text above table clarifying what "Age of Health Results" represents
 
 - **Update Attempts Details Table Improvements** (Update Progress tab):
   - Moved **Duration** column to appear before Started/Ended columns for better readability
 
-- **Clusters with Updates Available Table** (Update Readiness tab):
+- **Clusters with Updates Available Table** (System Health tab):
   - Renamed action button from "Apply Update" to "Install Update" for consistency with Azure Portal terminology
 
 #### Bug Fixes
 
-- **Clusters Currently Updating Table** (Update Readiness tab):
+- **Clusters Currently Updating Table** (System Health tab):
   - Fixed inconsistency where clusters with active update runs showing "InProgress" in Update Attempts Details table were not appearing in Clusters Currently Updating
   - Query now uses update runs (`updateruns`) as the primary source of truth instead of relying on `updateSummaries.state` which may not be synchronized
   - Ensures consistent display of in-progress updates across both tables
@@ -614,7 +616,7 @@ See the repository's LICENSE file for details.
   - Moved Quick Actions and Knowledge Links above Filter Instructions for better visual separation from Tabs
   - Increased tab font size for improved readability
 
-- **Update Readiness Tab**: Added "Top 5 - System Health Check Issues" pie chart showing most common failure reasons
+- **System Health tab**: Added "Top 5 - System Health Check Issues" pie chart showing most common failure reasons
 
 - **Clickable Name Columns**: Made name columns directly clickable with hidden link columns to reduce table width
   - Cluster Name is now clickable in all tables (Summary, Update Readiness, Update Progress, VMs, AKS tabs)
@@ -688,7 +690,7 @@ See the repository's LICENSE file for details.
   - Added [Troubleshoot Arc-enabled VMs](https://learn.microsoft.com/azure/azure-local/manage/troubleshoot-arc-enabled-vms) knowledge link
   - Split VM Status Summary into separate "Total VMs" and "Connected VMs" tiles with clear labels
 
-- **Update Readiness Tab**: Added prominent styled banner and title above the Update Readiness Summary table with refresh and export buttons
+- **System Health tab**: Added prominent styled banner and title above the Update Readiness Summary table with refresh and export buttons
 
 - **All Clusters Table**: Updated cluster link to open directly to the Updates view in Azure Portal
 
@@ -729,7 +731,7 @@ See the repository's LICENSE file for details.
 - **Clusters with Updates Available**:
   - Added column filtering capability for easier searching
 
-- **Update Readiness Tab**:
+- **System Health tab**:
   - Enlarged pie charts (Health State Distribution, Version Distribution) for better visibility
   - Moved chart legends to bottom position for improved layout
   - Added knowledge link to [Azure Local GitHub Supportability Forum](https://github.com/Azure/AzureLocal-Supportability) for TSGs and known issue mitigations

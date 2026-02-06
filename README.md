@@ -13,6 +13,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 ### Bug Fixes
 - **Update Attempts by Day Chart Date Ordering** ([Issue #24](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/24)): Fixed the "Update Attempts by Day" bar chart on the Update Progress tab not displaying dates in chronological order. The chart now uses the datetime `TimeBucket` column for x-axis sorting instead of the string-based `TimeLabel`, ensuring dates are always displayed in ascending order from earliest to latest.
 
+- **Update Run History Excludes Resolved Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a subsequent run for the exact same Update Name version (e.g., `Solution12.2601.1002.38`) has completed successfully on the same cluster. This reduces noise by hiding failures that have been resolved by a successful retry.
+
 ### Improvements
 - **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
 

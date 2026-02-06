@@ -32,6 +32,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 - **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges.
 
+- **Default Time Range Changed to 45 Days**: The global time range filter now defaults to 45 days (previously 7 days), giving broader visibility into update history and deployment trends out of the box. Added 45-day and 60-day options to the time range picker.
+
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---

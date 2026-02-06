@@ -588,6 +588,201 @@ testSuite('README Structure Validation', () => {
         'README has license section', 'found', readme.includes('## License') ? 'found' : 'not found');
 });
 
+// --- 15. Portal Link Integrity ---
+testSuite('Portal Link Integrity', () => {
+    // Collect all portal links from queries
+    const portalLinkQueries = allQueries.filter(q =>
+        q.query && q.query.includes('portal.azure.com')
+    );
+    assert(portalLinkQueries.length > 0,
+        'Workbook contains queries with portal links', '>0', portalLinkQueries.length);
+
+    // Portal links with resourceId should use URL-encoded slashes (%2F) not raw /
+    const queriesWithResourceIdLink = portalLinkQueries.filter(q =>
+        q.query.includes('resourceId/') || q.query.includes('resourceId%2F')
+    );
+    const queriesWithEncodedResourceId = queriesWithResourceIdLink.filter(q => {
+        // Check that the link construction uses replace_string or %2F encoding
+        return q.query.includes('%2F') || q.query.includes("replace_string") || q.query.includes('encodedResourceId') || q.query.includes('clusterIdEncoded');
+    });
+    assert(queriesWithEncodedResourceId.length === queriesWithResourceIdLink.length,
+        'Portal links use URL-encoded resource IDs',
+        queriesWithResourceIdLink.length, queriesWithEncodedResourceId.length);
+
+    // Clusters Currently Updating: View Progress link should use updateName~/null
+    const clusterUpdatingQuery = allQueries.find(q =>
+        q.query && q.query.includes('runState == "InProgress"') && q.query.includes('updateRunLink')
+    );
+    if (clusterUpdatingQuery) {
+        assert(clusterUpdatingQuery.query.includes("updateName~/null"),
+            'Clusters Currently Updating link uses updateName~/null (not specific update name)',
+            'contains updateName~/null', clusterUpdatingQuery.query.includes("updateName~/null") ? 'yes' : 'no');
+    }
+
+    // No hardcoded subscription GUIDs in portal links
+    const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const queriesWithHardcodedGuids = portalLinkQueries.filter(q => {
+        // Extract just the portal URL construction parts
+        const portalParts = q.query.split('portal.azure.com').slice(1);
+        return portalParts.some(part => {
+            const urlPart = part.substring(0, 500); // check first 500 chars after portal.azure.com
+            return guidPattern.test(urlPart);
+        });
+    });
+    assert(queriesWithHardcodedGuids.length === 0,
+        'No hardcoded subscription GUIDs in portal link templates',
+        '0', queriesWithHardcodedGuids.length);
+});
+
+// --- 16. Conditional Visibility Consistency ---
+testSuite('Conditional Visibility Consistency', () => {
+    // Top-level groups (direct children of workbook.items) with type 12 should have conditionalVisibility
+    const topLevelGroups = (workbook.items || []).filter(i => i.type === 12);
+    const groupsWithVisibility = topLevelGroups.filter(i => i.conditionalVisibility);
+    assert(groupsWithVisibility.length === topLevelGroups.length,
+        'All top-level tab groups have conditionalVisibility',
+        topLevelGroups.length, groupsWithVisibility.length);
+
+    // Tab parameter values should be unique across groups
+    const tabValues = groupsWithVisibility
+        .filter(i => i.conditionalVisibility && i.conditionalVisibility.parameterName === 'selectedTab')
+        .map(i => i.conditionalVisibility.value);
+    const uniqueTabValues = new Set(tabValues);
+    assert(uniqueTabValues.size === tabValues.length,
+        'Tab selectedTab parameter values are unique',
+        tabValues.length, uniqueTabValues.size);
+});
+
+// --- 17. KQL Query Robustness ---
+testSuite('KQL Query Robustness', () => {
+    // Queries filtering by ResourceGroupFilter should use the correct regex pattern
+    const queriesWithRGFilter = allQueries.filter(q =>
+        q.query && q.query.includes('ResourceGroupFilter')
+    );
+    const queriesWithCorrectRGPattern = queriesWithRGFilter.filter(q =>
+        q.query.includes('matches regex') || q.query.includes("'{ResourceGroupFilter}' == ''")
+    );
+    assert(queriesWithCorrectRGPattern.length === queriesWithRGFilter.length,
+        'All queries with ResourceGroupFilter use correct regex pattern',
+        queriesWithRGFilter.length, queriesWithCorrectRGPattern.length);
+
+    // Queries referencing updateruns should parse updateName consistently
+    const updateRunQueries = allQueries.filter(q =>
+        q.query && q.query.includes('updateruns') && q.type === 3
+    );
+    if (updateRunQueries.length > 0) {
+        const queriesParsingUpdateName = updateRunQueries.filter(q =>
+            q.query.includes("split(id, '/updates/')") || q.query.includes("split(id, '/')[10]")
+        );
+        assert(queriesParsingUpdateName.length === updateRunQueries.length,
+            'All update run queries parse updateName from resource ID',
+            updateRunQueries.length, queriesParsingUpdateName.length);
+    }
+
+    // Check for orphaned parameter references - parameters used in queries should be defined
+    const definedParamNames = new Set();
+    allItems.filter(i => i.type === 9 && i.content && i.content.parameters).forEach(pi => {
+        pi.content.parameters.forEach(p => {
+            if (p.name) definedParamNames.add(p.name);
+        });
+    });
+    // Also add well-known built-in parameters
+    ['TimeRange', 'Subscriptions'].forEach(p => definedParamNames.add(p));
+
+    // Extract parameter references from queries
+    const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*?)(?::[\w]+)?\}/g;
+    const referencedParams = new Set();
+    allQueries.forEach(q => {
+        let match;
+        while ((match = paramRefPattern.exec(q.query)) !== null) {
+            referencedParams.add(match[1]);
+        }
+    });
+    const orphanedParams = [...referencedParams].filter(p => !definedParamNames.has(p));
+    assert(orphanedParams.length === 0,
+        `No orphaned parameter references in queries (${orphanedParams.length > 0 ? orphanedParams.join(', ') : 'none'})`,
+        '0 orphaned', `${orphanedParams.length} orphaned`);
+});
+
+// --- 18. Grid Formatter Consistency ---
+testSuite('Grid Formatter Consistency', () => {
+    const gridItems = allItems.filter(i => i.content && i.content.gridSettings);
+
+    // Hidden columns should use formatter 5
+    const allFormatters = [];
+    gridItems.forEach(gi => {
+        if (gi.content.gridSettings.formatters) {
+            gi.content.gridSettings.formatters.forEach(f => {
+                allFormatters.push({ ...f, parentName: gi.name });
+            });
+        }
+    });
+    const hiddenFormatters = allFormatters.filter(f => f.formatter === 5);
+    assert(hiddenFormatters.length > 0,
+        'Workbook uses hidden columns (formatter 5) for link targets', '>0', hiddenFormatters.length);
+
+    // Link formatters (formatter 7) should reference a valid linkColumn
+    const linkFormatters = allFormatters.filter(f =>
+        f.formatter === 7 && f.formatOptions && f.formatOptions.linkColumn
+    );
+    if (linkFormatters.length > 0) {
+        // Check that referenced linkColumns have a corresponding hidden formatter (formatter 5)
+        const hiddenColumnNames = new Set(hiddenFormatters.map(f => f.columnMatch));
+        const linkColumnsWithHidden = linkFormatters.filter(f =>
+            hiddenColumnNames.has(f.formatOptions.linkColumn)
+        );
+        assert(linkColumnsWithHidden.length === linkFormatters.length,
+            'All link formatter linkColumns have a corresponding hidden column',
+            linkFormatters.length, linkColumnsWithHidden.length);
+    }
+});
+
+// --- 19. Item Count Regression Guard ---
+testSuite('Item Count Regression Guard', () => {
+    // Total item count should not drop significantly
+    assert(allItems.length >= 200,
+        `Workbook has at least 200 items (actual: ${allItems.length})`,
+        '>=200', allItems.length);
+
+    // Query count should not drop significantly
+    assert(allQueries.length >= 120,
+        `Workbook has at least 120 queries (actual: ${allQueries.length})`,
+        '>=120', allQueries.length);
+
+    // Chart count should not drop significantly
+    assert(allCharts.length >= 30,
+        `Workbook has at least 30 charts (actual: ${allCharts.length})`,
+        '>=30', allCharts.length);
+});
+
+// --- 20. Documentation File Validation ---
+testSuite('Documentation File Validation', () => {
+    const contributingPath = path.resolve(__dirname, '..', 'CONTRIBUTING.md');
+    const securityPath = path.resolve(__dirname, '..', 'SECURITY.md');
+    const licensePath = path.resolve(__dirname, '..', 'LICENSE');
+
+    const contributingExists = fs.existsSync(contributingPath);
+    assert(contributingExists,
+        'CONTRIBUTING.md exists', 'true', String(contributingExists));
+
+    if (contributingExists) {
+        const contributing = fs.readFileSync(contributingPath, 'utf8');
+        assert(contributing.includes('Reporting Issues'),
+            'CONTRIBUTING.md has issue reporting section', 'found', contributing.includes('Reporting Issues') ? 'found' : 'not found');
+        assert(contributing.includes('Submitting Pull Requests') || contributing.includes('Submitting Changes'),
+            'CONTRIBUTING.md has PR submission section', 'found',
+            (contributing.includes('Submitting Pull Requests') || contributing.includes('Submitting Changes')) ? 'found' : 'not found');
+    }
+
+    const securityExists = fs.existsSync(securityPath);
+    assert(securityExists,
+        'SECURITY.md exists', 'true', String(securityExists));
+
+    const licenseExists = fs.existsSync(licensePath);
+    assert(licenseExists,
+        'LICENSE file exists', 'true', String(licenseExists));
+});
+
 // ============================================================================
 // RESULTS
 // ============================================================================

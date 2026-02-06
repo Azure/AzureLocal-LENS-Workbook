@@ -15,6 +15,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 - **Update Run History Excludes Resolved Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a subsequent run for the exact same Update Name version (e.g., `Solution12.2601.1002.38`) has completed successfully on the same cluster. This reduces noise by hiding failures that have been resolved by a successful retry.
 
+- **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
+
 ### Improvements
 - **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
 

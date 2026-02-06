@@ -19,6 +19,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### New Features
 - **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 8 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
+- **Step Duration in Clusters Currently Updating**: Added a "Step Duration" column showing how long the cluster has been on its current update step (e.g., "2h 15m", "1d 3h 42m"). Calculated from the step's `startTimeUtc` against the current time.
 
 ### Improvements
 - **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output

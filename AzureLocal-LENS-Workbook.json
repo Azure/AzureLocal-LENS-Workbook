@@ -103,6 +103,9 @@
                 },
                 {
                   "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
                 }
               ],
               "allowCustom": true

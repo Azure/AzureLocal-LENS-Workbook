@@ -7787,7 +7787,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend timePeriod = {UpdateAttemptsTimeFilter}\r\n| extend TimeBucket = case(\r\n    timePeriod <= 30, startofday(timeStarted),\r\n    timePeriod <= 90, startofweek(timeStarted),\r\n    startofmonth(timeStarted)\r\n)\r\n| extend TimeLabel = case(\r\n    timePeriod <= 30, format_datetime(TimeBucket, 'yyyy-MM-dd'),\r\n    timePeriod <= 90, strcat('Week of ', format_datetime(TimeBucket, 'yyyy-MM-dd')),\r\n    format_datetime(TimeBucket, 'yyyy-MM')\r\n)\r\n| summarize Count = count() by TimeLabel, TimeBucket, state\r\n| order by TimeBucket asc\r\n| project TimeBucket, TimeLabel, state, Count",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend timePeriod = {UpdateAttemptsTimeFilter}\r\n| extend TimeBucket = case(\r\n    timePeriod <= 30, startofday(timeStarted),\r\n    timePeriod <= 90, startofweek(timeStarted),\r\n    startofmonth(timeStarted)\r\n)\r\n| summarize Succeeded = countif(state == 'Succeeded'), Failed = countif(state == 'Failed'), InProgress = countif(state == 'InProgress') by TimeBucket\r\n| order by TimeBucket asc\r\n| extend TimeLabel = case(\r\n    {UpdateAttemptsTimeFilter} <= 30, format_datetime(TimeBucket, 'yyyy-MM-dd'),\r\n    {UpdateAttemptsTimeFilter} <= 90, strcat('Week of ', format_datetime(TimeBucket, 'yyyy-MM-dd')),\r\n    format_datetime(TimeBucket, 'yyyy-MM')\r\n)\r\n| project TimeLabel, Succeeded, Failed, InProgress",
               "size": 0,
               "title": "Update Attempts by Day",
               "queryType": 1,
@@ -7796,19 +7796,13 @@
                 "{Subscriptions}"
               ],
               "visualization": "barchart",
-              "sortBy": [
-                {
-                  "itemKey": "TimeBucket",
-                  "sortOrder": 1
-                }
-              ],
               "chartSettings": {
                 "xAxis": "TimeLabel",
                 "yAxis": [
-                  "Count"
+                  "Succeeded",
+                  "Failed",
+                  "InProgress"
                 ],
-                "group": "state",
-                "createOtherGroup": null,
                 "showLegend": true,
                 "seriesLabelSettings": [
                   {

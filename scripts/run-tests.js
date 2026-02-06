@@ -399,7 +399,7 @@ testSuite('Chart Configuration Validation', () => {
         'All bar/line charts have yAxis configured',
         axisCharts.length, axisChartsWithY.length);
 
-    // Verify the Issue #24 fix: Update Attempts by Day chart should use TimeLabel for xAxis with sortBy TimeBucket
+    // Verify the Issue #24 fix: Update Attempts by Day chart uses pivoted columns (not group by state)
     const updateAttemptsChart = allCharts.find(c =>
         c.name === 'update-attempts-by-day-chart' ||
         (c.title && c.title.includes('Update Attempts by Day'))
@@ -409,17 +409,22 @@ testSuite('Chart Configuration Validation', () => {
             'Update Attempts by Day chart uses TimeLabel for xAxis (Issue #24 fix)',
             'TimeLabel', updateAttemptsChart.chartSettings.xAxis);
 
-        // Verify sortBy TimeBucket is set at the content level for cross-subscription ordering
-        const sortBy = updateAttemptsChart.sortBy;
-        const hasSortByTimeBucket = Array.isArray(sortBy) && sortBy.some(s => s.itemKey === 'TimeBucket' && s.sortOrder === 1);
-        assert(hasSortByTimeBucket,
-            'Update Attempts by Day chart has sortBy TimeBucket ascending (Issue #24 cross-subscription fix)',
-            'sortBy TimeBucket asc', JSON.stringify(sortBy));
+        // Verify pivoted yAxis columns instead of group-by-state (fixes cross-subscription ordering)
+        const yAxis = updateAttemptsChart.chartSettings.yAxis;
+        const hasPivotedColumns = Array.isArray(yAxis) && yAxis.includes('Succeeded') && yAxis.includes('Failed') && yAxis.includes('InProgress');
+        assert(hasPivotedColumns,
+            'Update Attempts by Day chart uses pivoted yAxis columns [Succeeded, Failed, InProgress] (Issue #24 fix)',
+            'Succeeded,Failed,InProgress', JSON.stringify(yAxis));
 
-        // Verify TimeBucket is in the query projection
-        assert(updateAttemptsChart.query.includes('TimeBucket') && updateAttemptsChart.query.includes('TimeLabel'),
-            'Update Attempts by Day query projects TimeBucket and TimeLabel columns',
-            'contains both', updateAttemptsChart.query.includes('TimeBucket') && updateAttemptsChart.query.includes('TimeLabel') ? 'contains both' : 'missing');
+        // Verify no group-by-state (which causes per-series ordering issues)
+        assert(!updateAttemptsChart.chartSettings.group,
+            'Update Attempts by Day chart does not use group (avoids per-series ordering)',
+            'no group', updateAttemptsChart.chartSettings.group || 'no group');
+
+        // Verify query uses countif pivot pattern
+        assert(updateAttemptsChart.query.includes('countif(state =='),
+            'Update Attempts by Day query uses countif pivot pattern',
+            'contains countif', updateAttemptsChart.query.includes('countif(state ==') ? 'contains countif' : 'missing');
     } else {
         assert(false, 'Update Attempts by Day chart found', 'found', 'not found');
     }

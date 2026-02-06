@@ -13,9 +13,13 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 ### Bug Fixes
 - **Update Attempts by Day Chart Date Ordering** ([Issue #24](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/24)): Fixed the "Update Attempts by Day" bar chart on the Update Progress tab not displaying dates in chronological order. The root cause was the chart's `group by state` rendering, which processed each state series (Succeeded, Failed, InProgress) independently — each series contributed its own dates to the x-axis in isolation, producing interleaved non-chronological ordering. Fixed by pivoting the KQL query to produce one row per time bucket with `Succeeded`, `Failed`, and `InProgress` as separate columns using `countif()`, eliminating the per-series grouping and guaranteeing a single chronologically ordered row sequence.
 
-- **Update Run History Excludes Resolved Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a subsequent run for the exact same Update Name version (e.g., `Solution12.2601.1002.38`) has completed successfully on the same cluster. This reduces noise by hiding failures that have been resolved by a successful retry.
+- **Update Run History Excludes Resolved and Active Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a Succeeded or InProgress run exists for the same cluster and Update Name. Additionally, when multiple failed runs exist for the same cluster and update, only the latest failure (by last updated time) is shown, reducing noise and focusing troubleshooting on the most recent issue.
+
+- **Clusters Currently Updating Excludes Stale InProgress Runs**: The "Clusters Currently Updating" table now excludes InProgress update runs when a Succeeded run already exists for the same cluster and Update Name, preventing stale entries from appearing.
 
 - **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
+
+- **Deployment Chart Sub-Month Time Ranges**: Fixed the "1 week" and "2 weeks" time range options on both deployment charts returning no data. The fractional month parameter values (0.25, 0.5) were being truncated to zero by integer conversion.
 
 ### New Features
 - **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 9 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
@@ -27,8 +31,6 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Continuous Timeline on Update Attempts by Day Chart**: The bar chart now fills date gaps with zero-count entries using a date scaffold, ensuring a continuous timeline with no missing days/weeks/months even when there is no update activity.
 
 - **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges.
-
-- **Deployment Chart Sub-Month Time Ranges**: Fixed the "1 week" and "2 weeks" time range options on both deployment charts returning no data. The fractional month parameter values (0.25, 0.5) were being truncated to zero by integer conversion.
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

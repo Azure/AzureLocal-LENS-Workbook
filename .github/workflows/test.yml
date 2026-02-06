@@ -11,6 +11,9 @@ jobs:
   test:
     name: Run Workbook Tests
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
 
     steps:
       - name: Checkout code

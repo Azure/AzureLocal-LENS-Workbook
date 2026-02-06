@@ -40,4 +40,7 @@ jobs:
         with:
           files: test-results/nunit.xml
           check_name: 'Workbook Unit Tests'
-          comment_mode: 'off'
+          comment_mode: 'always'
+          report_individual_runs: 'true'
+          report_suite_logs: 'info'
+          check_run_annotations: 'all tests, skipped tests'

@@ -18,7 +18,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
 
 ### New Features
-- **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 8 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
+- **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 9 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
 - **Step Duration in Clusters Currently Updating**: Added a "Step Duration" column showing how long the cluster has been on its current update step (e.g., "2h 15m", "1d 3h 42m"). Calculated from the step's `startTimeUtc` against the current time.
 
 ### Improvements
@@ -26,7 +26,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 - **Continuous Timeline on Update Attempts by Day Chart**: The bar chart now fills date gaps with zero-count entries using a date scaffold, ensuring a continuous timeline with no missing days/weeks/months even when there is no update activity.
 
-- **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges. Date gaps are also filled with zero-count entries for a continuous timeline.
+- **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges.
+
+- **Deployment Chart Sub-Month Time Ranges**: Fixed the "1 week" and "2 weeks" time range options on both deployment charts returning no data. The fractional month parameter values (0.25, 0.5) were being truncated to zero by integer conversion.
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

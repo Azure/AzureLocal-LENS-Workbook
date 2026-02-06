@@ -17,6 +17,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 - **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
 
+### New Features
+- **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 8 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
+
 ### Improvements
 - **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
 

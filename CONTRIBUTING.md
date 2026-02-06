@@ -6,7 +6,9 @@ Thank you for your interest in contributing to the Azure Local LENS (Lifecycle, 
 
 ## How to Contribute
 
-### Reporting Issues
+### Reporting Issues (Recommended)
+
+**We highly recommend raising an issue rather than submitting a pull request.** The workbook JSON is complex and changes can have unintended side effects across multiple tabs and queries. By raising an issue, the maintainers can assess the impact, implement the change with full context, and ensure proper testing.
 
 If you find a bug, have a feature request, or want to provide feedback:
 
@@ -18,7 +20,11 @@ If you find a bug, have a feature request, or want to provide feedback:
    - Screenshots where applicable
    - The workbook version you are using (shown in the version banner)
 
-### Submitting Changes
+### Submitting Pull Requests
+
+> **⚠️ Please raise an issue first** before opening a PR. This allows maintainers to discuss the approach and avoid duplicate or conflicting work. Unsolicited PRs without a corresponding issue may not be reviewed.
+
+If you have been asked to submit a PR, or have discussed the change in an issue:
 
 1. **Fork** the repository
 2. **Create a feature branch** from `main` (e.g., `users/yourname/fix-description`)

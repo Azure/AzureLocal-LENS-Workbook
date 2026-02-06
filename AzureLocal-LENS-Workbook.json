@@ -100,12 +100,15 @@
                 },
                 {
                   "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
                 }
               ],
               "allowCustom": true
             },
             "value": {
-              "durationMs": 604800000
+              "durationMs": 3888000000
             },
             "label": "Time Range"
           }

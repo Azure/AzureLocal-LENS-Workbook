@@ -350,7 +350,7 @@ The workbook provides several filtering options to help you focus on specific re
 
 ## Contributing
 
-Feel free to submit issues or pull requests to improve this workbook.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
 
 ## License
 

@@ -28,6 +28,10 @@ jobs:
       - name: Run unit tests
         run: node scripts/run-tests.js
 
+      - name: Write test summary
+        if: always()
+        run: node scripts/generate-summary.js >> $GITHUB_STEP_SUMMARY
+
       - name: Upload NUnit test results
         uses: actions/upload-artifact@v4
         if: always()

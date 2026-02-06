@@ -7796,8 +7796,14 @@
                 "{Subscriptions}"
               ],
               "visualization": "barchart",
+              "sortBy": [
+                {
+                  "itemKey": "TimeBucket",
+                  "sortOrder": 1
+                }
+              ],
               "chartSettings": {
-                "xAxis": "TimeBucket",
+                "xAxis": "TimeLabel",
                 "yAxis": [
                   "Count"
                 ],

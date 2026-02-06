@@ -167,6 +167,7 @@ function extractCharts(items) {
                 title: item.content.title,
                 visualization: item.content.visualization,
                 chartSettings: item.content.chartSettings,
+                sortBy: item.content.sortBy || null,
                 query: item.content.query
             });
         }
@@ -398,20 +399,27 @@ testSuite('Chart Configuration Validation', () => {
         'All bar/line charts have yAxis configured',
         axisCharts.length, axisChartsWithY.length);
 
-    // Verify the Issue #24 fix: Update Attempts by Day chart should use TimeBucket for xAxis
+    // Verify the Issue #24 fix: Update Attempts by Day chart should use TimeLabel for xAxis with sortBy TimeBucket
     const updateAttemptsChart = allCharts.find(c =>
         c.name === 'update-attempts-by-day-chart' ||
         (c.title && c.title.includes('Update Attempts by Day'))
     );
     if (updateAttemptsChart) {
-        assert(updateAttemptsChart.chartSettings.xAxis === 'TimeBucket',
-            'Update Attempts by Day chart uses TimeBucket for xAxis (Issue #24 fix)',
-            'TimeBucket', updateAttemptsChart.chartSettings.xAxis);
+        assert(updateAttemptsChart.chartSettings.xAxis === 'TimeLabel',
+            'Update Attempts by Day chart uses TimeLabel for xAxis (Issue #24 fix)',
+            'TimeLabel', updateAttemptsChart.chartSettings.xAxis);
+
+        // Verify sortBy TimeBucket is set at the content level for cross-subscription ordering
+        const sortBy = updateAttemptsChart.sortBy;
+        const hasSortByTimeBucket = Array.isArray(sortBy) && sortBy.some(s => s.itemKey === 'TimeBucket' && s.sortOrder === 1);
+        assert(hasSortByTimeBucket,
+            'Update Attempts by Day chart has sortBy TimeBucket ascending (Issue #24 cross-subscription fix)',
+            'sortBy TimeBucket asc', JSON.stringify(sortBy));
 
         // Verify TimeBucket is in the query projection
-        assert(updateAttemptsChart.query.includes('TimeBucket, TimeLabel'),
-            'Update Attempts by Day query projects TimeBucket column',
-            'contains TimeBucket', updateAttemptsChart.query.includes('TimeBucket, TimeLabel') ? 'contains TimeBucket' : 'missing TimeBucket');
+        assert(updateAttemptsChart.query.includes('TimeBucket') && updateAttemptsChart.query.includes('TimeLabel'),
+            'Update Attempts by Day query projects TimeBucket and TimeLabel columns',
+            'contains both', updateAttemptsChart.query.includes('TimeBucket') && updateAttemptsChart.query.includes('TimeLabel') ? 'contains both' : 'missing');
     } else {
         assert(false, 'Update Attempts by Day chart found', 'found', 'not found');
     }

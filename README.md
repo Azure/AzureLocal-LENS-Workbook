@@ -61,20 +61,11 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
    - Click **Save** or **Save As** in the toolbar
    - Provide a name (e.g., "Azure Local LENS Workbook")
    - Select a subscription, resource group, and location to save the workbook
+   - Optional - Set the "Auto refresh: xx minutes" to once every 30 minutes or 1 hour.
    - Click **Save**
 
 5. **Pin to Dashboard (Optional)**
    - After saving, you can pin individual tiles or the entire workbook to an Azure dashboard for quick access
-
-### Alternative Import Method
-
-You can also import directly from the Workbooks gallery:
-
-1. Go to **Monitor** > **Workbooks**
-2. Click **+ New**
-3. Click the **</>** (Advanced Editor) button
-4. Select **Gallery Template** tab
-5. Paste the JSON content and click **Apply**
 
 ## Prerequisites
 
@@ -86,57 +77,9 @@ You can also import directly from the Workbooks gallery:
   - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) - you cannot query resources in other tenants without Lighthouse delegation
 - Access to Azure Monitor Workbooks in the Azure portal.
 
-## Overview
+## Contributing
 
-This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.
-
-## Features
-
-1. **Navigate to Azure Monitor Workbooks**
-   - Open the [Azure portal](https://portal.azure.com)
-   - Search for "Monitor" in the search bar and select **Monitor**
-   - In the left navigation, select **Workbooks**
-
-2. **Create a New Workbook**
-   - Click **+ New** to create a new workbook
-   - In the empty workbook, click the **Advanced Editor** button (</> icon) in the toolbar
-
-3. **Import the JSON Template**
-   - In the Advanced Editor, select the **Gallery Template** tab
-   - Delete any existing content in the editor
-   - Copy the entire contents of the [`AzureLocal-LENS-Workbook.json`](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json) file
-   - Paste the JSON content into the editor
-   - Click **Apply**
-
-4. **Save the Workbook**
-   - Click **Done Editing** to exit edit mode
-   - Click **Save** or **Save As** in the toolbar
-   - Provide a name (e.g., "Azure Local LENS Workbook")
-   - Select a subscription, resource group, and location to save the workbook
-   - Click **Save**
-
-5. **Pin to Dashboard (Optional)**
-   - After saving, you can pin individual tiles or the entire workbook to an Azure dashboard for quick access
-
-### Alternative Import Method
-
-You can also import directly from the Workbooks gallery:
-
-1. Go to **Monitor** > **Workbooks**
-2. Click **+ New**
-3. Click the **</>** (Advanced Editor) button
-4. Select **Gallery Template** tab
-5. Paste the JSON content and click **Apply**
-
-## Prerequisites
-
-- Access to Azure subscriptions containing Azure Local clusters:
-- **Reader permissions** on the resources you want to monitor
-  - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant.
-  - You will only see data for resources where you have at least Reader access
-  - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant.
-  - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) - you cannot query resources in other tenants without Lighthouse delegation
-- Access to Azure Monitor Workbooks in the Azure portal.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
 
 ## Overview
 
@@ -358,10 +301,6 @@ The workbook provides several filtering options to help you focus on specific re
 - Monitor the ARB Status tab to ensure Azure Arc connectivity is healthy
 - Export data to Excel using the export button on grids for reporting purposes
 - Set up Azure Monitor alerts based on the queries in this workbook for proactive monitoring
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
 
 ## License
 

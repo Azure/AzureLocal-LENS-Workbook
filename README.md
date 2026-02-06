@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.7.9
+## Latest Version: v0.8.0
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,43 +8,71 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.7.9)
+## Recent Changes (v0.8.0)
 
-### New Features
-- **Dependency Information Column with SBE Details** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Progress tab): Added a new **Dependency Information** column to the "📦 Clusters with Updates Available" table:
-  - Shows SBE version with ⚠️ warning icon as a clickable link only when the update state is **AdditionalContentRequired** or **HasPrerequisite**
-  - Clicking the link opens a flyout showing Solution Builder Extension (SBE) details:
-    - **Publisher**: The OEM/hardware vendor name
-    - **Family**: The SBE family identifier
-    - **Version**: The SBE version that will be installed
-    - **Release Notes**: Link to SBE release documentation
-  - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
-
-- **Update Status Column with Emoji Icons** (System Health tab): Added visual emoji icons to the "Update Status" column in both the "System Health Checks Overview" and "Update Readiness Summary" tables:
-  - 🔄 Updates available
-  - ⚠️ Needs attention
-  - ✅ Up to date / Applied successfully
-  - ⏳ Update in progress / Preparation in progress
-  - ❌ Update failed / Preparation failed
-
-- **Tip for Update Progress Tab** (System Health tab): Added a tip below the "System Health Checks Overview" table recommending users review the "📦 Clusters with Updates Available" table in the Update Progress tab for more details
+### Bug Fixes
+- **Update Attempts by Day Chart Date Ordering** ([Issue #24](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/24)): Fixed the "Update Attempts by Day" bar chart on the Update Progress tab not displaying dates in chronological order. The chart now uses the datetime `TimeBucket` column for x-axis sorting instead of the string-based `TimeLabel`, ensuring dates are always displayed in ascending order from earliest to latest.
 
 ### Improvements
-- **Renamed "Update Readiness" tab to "System Health"**: The tab has been renamed to better reflect its purpose of showing overall cluster system health status, not just update readiness
-
-- **Renamed "State" to "Update Status"** (System Health tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update Status" for clarity and consistency with the "Update Readiness Summary" table
-
-- **Renamed "SBE Version" to "Current SBE Version"** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
-
-- **Removed Update Dependency Column** (System Health tab): The "Update Dependency" column has been removed from the "System Health Checks Overview" table as this information is now shown in the "📦 Clusters with Updates Available" table in the Update Progress tab
-
-- **Column Order Update** (Update Progress tab): In the "📦 Clusters with Updates Available" table, "Update State" now appears before "Dependency Information"
+- **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---
 
 ## How to Import the Workbook
+
+1. **Navigate to Azure Monitor Workbooks**
+   - Open the [Azure portal](https://portal.azure.com)
+   - Search for "Monitor" in the search bar and select **Monitor**
+   - In the left navigation, select **Workbooks**
+
+2. **Create a New Workbook**
+   - Click **+ New** to create a new workbook
+   - In the empty workbook, click the **Advanced Editor** button (</> icon) in the toolbar
+
+3. **Import the JSON Template**
+   - In the Advanced Editor, select the **Gallery Template** tab
+   - Delete any existing content in the editor
+   - Copy the entire contents of the [`AzureLocal-LENS-Workbook.json`](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json) file
+   - Paste the JSON content into the editor
+   - Click **Apply**
+
+4. **Save the Workbook**
+   - Click **Done Editing** to exit edit mode
+   - Click **Save** or **Save As** in the toolbar
+   - Provide a name (e.g., "Azure Local LENS Workbook")
+   - Select a subscription, resource group, and location to save the workbook
+   - Click **Save**
+
+5. **Pin to Dashboard (Optional)**
+   - After saving, you can pin individual tiles or the entire workbook to an Azure dashboard for quick access
+
+### Alternative Import Method
+
+You can also import directly from the Workbooks gallery:
+
+1. Go to **Monitor** > **Workbooks**
+2. Click **+ New**
+3. Click the **</>** (Advanced Editor) button
+4. Select **Gallery Template** tab
+5. Paste the JSON content and click **Apply**
+
+## Prerequisites
+
+- Access to Azure subscriptions containing Azure Local clusters:
+- **Reader permissions** on the resources you want to monitor
+  - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant.
+  - You will only see data for resources where you have at least Reader access
+  - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant.
+  - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) - you cannot query resources in other tenants without Lighthouse delegation
+- Access to Azure Monitor Workbooks in the Azure portal.
+
+## Overview
+
+This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.
+
+## Features
 
 1. **Navigate to Azure Monitor Workbooks**
    - Open the [Azure portal](https://portal.azure.com)
@@ -324,6 +352,34 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.7.9
+
+#### New Features
+- **Dependency Information Column with SBE Details** ([Issue #20](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/20)) (Update Progress tab): Added a new **Dependency Information** column to the "📦 Clusters with Updates Available" table:
+  - Shows SBE version with ⚠️ warning icon as a clickable link only when the update state is **AdditionalContentRequired** or **HasPrerequisite**
+  - Clicking the link opens a flyout showing Solution Builder Extension (SBE) details:
+    - **Publisher**: The OEM/hardware vendor name
+    - **Family**: The SBE family identifier
+    - **Version**: The SBE version that will be installed
+    - **Release Notes**: Link to SBE release documentation
+  - This helps identify when OEM-specific content needs to be downloaded before an update can proceed
+
+- **Update Status Column with Emoji Icons** (System Health tab): Added visual emoji icons to the "Update Status" column in both the "System Health Checks Overview" and "Update Readiness Summary" tables:
+  - 🔄 Updates available
+  - ⚠️ Needs attention
+  - ✅ Up to date / Applied successfully
+  - ⏳ Update in progress / Preparation in progress
+  - ❌ Update failed / Preparation failed
+
+- **Tip for Update Progress Tab** (System Health tab): Added a tip below the "System Health Checks Overview" table recommending users review the "📦 Clusters with Updates Available" table in the Update Progress tab for more details
+
+#### Improvements
+- **Renamed "Update Readiness" tab to "System Health"**: The tab has been renamed to better reflect its purpose of showing overall cluster system health status, not just update readiness
+- **Renamed "State" to "Update Status"** (System Health tab): The "State" column in the "System Health Checks Overview" table has been renamed to "Update Status" for clarity and consistency with the "Update Readiness Summary" table
+- **Renamed "SBE Version" to "Current SBE Version"** (Update Progress tab): The "SBE Version" column in the "📦 Clusters with Updates Available" table has been renamed to "Current SBE Version" for clarity, and moved to appear after "Current Version"
+- **Removed Update Dependency Column** (System Health tab): The "Update Dependency" column has been removed from the "System Health Checks Overview" table as this information is now shown in the "📦 Clusters with Updates Available" table in the Update Progress tab
+- **Column Order Update** (Update Progress tab): In the "📦 Clusters with Updates Available" table, "Update State" now appears before "Dependency Information"
 
 ### v0.7.81
 

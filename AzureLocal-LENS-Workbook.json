@@ -1347,9 +1347,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| where isnotempty(registrationDate)\r\n| where registrationDate >= ago(toint('{ClusterDeploymentMonths}') * 30d)\r\n| extend deploymentMonth = startofmonth(registrationDate)\r\n| summarize Count = count() by deploymentMonth\r\n| extend Series = 'Clusters'\r\n| order by deploymentMonth asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| where isnotempty(registrationDate)\r\n| extend _days = toint('{ClusterDeploymentMonths}') * 30\r\n| where registrationDate >= ago(_days * 1d)\r\n| extend TimeBucket = case(\r\n    _days <= 30, startofday(registrationDate),\r\n    _days <= 90, startofweek(registrationDate),\r\n    startofmonth(registrationDate)\r\n)\r\n| summarize Count = count() by TimeBucket\r\n| union (\r\n    resources\r\n    | take 1\r\n    | extend _days = toint('{ClusterDeploymentMonths}') * 30\r\n    | mv-expand TimeBucket = range(startofday(ago(_days * 1d)), startofday(now()), 1d) to typeof(datetime)\r\n    | extend TimeBucket = case(\r\n        _days <= 30, startofday(TimeBucket),\r\n        _days <= 90, startofweek(TimeBucket),\r\n        startofmonth(TimeBucket)\r\n    )\r\n    | summarize by TimeBucket\r\n    | extend Count = 0\r\n)\r\n| summarize Count = sum(Count) by TimeBucket\r\n| order by TimeBucket asc\r\n| extend TimeLabel = case(\r\n    toint('{ClusterDeploymentMonths}') * 30 <= 30, format_datetime(TimeBucket, 'yyyy-MM-dd'),\r\n    toint('{ClusterDeploymentMonths}') * 30 <= 90, strcat('Week of ', format_datetime(TimeBucket, 'yyyy-MM-dd')),\r\n    format_datetime(TimeBucket, 'yyyy-MM')\r\n)\r\n| project TimeLabel, Count",
               "size": 0,
-              "title": "Azure Local Clusters Registered by Month",
+              "title": "Azure Local Clusters Registered Over Time",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1357,11 +1357,15 @@
               ],
               "visualization": "linechart",
               "chartSettings": {
-                "xAxis": "deploymentMonth",
+                "xAxis": "TimeLabel",
                 "yAxis": ["Count"],
-                "group": "Series",
-                "seriesLabelKey": "Series",
-                "showLegend": true
+                "showLegend": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Count",
+                    "label": "Clusters Registered"
+                  }
+                ]
               }
             },
             "customWidth": "80",
@@ -5069,9 +5073,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocationRG = tolower(resourceGroup), arcBridgeRG\r\n) on $left.resourceGroup == $right.customLocationRG\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend createdAt = todatetime(systemData.createdAt)\r\n| where isnotempty(createdAt)\r\n| where createdAt >= ago(toint('{AKSDeploymentMonths}') * 30d)\r\n| extend deploymentMonth = startofmonth(createdAt)\r\n| summarize Count = count() by deploymentMonth\r\n| extend Series = 'AKS Clusters'\r\n| order by deploymentMonth asc",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocationRG = tolower(resourceGroup), arcBridgeRG\r\n) on $left.resourceGroup == $right.customLocationRG\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend createdAt = todatetime(systemData.createdAt)\r\n| where isnotempty(createdAt)\r\n| extend _days = toint('{AKSDeploymentMonths}') * 30\r\n| where createdAt >= ago(_days * 1d)\r\n| extend TimeBucket = case(\r\n    _days <= 30, startofday(createdAt),\r\n    _days <= 90, startofweek(createdAt),\r\n    startofmonth(createdAt)\r\n)\r\n| summarize Count = count() by TimeBucket\r\n| union (\r\n    resources\r\n    | take 1\r\n    | extend _days = toint('{AKSDeploymentMonths}') * 30\r\n    | mv-expand TimeBucket = range(startofday(ago(_days * 1d)), startofday(now()), 1d) to typeof(datetime)\r\n    | extend TimeBucket = case(\r\n        _days <= 30, startofday(TimeBucket),\r\n        _days <= 90, startofweek(TimeBucket),\r\n        startofmonth(TimeBucket)\r\n    )\r\n    | summarize by TimeBucket\r\n    | extend Count = 0\r\n)\r\n| summarize Count = sum(Count) by TimeBucket\r\n| order by TimeBucket asc\r\n| extend TimeLabel = case(\r\n    toint('{AKSDeploymentMonths}') * 30 <= 30, format_datetime(TimeBucket, 'yyyy-MM-dd'),\r\n    toint('{AKSDeploymentMonths}') * 30 <= 90, strcat('Week of ', format_datetime(TimeBucket, 'yyyy-MM-dd')),\r\n    format_datetime(TimeBucket, 'yyyy-MM')\r\n)\r\n| project TimeLabel, Count",
               "size": 0,
-              "title": "AKS Arc Cluster Deployments by Month",
+              "title": "AKS Arc Cluster Deployments Over Time",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -5079,11 +5083,15 @@
               ],
               "visualization": "linechart",
               "chartSettings": {
-                "xAxis": "deploymentMonth",
+                "xAxis": "TimeLabel",
                 "yAxis": ["Count"],
-                "group": "Series",
-                "seriesLabelKey": "Series",
-                "showLegend": true
+                "showLegend": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Count",
+                    "label": "AKS Clusters Deployed"
+                  }
+                ]
               }
             },
             "customWidth": "80",

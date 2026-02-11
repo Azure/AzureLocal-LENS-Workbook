@@ -750,7 +750,191 @@ testSuite('Grid Formatter Consistency', () => {
     }
 });
 
-// --- 19. Item Count Regression Guard ---
+// --- 19. Azure Licensing & Verification Columns (v0.8.1) ---
+testSuite('Azure Licensing & Verification Columns', () => {
+    // Find the all-clusters-base query
+    const clusterBaseQuery = allQueries.find(q => q.name === 'all-clusters-base');
+    assert(clusterBaseQuery !== undefined,
+        'all-clusters-base query exists', 'found', clusterBaseQuery ? 'found' : 'not found');
+
+    if (clusterBaseQuery) {
+        const query = clusterBaseQuery.query;
+
+        // Verify Azure Hybrid Benefit extend
+        assert(query.includes('softwareAssuranceProperties.softwareAssuranceStatus'),
+            'Base query extracts softwareAssuranceStatus for Azure Hybrid Benefit',
+            'contains property', query.includes('softwareAssuranceProperties.softwareAssuranceStatus') ? 'yes' : 'no');
+        assert(query.includes('azureHybridBenefit'),
+            'Base query defines azureHybridBenefit column',
+            'contains column', query.includes('azureHybridBenefit') ? 'yes' : 'no');
+
+        // Verify Windows Server Subscription extend
+        assert(query.includes('desiredProperties.windowsServerSubscription'),
+            'Base query extracts desiredProperties.windowsServerSubscription',
+            'contains property', query.includes('desiredProperties.windowsServerSubscription') ? 'yes' : 'no');
+        assert(query.includes('windowsServerSubscription'),
+            'Base query defines windowsServerSubscription column',
+            'contains column', query.includes('windowsServerSubscription') ? 'yes' : 'no');
+
+        // Verify Azure Verification for VMs extend
+        assert(query.includes('reportedProperties.imdsAttestation'),
+            'Base query extracts reportedProperties.imdsAttestation',
+            'contains property', query.includes('reportedProperties.imdsAttestation') ? 'yes' : 'no');
+        assert(query.includes('azureVerificationForVMs'),
+            'Base query defines azureVerificationForVMs column',
+            'contains column', query.includes('azureVerificationForVMs') ? 'yes' : 'no');
+
+        // Verify column ordering: azureHybridBenefit, windowsServerSubscription, azureVerificationForVMs come after lastSync
+        const lastSyncPos = query.indexOf('lastSync');
+        const ahbPos = query.indexOf('azureHybridBenefit');
+        const wssPos = query.indexOf('windowsServerSubscription');
+        const avvmPos = query.indexOf('azureVerificationForVMs');
+        const locationPos = query.lastIndexOf('location');
+        const regDatePos = query.lastIndexOf('registrationDate');
+
+        assert(ahbPos > lastSyncPos,
+            'azureHybridBenefit appears after lastSync in project',
+            'after lastSync', ahbPos > lastSyncPos ? 'yes' : 'no');
+        assert(wssPos > ahbPos,
+            'windowsServerSubscription appears after azureHybridBenefit',
+            'after AHB', wssPos > ahbPos ? 'yes' : 'no');
+        assert(avvmPos > wssPos,
+            'azureVerificationForVMs appears after windowsServerSubscription',
+            'after WSS', avvmPos > wssPos ? 'yes' : 'no');
+
+        // Verify Location is second-to-last and Registration Date is last in project
+        assert(locationPos > avvmPos,
+            'location appears after azureVerificationForVMs (second-to-last)',
+            'after AVVM', locationPos > avvmPos ? 'yes' : 'no');
+        assert(regDatePos > locationPos,
+            'registrationDate appears after location (last column)',
+            'after location', regDatePos > locationPos ? 'yes' : 'no');
+    }
+
+    // Verify grid formatters exist for the three columns
+    const gridItems = allItems.filter(i => i.content && i.content.gridSettings && i.content.gridSettings.formatters);
+    const clusterGrid = gridItems.find(i => {
+        const formatters = i.content.gridSettings.formatters;
+        return formatters.some(f => f.columnMatch === 'azureHybridBenefit');
+    });
+    assert(clusterGrid !== undefined,
+        'Grid has formatter for azureHybridBenefit column', 'found', clusterGrid ? 'found' : 'not found');
+
+    if (clusterGrid) {
+        const formatters = clusterGrid.content.gridSettings.formatters;
+        const ahbFormatter = formatters.find(f => f.columnMatch === 'azureHybridBenefit');
+        const wssFormatter = formatters.find(f => f.columnMatch === 'windowsServerSubscription');
+        const avvmFormatter = formatters.find(f => f.columnMatch === 'azureVerificationForVMs');
+
+        assert(wssFormatter !== undefined,
+            'Grid has formatter for windowsServerSubscription column', 'found', wssFormatter ? 'found' : 'not found');
+        assert(avvmFormatter !== undefined,
+            'Grid has formatter for azureVerificationForVMs column', 'found', avvmFormatter ? 'found' : 'not found');
+
+        // Verify formatters use threshold icons (formatter 18)
+        assert(ahbFormatter && ahbFormatter.formatter === 18,
+            'azureHybridBenefit uses threshold formatter (18)', 18, ahbFormatter ? ahbFormatter.formatter : 'missing');
+        assert(wssFormatter && wssFormatter.formatter === 18,
+            'windowsServerSubscription uses threshold formatter (18)', 18, wssFormatter ? wssFormatter.formatter : 'missing');
+        assert(avvmFormatter && avvmFormatter.formatter === 18,
+            'azureVerificationForVMs uses threshold formatter (18)', 18, avvmFormatter ? avvmFormatter.formatter : 'missing');
+    }
+
+    // Verify grid label settings for the three columns
+    if (clusterGrid && clusterGrid.content.gridSettings.labelSettings) {
+        const labels = clusterGrid.content.gridSettings.labelSettings;
+        const ahbLabel = labels.find(l => l.columnId === 'azureHybridBenefit');
+        const wssLabel = labels.find(l => l.columnId === 'windowsServerSubscription');
+        const avvmLabel = labels.find(l => l.columnId === 'azureVerificationForVMs');
+
+        assert(ahbLabel !== undefined && ahbLabel.label === 'Azure Hybrid Benefit',
+            'azureHybridBenefit has label "Azure Hybrid Benefit"',
+            'Azure Hybrid Benefit', ahbLabel ? ahbLabel.label : 'not found');
+        assert(wssLabel !== undefined && wssLabel.label === 'Windows Server Subscription',
+            'windowsServerSubscription has label "Windows Server Subscription"',
+            'Windows Server Subscription', wssLabel ? wssLabel.label : 'not found');
+        assert(avvmLabel !== undefined && avvmLabel.label === 'Azure Verification for VMs',
+            'azureVerificationForVMs has label "Azure Verification for VMs"',
+            'Azure Verification for VMs', avvmLabel ? avvmLabel.label : 'not found');
+    }
+});
+
+// --- 20. Azure Licensing & Verification Pie Charts (v0.8.1) ---
+testSuite('Azure Licensing & Verification Pie Charts', () => {
+    // Verify the section header exists
+    const sectionHeader = allItems.find(i =>
+        i.name === 'section-header-licensing' ||
+        (i.content && i.content.json && i.content.json.includes('Azure Licensing & Verification'))
+    );
+    assert(sectionHeader !== undefined,
+        'Azure Licensing & Verification section header exists', 'found', sectionHeader ? 'found' : 'not found');
+
+    // Verify three licensing pie charts exist
+    const licensingChartNames = ['pie-azure-hybrid-benefit', 'pie-windows-server-subscription', 'pie-azure-verification-vms'];
+    licensingChartNames.forEach(chartName => {
+        const chart = allItems.find(i => i.name === chartName);
+        assert(chart !== undefined,
+            `Pie chart "${chartName}" exists`, 'found', chart ? 'found' : 'not found');
+
+        if (chart) {
+            assert(chart.content.visualization === 'piechart',
+                `${chartName} uses piechart visualization`, 'piechart', chart.content.visualization);
+
+            // Each pie chart should have 33% width
+            assert(chart.customWidth === '33',
+                `${chartName} has 33% width`, '33', chart.customWidth);
+
+            // Each pie chart should query microsoft.azurestackhci/clusters
+            assert(chart.content.query.includes('microsoft.azurestackhci/clusters'),
+                `${chartName} queries microsoft.azurestackhci/clusters`,
+                'contains resource type', chart.content.query.includes('microsoft.azurestackhci/clusters') ? 'yes' : 'no');
+
+            // Each pie chart should have Enabled/Disabled series colors
+            const seriesLabels = chart.content.chartSettings && chart.content.chartSettings.seriesLabelSettings;
+            const hasEnabled = seriesLabels && seriesLabels.some(s => s.seriesName === 'Enabled' && s.color === 'green');
+            const hasDisabled = seriesLabels && seriesLabels.some(s => s.seriesName === 'Disabled' && s.color === 'gray');
+            assert(hasEnabled,
+                `${chartName} has green "Enabled" series`, 'green Enabled', hasEnabled ? 'yes' : 'no');
+            assert(hasDisabled,
+                `${chartName} has gray "Disabled" series`, 'gray Disabled', hasDisabled ? 'yes' : 'no');
+        }
+    });
+
+    // Verify AHB pie chart queries correct property
+    const ahbPie = allItems.find(i => i.name === 'pie-azure-hybrid-benefit');
+    if (ahbPie) {
+        assert(ahbPie.content.query.includes('softwareAssuranceProperties.softwareAssuranceStatus'),
+            'AHB pie chart queries softwareAssuranceStatus',
+            'contains property', 'yes');
+        assert(ahbPie.content.title === 'Azure Hybrid Benefit',
+            'AHB pie chart title is "Azure Hybrid Benefit"',
+            'Azure Hybrid Benefit', ahbPie.content.title);
+    }
+
+    // Verify WSS pie chart queries correct property
+    const wssPie = allItems.find(i => i.name === 'pie-windows-server-subscription');
+    if (wssPie) {
+        assert(wssPie.content.query.includes('desiredProperties.windowsServerSubscription'),
+            'WSS pie chart queries windowsServerSubscription',
+            'contains property', 'yes');
+        assert(wssPie.content.title === 'Windows Server Subscription',
+            'WSS pie chart title is "Windows Server Subscription"',
+            'Windows Server Subscription', wssPie.content.title);
+    }
+
+    // Verify AVVM pie chart queries correct property
+    const avvmPie = allItems.find(i => i.name === 'pie-azure-verification-vms');
+    if (avvmPie) {
+        assert(avvmPie.content.query.includes('reportedProperties.imdsAttestation'),
+            'AVVM pie chart queries imdsAttestation',
+            'contains property', 'yes');
+        assert(avvmPie.content.title === 'Azure Verification for VMs',
+            'AVVM pie chart title is "Azure Verification for VMs"',
+            'Azure Verification for VMs', avvmPie.content.title);
+    }
+});
+
+// --- 21. Item Count Regression Guard ---
 testSuite('Item Count Regression Guard', () => {
     // Total item count should not drop significantly
     assert(allItems.length >= 200,
@@ -768,7 +952,7 @@ testSuite('Item Count Regression Guard', () => {
         '>=30', allCharts.length);
 });
 
-// --- 20. Documentation File Validation ---
+// --- 22. Documentation File Validation ---
 testSuite('Documentation File Validation', () => {
     const contributingPath = path.resolve(__dirname, '..', 'CONTRIBUTING.md');
     const securityPath = path.resolve(__dirname, '..', 'SECURITY.md');

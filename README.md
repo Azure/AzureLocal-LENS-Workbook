@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.0
+## Latest Version: v0.8.1
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,31 +8,13 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.0)
-
-### Bug Fixes
-- **Update Attempts by Day Chart Date Ordering** ([Issue #24](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/24)): Fixed the "Update Attempts by Day" bar chart on the Update Progress tab not displaying dates in chronological order. The root cause was the chart's `group by state` rendering, which processed each state series (Succeeded, Failed, InProgress) independently — each series contributed its own dates to the x-axis in isolation, producing interleaved non-chronological ordering. Fixed by pivoting the KQL query to produce one row per time bucket with `Succeeded`, `Failed`, and `InProgress` as separate columns using `countif()`, eliminating the per-series grouping and guaranteeing a single chronologically ordered row sequence.
-
-- **Update Run History Excludes Resolved and Active Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a Succeeded or InProgress run exists for the same cluster and Update Name. Additionally, when multiple failed runs exist for the same cluster and update, only the latest failure (by last updated time) is shown, reducing noise and focusing troubleshooting on the most recent issue.
-
-- **Clusters Currently Updating Excludes Stale InProgress Runs**: The "Clusters Currently Updating" table now excludes InProgress update runs when a Succeeded run already exists for the same cluster and Update Name, preventing stale entries from appearing.
-
-- **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
-
-- **Deployment Chart Sub-Month Time Ranges**: Fixed the "1 week" and "2 weeks" time range options on both deployment charts returning no data. The fractional month parameter values (0.25, 0.5) were being truncated to zero by integer conversion.
+## Recent Changes (v0.8.1)
 
 ### New Features
-- **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 9 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
-- **Step Duration in Clusters Currently Updating**: Added a "Step Duration" column showing how long the cluster has been on its current update step (e.g., "2h 15m", "1d 3h 42m"). Calculated from the step's `startTimeUtc` against the current time.
-
-### Improvements
-- **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
-
-- **Continuous Timeline on Update Attempts by Day Chart**: The bar chart now fills date gaps with zero-count entries using a date scaffold, ensuring a continuous timeline with no missing days/weeks/months even when there is no update activity.
-
-- **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges.
-
-- **Default Time Range Changed to 45 Days**: The global time range filter now defaults to 45 days (previously 7 days), giving broader visibility into update history and deployment trends out of the box. Added 45-day and 60-day options to the time range picker.
+- **Azure Hybrid Benefit Column**: Added Azure Hybrid Benefit (Software Assurance) status column to the All Clusters table on the Azure Local Instances tab, sourced from `properties.softwareAssuranceProperties.softwareAssuranceStatus`
+- **Windows Server Subscription Column**: Added Windows Server Subscription status column to the All Clusters table, sourced from `properties.desiredProperties.windowsServerSubscription`
+- **Azure Verification for VMs Column**: Added Azure Verification for VMs (IMDS Attestation) status column to the All Clusters table, sourced from `properties.reportedProperties.imdsAttestation`
+- **Licensing & Verification Pie Charts**: Added new "Azure Licensing & Verification" section with three pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -107,7 +89,8 @@ A high-level overview of your entire Azure Local estate, including:
   - Hardware class distribution (Small, Medium, Large)
   - Billing model breakdown
   - Hardware vendor/model distribution
-- **All Clusters Table**: Comprehensive list with solution version, node count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, and registration date
+- **All Clusters Table**: Comprehensive list with solution version, node count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, registration date, Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
+- **Licensing & Verification Charts**: Pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 - **Stale Clusters Warning**: Table showing clusters that haven't synced in 24+ hours with color-coded severity
 
 ![Azure Local Instances](images/summary-dashboard-screenshot.png)
@@ -309,6 +292,32 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.0
+
+#### Bug Fixes
+- **Update Attempts by Day Chart Date Ordering** ([Issue #24](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/24)): Fixed the "Update Attempts by Day" bar chart on the Update Progress tab not displaying dates in chronological order. The root cause was the chart's `group by state` rendering, which processed each state series (Succeeded, Failed, InProgress) independently — each series contributed its own dates to the x-axis in isolation, producing interleaved non-chronological ordering. Fixed by pivoting the KQL query to produce one row per time bucket with `Succeeded`, `Failed`, and `InProgress` as separate columns using `countif()`, eliminating the per-series grouping and guaranteeing a single chronologically ordered row sequence.
+
+- **Update Run History Excludes Resolved and Active Failures**: Improved the "Update Run History and Error Details" table to automatically exclude failed update runs when a Succeeded or InProgress run exists for the same cluster and Update Name. Additionally, when multiple failed runs exist for the same cluster and update, only the latest failure (by last updated time) is shown, reducing noise and focusing troubleshooting on the most recent issue.
+
+- **Clusters Currently Updating Excludes Stale InProgress Runs**: The "Clusters Currently Updating" table now excludes InProgress update runs when a Succeeded run already exists for the same cluster and Update Name, preventing stale entries from appearing.
+
+- **Clusters Currently Updating View Progress Link**: Fixed the "View Progress" link in the "Clusters Currently Updating" table which was not displaying update step data in the Azure portal. The link now uses the correct portal URL format with `updateName~/null` instead of passing the specific update name.
+
+- **Deployment Chart Sub-Month Time Ranges**: Fixed the "1 week" and "2 weeks" time range options on both deployment charts returning no data. The fractional month parameter values (0.25, 0.5) were being truncated to zero by integer conversion.
+
+#### New Features
+- **Current Step in Clusters Currently Updating**: Added a "Current Step" column to the "Clusters Currently Updating" table showing the deepest currently-executing step from the update run's progress hierarchy. This is extracted by walking the nested steps structure (up to 9 levels deep) to find the most specific `InProgress` step, falling back to the top-level progress description when deeper step data is unavailable.
+- **Step Duration in Clusters Currently Updating**: Added a "Step Duration" column showing how long the cluster has been on its current update step (e.g., "2h 15m", "1d 3h 42m"). Calculated from the step's `startTimeUtc` against the current time.
+
+#### Improvements
+- **CI/CD Pipeline**: Added GitHub Actions workflow for automated unit testing of workbook JSON structure, KQL query validation, and version consistency checks with NUnit XML test result output
+
+- **Continuous Timeline on Update Attempts by Day Chart**: The bar chart now fills date gaps with zero-count entries using a date scaffold, ensuring a continuous timeline with no missing days/weeks/months even when there is no update activity.
+
+- **Dynamic Time Granularity on Deployment Line Charts**: Both the "Azure Local Clusters Deployment Over Time" and "AKS Arc Cluster Deployments Over Time" line charts now use daily data points for time ranges of 1 month or less, weekly data points for up to 3 months, and monthly data points for longer ranges.
+
+- **Default Time Range Changed to 45 Days**: The global time range filter now defaults to 45 days (previously 7 days), giving broader visibility into update history and deployment trends out of the box. Added 45-day and 60-day options to the time range picker.
 
 ### v0.7.9
 

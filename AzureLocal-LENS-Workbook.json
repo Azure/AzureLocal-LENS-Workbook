@@ -132,7 +132,7 @@
     {
       "type": 1,
       "content": {
-        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.8.0</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
+        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.8.1</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -1418,7 +1418,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend clusterName = tolower(name)\r\n| extend clusterRG = tolower(resourceGroup)\r\n| extend hciClusterId = tolower(id)\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n    | extend clusterRG = tolower(resourceGroup)\r\n    | extend solutionVersion = tostring(properties.currentVersion)\r\n    | project clusterName, clusterRG, solutionVersion\r\n) on clusterName, clusterRG\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend totalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend totalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend osVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n| extend hardwareClass = tostring(properties.reportedProperties.hardwareClass)\r\n| extend manufacturer = tostring(properties.reportedProperties.nodes[0].manufacturer)\r\n| extend model = tostring(properties.reportedProperties.nodes[0].model)\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, hciClusterId, hciClusterRG, resourceGroup, status, solutionVersion, nodeCount, totalCores, totalMemoryGB, osVersion, hardwareClass, manufacturer, model, lastSync, registrationDate, location\r\n| order by status asc, ClusterName asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend clusterName = tolower(name)\r\n| extend clusterRG = tolower(resourceGroup)\r\n| extend hciClusterId = tolower(id)\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n    | extend clusterRG = tolower(resourceGroup)\r\n    | extend solutionVersion = tostring(properties.currentVersion)\r\n    | project clusterName, clusterRG, solutionVersion\r\n) on clusterName, clusterRG\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend totalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend totalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend osVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n| extend hardwareClass = tostring(properties.reportedProperties.hardwareClass)\r\n| extend manufacturer = tostring(properties.reportedProperties.nodes[0].manufacturer)\r\n| extend model = tostring(properties.reportedProperties.nodes[0].model)\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| extend azureHybridBenefit = iff(tostring(properties.softwareAssuranceProperties.softwareAssuranceStatus) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| extend windowsServerSubscription = iff(tostring(properties.desiredProperties.windowsServerSubscription) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| extend azureVerificationForVMs = iff(tostring(properties.reportedProperties.imdsAttestation) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, hciClusterId, hciClusterRG, resourceGroup, status, solutionVersion, nodeCount, totalCores, totalMemoryGB, osVersion, hardwareClass, manufacturer, model, lastSync, azureHybridBenefit, windowsServerSubscription, azureVerificationForVMs, location, registrationDate\r\n| order by status asc, ClusterName asc",
               "size": 0,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1475,7 +1475,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"with-aksarc\",\"mergeType\":\"leftouter\",\"leftTable\":\"all-clusters-base\",\"rightTable\":\"all-clusters-aksarc-count\",\"leftColumn\":\"hciClusterRG\",\"rightColumn\":\"arcBridgeRG\"},{\"id\":\"with-vm\",\"mergeType\":\"leftouter\",\"leftTable\":\"all-clusters-base\",\"rightTable\":\"all-clusters-vm-count\",\"leftColumn\":\"hciClusterRG\",\"rightColumn\":\"arcBridgeRG\"}],\"projectRename\":[{\"originalName\":\"[all-clusters-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].vmLink\",\"mergedName\":\"vmLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].aksArcLink\",\"mergedName\":\"aksArcLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].machinesLink\",\"mergedName\":\"machinesLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].status\",\"mergedName\":\"status\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].solutionVersion\",\"mergedName\":\"solutionVersion\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].totalCores\",\"mergedName\":\"totalCores\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].totalMemoryGB\",\"mergedName\":\"totalMemoryGB\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-vm-count].VMCount\",\"mergedName\":\"VMCount\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-aksarc-count].AKSArcCount\",\"mergedName\":\"AKSArcCount\",\"fromId\":\"with-aksarc\"},{\"originalName\":\"[all-clusters-base].osVersion\",\"mergedName\":\"osVersion\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].hardwareClass\",\"mergedName\":\"hardwareClass\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].manufacturer\",\"mergedName\":\"manufacturer\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].model\",\"mergedName\":\"model\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].lastSync\",\"mergedName\":\"lastSync\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].registrationDate\",\"mergedName\":\"registrationDate\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].location\",\"mergedName\":\"location\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].hciClusterRG\"},{\"originalName\":\"[all-clusters-base].hciClusterId\"},{\"originalName\":\"[all-clusters-aksarc-count].arcBridgeRG\"},{\"originalName\":\"[all-clusters-vm-count].arcBridgeRG\"}]}",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"with-aksarc\",\"mergeType\":\"leftouter\",\"leftTable\":\"all-clusters-base\",\"rightTable\":\"all-clusters-aksarc-count\",\"leftColumn\":\"hciClusterRG\",\"rightColumn\":\"arcBridgeRG\"},{\"id\":\"with-vm\",\"mergeType\":\"leftouter\",\"leftTable\":\"all-clusters-base\",\"rightTable\":\"all-clusters-vm-count\",\"leftColumn\":\"hciClusterRG\",\"rightColumn\":\"arcBridgeRG\"}],\"projectRename\":[{\"originalName\":\"[all-clusters-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].vmLink\",\"mergedName\":\"vmLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].aksArcLink\",\"mergedName\":\"aksArcLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].machinesLink\",\"mergedName\":\"machinesLink\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].status\",\"mergedName\":\"status\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].solutionVersion\",\"mergedName\":\"solutionVersion\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].nodeCount\",\"mergedName\":\"nodeCount\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].totalCores\",\"mergedName\":\"totalCores\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].totalMemoryGB\",\"mergedName\":\"totalMemoryGB\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-vm-count].VMCount\",\"mergedName\":\"VMCount\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-aksarc-count].AKSArcCount\",\"mergedName\":\"AKSArcCount\",\"fromId\":\"with-aksarc\"},{\"originalName\":\"[all-clusters-base].osVersion\",\"mergedName\":\"osVersion\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].hardwareClass\",\"mergedName\":\"hardwareClass\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].manufacturer\",\"mergedName\":\"manufacturer\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].model\",\"mergedName\":\"model\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].lastSync\",\"mergedName\":\"lastSync\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].azureHybridBenefit\",\"mergedName\":\"azureHybridBenefit\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].windowsServerSubscription\",\"mergedName\":\"windowsServerSubscription\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].azureVerificationForVMs\",\"mergedName\":\"azureVerificationForVMs\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].location\",\"mergedName\":\"location\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].registrationDate\",\"mergedName\":\"registrationDate\",\"fromId\":\"with-vm\"},{\"originalName\":\"[all-clusters-base].hciClusterRG\"},{\"originalName\":\"[all-clusters-base].hciClusterId\"},{\"originalName\":\"[all-clusters-aksarc-count].arcBridgeRG\"},{\"originalName\":\"[all-clusters-vm-count].arcBridgeRG\"}]}",
               "size": 0,
               "showAnalytics": true,
               "showRefreshButton": true,
@@ -1560,6 +1560,69 @@
                   {
                     "columnMatch": "registrationDate",
                     "formatter": 6
+                  },
+                  {
+                    "columnMatch": "azureHybridBenefit",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Enabled",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "disabled",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "windowsServerSubscription",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Enabled",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "disabled",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "azureVerificationForVMs",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Enabled",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "disabled",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
                   }
                 ],
                 "filter": true,
@@ -1633,17 +1696,135 @@
                     "label": "Last Sync"
                   },
                   {
-                    "columnId": "registrationDate",
-                    "label": "Registration Date"
+                    "columnId": "azureHybridBenefit",
+                    "label": "Azure Hybrid Benefit"
+                  },
+                  {
+                    "columnId": "windowsServerSubscription",
+                    "label": "Windows Server Subscription"
+                  },
+                  {
+                    "columnId": "azureVerificationForVMs",
+                    "label": "Azure Verification for VMs"
                   },
                   {
                     "columnId": "location",
                     "label": "Location"
+                  },
+                  {
+                    "columnId": "registrationDate",
+                    "label": "Registration Date"
                   }
                 ]
               }
             },
             "name": "table-all-clusters"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🔑 Azure Licensing & Verification"
+            },
+            "name": "section-header-licensing"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend AHBStatus = iff(tostring(properties.softwareAssuranceProperties.softwareAssuranceStatus) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| summarize Count = count() by AHBStatus",
+              "size": 3,
+              "title": "Azure Hybrid Benefit",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "pie-azure-hybrid-benefit",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend WSSStatus = iff(tostring(properties.desiredProperties.windowsServerSubscription) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| summarize Count = count() by WSSStatus",
+              "size": 3,
+              "title": "Windows Server Subscription",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "pie-windows-server-subscription",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend AVVMStatus = iff(tostring(properties.reportedProperties.imdsAttestation) =~ 'Enabled', 'Enabled', 'Disabled')\r\n| summarize Count = count() by AVVMStatus",
+              "size": 3,
+              "title": "Azure Verification for VMs",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "pie-azure-verification-vms",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
           },
           {
             "type": 1,

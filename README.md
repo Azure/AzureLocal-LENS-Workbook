@@ -63,6 +63,35 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
 
+## CI/CD Validation
+
+All pull requests are automatically validated by a GitHub Actions workflow that runs **117+ unit tests** across 22 test suites. These tests ensure workbook integrity without requiring an Azure environment.
+
+| Test Suite | What It Validates |
+|---|---|
+| JSON Structure | Valid JSON, required top-level properties, Notebook/1.0 schema |
+| Item & Tab Structure | All items have valid types and content, tab groups exist |
+| Version Consistency | Workbook JSON version matches README version and changelog |
+| KQL Query Validation | Non-empty queries, balanced quotes, known resource types, pipe operators |
+| Chart Configuration | Axis configuration, pivot patterns, series settings |
+| Parameter Validation | Required parameters exist (Subscriptions, ResourceGroupFilter, tags) |
+| Markdown & Visualization | Version banner, valid visualization types |
+| Grid & Table Settings | Row limits, formatters, hidden columns, label settings |
+| Cross-Component Resources | All queries reference `{Subscriptions}` |
+| Azure Licensing & Verification | Columns, formatters, labels, and pie charts for AHB/WSS/AVVM |
+| Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
+| Conditional Visibility | Tab groups have unique visibility parameters |
+| KQL Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
+| Regression Guards | Item, query, and chart count minimums |
+| README & Docs | Required sections, CONTRIBUTING.md, SECURITY.md, LICENSE |
+
+Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
+
+Run tests locally:
+```bash
+node scripts/run-tests.js
+```
+
 ## Overview
 
 This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.

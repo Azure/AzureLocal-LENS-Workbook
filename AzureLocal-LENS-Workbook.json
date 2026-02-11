@@ -1576,7 +1576,7 @@
                         {
                           "operator": "Default",
                           "thresholdValue": null,
-                          "representation": "disabled",
+                          "representation": "unknown",
                           "text": "{0}{1}"
                         }
                       ]
@@ -1597,7 +1597,7 @@
                         {
                           "operator": "Default",
                           "thresholdValue": null,
-                          "representation": "disabled",
+                          "representation": "unknown",
                           "text": "{0}{1}"
                         }
                       ]
@@ -1618,7 +1618,7 @@
                         {
                           "operator": "Default",
                           "thresholdValue": null,
-                          "representation": "disabled",
+                          "representation": "unknown",
                           "text": "{0}{1}"
                         }
                       ]

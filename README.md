@@ -168,6 +168,17 @@ Comprehensive view of physical server machines in Azure Local clusters:
   - OS version distribution pie chart
   - Arc Agent version distribution pie chart
   - License type distribution pie chart
+- **Resource Trends & Forecast**:
+  - Multi-select Log Analytics workspace picker (defaults to All) for fleet-wide visibility
+  - Cluster filter dropdown for fleet summary or drill-down into a specific Azure Local instance
+  - HCI-only node filtering — automatically excludes Arc VMs, showing only Azure Stack HCI host nodes
+  - Adjustable time range (default 30 days) with CPU, memory, and storage trend lines and 7-day forecast
+  - Configurable Warning (default 80%) and Critical (default 90%) thresholds
+- **Resource Health & Exhaustion Warnings**:
+  - At-a-glance health summary tiles showing nodes at Warning/Critical levels for CPU, Memory, and Storage
+  - Per-node exhaustion forecast table using linear trend analysis (`series_fit_line`)
+  - Predicts estimated days until Warning and Critical thresholds are reached
+  - Color-coded status indicators: 🟢 OK, 🟡 Warning (within 30 days or above warning %), 🔴 Critical (within 14 days or above critical %)
 - **All Machines Table** (sorted with Connected first) with details including:
   - Machine name and cluster association
   - Connection status with icons

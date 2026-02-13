@@ -1364,7 +1364,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeBucket",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": [
@@ -2149,7 +2151,7 @@
                       "{Subscriptions}"
                     ],
                     "gridSettings": {
-                "rowLimit": 2000,
+                      "rowLimit": 2000,
                       "formatters": [
                         {
                           "columnMatch": "TotalResources",
@@ -2186,8 +2188,7 @@
                             ]
                           }
                         }
-                      ],
-                      "rowLimit": 2000
+                      ]
                     },
                     "sortBy": []
                   },
@@ -2744,7 +2745,7 @@
                       "{Subscriptions}"
                     ],
                     "gridSettings": {
-                "rowLimit": 2000,
+                      "rowLimit": 2000,
                       "formatters": [
                         {
                           "columnMatch": "Status",
@@ -3261,6 +3262,401 @@
             "name": "machines-filters"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 📈 Resource Trends & Forecast"
+            },
+            "name": "text-node-trends-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "machines-log-analytics-workspace",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MachinesLogAnalyticsWorkspace",
+                  "label": "Log Analytics Workspace",
+                  "type": 2,
+                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "node-trends-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "NodeTrendsTimeRange",
+                  "label": "Trend Time Range",
+                  "type": 4,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      },
+                      {
+                        "durationMs": 5184000000
+                      },
+                      {
+                        "durationMs": 7776000000
+                      },
+                      {
+                        "durationMs": 15552000000
+                      },
+                      {
+                        "durationMs": 31536000000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 2592000000
+                  }
+                },
+                {
+                  "id": "warning-threshold-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "WarningThreshold",
+                  "label": "Warning Threshold (%)",
+                  "type": 2,
+                  "description": "Usage percentage at which a node is considered in Warning state.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"70\",\"label\":\"70%\"},{\"value\":\"75\",\"label\":\"75%\"},{\"value\":\"80\",\"label\":\"80% (Default)\"},{\"value\":\"85\",\"label\":\"85%\"}]",
+                  "value": "80"
+                },
+                {
+                  "id": "critical-threshold-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "CriticalThreshold",
+                  "label": "Critical Threshold (%)",
+                  "type": 2,
+                  "description": "Usage percentage at which a node is considered in Critical state.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"85\",\"label\":\"85%\"},{\"value\":\"90\",\"label\":\"90% (Default)\"},{\"value\":\"95\",\"label\":\"95%\"}]",
+                  "value": "90"
+                },
+                {
+                  "id": "cluster-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ClusterFilter",
+                  "label": "Cluster",
+                  "type": 2,
+                  "description": "Filter to a specific Azure Local cluster or view fleet-wide summary.",
+                  "isRequired": false,
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "node-trends-params"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "size": 0,
+              "title": "CPU Usage (%) - Actual vs Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Value"
+                ],
+                "group": "Series",
+                "seriesLabelKey": "Series",
+                "showLegend": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Actual",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-cpu-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "size": 0,
+              "title": "Memory Usage (%) - Actual vs Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Value"
+                ],
+                "group": "Series",
+                "seriesLabelKey": "Series",
+                "showLegend": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Actual",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-memory-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend nodeName = tolower(Computer)\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgValue = avg(UsedPercent) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "size": 0,
+              "title": "Storage Used (%) - Actual vs Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Value"
+                ],
+                "group": "Series",
+                "seriesLabelKey": "Series",
+                "showLegend": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Actual",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-storage-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### ⚠️ Node Resource Health Summary\r\nNodes at or above your configured Warning ({WarningThreshold}%) and Critical ({CriticalThreshold}%) thresholds. Based on average usage over the selected time range."
+            },
+            "name": "text-node-health-summary-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet warnPct = todouble({WarningThreshold});\r\nlet critPct = todouble({CriticalThreshold});\r\nlet cpuData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgUsage = avg(CounterValue) by nodeName\r\n| extend Status = case(AvgUsage >= critPct, \"Critical\", AvgUsage >= warnPct, \"Warning\", \"OK\")\r\n| summarize Critical = countif(Status == \"Critical\"), Warning = countif(Status == \"Warning\"), OK = countif(Status == \"OK\"), Total = count()\r\n| extend Resource = \"🖥️ CPU\";\r\nlet memData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgUsage = avg(CounterValue) by nodeName\r\n| extend Status = case(AvgUsage >= critPct, \"Critical\", AvgUsage >= warnPct, \"Warning\", \"OK\")\r\n| summarize Critical = countif(Status == \"Critical\"), Warning = countif(Status == \"Warning\"), OK = countif(Status == \"OK\"), Total = count()\r\n| extend Resource = \"🧠 Memory\";\r\nlet storData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend nodeName = tolower(Computer)\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgUsage = avg(UsedPercent) by nodeName\r\n| extend Status = case(AvgUsage >= critPct, \"Critical\", AvgUsage >= warnPct, \"Warning\", \"OK\")\r\n| summarize Critical = countif(Status == \"Critical\"), Warning = countif(Status == \"Warning\"), OK = countif(Status == \"OK\"), Total = count()\r\n| extend Resource = \"💾 Storage\";\r\nunion cpuData, memData, storData\r\n| project Resource, [\"🔴 Critical\"] = Critical, [\"🟡 Warning\"] = Warning, [\"🟢 OK\"] = OK, [\"Total Nodes\"] = Total",
+              "size": 4,
+              "title": "Resource Health Overview",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Resource",
+                  "formatter": 1
+                },
+                "subtitleContent": {
+                  "columnMatch": "Total Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "none"
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Total nodes"
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "🔴 Critical",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "redDark"
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Nodes at Critical threshold"
+                  }
+                },
+                "rightContent": {
+                  "columnMatch": "🟡 Warning",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "yellow"
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Nodes at Warning threshold"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "name": "node-health-summary-tiles"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📅 Resource Exhaustion Forecast\r\nPer-node linear trend analysis predicting when CPU, Memory, and Storage will reach Warning ({WarningThreshold}%) or Critical ({CriticalThreshold}%) thresholds. Nodes predicted to hit Critical within 14 days or Warning within 30 days are flagged."
+            },
+            "name": "text-exhaustion-forecast-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet warnPct = todouble({WarningThreshold});\r\nlet critPct = todouble({CriticalThreshold});\r\nlet step = 1d;\r\nlet cpuData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by nodeName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by nodeName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"CPU\"\r\n| project nodeName, Resource, CurrentAvg, SlopePerDay;\r\nlet memData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by nodeName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by nodeName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Memory\"\r\n| project nodeName, Resource, CurrentAvg, SlopePerDay;\r\nlet storData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend nodeName = tolower(Computer)\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgValue = avg(UsedPercent) by nodeName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by nodeName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project nodeName, Resource, CurrentAvg, SlopePerDay;\r\nunion cpuData, memData, storData\r\n| extend Trend = case(SlopePerDay > 0.1, \"↑ Rising\", SlopePerDay < -0.1, \"↓ Declining\", \"→ Stable\")\r\n| extend DaysToWarning = iff(SlopePerDay > 0 and CurrentAvg < warnPct, round((warnPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= warnPct, todouble(0), todouble(-1)))\r\n| extend DaysToCritical = iff(SlopePerDay > 0 and CurrentAvg < critPct, round((critPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= critPct, todouble(0), todouble(-1)))\r\n| extend DaysToWarningDisplay = case(DaysToWarning == 0, \"⚠ Already exceeded\", DaysToWarning < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToWarning)), \" days\"))\r\n| extend DaysToCriticalDisplay = case(DaysToCritical == 0, \"🚨 Already exceeded\", DaysToCritical < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToCritical)), \" days\"))\r\n| extend Status = case(\r\n    CurrentAvg >= critPct or (DaysToCritical >= 0 and DaysToCritical <= 14), \"🔴 Critical\",\r\n    CurrentAvg >= warnPct or (DaysToWarning >= 0 and DaysToWarning <= 30), \"🟡 Warning\",\r\n    \"🟢 OK\")\r\n| project [\"Node Name\"] = nodeName, Resource, [\"Current Avg %%\"] = CurrentAvg, Trend, [\"Days to Warning\"] = DaysToWarningDisplay, [\"Days to Critical\"] = DaysToCriticalDisplay, Status\r\n| order by Status asc, Resource asc, [\"Node Name\"] asc",
+              "size": 0,
+              "title": "Resource Exhaustion Forecast by Node",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Current Avg %",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "greenRed",
+                      "min": 0,
+                      "max": 100
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  },
+                  {
+                    "columnMatch": "Trend",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  }
+                ],
+                "sortBy": [
+                  {
+                    "itemKey": "Status",
+                    "sortOrder": 1
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Node Name",
+                    "label": "Node"
+                  },
+                  {
+                    "columnId": "Current Avg %",
+                    "label": "Avg Usage %"
+                  },
+                  {
+                    "columnId": "Days to Warning",
+                    "label": "Est. Days to Warning"
+                  },
+                  {
+                    "columnId": "Days to Critical",
+                    "label": "Est. Days to Critical"
+                  }
+                ]
+              }
+            },
+            "name": "node-exhaustion-forecast-table"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -3362,7 +3758,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -3510,7 +3905,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -3878,7 +4272,6 @@
                     "formatter": 5
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -4287,7 +4680,6 @@
                     }
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -4605,7 +4997,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "deploymentMonth",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true
@@ -5272,7 +5666,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeBucket",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": [
@@ -6350,7 +6746,6 @@
                     "formatter": 5
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -8414,7 +8809,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "sortBy": [
                   {

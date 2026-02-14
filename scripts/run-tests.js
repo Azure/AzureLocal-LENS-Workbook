@@ -527,13 +527,14 @@ testSuite('Cross-Component Resources Validation', () => {
     assert(itemsWithCCR.length > 0,
         'Workbook has items with crossComponentResources', '>0', itemsWithCCR.length);
 
-    // All crossComponentResources should reference {Subscriptions}
-    const itemsRefSubscriptions = itemsWithCCR.filter(i =>
-        i.content.crossComponentResources.includes('{Subscriptions}')
+    // All crossComponentResources should reference {Subscriptions} or a valid workspace parameter
+    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}'];
+    const itemsRefValid = itemsWithCCR.filter(i =>
+        i.content.crossComponentResources.some(r => validCCR.includes(r))
     );
-    assert(itemsRefSubscriptions.length === itemsWithCCR.length,
-        'All crossComponentResources reference {Subscriptions}',
-        itemsWithCCR.length, itemsRefSubscriptions.length);
+    assert(itemsRefValid.length === itemsWithCCR.length,
+        'All crossComponentResources reference valid parameters',
+        itemsWithCCR.length, itemsRefValid.length);
 });
 
 // --- 12. Resource Type References Validation ---

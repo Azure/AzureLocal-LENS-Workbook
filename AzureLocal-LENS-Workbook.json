@@ -3421,145 +3421,35 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Value = dcount(clusterName)\r\n| extend Label = 'HCI Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Clusters = dcount(clusterName), Nodes = count(), TotalCPUCores = sum(logicalCoreCount), TotalMemoryGB = sum(memoryGB)\r\n| extend Label = strcat(Clusters, ' Clusters | ', Nodes, ' Nodes | ', TotalCPUCores, ' CPU Cores | ', TotalMemoryGB, ' GB Memory')\r\n| project Label",
               "size": 4,
-              "title": "Clusters",
+              "title": "Fleet Capacity",
+              "noDataMessage": "No HCI nodes found.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscriptions}"
               ],
-              "visualization": "tiles",
-              "tileSettings": {
-                "titleContent": {
-                  "columnMatch": "Label",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Value",
-                  "formatter": 12,
-                  "formatOptions": {
-                    "palette": "blue"
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Label",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "100%"
+                    }
                   }
-                },
-                "showBorder": true,
-                "size": "auto"
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Label",
+                    "label": ""
+                  }
+                ]
               }
             },
-            "customWidth": "20",
-            "name": "cap-tile-clusters",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Value = count()\r\n| extend Label = 'Total Nodes'",
-              "size": 4,
-              "title": "Nodes",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "tiles",
-              "tileSettings": {
-                "titleContent": {
-                  "columnMatch": "Label",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Value",
-                  "formatter": 12,
-                  "formatOptions": {
-                    "palette": "purple"
-                  }
-                },
-                "showBorder": true,
-                "size": "auto"
-              }
-            },
-            "customWidth": "20",
-            "name": "cap-tile-nodes",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Value = sum(logicalCoreCount)\r\n| extend Label = 'Total CPU Cores'",
-              "size": 4,
-              "title": "CPU Cores",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "tiles",
-              "tileSettings": {
-                "titleContent": {
-                  "columnMatch": "Label",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Value",
-                  "formatter": 12,
-                  "formatOptions": {
-                    "palette": "turquoise"
-                  }
-                },
-                "showBorder": true,
-                "size": "auto"
-              }
-            },
-            "customWidth": "20",
-            "name": "cap-tile-cores",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Value = sum(memoryGB)\r\n| extend Label = strcat('Total Memory (GB)')",
-              "size": 4,
-              "title": "Memory",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "tiles",
-              "tileSettings": {
-                "titleContent": {
-                  "columnMatch": "Label",
-                  "formatter": 1
-                },
-                "leftContent": {
-                  "columnMatch": "Value",
-                  "formatter": 12,
-                  "formatOptions": {
-                    "palette": "green"
-                  }
-                },
-                "showBorder": true,
-                "size": "auto"
-              }
-            },
-            "customWidth": "20",
-            "name": "cap-tile-memory",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
+            "name": "fleet-capacity-summary"
           },
           {
             "type": 3,

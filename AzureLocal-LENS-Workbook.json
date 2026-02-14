@@ -3455,7 +3455,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend Forecast = iff(TimeGenerated > trendEnd, round(forecast, 1), real(null))\r\n| project TimeGenerated, Actual, Forecast\r\n| order by TimeGenerated asc",
               "size": 0,
               "title": "CPU Usage (%) — Actual vs Forecast",
               "queryType": 0,
@@ -3467,10 +3467,9 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Value"
+                  "Actual",
+                  "Forecast"
                 ],
-                "group": "Series",
-                "seriesLabelKey": "Series",
                 "showLegend": true,
                 "ySettings": {
                   "min": 0,
@@ -3486,14 +3485,11 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue",
-                    "aggregation": 4
+                    "color": "blue"
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange",
-                    "lineStyle": "dotted",
-                    "aggregation": 4
+                    "color": "orange"
                   }
                 ]
               }
@@ -3509,7 +3505,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend Forecast = iff(TimeGenerated > trendEnd, round(forecast, 1), real(null))\r\n| project TimeGenerated, Actual, Forecast\r\n| order by TimeGenerated asc",
               "size": 0,
               "title": "Memory Usage (%) — Actual vs Forecast",
               "queryType": 0,
@@ -3521,10 +3517,9 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Value"
+                  "Actual",
+                  "Forecast"
                 ],
-                "group": "Series",
-                "seriesLabelKey": "Series",
                 "showLegend": true,
                 "ySettings": {
                   "min": 0,
@@ -3540,14 +3535,11 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue",
-                    "aggregation": 4
+                    "color": "blue"
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange",
-                    "lineStyle": "dotted",
-                    "aggregation": 4
+                    "color": "orange"
                   }
                 ]
               }
@@ -3563,7 +3555,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nunion perfStorage, insightsStorage\r\n| summarize AvgValue = avg(UsedPercent) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nunion perfStorage, insightsStorage\r\n| summarize AvgValue = avg(UsedPercent) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend Forecast = iff(TimeGenerated > trendEnd, round(forecast, 1), real(null))\r\n| project TimeGenerated, Actual, Forecast\r\n| order by TimeGenerated asc",
               "size": 0,
               "title": "Storage Usage (%) — Actual vs Forecast",
               "queryType": 0,
@@ -3575,10 +3567,9 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Value"
+                  "Actual",
+                  "Forecast"
                 ],
-                "group": "Series",
-                "seriesLabelKey": "Series",
                 "showLegend": true,
                 "ySettings": {
                   "min": 0,
@@ -3594,14 +3585,11 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue",
-                    "aggregation": 4
+                    "color": "blue"
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange",
-                    "lineStyle": "dotted",
-                    "aggregation": 4
+                    "color": "orange"
                   }
                 ]
               }

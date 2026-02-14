@@ -175,10 +175,14 @@ Comprehensive view of physical server machines in Azure Local clusters:
   - Adjustable time range (default 30 days) with CPU, memory, and storage trend lines and 7-day forecast
   - Configurable Warning (default 80%) and Critical (default 90%) thresholds
 - **Resource Health & Exhaustion Warnings**:
-  - At-a-glance health summary tiles showing nodes at Warning/Critical levels for CPU, Memory, and Storage
-  - Per-node exhaustion forecast table using linear trend analysis (`series_fit_line`)
-  - Predicts estimated days until Warning and Critical thresholds are reached
+  - **Node Resource Health Summary** — ARG-based table showing only Azure Stack HCI nodes (excludes VMs/VMware), with CPU cores, memory GB, cluster association, and connection status with icons
+  - **Resource Exhaustion Forecast by Cluster** — aggregated per-cluster forecast using linear trend analysis (`series_fit_line`) on HCI nodes only (via Heartbeat join)
+  - Predicts estimated days until Warning and Critical thresholds are reached per cluster
   - Color-coded status indicators: 🟢 OK, 🟡 Warning (within 30 days or above warning %), 🔴 Critical (within 14 days or above critical %)
+- **Cluster Workload Drill-Down**:
+  - When a specific cluster is selected, shows VMs (`kind == "HCI"`) and AKS Arc clusters (`infrastructure == "azure_stack_hci"`) running on that cluster
+  - Tables include portal links, connection status, OS info, Kubernetes version, and node counts
+  - When "All" clusters are selected, a prompt guides the user to select a specific cluster for workload detail
 - **All Machines Table** (sorted with Connected first) with details including:
   - Machine name and cluster association
   - Connection status with icons

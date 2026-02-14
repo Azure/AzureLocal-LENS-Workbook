@@ -10,8 +10,21 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ## Recent Changes (v0.8.2)
 
+### New Features
+- **Resource Trends & Forecast**: CPU, memory, and storage trend charts with 7-day forecast using `series_decompose_forecast`, configurable Warning/Critical thresholds, multi-select Log Analytics workspace picker, and cluster filter for fleet-wide or per-cluster views
+- **Node Resource Health Summary**: ARG-based table showing only Azure Stack HCI nodes with CPU cores, memory GB, cluster association, and connection status (excludes VMs and non-HCI machines)
+- **Resource Exhaustion Forecast by Cluster**: Per-cluster aggregated forecast using `series_fit_line` with estimated days to Warning/Critical thresholds, HCI-only filtering via Heartbeat-to-cluster mapping
+- **Cluster Workload Drill-Down**: When a specific cluster is selected, shows VMs and AKS Arc clusters running on that cluster with portal links, status icons, and configuration details
+- **InsightsMetrics Storage Fallback**: Storage trend and forecast queries now union Perf counters with InsightsMetrics (`FreeSpacePercentage`) for broader data collection compatibility
+
 ### Bug Fixes
 - **Fixed VMs appearing in Azure Local Machines section** ([#31](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/31)): Arc-enabled VMs running on Azure Local were incorrectly displayed as physical nodes in the Azure Local Machines tab and the Overview dashboard tile. Added `kind != "HCI"` filter to all 21 affected KQL queries to exclude VMs (which have `kind == "HCI"`) while retaining only physical server nodes (which have an empty `kind` field). This fix affects the Total Machines tile, Connected/Disconnected/Expired/Error tiles, OS distribution and license type charts, the All Azure Local Machines table, the Extensions table, the Failed Extensions detail view, the NIC health views, and the Updates health summary.
+
+### Previous: v0.8.1
+- **Azure Hybrid Benefit Column**: Added Azure Hybrid Benefit (Software Assurance) status column to the All Clusters table on the Azure Local Instances tab, sourced from `properties.softwareAssuranceProperties.softwareAssuranceStatus`
+- **Windows Server Subscription Column**: Added Windows Server Subscription status column to the All Clusters table, sourced from `properties.desiredProperties.windowsServerSubscription`
+- **Azure Verification for VMs Column**: Added Azure Verification for VMs (IMDS Attestation) status column to the All Clusters table, sourced from `properties.reportedProperties.imdsAttestation`
+- **Licensing & Verification Pie Charts**: Added new "Azure Licensing & Verification" section with three pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

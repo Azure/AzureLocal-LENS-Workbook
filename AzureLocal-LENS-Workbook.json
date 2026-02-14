@@ -3421,9 +3421,88 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize \r\n    TotalNodes = count(),\r\n    TotalCPUCores = sum(logicalCoreCount),\r\n    TotalMemoryGB = sum(memoryGB),\r\n    Clusters = dcount(clusterName)",
+              "size": 4,
+              "title": "Fleet Capacity (Azure Stack HCI Nodes)",
+              "noDataMessage": "No HCI nodes found.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Clusters",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Clusters"
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "TotalNodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Total HCI Nodes"
+                  }
+                },
+                "rightContent": {
+                  "columnMatch": "TotalCPUCores",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  },
+                  "numberFormat": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Total Logical CPU Cores"
+                  }
+                },
+                "secondaryContent": {
+                  "columnMatch": "TotalMemoryGB",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  },
+                  "numberFormat": {
+                    "unit": 5,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Total Physical Memory"
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "name": "cluster-capacity-tiles"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
               "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
               "size": 0,
-              "title": "CPU Usage (%) - Actual vs Forecast",
+              "title": "CPU Usage (%) — Actual vs Forecast",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -3438,6 +3517,17 @@
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
@@ -3463,7 +3553,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| extend nodeName = tolower(Computer)\r\n| summarize AvgValue = avg(CounterValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
               "size": 0,
-              "title": "Memory Usage (%) - Actual vs Forecast",
+              "title": "Memory Usage (%) — Actual vs Forecast",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -3478,6 +3568,17 @@
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
@@ -3503,7 +3604,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, UsedPercent;\r\nunion perfStorage, insightsStorage\r\n| summarize AvgValue = avg(UsedPercent) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend Actual = iff(TimeGenerated <= trendEnd, AvgValue, real(null)), Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend Series = pack_array(\"Actual\", \"Forecast\"), Value = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
               "size": 0,
-              "title": "Storage Used (%) - Actual vs Forecast",
+              "title": "Storage Usage (%) — Actual vs Forecast",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -3518,6 +3619,17 @@
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",

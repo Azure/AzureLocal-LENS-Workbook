@@ -3486,11 +3486,14 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue"
+                    "color": "blue",
+                    "aggregation": 4
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange"
+                    "color": "orange",
+                    "lineStyle": "dotted",
+                    "aggregation": 4
                   }
                 ]
               }
@@ -3537,11 +3540,14 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue"
+                    "color": "blue",
+                    "aggregation": 4
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange"
+                    "color": "orange",
+                    "lineStyle": "dotted",
+                    "aggregation": 4
                   }
                 ]
               }
@@ -3588,11 +3594,14 @@
                 "seriesLabelSettings": [
                   {
                     "seriesName": "Actual",
-                    "color": "blue"
+                    "color": "blue",
+                    "aggregation": 4
                   },
                   {
                     "seriesName": "Forecast",
-                    "color": "orange"
+                    "color": "orange",
+                    "lineStyle": "dotted",
+                    "aggregation": 4
                   }
                 ]
               }

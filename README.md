@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.1
+## Latest Version: v0.8.2
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,13 +8,10 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.1)
+## Recent Changes (v0.8.2)
 
-### New Features
-- **Azure Hybrid Benefit Column**: Added Azure Hybrid Benefit (Software Assurance) status column to the All Clusters table on the Azure Local Instances tab, sourced from `properties.softwareAssuranceProperties.softwareAssuranceStatus`
-- **Windows Server Subscription Column**: Added Windows Server Subscription status column to the All Clusters table, sourced from `properties.desiredProperties.windowsServerSubscription`
-- **Azure Verification for VMs Column**: Added Azure Verification for VMs (IMDS Attestation) status column to the All Clusters table, sourced from `properties.reportedProperties.imdsAttestation`
-- **Licensing & Verification Pie Charts**: Added new "Azure Licensing & Verification" section with three pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
+### Bug Fixes
+- **Fixed VMs appearing in Azure Local Machines section** ([#31](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/31)): Arc-enabled VMs running on Azure Local were incorrectly displayed as physical nodes in the Azure Local Machines tab and the Overview dashboard tile. Added `kind != "HCI"` filter to all 21 affected KQL queries to exclude VMs (which have `kind == "HCI"`) while retaining only physical server nodes (which have an empty `kind` field). This fix affects the Total Machines tile, Connected/Disconnected/Expired/Error tiles, OS distribution and license type charts, the All Azure Local Machines table, the Extensions table, the Failed Extensions detail view, the NIC health views, and the Updates health summary.
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -321,6 +318,14 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.1
+
+#### New Features
+- **Azure Hybrid Benefit Column**: Added Azure Hybrid Benefit (Software Assurance) status column to the All Clusters table on the Azure Local Instances tab, sourced from `properties.softwareAssuranceProperties.softwareAssuranceStatus`
+- **Windows Server Subscription Column**: Added Windows Server Subscription status column to the All Clusters table, sourced from `properties.desiredProperties.windowsServerSubscription`
+- **Azure Verification for VMs Column**: Added Azure Verification for VMs (IMDS Attestation) status column to the All Clusters table, sourced from `properties.reportedProperties.imdsAttestation`
+- **Licensing & Verification Pie Charts**: Added new "Azure Licensing & Verification" section with three pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 
 ### v0.8.0
 

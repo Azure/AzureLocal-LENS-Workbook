@@ -3872,6 +3872,116 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
+              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nlet clusterNodes = Heartbeat\r\n| where TimeGenerated > ago(1d)\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| extend nodeRG = tolower(ResourceGroup)\r\n| where nodeRG in (targetRGs)\r\n| project Computer, nodeRG;\r\nPerf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Computer in ((clusterNodes | project Computer))\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use')\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| order by Computer asc",
+              "size": 0,
+              "title": "📊 Workload Resource Usage on: {ClusterFilter}",
+              "noDataMessage": "No performance data available for workloads on this cluster.",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "timeContextFromParameter": "NodeTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "AvgCPU",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "MaxCPU",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgMemory",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "MaxMemory",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Computer",
+                    "label": "Machine Name"
+                  },
+                  {
+                    "columnId": "AvgCPU",
+                    "label": "Avg CPU %"
+                  },
+                  {
+                    "columnId": "MaxCPU",
+                    "label": "Peak CPU %"
+                  },
+                  {
+                    "columnId": "AvgMemory",
+                    "label": "Avg Memory %"
+                  },
+                  {
+                    "columnId": "MaxMemory",
+                    "label": "Peak Memory %"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-workload-perf-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
               "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where tostring(properties.infrastructure) == \"azure_stack_hci\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend aksName = name\r\n| extend connectivity = tostring(properties.connectivityStatus)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend totalNodeCount = toint(properties.totalNodeCount)\r\n| extend aksLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project aksName, aksLink, clusterName, connectivity, kubernetesVersion, agentVersion, provisioningState, totalNodeCount, resourceGroup\r\n| order by clusterName asc, aksName asc",
               "size": 0,
               "title": "☸️ AKS Clusters on: {ClusterFilter}",

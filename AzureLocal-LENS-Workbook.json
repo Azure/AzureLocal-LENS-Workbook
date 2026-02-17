@@ -3788,8 +3788,8 @@
             "content": {
               "version": "KqlItem/1.0",
               "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName, status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
-              "size": 0,
-              "title": "🖥️ VMs on Cluster: {ClusterFilter}",
+              "size": 4,
+              "title": "",
               "noDataMessage": "No VMs found on this cluster.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -3866,16 +3866,15 @@
               "comparison": "isNotEqualTo",
               "value": "value::all"
             },
-            "name": "cluster-vms-table"
+            "name": "cluster-vms-arg-data"
           },
           {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nlet clusterNodes = Heartbeat\r\n| where TimeGenerated > ago(1d)\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| extend nodeRG = tolower(ResourceGroup)\r\n| where nodeRG in (targetRGs)\r\n| project Computer, nodeRG;\r\nPerf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Computer in ((clusterNodes | project Computer))\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use')\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| order by Computer asc",
-              "size": 0,
-              "title": "📊 Workload Resource Usage on: {ClusterFilter}",
-              "noDataMessage": "No performance data available for workloads on this cluster.",
+              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nlet clusterNodes = Heartbeat\r\n| where TimeGenerated > ago(1d)\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| extend nodeRG = tolower(ResourceGroup)\r\n| where nodeRG in (targetRGs)\r\n| project Computer, nodeRG;\r\nPerf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Computer in ((clusterNodes | project Computer))\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use')\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| project vmName = Computer, AvgCPU, MaxCPU, AvgMemory, MaxMemory",
+              "size": 4,
+              "title": "",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -3884,10 +3883,64 @@
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
                 "{MachinesLogAnalyticsWorkspace}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-vms-perf-data"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"vm-with-perf\", \"mergeType\": \"leftouter\", \"leftTable\": \"cluster-vms-arg-data\", \"rightTable\": \"cluster-vms-perf-data\", \"leftColumn\": \"vmName\", \"rightColumn\": \"vmName\"}], \"projectRename\": [{\"originalName\": \"[cluster-vms-arg-data].vmName\", \"mergedName\": \"vmName\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].vmLink\", \"mergedName\": \"vmLink\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].clusterName\", \"mergedName\": \"clusterName\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].status\", \"mergedName\": \"status\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].osSku\", \"mergedName\": \"osSku\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].osVersion\", \"mergedName\": \"osVersion\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].AvgCPU\", \"mergedName\": \"AvgCPU\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].MaxCPU\", \"mergedName\": \"MaxCPU\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].AvgMemory\", \"mergedName\": \"AvgMemory\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].MaxMemory\", \"mergedName\": \"MaxMemory\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].resourceGroup\"}, {\"originalName\": \"[cluster-vms-arg-data].subscriptionId\"}, {\"originalName\": \"[cluster-vms-perf-data].vmName\"}]}",
+              "size": 0,
+              "title": "🖥️ VMs on Cluster: {ClusterFilter}",
+              "noDataMessage": "No VMs found on this cluster.",
+              "queryType": 7,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
               ],
               "visualization": "table",
               "gridSettings": {
                 "formatters": [
+                  {
+                    "columnMatch": "vmName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkLabel": "",
+                      "linkIsContextBlade": false
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
                   {
                     "columnMatch": "AvgCPU",
                     "formatter": 8,
@@ -3945,12 +3998,36 @@
                         "maximumFractionDigits": 1
                       }
                     }
+                  },
+                  {
+                    "columnMatch": "resourceGroup",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "subscriptionId",
+                    "formatter": 5
                   }
                 ],
                 "labelSettings": [
                   {
-                    "columnId": "Computer",
-                    "label": "Machine Name"
+                    "columnId": "vmName",
+                    "label": "VM Name"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
                   },
                   {
                     "columnId": "AvgCPU",
@@ -3976,7 +4053,7 @@
               "comparison": "isNotEqualTo",
               "value": "value::all"
             },
-            "name": "cluster-workload-perf-table"
+            "name": "cluster-vms-table"
           },
           {
             "type": 3,
@@ -4070,6 +4147,112 @@
               "value": "value::all"
             },
             "name": "cluster-aks-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nKubeNodeInventory\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| extend nodeRG = tolower(extract('/resourcegroups/([^/]+)/', 1, ClusterId))\r\n| where nodeRG in (targetRGs)\r\n| extend aksClusterName = extract('/([^/]+)$', 1, ClusterId)\r\n| summarize arg_max(TimeGenerated, *) by Computer, aksClusterName\r\n| join kind=leftouter (\r\n    Perf\r\n    | where TimeGenerated {NodeTrendsTimeRange}\r\n    | where (ObjectName == 'K8SNode' and CounterName == 'cpuCapacityNanoCores')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'cpuUsageNanoCores')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'memoryRssBytes')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'memoryCapacityBytes')\r\n    | summarize AvgCPUUsage = avgif(CounterValue, CounterName == 'cpuUsageNanoCores'),\r\n              AvgCPUCap = avgif(CounterValue, CounterName == 'cpuCapacityNanoCores'),\r\n              AvgMemUsage = avgif(CounterValue, CounterName == 'memoryRssBytes'),\r\n              AvgMemCap = avgif(CounterValue, CounterName == 'memoryCapacityBytes')\r\n      by Computer\r\n) on Computer\r\n| extend AvgCPU = round(iff(AvgCPUCap > 0, AvgCPUUsage / AvgCPUCap * 100, real(null)), 1)\r\n| extend AvgMemory = round(iff(AvgMemCap > 0, AvgMemUsage / AvgMemCap * 100, real(null)), 1)\r\n| project aksName = aksClusterName, nodeName = Computer, AvgCPU, AvgMemory, Status\r\n| order by aksName asc, nodeName asc",
+              "size": 0,
+              "title": "☸️ AKS Node Resource Usage on: {ClusterFilter}",
+              "noDataMessage": "No AKS node performance data available. Ensure Container Insights is enabled.",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "timeContextFromParameter": "NodeTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "AvgCPU",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgMemory",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Ready",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "aksName",
+                    "label": "AKS Cluster"
+                  },
+                  {
+                    "columnId": "nodeName",
+                    "label": "Node Name"
+                  },
+                  {
+                    "columnId": "AvgCPU",
+                    "label": "Avg CPU %"
+                  },
+                  {
+                    "columnId": "AvgMemory",
+                    "label": "Avg Memory %"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-perf-table"
           },
           {
             "type": 3,

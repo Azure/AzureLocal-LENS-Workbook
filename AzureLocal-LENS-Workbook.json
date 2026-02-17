@@ -3224,6 +3224,307 @@
             }
           },
           {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend updateClusterName = tostring(split(id, '/')[8])\r\n    | extend currentVersion = tostring(properties.currentVersion)\r\n    | extend packageVersions = properties.packageVersions\r\n    | mv-expand pkg = packageVersions\r\n    | where tostring(pkg.packageType) =~ 'SBE'\r\n    | project updateClusterName, currentVersion, sbeVersion = tostring(pkg.version)\r\n) on $left.clusterName == $right.updateClusterName\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend manufacturer = tostring(properties.detectedProperties.manufacturer)\r\n| extend model = tostring(properties.detectedProperties.model)\r\n| extend processorNames = tostring(properties.detectedProperties.processorNames)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend statusSort = case(status == 'Connected', 0, 1)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), logicalCoreCount, memoryGB, manufacturer, model, processorNames, sbeVersion = coalesce(sbeVersion, ''), ipAddress, lastStatusChange, resourceGroup, subscriptionId, statusSort\r\n| order by statusSort asc, clusterName asc, nodeName asc\r\n| project-away statusSort",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "All Azure Local Machines",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "nodeName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "nodeLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "nodeLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Disconnected",
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Error",
+                          "representation": "orange",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "gray",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "logicalCoreCount",
+                    "formatter": 0,
+                    "formatOptions": {},
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal"
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "memoryGB",
+                    "formatter": 0,
+                    "formatOptions": {},
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal"
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "lastStatusChange",
+                    "formatter": 6
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "nodeName",
+                    "label": "Node Name"
+                  },
+                  {
+                    "columnId": "nodeLink",
+                    "label": "Node"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Cluster Version"
+                  },
+                  {
+                    "columnId": "logicalCoreCount",
+                    "label": "vCPUs"
+                  },
+                  {
+                    "columnId": "memoryGB",
+                    "label": "Memory"
+                  },
+                  {
+                    "columnId": "manufacturer",
+                    "label": "Vendor"
+                  },
+                  {
+                    "columnId": "model",
+                    "label": "Model"
+                  },
+                  {
+                    "columnId": "processorNames",
+                    "label": "Processor"
+                  },
+                  {
+                    "columnId": "sbeVersion",
+                    "label": "SBE Version"
+                  },
+                  {
+                    "columnId": "ipAddress",
+                    "label": "IP Address"
+                  },
+                  {
+                    "columnId": "lastStatusChange",
+                    "label": "Last Status Change"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "subscriptionId",
+                    "label": "Subscription"
+                  }
+                ]
+              }
+            },
+            "name": "all-nodes-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n    | join kind=leftouter (\r\n        extensibilityresources\r\n        | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion = tostring(properties.currentVersion)\r\n    ) on $left.clusterId == $right.cId\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| where tostring(properties.status) == \"Disconnected\"\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), lastStatusChange, resourceGroup, subscriptionId\r\n| order by lastStatusChange asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "⚠️ Disconnected Nodes",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "nodeName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "nodeLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "nodeLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Disconnected",
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "lastStatusChange",
+                    "formatter": 6
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "nodeName",
+                    "label": "Node Name"
+                  },
+                  {
+                    "columnId": "nodeLink",
+                    "label": "Node"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Cluster Version"
+                  },
+                  {
+                    "columnId": "lastStatusChange",
+                    "label": "Disconnected Since"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "subscriptionId",
+                    "label": "Subscription"
+                  }
+                ],
+                "noDataMessage": "✅ All nodes are connected"
+              }
+            },
+            "name": "disconnected-nodes-table"
+          },
+          {
             "type": 9,
             "content": {
               "version": "KqlParameterItem/1.0",
@@ -3416,40 +3717,6 @@
               "resourceType": "microsoft.operationalinsights/workspaces"
             },
             "name": "node-trends-params"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Clusters = dcount(clusterName), Nodes = count(), TotalCPUCores = sum(logicalCoreCount), TotalMemoryGB = sum(memoryGB)\r\n| extend Label = strcat(Clusters, ' Clusters | ', Nodes, ' Nodes | ', TotalCPUCores, ' CPU Cores | ', TotalMemoryGB, ' GB Memory')\r\n| project Label",
-              "size": 4,
-              "title": "Fleet Capacity",
-              "noDataMessage": "No HCI nodes found.",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Label",
-                    "formatter": 1,
-                    "formatOptions": {
-                      "customColumnWidthSetting": "100%"
-                    }
-                  }
-                ],
-                "labelSettings": [
-                  {
-                    "columnId": "Label",
-                    "label": ""
-                  }
-                ]
-              }
-            },
-            "name": "fleet-capacity-summary"
           },
           {
             "type": 1,
@@ -3675,6 +3942,129 @@
               "margin": "5px",
               "padding": "5px"
             }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🏗️ Fleet Capacity\r\nPhysical hardware available across **{ClusterFilter}** cluster(s)."
+            },
+            "name": "text-fleet-capacity-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Clusters = dcount(clusterName)\r\n| project Clusters",
+              "size": 4,
+              "title": "Clusters",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Clusters",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "25",
+            "name": "fleet-clusters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Nodes = count()\r\n| project Nodes",
+              "size": 4,
+              "title": "Nodes",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "25",
+            "name": "fleet-nodes"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize TotalCPUCores = sum(logicalCoreCount)\r\n| project TotalCPUCores",
+              "size": 4,
+              "title": "Total CPU Cores",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "TotalCPUCores",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "25",
+            "name": "fleet-cpu-cores"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize TotalMemoryGB = sum(memoryGB)\r\n| project TotalMemoryGB",
+              "size": 4,
+              "title": "Total Memory (GB)",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "TotalMemoryGB",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "25",
+            "name": "fleet-memory-gb"
           },
           {
             "type": 1,
@@ -4253,307 +4643,6 @@
               "value": "value::all"
             },
             "name": "cluster-aks-node-perf-table"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend updateClusterName = tostring(split(id, '/')[8])\r\n    | extend currentVersion = tostring(properties.currentVersion)\r\n    | extend packageVersions = properties.packageVersions\r\n    | mv-expand pkg = packageVersions\r\n    | where tostring(pkg.packageType) =~ 'SBE'\r\n    | project updateClusterName, currentVersion, sbeVersion = tostring(pkg.version)\r\n) on $left.clusterName == $right.updateClusterName\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend manufacturer = tostring(properties.detectedProperties.manufacturer)\r\n| extend model = tostring(properties.detectedProperties.model)\r\n| extend processorNames = tostring(properties.detectedProperties.processorNames)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend statusSort = case(status == 'Connected', 0, 1)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), logicalCoreCount, memoryGB, manufacturer, model, processorNames, sbeVersion = coalesce(sbeVersion, ''), ipAddress, lastStatusChange, resourceGroup, subscriptionId, statusSort\r\n| order by statusSort asc, clusterName asc, nodeName asc\r\n| project-away statusSort",
-              "size": 0,
-              "showAnalytics": true,
-              "title": "All Azure Local Machines",
-              "showRefreshButton": true,
-              "showExportToExcel": true,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "gridSettings": {
-                "rowLimit": 2000,
-                "formatters": [
-                  {
-                    "columnMatch": "nodeName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "nodeLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "nodeLink",
-                    "formatter": 5
-                  },
-                  {
-                    "columnMatch": "clusterName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "clusterLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "clusterLink",
-                    "formatter": 5
-                  },
-                  {
-                    "columnMatch": "status",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "colors",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Connected",
-                          "representation": "green",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Disconnected",
-                          "representation": "redBright",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Error",
-                          "representation": "orange",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "Default",
-                          "thresholdValue": null,
-                          "representation": "gray",
-                          "text": "{0}{1}"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "columnMatch": "logicalCoreCount",
-                    "formatter": 0,
-                    "formatOptions": {},
-                    "numberFormat": {
-                      "unit": 0,
-                      "options": {
-                        "style": "decimal"
-                      }
-                    }
-                  },
-                  {
-                    "columnMatch": "memoryGB",
-                    "formatter": 0,
-                    "formatOptions": {},
-                    "numberFormat": {
-                      "unit": 5,
-                      "options": {
-                        "style": "decimal"
-                      }
-                    }
-                  },
-                  {
-                    "columnMatch": "lastStatusChange",
-                    "formatter": 6
-                  }
-                ],
-                "filter": true,
-                "labelSettings": [
-                  {
-                    "columnId": "nodeName",
-                    "label": "Node Name"
-                  },
-                  {
-                    "columnId": "nodeLink",
-                    "label": "Node"
-                  },
-                  {
-                    "columnId": "clusterName",
-                    "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "clusterLink",
-                    "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "status",
-                    "label": "Status"
-                  },
-                  {
-                    "columnId": "osSku",
-                    "label": "OS SKU"
-                  },
-                  {
-                    "columnId": "osVersion",
-                    "label": "OS Version"
-                  },
-                  {
-                    "columnId": "currentVersion",
-                    "label": "Cluster Version"
-                  },
-                  {
-                    "columnId": "logicalCoreCount",
-                    "label": "vCPUs"
-                  },
-                  {
-                    "columnId": "memoryGB",
-                    "label": "Memory"
-                  },
-                  {
-                    "columnId": "manufacturer",
-                    "label": "Vendor"
-                  },
-                  {
-                    "columnId": "model",
-                    "label": "Model"
-                  },
-                  {
-                    "columnId": "processorNames",
-                    "label": "Processor"
-                  },
-                  {
-                    "columnId": "sbeVersion",
-                    "label": "SBE Version"
-                  },
-                  {
-                    "columnId": "ipAddress",
-                    "label": "IP Address"
-                  },
-                  {
-                    "columnId": "lastStatusChange",
-                    "label": "Last Status Change"
-                  },
-                  {
-                    "columnId": "resourceGroup",
-                    "label": "Resource Group"
-                  },
-                  {
-                    "columnId": "subscriptionId",
-                    "label": "Subscription"
-                  }
-                ]
-              }
-            },
-            "name": "all-nodes-table"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n    | join kind=leftouter (\r\n        extensibilityresources\r\n        | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion = tostring(properties.currentVersion)\r\n    ) on $left.clusterId == $right.cId\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| where tostring(properties.status) == \"Disconnected\"\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), lastStatusChange, resourceGroup, subscriptionId\r\n| order by lastStatusChange asc",
-              "size": 0,
-              "showAnalytics": true,
-              "title": "⚠️ Disconnected Nodes",
-              "showRefreshButton": true,
-              "showExportToExcel": true,
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "gridSettings": {
-                "rowLimit": 2000,
-                "formatters": [
-                  {
-                    "columnMatch": "nodeName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "nodeLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "nodeLink",
-                    "formatter": 5
-                  },
-                  {
-                    "columnMatch": "clusterName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "clusterLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "clusterLink",
-                    "formatter": 5
-                  },
-                  {
-                    "columnMatch": "status",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "colors",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Disconnected",
-                          "representation": "redBright",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "Default",
-                          "thresholdValue": null,
-                          "representation": "redBright",
-                          "text": "{0}{1}"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "columnMatch": "lastStatusChange",
-                    "formatter": 6
-                  }
-                ],
-                "filter": true,
-                "labelSettings": [
-                  {
-                    "columnId": "nodeName",
-                    "label": "Node Name"
-                  },
-                  {
-                    "columnId": "nodeLink",
-                    "label": "Node"
-                  },
-                  {
-                    "columnId": "clusterName",
-                    "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "clusterLink",
-                    "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "status",
-                    "label": "Status"
-                  },
-                  {
-                    "columnId": "osSku",
-                    "label": "OS SKU"
-                  },
-                  {
-                    "columnId": "osVersion",
-                    "label": "OS Version"
-                  },
-                  {
-                    "columnId": "currentVersion",
-                    "label": "Cluster Version"
-                  },
-                  {
-                    "columnId": "lastStatusChange",
-                    "label": "Disconnected Since"
-                  },
-                  {
-                    "columnId": "resourceGroup",
-                    "label": "Resource Group"
-                  },
-                  {
-                    "columnId": "subscriptionId",
-                    "label": "Subscription"
-                  }
-                ],
-                "noDataMessage": "✅ All nodes are connected"
-              }
-            },
-            "name": "disconnected-nodes-table"
           },
           {
             "type": 1,

@@ -3452,6 +3452,81 @@
             "name": "fleet-capacity-summary"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "## 📉 Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster. Uses linear trend (`series_fit_line`) over the selected time range."
+            },
+            "name": "text-exhaustion-forecast-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet warnPct = todouble({WarningThreshold});\r\nlet critPct = todouble({CriticalThreshold});\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet cpuData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"CPU\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet memData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Memory\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet storData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet insightsStorData = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = 100.0 - Val\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nunion cpuData, memData, storData, insightsStorData\r\n| summarize CurrentAvg = max(CurrentAvg), SlopePerDay = max(SlopePerDay) by clusterName, Resource\r\n| extend Trend = case(SlopePerDay > 0.1, \"↑ Rising\", SlopePerDay < -0.1, \"↓ Declining\", \"→ Stable\")\r\n| extend DaysToWarning = iff(SlopePerDay > 0 and CurrentAvg < warnPct, round((warnPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= warnPct, todouble(0), todouble(-1)))\r\n| extend DaysToCritical = iff(SlopePerDay > 0 and CurrentAvg < critPct, round((critPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= critPct, todouble(0), todouble(-1)))\r\n| extend DaysToWarningDisplay = case(DaysToWarning == 0, \"⚠ Already exceeded\", DaysToWarning < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToWarning)), \" days\"))\r\n| extend DaysToCriticalDisplay = case(DaysToCritical == 0, \"🚨 Already exceeded\", DaysToCritical < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToCritical)), \" days\"))\r\n| extend Status = case(\r\n    CurrentAvg >= critPct or (DaysToCritical >= 0 and DaysToCritical <= 14), \"🔴 Critical\",\r\n    CurrentAvg >= warnPct or (DaysToWarning >= 0 and DaysToWarning <= 30), \"🟡 Warning\",\r\n    \"🟢 OK\")\r\n| project [\"Cluster Name\"] = clusterName, Resource, [\"Current Avg %%\"] = CurrentAvg, Trend, [\"Days to Warning\"] = DaysToWarningDisplay, [\"Days to Critical\"] = DaysToCriticalDisplay, Status\r\n| order by Status asc, Resource asc, [\"Cluster Name\"] asc",
+              "size": 0,
+              "title": "Resource Exhaustion Forecast by Cluster",
+              "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace.",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Current Avg %",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "greenRed",
+                      "min": 0,
+                      "max": 100
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  },
+                  {
+                    "columnMatch": "Trend",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  }
+                ],
+                "sortBy": [
+                  {
+                    "itemKey": "Status",
+                    "sortOrder": 1
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Cluster Name",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "Current Avg %",
+                    "label": "Avg Usage %"
+                  },
+                  {
+                    "columnId": "Days to Warning",
+                    "label": "Est. Days to Warning"
+                  },
+                  {
+                    "columnId": "Days to Critical",
+                    "label": "Est. Days to Critical"
+                  }
+                ]
+              }
+            },
+            "name": "node-exhaustion-forecast-table"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -3692,81 +3767,6 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📉 Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster. Uses linear trend (`series_fit_line`) over the selected time range."
-            },
-            "name": "text-exhaustion-forecast-header"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet warnPct = todouble({WarningThreshold});\r\nlet critPct = todouble({CriticalThreshold});\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet cpuData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"CPU\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet memData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Memory\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet storData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet insightsStorData = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = 100.0 - Val\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nunion cpuData, memData, storData, insightsStorData\r\n| summarize CurrentAvg = max(CurrentAvg), SlopePerDay = max(SlopePerDay) by clusterName, Resource\r\n| extend Trend = case(SlopePerDay > 0.1, \"↑ Rising\", SlopePerDay < -0.1, \"↓ Declining\", \"→ Stable\")\r\n| extend DaysToWarning = iff(SlopePerDay > 0 and CurrentAvg < warnPct, round((warnPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= warnPct, todouble(0), todouble(-1)))\r\n| extend DaysToCritical = iff(SlopePerDay > 0 and CurrentAvg < critPct, round((critPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= critPct, todouble(0), todouble(-1)))\r\n| extend DaysToWarningDisplay = case(DaysToWarning == 0, \"⚠ Already exceeded\", DaysToWarning < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToWarning)), \" days\"))\r\n| extend DaysToCriticalDisplay = case(DaysToCritical == 0, \"🚨 Already exceeded\", DaysToCritical < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToCritical)), \" days\"))\r\n| extend Status = case(\r\n    CurrentAvg >= critPct or (DaysToCritical >= 0 and DaysToCritical <= 14), \"🔴 Critical\",\r\n    CurrentAvg >= warnPct or (DaysToWarning >= 0 and DaysToWarning <= 30), \"🟡 Warning\",\r\n    \"🟢 OK\")\r\n| project [\"Cluster Name\"] = clusterName, Resource, [\"Current Avg %%\"] = CurrentAvg, Trend, [\"Days to Warning\"] = DaysToWarningDisplay, [\"Days to Critical\"] = DaysToCriticalDisplay, Status\r\n| order by Status asc, Resource asc, [\"Cluster Name\"] asc",
-              "size": 0,
-              "title": "Resource Exhaustion Forecast by Cluster",
-              "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace.",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "crossComponentResources": [
-                "{MachinesLogAnalyticsWorkspace}"
-              ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Current Avg %",
-                    "formatter": 8,
-                    "formatOptions": {
-                      "palette": "greenRed",
-                      "min": 0,
-                      "max": 100
-                    }
-                  },
-                  {
-                    "columnMatch": "Status",
-                    "formatter": 1,
-                    "formatOptions": {
-                      "customColumnWidthSetting": "120px"
-                    }
-                  },
-                  {
-                    "columnMatch": "Trend",
-                    "formatter": 1,
-                    "formatOptions": {
-                      "customColumnWidthSetting": "120px"
-                    }
-                  }
-                ],
-                "sortBy": [
-                  {
-                    "itemKey": "Status",
-                    "sortOrder": 1
-                  }
-                ],
-                "labelSettings": [
-                  {
-                    "columnId": "Cluster Name",
-                    "label": "Cluster"
-                  },
-                  {
-                    "columnId": "Current Avg %",
-                    "label": "Avg Usage %"
-                  },
-                  {
-                    "columnId": "Days to Warning",
-                    "label": "Est. Days to Warning"
-                  },
-                  {
-                    "columnId": "Days to Critical",
-                    "label": "Est. Days to Critical"
-                  }
-                ]
-              }
-            },
-            "name": "node-exhaustion-forecast-table"
-          },
-          {
-            "type": 1,
-            "content": {
               "json": "## 🔍 Cluster Workload Detail\r\nVirtual Machines and AKS clusters running on the selected Azure Local cluster."
             },
             "name": "text-cluster-drilldown-header"
@@ -3788,7 +3788,7 @@
             "content": {
               "version": "KqlItem/1.0",
               "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName, status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
-              "size": 4,
+              "size": 0,
               "title": "",
               "noDataMessage": "No VMs found on this cluster.",
               "queryType": 1,
@@ -3862,9 +3862,9 @@
               }
             },
             "conditionalVisibility": {
-              "parameterName": "ClusterFilter",
-              "comparison": "isNotEqualTo",
-              "value": "value::all"
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
             },
             "name": "cluster-vms-arg-data"
           },
@@ -3873,7 +3873,7 @@
             "content": {
               "version": "KqlItem/1.0",
               "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nlet clusterNodes = Heartbeat\r\n| where TimeGenerated > ago(1d)\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| extend nodeRG = tolower(ResourceGroup)\r\n| where nodeRG in (targetRGs)\r\n| project Computer, nodeRG;\r\nPerf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Computer in ((clusterNodes | project Computer))\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use')\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| project vmName = Computer, AvgCPU, MaxCPU, AvgMemory, MaxMemory",
-              "size": 4,
+              "size": 0,
               "title": "",
               "timeContext": {
                 "durationMs": 86400000
@@ -3886,9 +3886,9 @@
               ]
             },
             "conditionalVisibility": {
-              "parameterName": "ClusterFilter",
-              "comparison": "isNotEqualTo",
-              "value": "value::all"
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
             },
             "name": "cluster-vms-perf-data"
           },

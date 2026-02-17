@@ -10,8 +10,21 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ## Recent Changes (v0.8.2)
 
+### New Features
+- **Resource Trends & Forecast**: CPU, memory, and storage trend charts with 7-day forecast using `series_decompose_forecast`, configurable Warning/Critical thresholds, multi-select Log Analytics workspace picker, and cluster filter for fleet-wide or per-cluster views
+- **Node Resource Health Summary**: ARG-based table showing only Azure Stack HCI nodes with CPU cores, memory GB, cluster association, and connection status (excludes VMs and non-HCI machines)
+- **Resource Exhaustion Forecast by Cluster**: Per-cluster aggregated forecast using `series_fit_line` with estimated days to Warning/Critical thresholds, HCI-only filtering via Heartbeat-to-cluster mapping
+- **Cluster Workload Drill-Down**: When a specific cluster is selected, shows VMs and AKS Arc clusters running on that cluster with portal links, status icons, and configuration details
+- **InsightsMetrics Storage Fallback**: Storage trend and forecast queries now union Perf counters with InsightsMetrics (`FreeSpacePercentage`) for broader data collection compatibility
+
 ### Bug Fixes
 - **Fixed VMs appearing in Azure Local Machines section** ([#31](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/31)): Arc-enabled VMs running on Azure Local were incorrectly displayed as physical nodes in the Azure Local Machines tab and the Overview dashboard tile. Added `kind != "HCI"` filter to all 21 affected KQL queries to exclude VMs (which have `kind == "HCI"`) while retaining only physical server nodes (which have an empty `kind` field). This fix affects the Total Machines tile, Connected/Disconnected/Expired/Error tiles, OS distribution and license type charts, the All Azure Local Machines table, the Extensions table, the Failed Extensions detail view, the NIC health views, and the Updates health summary.
+
+### Previous: v0.8.1
+- **Azure Hybrid Benefit Column**: Added Azure Hybrid Benefit (Software Assurance) status column to the All Clusters table on the Azure Local Instances tab, sourced from `properties.softwareAssuranceProperties.softwareAssuranceStatus`
+- **Windows Server Subscription Column**: Added Windows Server Subscription status column to the All Clusters table, sourced from `properties.desiredProperties.windowsServerSubscription`
+- **Azure Verification for VMs Column**: Added Azure Verification for VMs (IMDS Attestation) status column to the All Clusters table, sourced from `properties.reportedProperties.imdsAttestation`
+- **Licensing & Verification Pie Charts**: Added new "Azure Licensing & Verification" section with three pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -168,6 +181,21 @@ Comprehensive view of physical server machines in Azure Local clusters:
   - OS version distribution pie chart
   - Arc Agent version distribution pie chart
   - License type distribution pie chart
+- **Resource Trends & Forecast**:
+  - Multi-select Log Analytics workspace picker (defaults to All) for fleet-wide visibility
+  - Cluster filter dropdown for fleet summary or drill-down into a specific Azure Local instance
+  - HCI-only node filtering — automatically excludes Arc VMs, showing only Azure Stack HCI host nodes
+  - Adjustable time range (default 30 days) with CPU, memory, and storage trend lines and 7-day forecast
+  - Configurable Warning (default 80%) and Critical (default 90%) thresholds
+- **Resource Health & Exhaustion Warnings**:
+  - **Node Resource Health Summary** — ARG-based table showing only Azure Stack HCI nodes (excludes VMs/VMware), with CPU cores, memory GB, cluster association, and connection status with icons
+  - **Resource Exhaustion Forecast by Cluster** — aggregated per-cluster forecast using linear trend analysis (`series_fit_line`) on HCI nodes only (via Heartbeat join)
+  - Predicts estimated days until Warning and Critical thresholds are reached per cluster
+  - Color-coded status indicators: 🟢 OK, 🟡 Warning (within 30 days or above warning %), 🔴 Critical (within 14 days or above critical %)
+- **Cluster Workload Drill-Down**:
+  - When a specific cluster is selected, shows VMs (`kind == "HCI"`) and AKS Arc clusters (`infrastructure == "azure_stack_hci"`) running on that cluster
+  - Tables include portal links, connection status, OS info, Kubernetes version, and node counts
+  - When "All" clusters are selected, a prompt guides the user to select a specific cluster for workload detail
 - **All Machines Table** (sorted with Connected first) with details including:
   - Machine name and cluster association
   - Connection status with icons

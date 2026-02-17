@@ -1364,7 +1364,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeBucket",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": [
@@ -2149,7 +2151,7 @@
                       "{Subscriptions}"
                     ],
                     "gridSettings": {
-                "rowLimit": 2000,
+                      "rowLimit": 2000,
                       "formatters": [
                         {
                           "columnMatch": "TotalResources",
@@ -2186,8 +2188,7 @@
                             ]
                           }
                         }
-                      ],
-                      "rowLimit": 2000
+                      ]
                     },
                     "sortBy": []
                   },
@@ -2744,7 +2745,7 @@
                       "{Subscriptions}"
                     ],
                     "gridSettings": {
-                "rowLimit": 2000,
+                      "rowLimit": 2000,
                       "formatters": [
                         {
                           "columnMatch": "Status",
@@ -3362,7 +3363,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -3510,7 +3510,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -3562,6 +3561,1150 @@
               }
             },
             "name": "disconnected-nodes-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 📈 Resource Trends & Forecast"
+            },
+            "name": "text-node-trends-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "machines-log-analytics-workspace",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MachinesLogAnalyticsWorkspace",
+                  "label": "Log Analytics Workspace",
+                  "type": 2,
+                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "node-trends-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "NodeTrendsTimeRange",
+                  "label": "Trend Time Range",
+                  "type": 4,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      },
+                      {
+                        "durationMs": 5184000000
+                      },
+                      {
+                        "durationMs": 7776000000
+                      },
+                      {
+                        "durationMs": 15552000000
+                      },
+                      {
+                        "durationMs": 31536000000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 2592000000
+                  }
+                },
+                {
+                  "id": "warning-threshold-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "WarningThreshold",
+                  "label": "Warning Threshold (%)",
+                  "type": 2,
+                  "description": "Usage percentage at which a node is considered in Warning state.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"70\",\"label\":\"70%\"},{\"value\":\"75\",\"label\":\"75%\"},{\"value\":\"80\",\"label\":\"80% (Default)\"},{\"value\":\"85\",\"label\":\"85%\"}]",
+                  "value": "80"
+                },
+                {
+                  "id": "critical-threshold-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "CriticalThreshold",
+                  "label": "Critical Threshold (%)",
+                  "type": 2,
+                  "description": "Usage percentage at which a node is considered in Critical state.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"85\",\"label\":\"85%\"},{\"value\":\"90\",\"label\":\"90% (Default)\"},{\"value\":\"95\",\"label\":\"95%\"}]",
+                  "value": "90"
+                },
+                {
+                  "id": "cluster-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ClusterFilter",
+                  "label": "Cluster",
+                  "type": 2,
+                  "description": "Filter to a specific Azure Local cluster or view fleet-wide summary.",
+                  "isRequired": false,
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "cluster-rg-map-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ClusterRGMap",
+                  "type": 1,
+                  "description": "Hidden: maps resource group to cluster name for HCI clusters",
+                  "isRequired": false,
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "isHiddenWhenLocked": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "node-trends-params"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📉 Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster. Uses linear trend (`series_fit_line`) over the selected time range."
+            },
+            "name": "text-exhaustion-forecast-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet warnPct = todouble({WarningThreshold});\r\nlet critPct = todouble({CriticalThreshold});\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet cpuData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"CPU\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet memData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgValue = avg(CounterValue) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Memory\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet storData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nlet insightsStorData = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| lookup kind=inner hciNodes on Computer\r\n| extend UsedPercent = 100.0 - Val\r\n| summarize AvgValue = avg(UsedPercent) by clusterName, bin(TimeGenerated, step)\r\n| make-series Value = avg(AvgValue) default=0 on TimeGenerated from trendStart to trendEnd step step by clusterName\r\n| extend (RSquare, SplitCoeff, Variance, RVariance, LineFit, Baseline) = series_fit_line(Value)\r\n| extend CurrentAvg = round(toreal(series_stats_dynamic(Value).avg), 1)\r\n| extend SlopePerDay = round(SplitCoeff, 3)\r\n| extend Resource = \"Storage\"\r\n| project clusterName, Resource, CurrentAvg, SlopePerDay;\r\nunion cpuData, memData, storData, insightsStorData\r\n| summarize CurrentAvg = max(CurrentAvg), SlopePerDay = max(SlopePerDay) by clusterName, Resource\r\n| extend Trend = case(SlopePerDay > 0.1, \"↑ Rising\", SlopePerDay < -0.1, \"↓ Declining\", \"→ Stable\")\r\n| extend DaysToWarning = iff(SlopePerDay > 0 and CurrentAvg < warnPct, round((warnPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= warnPct, todouble(0), todouble(-1)))\r\n| extend DaysToCritical = iff(SlopePerDay > 0 and CurrentAvg < critPct, round((critPct - CurrentAvg) / SlopePerDay, 0), iff(CurrentAvg >= critPct, todouble(0), todouble(-1)))\r\n| extend DaysToWarningDisplay = case(DaysToWarning == 0, \"⚠ Already exceeded\", DaysToWarning < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToWarning)), \" days\"))\r\n| extend DaysToCriticalDisplay = case(DaysToCritical == 0, \"🚨 Already exceeded\", DaysToCritical < 0, \"N/A (stable/declining)\", strcat(\"~\", tostring(toint(DaysToCritical)), \" days\"))\r\n| extend Status = case(\r\n    CurrentAvg >= critPct or (DaysToCritical >= 0 and DaysToCritical <= 14), \"🔴 Critical\",\r\n    CurrentAvg >= warnPct or (DaysToWarning >= 0 and DaysToWarning <= 30), \"🟡 Warning\",\r\n    \"🟢 OK\")\r\n| project [\"Cluster Name\"] = clusterName, Resource, [\"Current Avg %%\"] = CurrentAvg, Trend, [\"Days to Warning\"] = DaysToWarningDisplay, [\"Days to Critical\"] = DaysToCriticalDisplay, Status\r\n| order by Status asc, Resource asc, [\"Cluster Name\"] asc",
+              "size": 0,
+              "title": "Resource Exhaustion Forecast by Cluster",
+              "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace.",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Current Avg %",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "greenRed",
+                      "min": 0,
+                      "max": 100
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  },
+                  {
+                    "columnMatch": "Trend",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  }
+                ],
+                "sortBy": [
+                  {
+                    "itemKey": "Status",
+                    "sortOrder": 1
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Cluster Name",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "Current Avg %",
+                    "label": "Avg Usage %"
+                  },
+                  {
+                    "columnId": "Days to Warning",
+                    "label": "Est. Days to Warning"
+                  },
+                  {
+                    "columnId": "Days to Critical",
+                    "label": "Est. Days to Critical"
+                  }
+                ]
+              }
+            },
+            "name": "node-exhaustion-forecast-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "title": "CPU Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %",
+                  "Forecast %"
+                ],
+                "showLegend": false,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Avg Usage %",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast %",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-cpu-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "title": "Memory Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %",
+                  "Forecast %"
+                ],
+                "showLegend": false,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Avg Usage %",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast %",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-memory-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nunion perfStorage, insightsStorage\r\n| summarize AvgValue = avg(UsedPercent) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "title": "Storage Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %",
+                  "Forecast %"
+                ],
+                "showLegend": false,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Avg Usage %",
+                    "color": "blue"
+                  },
+                  {
+                    "seriesName": "Forecast %",
+                    "color": "orange"
+                  }
+                ]
+              }
+            },
+            "customWidth": "33",
+            "name": "node-storage-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 🏗️ Fleet Capacity\r\nPhysical hardware available across **{ClusterFilter}** cluster(s)."
+            },
+            "name": "text-fleet-capacity-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Clusters = dcount(clusterName)\r\n| extend Label = 'Clusters'",
+              "size": 4,
+              "title": "Clusters",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Clusters",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "10",
+            "name": "fleet-clusters",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| summarize Nodes = count()\r\n| extend Label = 'Nodes'",
+              "size": 4,
+              "title": "Nodes",
+              "noDataMessage": "—",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              }
+            },
+            "customWidth": "10",
+            "name": "fleet-nodes",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend cpuCores = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend status = tostring(properties.status)\r\n| project Node = name, Cluster = clusterName, Status = status, CPUCores = cpuCores, MemoryGB = memoryGB, OS = osSku\r\n| order by Cluster asc, Node asc",
+              "size": 4,
+              "title": "",
+              "noDataMessage": "No physical nodes found.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "CPUCores",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "palette": "blue"
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "MemoryGB",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "palette": "green"
+                    },
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Node",
+                    "label": "Node"
+                  },
+                  {
+                    "columnId": "Cluster",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "CPUCores",
+                    "label": "CPU Cores"
+                  },
+                  {
+                    "columnId": "MemoryGB",
+                    "label": "Memory (GB)"
+                  },
+                  {
+                    "columnId": "OS",
+                    "label": "OS SKU"
+                  }
+                ]
+              }
+            },
+            "customWidth": "80",
+            "name": "fleet-hardware-table",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## ⚠️ Node Resource Health Summary\r\nAzure Stack HCI nodes with hardware configuration. Filter by cluster above to narrow results."
+            },
+            "name": "text-node-health-summary-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend logicalCoreCount = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| project nodeName, clusterName, status, osSku, logicalCoreCount, memoryGB\r\n| order by clusterName asc, nodeName asc",
+              "size": 0,
+              "title": "Node Resource Health Summary",
+              "noDataMessage": "No Azure Stack HCI nodes found. Verify your subscription and resource group filters.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "logicalCoreCount",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "100px"
+                    }
+                  },
+                  {
+                    "columnMatch": "memoryGB",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "100px"
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "nodeName",
+                    "label": "Node Name"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "logicalCoreCount",
+                    "label": "CPU Cores"
+                  },
+                  {
+                    "columnId": "memoryGB",
+                    "label": "Memory (GB)"
+                  }
+                ]
+              }
+            },
+            "name": "node-health-summary-tiles"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔍 Cluster Workload Detail\r\nVirtual Machines and AKS clusters running on the selected Azure Local cluster."
+            },
+            "name": "text-cluster-drilldown-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### ℹ️ Select a specific cluster\r\nTo view the VMs and AKS clusters running on an Azure Local cluster, please select a **single cluster** from the **Cluster** filter above. The workload detail is not shown when \"All\" clusters are selected."
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isEqualTo",
+              "value": "value::all"
+            },
+            "name": "text-cluster-drilldown-prompt"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName, status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
+              "size": 0,
+              "title": "",
+              "noDataMessage": "No VMs found on this cluster.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "vmName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkLabel": "",
+                      "linkIsContextBlade": false
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "vmName",
+                    "label": "VM Name"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "cluster-vms-arg-data"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nlet clusterNodes = Heartbeat\r\n| where TimeGenerated > ago(1d)\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| extend nodeRG = tolower(ResourceGroup)\r\n| where nodeRG in (targetRGs)\r\n| project Computer, nodeRG;\r\nPerf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Computer in ((clusterNodes | project Computer))\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use')\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| project vmName = Computer, AvgCPU, MaxCPU, AvgMemory, MaxMemory",
+              "size": 0,
+              "title": "",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "timeContextFromParameter": "NodeTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "cluster-vms-perf-data"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"vm-with-perf\", \"mergeType\": \"leftouter\", \"leftTable\": \"cluster-vms-arg-data\", \"rightTable\": \"cluster-vms-perf-data\", \"leftColumn\": \"vmName\", \"rightColumn\": \"vmName\"}], \"projectRename\": [{\"originalName\": \"[cluster-vms-arg-data].vmName\", \"mergedName\": \"vmName\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].vmLink\", \"mergedName\": \"vmLink\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].clusterName\", \"mergedName\": \"clusterName\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].status\", \"mergedName\": \"status\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].osSku\", \"mergedName\": \"osSku\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].osVersion\", \"mergedName\": \"osVersion\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].AvgCPU\", \"mergedName\": \"AvgCPU\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].MaxCPU\", \"mergedName\": \"MaxCPU\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].AvgMemory\", \"mergedName\": \"AvgMemory\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-perf-data].MaxMemory\", \"mergedName\": \"MaxMemory\", \"fromId\": \"vm-with-perf\"}, {\"originalName\": \"[cluster-vms-arg-data].resourceGroup\"}, {\"originalName\": \"[cluster-vms-arg-data].subscriptionId\"}, {\"originalName\": \"[cluster-vms-perf-data].vmName\"}]}",
+              "size": 0,
+              "title": "🖥️ VMs on Cluster: {ClusterFilter}",
+              "noDataMessage": "No VMs found on this cluster.",
+              "queryType": 7,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "vmName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkLabel": "",
+                      "linkIsContextBlade": false
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgCPU",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "MaxCPU",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgMemory",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "MaxMemory",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "resourceGroup",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "subscriptionId",
+                    "formatter": 5
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "vmName",
+                    "label": "VM Name"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "AvgCPU",
+                    "label": "Avg CPU %"
+                  },
+                  {
+                    "columnId": "MaxCPU",
+                    "label": "Peak CPU %"
+                  },
+                  {
+                    "columnId": "AvgMemory",
+                    "label": "Avg Memory %"
+                  },
+                  {
+                    "columnId": "MaxMemory",
+                    "label": "Peak Memory %"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-vms-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where tostring(properties.infrastructure) == \"azure_stack_hci\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | project clusterName = name, clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend aksName = name\r\n| extend connectivity = tostring(properties.connectivityStatus)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend totalNodeCount = toint(properties.totalNodeCount)\r\n| extend aksLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project aksName, aksLink, clusterName, connectivity, kubernetesVersion, agentVersion, provisioningState, totalNodeCount, resourceGroup\r\n| order by clusterName asc, aksName asc",
+              "size": 0,
+              "title": "☸️ AKS Clusters on: {ClusterFilter}",
+              "noDataMessage": "No AKS Arc clusters found on this cluster.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "aksName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkLabel": "",
+                      "linkIsContextBlade": false
+                    }
+                  },
+                  {
+                    "columnMatch": "aksLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "connectivity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "critical",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "aksName",
+                    "label": "AKS Cluster"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Azure Local Cluster"
+                  },
+                  {
+                    "columnId": "connectivity",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "kubernetesVersion",
+                    "label": "K8s Version"
+                  },
+                  {
+                    "columnId": "agentVersion",
+                    "label": "Agent Version"
+                  },
+                  {
+                    "columnId": "provisioningState",
+                    "label": "Provisioning"
+                  },
+                  {
+                    "columnId": "totalNodeCount",
+                    "label": "Node Count"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let clusterRGMap = dynamic({ClusterRGMap});\r\nlet mapTable = print mapping = clusterRGMap\r\n| mv-expand mapping\r\n| extend pair = split(tostring(mapping), ':')\r\n| extend rg = tolower(tostring(pair[0])), clusterName = tostring(pair[1])\r\n| where clusterName =~ '{ClusterFilter}'\r\n| project rg;\r\nlet targetRGs = materialize(mapTable);\r\nKubeNodeInventory\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| extend nodeRG = tolower(extract('/resourcegroups/([^/]+)/', 1, ClusterId))\r\n| where nodeRG in (targetRGs)\r\n| extend aksClusterName = extract('/([^/]+)$', 1, ClusterId)\r\n| summarize arg_max(TimeGenerated, *) by Computer, aksClusterName\r\n| join kind=leftouter (\r\n    Perf\r\n    | where TimeGenerated {NodeTrendsTimeRange}\r\n    | where (ObjectName == 'K8SNode' and CounterName == 'cpuCapacityNanoCores')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'cpuUsageNanoCores')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'memoryRssBytes')\r\n         or (ObjectName == 'K8SNode' and CounterName == 'memoryCapacityBytes')\r\n    | summarize AvgCPUUsage = avgif(CounterValue, CounterName == 'cpuUsageNanoCores'),\r\n              AvgCPUCap = avgif(CounterValue, CounterName == 'cpuCapacityNanoCores'),\r\n              AvgMemUsage = avgif(CounterValue, CounterName == 'memoryRssBytes'),\r\n              AvgMemCap = avgif(CounterValue, CounterName == 'memoryCapacityBytes')\r\n      by Computer\r\n) on Computer\r\n| extend AvgCPU = round(iff(AvgCPUCap > 0, AvgCPUUsage / AvgCPUCap * 100, real(null)), 1)\r\n| extend AvgMemory = round(iff(AvgMemCap > 0, AvgMemUsage / AvgMemCap * 100, real(null)), 1)\r\n| project aksName = aksClusterName, nodeName = Computer, AvgCPU, AvgMemory, Status\r\n| order by aksName asc, nodeName asc",
+              "size": 0,
+              "title": "☸️ AKS Node Resource Usage on: {ClusterFilter}",
+              "noDataMessage": "No AKS node performance data available. Ensure Container Insights is enabled.",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "timeContextFromParameter": "NodeTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "AvgCPU",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "AvgMemory",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 100,
+                      "palette": "greenRed"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Ready",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "aksName",
+                    "label": "AKS Cluster"
+                  },
+                  {
+                    "columnId": "nodeName",
+                    "label": "Node Name"
+                  },
+                  {
+                    "columnId": "AvgCPU",
+                    "label": "Avg CPU %"
+                  },
+                  {
+                    "columnId": "AvgMemory",
+                    "label": "Avg Memory %"
+                  },
+                  {
+                    "columnId": "Status",
+                    "label": "Status"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-perf-table"
           },
           {
             "type": 1,
@@ -3878,7 +5021,6 @@
                     "formatter": 5
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -4287,7 +5429,6 @@
                     }
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -4605,7 +5746,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "deploymentMonth",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true
@@ -5272,7 +6415,9 @@
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeBucket",
-                "yAxis": ["Count"],
+                "yAxis": [
+                  "Count"
+                ],
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": [
@@ -6350,7 +7495,6 @@
                     "formatter": 5
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "labelSettings": [
                   {
@@ -8414,7 +9558,6 @@
                     "formatter": 6
                   }
                 ],
-                "rowLimit": 2000,
                 "filter": true,
                 "sortBy": [
                   {

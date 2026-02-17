@@ -3224,6 +3224,44 @@
             }
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "machines-node-name-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MachinesNodeNameFilter",
+                  "label": "Filter by Node Name",
+                  "type": 1,
+                  "description": "Optional: Filter by node name using wildcards. Example: *node01* or *hci*",
+                  "isRequired": false,
+                  "value": "",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                },
+                {
+                  "id": "machines-cluster-name-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MachinesClusterNameFilter",
+                  "label": "Filter by Cluster Name",
+                  "type": 1,
+                  "description": "Optional: Filter by cluster name using wildcards. Example: *prod* or *hci*",
+                  "isRequired": false,
+                  "value": "",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "machines-filters"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -3523,44 +3561,6 @@
               }
             },
             "name": "disconnected-nodes-table"
-          },
-          {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "machines-node-name-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "MachinesNodeNameFilter",
-                  "label": "Filter by Node Name",
-                  "type": 1,
-                  "description": "Optional: Filter by node name using wildcards. Example: *node01* or *hci*",
-                  "isRequired": false,
-                  "value": "",
-                  "timeContext": {
-                    "durationMs": 86400000
-                  }
-                },
-                {
-                  "id": "machines-cluster-name-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "MachinesClusterNameFilter",
-                  "label": "Filter by Cluster Name",
-                  "type": 1,
-                  "description": "Optional: Filter by cluster name using wildcards. Example: *prod* or *hci*",
-                  "isRequired": false,
-                  "value": "",
-                  "timeContext": {
-                    "durationMs": 86400000
-                  }
-                }
-              ],
-              "style": "pills",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces"
-            },
-            "name": "machines-filters"
           },
           {
             "type": 1,

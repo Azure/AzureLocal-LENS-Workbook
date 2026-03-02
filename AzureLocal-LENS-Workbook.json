@@ -2367,6 +2367,7 @@
                   }
                 ],
                 "filter": true,
+                "rowLimit": 2000,
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
@@ -2421,11 +2422,11 @@
                   },
                   {
                     "columnId": "physicalMemoryGB",
-                    "label": "Physical Memory (GB)"
+                    "label": "Physical Memory"
                   },
                   {
                     "columnId": "vmMemoryTotalGB",
-                    "label": "Workload Memory (GB)"
+                    "label": "Workload Memory"
                   },
                   {
                     "columnId": "vmVCPUTotal",

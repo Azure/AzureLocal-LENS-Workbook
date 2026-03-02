@@ -2172,6 +2172,14 @@
                     "formatter": 5
                   },
                   {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "aksArcLink",
+                    "formatter": 5
+                  },
+                  {
                     "columnMatch": "status",
                     "formatter": 18,
                     "formatOptions": {

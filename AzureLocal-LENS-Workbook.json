@@ -2293,6 +2293,210 @@
           {
             "type": 1,
             "content": {
+              "json": "## 📊 Cluster Capacity Overview\r\nPhysical cores, virtual CPU allocation, and pCPU:vCPU ratio per Azure Local cluster."
+            },
+            "name": "text-capacity-overview-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Cluster base data\r\nresources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n    | extend clusterRG = tolower(resourceGroup)\r\n    | extend solutionVersion = tostring(properties.currentVersion)\r\n    | project clusterName, clusterRG, solutionVersion\r\n) on $left.name == $right.clusterName, $left.hciClusterRG == $right.clusterRG\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend osVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n// Join VM vCPU totals per cluster RG\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend vmId = tolower(tostring(split(id, '/providers/Microsoft.AzureStackHCI')[0]))\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.hybridcompute/machines\"\r\n        | where kind == \"HCI\"\r\n        | project vmId = tolower(id), vmRG = tolower(resourceGroup)\r\n    ) on vmId\r\n    | extend vCPUs = toint(properties.hardwareProfile.processors)\r\n    | extend memMB = toint(properties.hardwareProfile.memoryMB)\r\n    | summarize vmVCPUTotal = sum(vCPUs), vmMemoryTotalMB = sum(memMB) by vmRG\r\n) on $left.hciClusterRG == $right.vmRG\r\n// Join AKS Arc vCPU totals per cluster RG\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocId = tolower(tostring(extendedLocation.name))\r\n    | mv-expand pool = properties.agentPoolProfiles\r\n    | extend poolVCPUs = toint(pool['count'])\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.extendedlocation/customlocations\"\r\n        | extend customLocId = tolower(id)\r\n        | extend aksRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n        | project customLocId, aksRG\r\n    ) on customLocId\r\n    | summarize aksVCPUTotal = sum(poolVCPUs) by aksRG\r\n) on $left.hciClusterRG == $right.aksRG\r\n// Compute totals and ratio\r\n| extend vmVCPUTotal = coalesce(vmVCPUTotal, 0)\r\n| extend vmMemoryTotalMB = coalesce(vmMemoryTotalMB, 0)\r\n| extend aksVCPUTotal = coalesce(aksVCPUTotal, 0)\r\n| extend vCPUTotal = vmVCPUTotal + aksVCPUTotal\r\n| extend vmMemoryTotalGB = round(todouble(vmMemoryTotalMB) / 1024.0, 1)\r\n| extend pCPUvCPURatio = iff(physicalCores > 0 and vCPUTotal > 0, strcat('1:', tostring(round(todouble(vCPUTotal) / todouble(physicalCores), 1))), 'N/A')\r\n| project ClusterName = name, clusterLink, resourceGroup, status, solutionVersion, nodeCount, physicalCores, physicalMemoryGB, osVersion, vmVCPUTotal, aksVCPUTotal, vCPUTotal, vmMemoryTotalGB, pCPUvCPURatio\r\n| order by status asc, ClusterName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "Cluster Capacity Overview",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "physicalCores",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "physicalMemoryGB",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "vmVCPUTotal",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "aksVCPUTotal",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "vCPUTotal",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "palette": "blue"
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "vmMemoryTotalGB",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "pCPUvCPURatio",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "120px"
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "solutionVersion",
+                    "label": "Solution Version"
+                  },
+                  {
+                    "columnId": "nodeCount",
+                    "label": "Nodes"
+                  },
+                  {
+                    "columnId": "physicalCores",
+                    "label": "Physical Cores"
+                  },
+                  {
+                    "columnId": "physicalMemoryGB",
+                    "label": "Physical Memory (GB)"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "vmVCPUTotal",
+                    "label": "VM vCPUs"
+                  },
+                  {
+                    "columnId": "aksVCPUTotal",
+                    "label": "AKS vCPUs"
+                  },
+                  {
+                    "columnId": "vCPUTotal",
+                    "label": "vCPU Total"
+                  },
+                  {
+                    "columnId": "vmMemoryTotalGB",
+                    "label": "VM Memory Total (GB)"
+                  },
+                  {
+                    "columnId": "pCPUvCPURatio",
+                    "label": "pCPU:vCPU Ratio"
+                  }
+                ]
+              }
+            },
+            "name": "capacity-overview-table"
+          },
+          {
+            "type": 1,
+            "content": {
               "json": "## 📉 Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster. Uses linear trend (`series_fit_line`) over the selected time range."
             },
             "name": "text-exhaustion-forecast-header"

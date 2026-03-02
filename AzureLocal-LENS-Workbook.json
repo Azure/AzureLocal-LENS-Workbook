@@ -9457,7 +9457,7 @@
                     "showDefault": false
                   },
                   "jsonData": "[{\"value\": \"7\", \"label\": \"1 week\"}, {\"value\": \"14\", \"label\": \"2 weeks\"}, {\"value\": \"30\", \"label\": \"1 month\"}, {\"value\": \"90\", \"label\": \"3 months\"}, {\"value\": \"180\", \"label\": \"6 months\"}, {\"value\": \"270\", \"label\": \"9 months\"}, {\"value\": \"365\", \"label\": \"12 months\"}]",
-                  "defaultValue": "7",
+                  "defaultValue": "90",
                   "queryType": 1,
                   "resourceType": "microsoft.resourcegraph/resources"
                 },

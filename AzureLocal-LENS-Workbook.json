@@ -2142,10 +2142,50 @@
             "name": "text-capacity-overview-header"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "target-ratio-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TargetRatio",
+                  "label": "Target pCPU to vCPU Ratio",
+                  "type": 2,
+                  "description": "Select the target pCPU to vCPU ratio for your environment. Used for color-coding the ratio health indicator.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"1\",\"label\":\"1:1\"},{\"value\":\"2\",\"label\":\"1:2\"},{\"value\":\"3\",\"label\":\"1:3\"},{\"value\":\"4\",\"label\":\"1:4\"},{\"value\":\"5\",\"label\":\"1:5\"},{\"value\":\"6\",\"label\":\"1:6\"}]",
+                  "value": "4"
+                },
+                {
+                  "id": "ratio-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "RatioFilter",
+                  "label": "Filter by Ratio",
+                  "type": 2,
+                  "description": "Filter clusters to show only those with a pCPU to vCPU ratio at or above the selected value.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"1\",\"label\":\"≥ 1:1\"},{\"value\":\"2\",\"label\":\"≥ 1:2\"},{\"value\":\"3\",\"label\":\"≥ 1:3\"},{\"value\":\"4\",\"label\":\"≥ 1:4\"},{\"value\":\"5\",\"label\":\"≥ 1:5\"},{\"value\":\"6\",\"label\":\"≥ 1:6\"}]",
+                  "value": "0"
+                }
+              ],
+              "style": "pills"
+            },
+            "name": "capacity-ratio-params"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "// Cluster base data\r\nresources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend osVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n// Join VM vCPU and memory totals per cluster RG (uses resources table, same pattern as Azure Local VMs tab)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where kind == \"HCI\"\r\n    | extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n    | extend memGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n    | summarize vmVCPUTotal = sum(vCPUs), vmMemoryTotalGB = sum(memGB) by vmRG = tolower(resourceGroup)\r\n) on $left.hciClusterRG == $right.vmRG\r\n// Join AKS Arc vCPU totals per cluster RG (uses resources table, same pattern as AKS Arc Clusters tab)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where tostring(properties.infrastructure) == \"azure_stack_hci\"\r\n    | extend totalCoreCount = toint(properties.totalCoreCount)\r\n    | summarize aksVCPUTotal = sum(totalCoreCount) by aksRG = tolower(resourceGroup)\r\n) on $left.hciClusterRG == $right.aksRG\r\n// Compute totals and ratio\r\n| extend vmVCPUTotal = coalesce(vmVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = coalesce(vmMemoryTotalGB, 0)\r\n| extend aksVCPUTotal = coalesce(aksVCPUTotal, 0)\r\n| extend vCPUTotal = vmVCPUTotal + aksVCPUTotal\r\n| extend ratioValue = iff(physicalCores > 0 and vCPUTotal > 0, round(todouble(vCPUTotal) / todouble(physicalCores), 1), 0.0)\r\n| extend pCPUvCPURatio = iff(ratioValue > 0, strcat('1:', tostring(ratioValue)), 'N/A')\r\n| extend memoryUsagePct = iff(physicalMemoryGB > 0 and vmMemoryTotalGB > 0, round(todouble(vmMemoryTotalGB) / todouble(physicalMemoryGB) * 100.0, 1), 0.0)\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, resourceGroup, status, nodeCount, pCPUvCPURatio, ratioValue, physicalCores, vCPUTotal, memoryUsagePct, physicalMemoryGB, vmMemoryTotalGB, vmVCPUTotal, aksVCPUTotal\r\n| order by ratioValue desc, ClusterName asc",
+              "query": "// Cluster base data\r\nresources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend osVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n// Join VM vCPU and memory totals per cluster RG (uses resources table, same pattern as Azure Local VMs tab)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where kind == \"HCI\"\r\n    | extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n    | extend memGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n    | summarize vmVCPUTotal = sum(vCPUs), vmMemoryTotalGB = sum(memGB) by vmRG = tolower(resourceGroup)\r\n) on $left.hciClusterRG == $right.vmRG\r\n// Join AKS Arc vCPU totals per cluster RG (uses resources table, same pattern as AKS Arc Clusters tab)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where tostring(properties.infrastructure) == \"azure_stack_hci\"\r\n    | extend totalCoreCount = toint(properties.totalCoreCount)\r\n    | summarize aksVCPUTotal = sum(totalCoreCount) by aksRG = tolower(resourceGroup)\r\n) on $left.hciClusterRG == $right.aksRG\r\n// Compute totals and ratio\r\n| extend vmVCPUTotal = coalesce(vmVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = coalesce(vmMemoryTotalGB, 0)\r\n| extend aksVCPUTotal = coalesce(aksVCPUTotal, 0)\r\n| extend vCPUTotal = vmVCPUTotal + aksVCPUTotal\r\n| extend ratioValue = iff(physicalCores > 0 and vCPUTotal > 0, round(todouble(vCPUTotal) / todouble(physicalCores), 1), 0.0)\r\n| extend pCPUvCPURatio = iff(ratioValue > 0, strcat('1:', tostring(ratioValue)), 'N/A')\r\n| extend memoryUsagePct = iff(physicalMemoryGB > 0 and vmMemoryTotalGB > 0, round(todouble(vmMemoryTotalGB) / todouble(physicalMemoryGB) * 100.0, 1), 0.0)\r\n| extend ratioHealthPct = iff(ratioValue > 0 and todouble('{TargetRatio}') > 0, round(ratioValue / todouble('{TargetRatio}') * 100.0, 0), 0.0)\r\n| where '{RatioFilter}' == '0' or ratioValue >= todouble('{RatioFilter}')\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, resourceGroup, status, nodeCount, pCPUvCPURatio, ratioHealthPct, ratioValue, physicalCores, vCPUTotal, memoryUsagePct, physicalMemoryGB, vmMemoryTotalGB, vmVCPUTotal, aksVCPUTotal\r\n| order by ratioValue desc, ClusterName asc",
               "size": 0,
               "showAnalytics": true,
               "title": "Cluster Capacity Overview",
@@ -2222,6 +2262,23 @@
                   {
                     "columnMatch": "ratioValue",
                     "formatter": 5
+                  },
+                  {
+                    "columnMatch": "ratioHealthPct",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 200,
+                      "palette": "greenRedDark"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
                   },
                   {
                     "columnMatch": "memoryUsagePct",
@@ -2342,6 +2399,10 @@
                   {
                     "columnId": "pCPUvCPURatio",
                     "label": "pCPU to vCPU Ratio"
+                  },
+                  {
+                    "columnId": "ratioHealthPct",
+                    "label": "% of Target"
                   },
                   {
                     "columnId": "ratioValue"

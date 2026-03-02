@@ -2576,32 +2576,6 @@
                   "value": "90"
                 },
                 {
-                  "id": "cluster-filter-param",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "ClusterFilter",
-                  "label": "Cluster",
-                  "type": 2,
-                  "description": "Filter to a specific Azure Local cluster or view fleet-wide summary.",
-                  "isRequired": false,
-                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "includeAll": true,
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "value": [
-                    "value::all"
-                  ],
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
-                {
                   "id": "cluster-rg-map-param",
                   "version": "KqlParameterItem/1.0",
                   "name": "ClusterRGMap",
@@ -2699,13 +2673,20 @@
             "name": "node-exhaustion-forecast-table"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "---\r\n### 📊 Top 5 Clusters by Resource Usage\r\nShowing the 5 clusters with the highest average usage for each resource type over the selected time range."
+            },
+            "name": "text-top5-charts-header"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
               "size": 1,
               "aggregation": 3,
-              "title": "CPU Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "title": "CPU Usage (%) — Top 5 Clusters",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -2715,10 +2696,10 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Avg Usage %",
-                  "Forecast %"
+                  "Avg Usage %"
                 ],
-                "showLegend": false,
+                "group": "clusterName",
+                "showLegend": true,
                 "ySettings": {
                   "min": 0,
                   "max": 100,
@@ -2729,17 +2710,7 @@
                       "maximumFractionDigits": 1
                     }
                   }
-                },
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Avg Usage %",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Forecast %",
-                    "color": "orange"
-                  }
-                ]
+                }
               }
             },
             "customWidth": "33",
@@ -2753,10 +2724,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| summarize AvgValue = avg(CounterValue) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
               "size": 1,
               "aggregation": 3,
-              "title": "Memory Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "title": "Memory Usage (%) — Top 5 Clusters",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -2766,10 +2737,10 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Avg Usage %",
-                  "Forecast %"
+                  "Avg Usage %"
                 ],
-                "showLegend": false,
+                "group": "clusterName",
+                "showLegend": true,
                 "ySettings": {
                   "min": 0,
                   "max": 100,
@@ -2780,17 +2751,7 @@
                       "maximumFractionDigits": 1
                     }
                   }
-                },
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Avg Usage %",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Forecast %",
-                    "color": "orange"
-                  }
-                ]
+                }
               }
             },
             "customWidth": "33",
@@ -2804,10 +2765,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet horizonDays = 7;\r\nlet step = 1d;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nunion perfStorage, insightsStorage\r\n| summarize AvgValue = avg(UsedPercent) by Computer, bin(TimeGenerated, step)\r\n| summarize AvgValue = avg(AvgValue) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) on TimeGenerated from trendStart to trendEnd step step\r\n| extend (forecast, trend, seasonality, residual) = series_decompose_forecast(AvgValue, horizonDays)\r\n| mv-expand TimeGenerated to typeof(datetime), AvgValue to typeof(double), forecast to typeof(double)\r\n| extend forecast = min_of(max_of(forecast, 0.0), 100.0)\r\n| extend IsLastActual = (TimeGenerated == trendEnd)\r\n| extend ActualVal = iff(TimeGenerated <= trendEnd, round(AvgValue, 1), real(null))\r\n| extend ForecastVal = iff(TimeGenerated > trendEnd or IsLastActual, round(iff(IsLastActual, AvgValue, forecast), 1), real(null))\r\n| project TimeGenerated, [\"Avg Usage %\"] = ActualVal, [\"Forecast %\"] = ForecastVal\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName;\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet allStorage = union perfStorage, insightsStorage\r\n| lookup kind=inner hciNodes on Computer;\r\nlet top5 = allStorage\r\n| summarize AvgUsage = avg(UsedPercent) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nallStorage\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(UsedPercent), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
               "size": 1,
               "aggregation": 3,
-              "title": "Storage Usage (%) — 🔵 Avg Usage | 🟠 Forecast",
+              "title": "Storage Usage (%) — Top 5 Clusters",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -2817,10 +2778,10 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Avg Usage %",
-                  "Forecast %"
+                  "Avg Usage %"
                 ],
-                "showLegend": false,
+                "group": "clusterName",
+                "showLegend": true,
                 "ySettings": {
                   "min": 0,
                   "max": 100,
@@ -2831,17 +2792,7 @@
                       "maximumFractionDigits": 1
                     }
                   }
-                },
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Avg Usage %",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Forecast %",
-                    "color": "orange"
-                  }
-                ]
+                }
               }
             },
             "customWidth": "33",
@@ -2850,6 +2801,44 @@
               "margin": "5px",
               "padding": "5px"
             }
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "cluster-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ClusterFilter",
+                  "label": "Cluster",
+                  "type": 2,
+                  "description": "Filter to a specific Azure Local cluster or view fleet-wide summary.",
+                  "isRequired": false,
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "fleet-capacity-params"
           },
           {
             "type": 1,

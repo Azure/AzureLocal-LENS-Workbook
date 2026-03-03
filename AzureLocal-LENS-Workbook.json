@@ -4180,7 +4180,7 @@
               "size": 0,
               "title": "☸️ AKS Node CPU Usage on: {ClusterFilter}",
               "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled on your AKS Arc clusters and the selected Azure Monitor Workspace receives metrics.",
-              "queryType": 0,
+              "queryType": 18,
               "resourceType": "microsoft.monitor/accounts",
               "crossComponentResources": [
                 "{AzureMonitorWorkspace}"
@@ -4241,7 +4241,7 @@
               "size": 0,
               "title": "☸️ AKS Node Memory Usage on: {ClusterFilter}",
               "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled on your AKS Arc clusters and the selected Azure Monitor Workspace receives metrics.",
-              "queryType": 0,
+              "queryType": 18,
               "resourceType": "microsoft.monitor/accounts",
               "crossComponentResources": [
                 "{AzureMonitorWorkspace}"

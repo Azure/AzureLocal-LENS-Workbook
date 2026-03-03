@@ -2444,7 +2444,7 @@
                           "operator": "==",
                           "thresholdValue": "0",
                           "representation": "Blank",
-                          "text": "{0}{1}"
+                          "text": "Unknown"
                         },
                         {
                           "operator": ">=",
@@ -2531,11 +2531,11 @@
                   },
                   {
                     "columnId": "physicalCores",
-                    "label": "pCPUs Total"
+                    "label": "pCPUs"
                   },
                   {
                     "columnId": "vCPUTotal",
-                    "label": "vCPUs Total"
+                    "label": "vCPUs"
                   },
                   {
                     "columnId": "physicalMemoryGB",

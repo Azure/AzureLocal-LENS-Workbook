@@ -3209,112 +3209,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup, physicalCoresPerNode = toint(properties.reportedProperties.nodes[0].coreCount)\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend logicalCores = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend status = tostring(properties.status)\r\n| project Node = name, Cluster = clusterName, Status = status, CPUCores = iff(isnotempty(physicalCoresPerNode), physicalCoresPerNode, toint(logicalCores / 2)), MemoryGB = memoryGB, OS = osSku\r\n| order by Cluster asc, Node asc",
-              "size": 4,
-              "title": "",
-              "noDataMessage": "No physical nodes found.",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Status",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Connected",
-                          "representation": "success",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "Default",
-                          "representation": "critical",
-                          "text": "{0}{1}"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "columnMatch": "CPUCores",
-                    "formatter": 0,
-                    "numberFormat": {
-                      "unit": 0,
-                      "options": {
-                        "style": "decimal",
-                        "minimumFractionDigits": 0,
-                        "maximumFractionDigits": 0
-                      }
-                    }
-                  },
-                  {
-                    "columnMatch": "MemoryGB",
-                    "formatter": 0,
-                    "numberFormat": {
-                      "unit": 5,
-                      "options": {
-                        "style": "decimal",
-                        "minimumFractionDigits": 0,
-                        "maximumFractionDigits": 0
-                      }
-                    }
-                  }
-                ],
-                "labelSettings": [
-                  {
-                    "columnId": "Node",
-                    "label": "Node"
-                  },
-                  {
-                    "columnId": "Cluster",
-                    "label": "Cluster"
-                  },
-                  {
-                    "columnId": "Status",
-                    "label": "Status"
-                  },
-                  {
-                    "columnId": "CPUCores",
-                    "label": "CPU Cores"
-                  },
-                  {
-                    "columnId": "MemoryGB",
-                    "label": "Memory (GB)"
-                  },
-                  {
-                    "columnId": "OS",
-                    "label": "OS SKU"
-                  }
-                ]
-              }
-            },
-            "customWidth": "80",
-            "name": "fleet-hardware-table",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "## ⚠️ Node Resource Health Summary\r\nAzure Stack HCI nodes with hardware configuration. Filter by cluster above to narrow results."
-            },
-            "name": "text-node-health-summary-header"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
               "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, physicalCoresPerNode = toint(properties.reportedProperties.nodes[0].coreCount), osDisplayVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion)\r\n) on $left.resourceGroup == $right.clusterResourceGroup\r\n| where '{ClusterFilter}' == 'value::all' or clusterName =~ '{ClusterFilter}'\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend logicalCores = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osVersion = replace_string(tostring(properties.osVersion), '10.0.', '')\r\n| extend osEdition = coalesce(osDisplayVersion, iff(osVersion startswith '26100', '24H2', iff(osVersion startswith '25398', '23H2', iff(osVersion startswith '20349', '21H2', ''))))\r\n| extend physicalCores = iff(isnotempty(physicalCoresPerNode), physicalCoresPerNode, toint(logicalCores / 2))\r\n| project nodeName, clusterName, status, osEdition, osVersion, physicalCores, logicalCores, memoryGiB\r\n| order by clusterName asc, nodeName asc",
               "size": 0,
-              "title": "Node Resource Health Summary",
+              "title": "Node Hardware Summary",
               "noDataMessage": "No Azure Stack HCI nodes found. Verify your subscription and resource group filters.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -3397,12 +3294,290 @@
                   },
                   {
                     "columnId": "memoryGiB",
-                    "label": "Memory (GiB)"
+                    "label": "Physical Memory (GiB)"
                   }
                 ]
               }
             },
-            "name": "node-health-summary-tiles"
+            "customWidth": "80",
+            "name": "fleet-hardware-table",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/storagecontainers\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ '{ClusterFilter}'\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend pathName = name\r\n| extend totalGB = round(toreal(properties.status.containerSizeMB) / 1024, 0)\r\n| extend availableGB = round(toreal(properties.status.availableSizeMB) / 1024, 0)\r\n| extend usedGB = totalGB - availableGB\r\n| project pathName, UsedGB = usedGB, AvailableGB = availableGB\r\n| order by pathName asc",
+              "size": 0,
+              "title": "Storage Volume Usage (GB) — {ClusterFilter}",
+              "noDataMessage": "No storage containers found for this cluster.",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "pathName",
+                "yAxis": [
+                  "UsedGB",
+                  "AvailableGB"
+                ],
+                "group": null,
+                "createOtherGroup": null,
+                "showDataPointsCount": true,
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "UsedGB",
+                    "label": "Used (GB)",
+                    "color": "orange"
+                  },
+                  {
+                    "seriesName": "AvailableGB",
+                    "label": "Available (GB)",
+                    "color": "green"
+                  }
+                ],
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 0
+                  }
+                }
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "customWidth": "50",
+            "name": "storage-paths-chart",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## ⚠️ Node Resource Health Summary\r\nHealth check results from update readiness checks for the selected cluster."
+            },
+            "name": "text-node-health-summary-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where name =~ '{ClusterFilter}'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project clusterName = name, clusterId = id, resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend hciClusterName = tostring(split(id, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthCheckResult = properties.healthCheckResult\r\n    | mv-expand healthCheck = healthCheckResult\r\n    | where tostring(healthCheck.status) == \"Failed\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project hciClusterName, healthState, stepStatus = tostring(healthCheck.status), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on $left.clusterName == $right.hciClusterName\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| project clusterName, healthState, stepStatus, displayName, description, remediation, remediationLink, severity, targetResourceName, timestamp, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
+              "size": 0,
+              "title": "Failed Health Check Results — {ClusterFilter}",
+              "noDataMessage": "No failed health checks found for this cluster. ✅",
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "healthState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Success",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failure",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "stepStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Succeeded",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "severity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Informational",
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "remediation",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "remediationLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "remediationLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "DaysSinceCheck",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "4",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "2",
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "severityOrder",
+                    "formatter": 5
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "healthState",
+                    "label": "Health State"
+                  },
+                  {
+                    "columnId": "stepStatus",
+                    "label": "Step Status"
+                  },
+                  {
+                    "columnId": "displayName",
+                    "label": "Check Name"
+                  },
+                  {
+                    "columnId": "description",
+                    "label": "Description"
+                  },
+                  {
+                    "columnId": "remediation",
+                    "label": "Remediation"
+                  },
+                  {
+                    "columnId": "remediationLink"
+                  },
+                  {
+                    "columnId": "severity",
+                    "label": "Severity"
+                  },
+                  {
+                    "columnId": "targetResourceName",
+                    "label": "Target Resource"
+                  },
+                  {
+                    "columnId": "timestamp",
+                    "label": "Timestamp"
+                  },
+                  {
+                    "columnId": "lastChecked",
+                    "label": "Last Checked"
+                  },
+                  {
+                    "columnId": "DaysSinceCheck",
+                    "label": "Days Since Check"
+                  }
+                ]
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "capacity-health-check-results"
           },
           {
             "type": 1,

@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.2
+## Latest Version: v0.8.3
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,10 +8,52 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.2)
+## Recent Changes (v0.8.3)
 
-### Bug Fixes
-- **Fixed VMs appearing in Azure Local Machines section** ([#31](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/31)): Arc-enabled VMs running on Azure Local were incorrectly displayed as physical nodes in the Azure Local Machines tab and the Overview dashboard tile. Added `kind != "HCI"` filter to all 21 affected KQL queries to exclude VMs (which have `kind == "HCI"`) while retaining only physical server nodes (which have an empty `kind` field). This fix affects the Total Machines tile, Connected/Disconnected/Expired/Error tiles, OS distribution and license type charts, the All Azure Local Machines table, the Extensions table, the Failed Extensions detail view, the NIC health views, and the Updates health summary.
+### New Capacity Tab (🏗️)
+Added a dedicated **Capacity** tab providing centralized visibility into cluster resource utilization, forecasting, and workload allocation.
+
+#### Capacity Overview Table
+- **Cluster Capacity Overview**: Fleet-wide table showing per-cluster resource allocation with clickable **Cluster** column linking to the Azure portal
+- **P:V CPU Ratio**: Physical-to-virtual CPU ratio (e.g., `1:4.2`) with configurable target ratio dropdown and color-coded **% of P:V Target** column
+- **Memory Used % (N-1)**: Memory utilization calculated against N-1 node capacity for multi-node clusters, with traffic light thresholds (🟢 <80%, 🟡 ≥80%, 🔴 ≥95%)
+- **Storage Summary**: Storage Used, Storage Available (with portal **Storage Paths** deep-links), and Storage Used % columns joined via storagecontainers → customlocations → arcBridgeRG chain. Shows "Unknown" for 0% storage
+- **Portal Links**: Cluster, VM vCPUs, AKS vCPUs, Machines, Storage Used, and Storage Available columns all link to their respective Azure portal pages
+- **Column labels**: Compact naming — Cluster, pCPUs, vCPUs, P:V CPU Ratio, Physical Memory (with GiB/TiB unit formatting)
+- **Sorting**: Default sort by Memory Used % descending, then % of P:V Target descending
+
+#### Resource Trends & Forecast
+- **Top 5 Clusters Charts**: CPU, Memory, and Storage utilization trend charts showing the top 5 clusters by usage with legend, powered by Log Analytics (Perf / InsightsMetrics)
+- **Storage Latency, Storage IOPS, and Network Throughput** charts added for per-node performance visibility
+- **AMA Tip**: Info banner with Azure Monitor Agent link above trend charts
+- **Predictive Resource Exhaustion Forecast**: Projected days until warning/critical thresholds using `series_fit_line` linear trend analysis, capped at 365+ days, with color-coded status indicators
+- **Forecast Filters**: Configurable Historic Data Time Range, Log Analytics workspace selector, Resource Group and Cluster multi-select filters, and adjustable warning/critical threshold parameters
+
+#### Cluster Capacity Section
+- **Fleet Capacity Tiles**: Aggregated totals (Clusters, Nodes, Total Cores, Total Memory) across the filtered fleet
+- **Node Hardware Summary**: Per-node physical and logical core counts, Physical Memory (with GiB unit formatting), OS Edition (derived from build number for disconnected clusters), and OS Version
+- **Storage Volume Usage Chart**: Stacked bar chart per storage path showing Used vs Available (GB), visible when a single cluster is selected
+
+#### Cluster Health Summary Status
+- **Failed Health Check Results**: Expanded from update readiness checks with **Severity** multi-select filter (defaults to Critical + Warning, excludes Informational)
+- **Cluster link**: Cluster column links to the cluster's portal page
+- **Check Result** column (renamed from "Step Status") with severity-based icons and Days Since Check indicator
+
+#### Cluster Workload Drill-Down
+- **VMs on Cluster**: Per-VM detail with Avg/Peak CPU % and Avg/Peak Memory % from Log Analytics, with portal links
+- **AKS Clusters on Cluster**: AKS Arc clusters with connectivity status, Kubernetes version, agent version, provisioning state, and node count
+- **AKS Node Resource Usage**: Top 5 AKS nodes by resource usage via PromQL timecharts from Azure Monitor Workspace (Managed Prometheus), showing CPU, Memory, Disk I/O, and Network Throughput over time
+- **Azure Monitor Workspace Parameter**: New dropdown to select the Azure Monitor Workspace collecting Prometheus metrics from AKS Arc clusters
+- **Prometheus Time Range**: Dedicated time range picker (30 min to 7 days, default 4 hours) for Prometheus metric charts
+
+### Bug Fixes & Technical Improvements
+- **ARG Query Fixes**: Removed all `let` statements from `extensibilityresources` queries (ARG constraint), restructured queries to work within single-extensibilityresources-per-query limit
+- **VM/AKS Resource Discovery**: Replaced RG-based joins with proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for correct multi-cluster environments
+- **Container Insights**: Fixed case-sensitive `extract` bug and added `InsightsMetrics` union for modern AMA/DCR support
+- **Network Throughput**: Fixed query to include both `ObjectName` values and both traffic directions; added `materialize()` optimization
+- **VM Perf Query**: Removed incorrect RG filter, added Linux and InsightsMetrics support
+- **Disconnected Cluster Fallbacks**: Arc machine fallback for blank pCPUs/memory, OS Edition derived from build number, `logicalCores/2` for physical core estimation
+- **Physical vs Logical Cores**: Fixed tables to show physical core counts instead of logical cores; excluded guest VMs from node counts
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -62,7 +104,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **117+ unit tests** across 22 test suites. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **137+ unit tests** across 23 test suites. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -80,6 +122,7 @@ All pull requests are automatically validated by a GitHub Actions workflow that 
 | Conditional Visibility | Tab groups have unique visibility parameters |
 | KQL Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
 | Regression Guards | Item, query, and chart count minimums |
+| Prometheus AKS Metrics | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
 | README & Docs | Required sections, CONTRIBUTING.md, SECURITY.md, LICENSE |
 
 Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
@@ -95,9 +138,9 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 ## Features
 
-The workbook is organized into seven tabs:
+The workbook is organized into eight tabs:
 
-📊 Azure Local Instances | 📋 System Health | 🔄 Update Progress | 🖥️ Azure Local Machines | 🔗 ARB Status | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🖥️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
@@ -122,6 +165,31 @@ A high-level overview of your entire Azure Local estate, including:
 ![Azure Local Instances](images/summary-dashboard-screenshot.png)
 
 ![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
+
+### 🏗️ Capacity
+Centralized view of cluster resource utilization, capacity forecasting, and workload allocation:
+- **Cluster Capacity Overview**: Table showing each cluster with:
+  - Physical Cores and Physical Memory (GB)
+  - VM vCPUs and AKS vCPUs (from provisioned workloads)
+  - vCPU Total (combined VM + AKS)
+  - VM Memory Total (GB)
+  - pCPU:vCPU Ratio (e.g., `1:4.2`) — computed inline via Azure Resource Graph sub-joins
+- **Resource Trends & Forecast**: Time-series trend analysis with configurable parameters:
+  - Log Analytics Workspace selector (multi-select)
+  - Configurable time range, warning threshold (default 80%), and critical threshold (default 90%)
+  - CPU, Memory, and Storage utilization trends per node using Perf and InsightsMetrics data
+- **Resource Exhaustion Forecast by Cluster**: Projected days until resource thresholds are reached using `series_fit_line` linear trend analysis:
+  - Current average utilization percentage
+  - Trend direction (↑ Rising, → Stable, ↓ Declining)
+  - Days to Warning and Days to Critical thresholds
+  - Color-coded status indicators (🟢 OK, 🟡 Warning, 🔴 Critical)
+- **Fleet Capacity**: Aggregated physical hardware tiles (Clusters, Nodes, Total Cores, Total Memory) across the filtered fleet
+- **Node Resource Health Summary**: Per-node hardware details including logical core count, memory, vendor, model, processor, and cluster association
+- **Cluster Workload Drill-Down**: Detailed view of VMs and AKS Arc clusters on a selected cluster:
+  - Requires single cluster selection from the Cluster filter
+  - Shows individual workload resource allocations (vCPUs, memory, status)
+  - **AKS Node Resource Usage**: Top 5 nodes by CPU, Memory, Disk I/O, and Network Throughput via Prometheus timecharts from Azure Monitor Workspace
+  - Configurable Prometheus Time Range (30 min – 7 days)
 
 ### 📋 System Health
 Detailed view of cluster system health and update readiness:
@@ -311,6 +379,18 @@ The workbook provides several filtering options to help you focus on specific re
 - Export data to Excel using the export button on grids for reporting purposes
 - Set up Azure Monitor alerts based on the queries in this workbook for proactive monitoring
 
+## Azure Resource Graph | Azure Local Resource Joins | Useful Information
+
+Understanding how Azure Local resources are linked across Azure Resource Graph (ARG) is essential for building accurate queries. The workbook uses the following join chains to associate workload resources with their parent HCI cluster:
+
+- **Azure Local VMs:** `machine.id` → `microsoft.azurestackhci/virtualmachineinstances` (extensibility, joined by extracting machineId before `/providers/Microsoft.AzureStackHCI`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI cluster
+
+- **AKS Arc Clusters:** `connectedcluster.id` → `microsoft.hybridcontainerservice/provisionedclusterinstances` (extensibility, joined by extracting aksId before `/providers/Microsoft.HybridContainerService`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI cluster
+
+- **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location (joined by extracting `arcBridgeRG` from `hostResourceId`) → HCI cluster (joined by `resourceGroup`)
+
+> **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
+
 ## License
 
 See the repository's LICENSE file for details.
@@ -318,6 +398,11 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.2
+
+#### Bug Fixes
+- **Fixed VMs appearing in Azure Local Machines section** ([#31](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/31)): Arc-enabled VMs running on Azure Local were incorrectly displayed as physical nodes in the Azure Local Machines tab and the Overview dashboard tile. Added `kind != "HCI"` filter to all 21 affected KQL queries to exclude VMs (which have `kind == "HCI"`) while retaining only physical server nodes (which have an empty `kind` field). This fix affects the Total Machines tile, Connected/Disconnected/Expired/Error tiles, OS distribution and license type charts, the All Azure Local Machines table, the Extensions table, the Failed Extensions detail view, the NIC health views, and the Updates health summary.
 
 ### v0.8.1
 

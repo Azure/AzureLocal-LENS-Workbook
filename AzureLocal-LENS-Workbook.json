@@ -2897,6 +2897,33 @@
                   "resourceType": "microsoft.resourcegraph/resources"
                 },
                 {
+                  "id": "forecast-cluster-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ForecastClusterFilter",
+                  "label": "Cluster",
+                  "type": 2,
+                  "description": "Filter forecast results by cluster name.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "value": [
+                    "value::all"
+                  ]
+                },
+                {
                   "id": "forecast-time-range-param",
                   "version": "KqlParameterItem/1.0",
                   "name": "ForecastTimeRange",
@@ -2981,33 +3008,6 @@
                     "showDefault": false
                   },
                   "jsonData": "[{\"value\":\"CPU\",\"label\":\"CPU\"},{\"value\":\"Memory\",\"label\":\"Memory\"},{\"value\":\"Storage\",\"label\":\"Storage\"}]",
-                  "value": [
-                    "value::all"
-                  ]
-                },
-                {
-                  "id": "forecast-cluster-filter-param",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "ForecastClusterFilter",
-                  "label": "Cluster",
-                  "type": 2,
-                  "description": "Filter forecast results by cluster name.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "",
-                  "delimiter": ",",
-                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources",
                   "value": [
                     "value::all"
                   ]

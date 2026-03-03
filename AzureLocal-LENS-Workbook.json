@@ -3463,7 +3463,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## ⚠️ Node Resource Health Summary\r\nHealth check results from update readiness checks for the selected cluster."
+              "json": "## ⚠️ Cluster Health Summary Status\r\nHealth check results from update readiness checks for the selected cluster."
             },
             "name": "text-node-health-summary-header"
           },
@@ -3509,7 +3509,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where name =~ '{ClusterFilter}'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project clusterName = name, clusterId = id, resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend hciClusterName = tostring(split(id, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthCheckResult = properties.healthCheckResult\r\n    | mv-expand healthCheck = healthCheckResult\r\n    | where tostring(healthCheck.status) == \"Failed\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project hciClusterName, healthState, stepStatus = tostring(healthCheck.status), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on $left.clusterName == $right.hciClusterName\r\n| where '{HealthCheckSeverity}' == 'value::all' or severity in (split('{HealthCheckSeverity}', ','))\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| project clusterName, healthState, stepStatus, displayName, description, remediation, remediationLink, severity, targetResourceName, timestamp, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where name =~ '{ClusterFilter}'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project clusterName = name, clusterId = id, resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend hciClusterName = tostring(split(id, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthCheckResult = properties.healthCheckResult\r\n    | mv-expand healthCheck = healthCheckResult\r\n    | where tostring(healthCheck.status) == \"Failed\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project hciClusterName, healthState, stepStatus = tostring(healthCheck.status), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on $left.clusterName == $right.hciClusterName\r\n| where '{HealthCheckSeverity}' == 'value::all' or severity in (split('{HealthCheckSeverity}', ','))\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project clusterName, clusterLink, healthState, stepStatus, displayName, description, remediation, remediationLink, severity, targetResourceName, timestamp, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
               "size": 0,
               "title": "Failed Health Check Results — {ClusterFilter}",
               "noDataMessage": "No failed health checks found for this cluster. ✅",
@@ -3522,6 +3522,18 @@
               "gridSettings": {
                 "rowLimit": 2000,
                 "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
                   {
                     "columnMatch": "healthState",
                     "formatter": 18,
@@ -3663,6 +3675,9 @@
                   {
                     "columnId": "clusterName",
                     "label": "Cluster"
+                  },
+                  {
+                    "columnId": "clusterLink"
                   },
                   {
                     "columnId": "healthState",

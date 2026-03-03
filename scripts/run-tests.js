@@ -528,7 +528,7 @@ testSuite('Cross-Component Resources Validation', () => {
         'Workbook has items with crossComponentResources', '>0', itemsWithCCR.length);
 
     // All crossComponentResources should reference {Subscriptions} or a valid workspace parameter
-    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}'];
+    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}', '{ForecastWorkspace}'];
     const itemsRefValid = itemsWithCCR.filter(i =>
         i.content.crossComponentResources.some(r => validCCR.includes(r))
     );

@@ -2534,7 +2534,7 @@
                   "id": "node-trends-time-range",
                   "version": "KqlParameterItem/1.0",
                   "name": "NodeTrendsTimeRange",
-                  "label": "Trend Time Range",
+                  "label": "Historic Data Time Range",
                   "type": 4,
                   "isRequired": true,
                   "typeSettings": {
@@ -2857,7 +2857,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **How this works:** This table analyses historical CPU, Memory and Storage utilisation data from Log Analytics over the selected time range. It applies linear regression (`series_fit_line`) to calculate the daily rate of change (trend) and estimates how many days until the Warning and Critical thresholds are reached. A longer time range (e.g. 30+ days) produces more accurate forecasts. 'N/A' means usage is stable or declining — no exhaustion is projected.",
+              "json": "💡 **How this works:** This table analyses historical CPU, Memory and Storage utilisation data from the selected Log Analytics Workspace over the **Historic Data Time Range**. It applies linear regression to calculate the daily rate of change (trend) and estimates how many days until the configurable **Warning** and **Critical** thresholds are reached. A longer time range (e.g. 30+ days) produces more accurate forecasts. 'N/A' means usage is stable or declining — no exhaustion is projected.",
               "style": "info"
             },
             "name": "exhaustion-forecast-tip"
@@ -2867,6 +2867,35 @@
             "content": {
               "version": "KqlParameterItem/1.0",
               "parameters": [
+                {
+                  "id": "forecast-workspace-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ForecastWorkspace",
+                  "label": "Log Analytics Workspace",
+                  "type": 2,
+                  "description": "Displays the Log Analytics Workspace selected above. Change it in the Resource Trends filters.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
                 {
                   "id": "forecast-time-range-param",
                   "version": "KqlParameterItem/1.0",
@@ -2999,7 +3028,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{MachinesLogAnalyticsWorkspace}"
+                "{ForecastWorkspace}"
               ],
               "visualization": "table",
               "gridSettings": {

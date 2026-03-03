@@ -42,7 +42,8 @@ Added a dedicated **Capacity** tab providing centralized visibility into cluster
 #### Cluster Workload Drill-Down
 - **VMs on Cluster**: Per-VM detail with Avg/Peak CPU % and Avg/Peak Memory % from Log Analytics, with portal links
 - **AKS Clusters on Cluster**: AKS Arc clusters with connectivity status, Kubernetes version, agent version, provisioning state, and node count
-- **AKS Node Resource Usage**: Per-AKS-node CPU and memory utilization from Container Insights / InsightsMetrics
+- **AKS Node Resource Usage**: Per-AKS-node CPU and memory utilization via PromQL from Azure Monitor Workspace (Managed Prometheus), with separate CPU and Memory tables and green-red heatmap bars
+- **Azure Monitor Workspace Parameter**: New dropdown to select the Azure Monitor Workspace collecting Prometheus metrics from AKS Arc clusters
 
 ### Bug Fixes & Technical Improvements
 - **ARG Query Fixes**: Removed all `let` statements from `extensibilityresources` queries (ARG constraint), restructured queries to work within single-extensibilityresources-per-query limit

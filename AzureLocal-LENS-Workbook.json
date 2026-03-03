@@ -2313,11 +2313,29 @@
                   },
                   {
                     "columnMatch": "memoryUsagePct",
-                    "formatter": 8,
+                    "formatter": 18,
                     "formatOptions": {
-                      "min": 0,
-                      "max": 100,
-                      "palette": "greenRedDark"
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "95",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
                     },
                     "numberFormat": {
                       "unit": 1,

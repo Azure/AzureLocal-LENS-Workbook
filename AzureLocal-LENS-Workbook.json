@@ -2487,7 +2487,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Cluster"
                   },
                   {
                     "columnId": "clusterLink"

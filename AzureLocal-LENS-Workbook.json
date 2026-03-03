@@ -2623,35 +2623,6 @@
                   "resourceType": "microsoft.resourcegraph/resources"
                 },
                 {
-                  "id": "azure-monitor-workspace",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "AzureMonitorWorkspace",
-                  "label": "Azure Monitor Workspace",
-                  "type": 2,
-                  "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "includeAll": true,
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "value": [
-                    "value::all"
-                  ],
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
-                {
                   "id": "node-trends-time-range",
                   "version": "KqlParameterItem/1.0",
                   "name": "NodeTrendsTimeRange",
@@ -4171,6 +4142,52 @@
               "value": "value::all"
             },
             "name": "cluster-aks-table"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "azure-monitor-workspace",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AzureMonitorWorkspace",
+                  "label": "Azure Monitor Workspace",
+                  "type": 2,
+                  "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "aks-prometheus-params"
           },
           {
             "type": 3,

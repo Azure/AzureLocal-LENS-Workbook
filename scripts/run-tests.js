@@ -493,7 +493,7 @@ testSuite('Visualization Types Validation', () => {
         .map(i => i.content.visualization);
 
     const uniqueVizTypes = [...new Set(visualizationTypes)];
-    const validVizTypes = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar'];
+    const validVizTypes = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar', 'timechart'];
 
     const invalidVizTypes = uniqueVizTypes.filter(v => !validVizTypes.includes(v));
     assert(invalidVizTypes.length === 0,
@@ -952,6 +952,120 @@ testSuite('Item Count Regression Guard', () => {
     assert(allCharts.length >= 30,
         `Workbook has at least 30 charts (actual: ${allCharts.length})`,
         '>=30', allCharts.length);
+});
+
+// --- 22. Prometheus / AKS Node Resource Usage Validation ---
+testSuite('Prometheus AKS Node Resource Usage', () => {
+    // Verify Azure Monitor Workspace parameter exists
+    const allParams = [];
+    allItems.filter(i => i.type === 9 && i.content && i.content.parameters).forEach(pi => {
+        pi.content.parameters.forEach(p => allParams.push(p));
+    });
+    const amwParam = allParams.find(p => p.name === 'AzureMonitorWorkspace');
+    assert(amwParam !== undefined,
+        'AzureMonitorWorkspace parameter exists', 'found', amwParam ? 'found' : 'not found');
+
+    if (amwParam) {
+        assert(amwParam.type === 2,
+            'AzureMonitorWorkspace is a dropdown (type 2)', 2, amwParam.type);
+        assert(amwParam.query && amwParam.query.includes('microsoft.monitor/accounts'),
+            'AzureMonitorWorkspace queries microsoft.monitor/accounts',
+            'contains resource type', amwParam.query.includes('microsoft.monitor/accounts') ? 'yes' : 'no');
+    }
+
+    // Verify PrometheusTimeRange parameter exists
+    const promTimeRange = allParams.find(p => p.name === 'PrometheusTimeRange');
+    assert(promTimeRange !== undefined,
+        'PrometheusTimeRange parameter exists', 'found', promTimeRange ? 'found' : 'not found');
+    if (promTimeRange) {
+        assert(promTimeRange.type === 4,
+            'PrometheusTimeRange is a time range picker (type 4)', 4, promTimeRange.type);
+    }
+
+    // Verify Prometheus tip markdown exists
+    const promTip = allItems.find(i => i.name === 'text-prometheus-tip');
+    assert(promTip !== undefined,
+        'Prometheus tip markdown exists', 'found', promTip ? 'found' : 'not found');
+    if (promTip) {
+        assert(promTip.content.json.includes('Azure Managed Prometheus'),
+            'Prometheus tip mentions Azure Managed Prometheus',
+            'contains text', promTip.content.json.includes('Azure Managed Prometheus') ? 'yes' : 'no');
+    }
+
+    // Verify all 6 Prometheus items exist
+    const promItemNames = [
+        'cluster-aks-node-cpu-chart',
+        'cluster-aks-node-memory-chart',
+        'cluster-aks-node-disk-chart',
+        'cluster-aks-node-network-chart'
+    ];
+    promItemNames.forEach(name => {
+        const item = allItems.find(i => i.name === name);
+        assert(item !== undefined,
+            `Prometheus item "${name}" exists`, 'found', item ? 'found' : 'not found');
+    });
+
+    // Verify all Prometheus queries use PrometheusQueryProvider/1.0 format
+    const promItems = allItems.filter(i => promItemNames.includes(i.name) && i.content && i.content.query);
+    const promWithProvider = promItems.filter(i => i.content.query.includes('PrometheusQueryProvider/1.0'));
+    assert(promWithProvider.length === promItems.length,
+        'All Prometheus queries use PrometheusQueryProvider/1.0 format',
+        promItems.length, promWithProvider.length);
+
+    // Verify all Prometheus items use queryType 16
+    const promWithQT16 = promItems.filter(i => i.content.queryType === 16);
+    assert(promWithQT16.length === promItems.length,
+        'All Prometheus items use queryType 16',
+        promItems.length, promWithQT16.length);
+
+    // Verify all Prometheus items use microsoft.monitor/accounts resource type
+    const promWithRT = promItems.filter(i => i.content.resourceType === 'microsoft.monitor/accounts');
+    assert(promWithRT.length === promItems.length,
+        'All Prometheus items use microsoft.monitor/accounts resource type',
+        promItems.length, promWithRT.length);
+
+    // Verify all Prometheus items reference {AzureMonitorWorkspace} in crossComponentResources
+    const promWithCCR = promItems.filter(i =>
+        i.content.crossComponentResources && i.content.crossComponentResources.includes('{AzureMonitorWorkspace}')
+    );
+    assert(promWithCCR.length === promItems.length,
+        'All Prometheus items reference {AzureMonitorWorkspace}',
+        promItems.length, promWithCCR.length);
+
+    // Verify all Prometheus items use query_range type (all are timecharts now)
+    const timechartsWithRange = promItems.filter(i => i.content.query && i.content.query.includes('"type":"query_range"'));
+    assert(timechartsWithRange.length === promItems.length,
+        'All Prometheus timecharts use query_range type',
+        promItems.length, timechartsWithRange.length);
+
+    // Verify all Prometheus items use timechart visualization
+    const timechartsWithViz = promItems.filter(i => i.content.visualization === 'timechart');
+    assert(timechartsWithViz.length === promItems.length,
+        'All Prometheus timecharts use timechart visualization',
+        promItems.length, timechartsWithViz.length);
+
+    // Verify all timecharts have timeContextFromParameter set to PrometheusTimeRange
+    const timechartsWithTimeCtx = promItems.filter(i => i.content.timeContextFromParameter === 'PrometheusTimeRange');
+    assert(timechartsWithTimeCtx.length === promItems.length,
+        'All Prometheus timecharts use PrometheusTimeRange time context',
+        promItems.length, timechartsWithTimeCtx.length);
+
+    // Verify all Prometheus items have conditional visibility on ClusterFilter
+    const promWithVis = promItems.filter(i =>
+        i.conditionalVisibility &&
+        i.conditionalVisibility.parameterName === 'ClusterFilter' &&
+        i.conditionalVisibility.comparison === 'isNotEqualTo' &&
+        i.conditionalVisibility.value === 'value::all'
+    );
+    assert(promWithVis.length === promItems.length,
+        'All Prometheus items hidden when ClusterFilter is "all"',
+        promItems.length, promWithVis.length);
+
+    // Verify CPU/Memory charts and tables are 50% width (side-by-side layout)
+    const promWith50Width = promItems.filter(i => i.customWidth === '50');
+    assert(promWith50Width.length === promItems.length,
+        'All Prometheus items have 50% width for side-by-side layout',
+        promItems.length, promWith50Width.length);
 });
 
 // --- 22. Documentation File Validation ---

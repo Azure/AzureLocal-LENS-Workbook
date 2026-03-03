@@ -4186,6 +4186,44 @@
                   ],
                   "queryType": 1,
                   "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "prometheus-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "PrometheusTimeRange",
+                  "label": "Prometheus Time Range",
+                  "type": 4,
+                  "description": "Time range for Prometheus charts. Shorter ranges provide higher resolution data.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 14400000
+                  }
                 }
               ],
               "style": "pills",
@@ -4215,54 +4253,34 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100\",\"type\":\"query\"}",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"avg by (instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100\",\"type\":\"query_range\"}",
               "size": 0,
-              "title": "☸️ AKS Node CPU Usage on: {ClusterFilter}",
-              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled on your AKS Arc clusters and the selected Azure Monitor Workspace receives metrics.",
+              "aggregation": 3,
+              "title": "📈 AKS Node CPU Usage Over Time",
+              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+              "timeContextFromParameter": "PrometheusTimeRange",
               "queryType": 16,
               "resourceType": "microsoft.monitor/accounts",
               "crossComponentResources": [
                 "{AzureMonitorWorkspace}"
               ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Value",
-                    "formatter": 8,
-                    "formatOptions": {
-                      "min": 0,
-                      "max": 100,
-                      "palette": "greenRed"
-                    },
-                    "numberFormat": {
-                      "unit": 1,
-                      "options": {
-                        "style": "decimal",
-                        "minimumFractionDigits": 1,
-                        "maximumFractionDigits": 1
-                      }
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 1
                     }
-                  },
-                  {
-                    "columnMatch": "Timestamp",
-                    "formatter": 5
                   }
-                ],
-                "labelSettings": [
-                  {
-                    "columnId": "cluster",
-                    "label": "AKS Cluster"
-                  },
-                  {
-                    "columnId": "instance",
-                    "label": "Node Name"
-                  },
-                  {
-                    "columnId": "Value",
-                    "label": "Avg CPU %"
-                  }
-                ]
+                }
               }
             },
             "conditionalVisibility": {
@@ -4270,60 +4288,41 @@
               "comparison": "isNotEqualTo",
               "value": "value::all"
             },
-            "name": "cluster-aks-node-cpu-table"
+            "customWidth": "50",
+            "name": "cluster-aks-node-cpu-chart"
           },
           {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"(1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100\",\"type\":\"query\"}",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"(1 - avg by (instance) (node_memory_MemAvailable_bytes) / avg by (instance) (node_memory_MemTotal_bytes)) * 100\",\"type\":\"query_range\"}",
               "size": 0,
-              "title": "☸️ AKS Node Memory Usage on: {ClusterFilter}",
-              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled on your AKS Arc clusters and the selected Azure Monitor Workspace receives metrics.",
+              "aggregation": 3,
+              "title": "📈 AKS Node Memory Usage Over Time",
+              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+              "timeContextFromParameter": "PrometheusTimeRange",
               "queryType": 16,
               "resourceType": "microsoft.monitor/accounts",
               "crossComponentResources": [
                 "{AzureMonitorWorkspace}"
               ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
-                  {
-                    "columnMatch": "Value",
-                    "formatter": 8,
-                    "formatOptions": {
-                      "min": 0,
-                      "max": 100,
-                      "palette": "greenRed"
-                    },
-                    "numberFormat": {
-                      "unit": 1,
-                      "options": {
-                        "style": "decimal",
-                        "minimumFractionDigits": 1,
-                        "maximumFractionDigits": 1
-                      }
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 1
                     }
-                  },
-                  {
-                    "columnMatch": "Timestamp",
-                    "formatter": 5
                   }
-                ],
-                "labelSettings": [
-                  {
-                    "columnId": "cluster",
-                    "label": "AKS Cluster"
-                  },
-                  {
-                    "columnId": "instance",
-                    "label": "Node Name"
-                  },
-                  {
-                    "columnId": "Value",
-                    "label": "Avg Memory %"
-                  }
-                ]
+                }
               }
             },
             "conditionalVisibility": {
@@ -4331,7 +4330,88 @@
               "comparison": "isNotEqualTo",
               "value": "value::all"
             },
-            "name": "cluster-aks-node-memory-table"
+            "customWidth": "50",
+            "name": "cluster-aks-node-memory-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"avg by (instance) (rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m]))\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 AKS Node Disk I/O Over Time (bytes/sec)",
+              "noDataMessage": "No Prometheus data found.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 36,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                }
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "customWidth": "50",
+            "name": "cluster-aks-node-disk-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"avg by (instance) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m]))\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 AKS Node Network Throughput Over Time (bytes/sec)",
+              "noDataMessage": "No Prometheus data found.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 36,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                }
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "customWidth": "50",
+            "name": "cluster-aks-node-network-chart"
           }
         ]
       },

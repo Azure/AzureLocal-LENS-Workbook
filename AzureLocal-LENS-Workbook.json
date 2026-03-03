@@ -170,7 +170,17 @@
             "linkTarget": "Url",
             "linkLabel": "🧩 Solution Builder Extension (SBE) updates",
             "style": "link"
-          },
+          }
+        ]
+      },
+      "name": "quick-actions-links"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "nav",
+        "links": [
           {
             "id": "update-docs-link",
             "cellValue": "https://learn.microsoft.com/azure/azure-local/update/update-via-powershell-23h2",
@@ -201,7 +211,7 @@
           }
         ]
       },
-      "name": "quick-actions-links"
+      "name": "quick-actions-links-row2"
     },
     {
       "type": 1,

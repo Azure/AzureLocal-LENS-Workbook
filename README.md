@@ -8,7 +8,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.4) — [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37)
+## Recent Changes (v0.8.4) — [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37) | [Issue #39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)
 
 ### Capacity Tab Layout & Navigation Improvements
 - **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability
@@ -51,6 +51,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
 - **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
 - **Storage TB forecast fix**: Fixed duplicate event aggregation causing data spikes — now uses `arg_max` to take latest Event 3002 per day per cluster before expanding volumes
+- **ARB table VM/AKS counts** ([#39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)): Fixed Offline ARBs and All ARBs tables to use proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for VM and AKS Arc counts via 2-query + merge pattern, replacing incorrect resource group matching
+- **Licensing pie chart colors**: Restored Enabled (green) / Disabled (gray) series colors on Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification pie charts
 - **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
 - **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
 - **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults

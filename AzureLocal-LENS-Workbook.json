@@ -6421,7 +6421,7 @@
                     "aggregation": 3,
                     "title": "Storage Latency (ms) — By Machine",
                     "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
+                    "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
                       "{MachinesLogAnalyticsWorkspace}"
                     ],
@@ -6461,9 +6461,9 @@
                     "aggregation": 3,
                     "title": "Storage IOPS — By Machine",
                     "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
+                    "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
-                      "{Subscriptions}"
+                      "{MachinesLogAnalyticsWorkspace}"
                     ],
                     "visualization": "linechart",
                     "chartSettings": {
@@ -6902,9 +6902,9 @@
                     "aggregation": 3,
                     "title": "Volume Usage (%) - Single cluster",
                     "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
+                    "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
-                      "{Subscriptions}"
+                      "{MachinesLogAnalyticsWorkspace}"
                     ],
                     "visualization": "timechart",
                     "chartSettings": {
@@ -7329,7 +7329,7 @@
                     "aggregation": 3,
                     "title": "CPU Usage (%) - Single cluster (Actual vs Forecast)",
                     "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
+                    "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
                       "{MachinesLogAnalyticsWorkspace}"
                     ],

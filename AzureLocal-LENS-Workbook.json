@@ -7842,10 +7842,13 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc(avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"instant\"}",
+                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100\",\"type\":\"query_range\"}",
                     "size": 0,
-                    "title": "AKS Node CPU & Memory Usage (Prometheus)",
+                    "title": "AKS Node CPU Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+                    "timeContext": {
+                      "durationMs": 3600000
+                    },
                     "queryType": 16,
                     "resourceType": "microsoft.monitor/accounts",
                     "crossComponentResources": [
@@ -7916,9 +7919,13 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc((1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"instant\"}",
+                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"(1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100\",\"type\":\"query_range\"}",
                     "size": 0,
+                    "title": "AKS Node Memory Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+                    "timeContext": {
+                      "durationMs": 3600000
+                    },
                     "queryType": 16,
                     "resourceType": "microsoft.monitor/accounts",
                     "crossComponentResources": [

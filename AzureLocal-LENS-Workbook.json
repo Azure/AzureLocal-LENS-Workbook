@@ -5877,6 +5877,14 @@
                   "name": "single-header-text"
                 },
                 {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** Select an Azure Local cluster using the **'Select Cluster'** drop-down below. Optionally, select a specific **Log Analytics Workspace** if your clusters report to different workspaces.",
+                    "style": "upsell"
+                  },
+                  "name": "single-cluster-tip"
+                },
+                {
                   "type": 9,
                   "content": {
                     "version": "KqlParameterItem/1.0",

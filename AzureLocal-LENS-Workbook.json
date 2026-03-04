@@ -3427,6 +3427,14 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Latency, IOPS, or Network throughput).",
+                    "style": "upsell"
+                  },
+                  "name": "mc-perf-data-tip"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "💡 **How this works:** This table analyses historical CPU, Memory and Storage utilisation data from the selected Log Analytics Workspace over the **Historic Data Time Range**. It applies linear regression to calculate the daily rate of change (trend) and estimates how many days until the configurable **Warning** and **Critical** thresholds are reached. A longer time range (e.g. 30+ days) produces more accurate forecasts. 'N/A' means usage is stable or declining — no exhaustion is projected.",
                     "style": "info"
                   },
@@ -3788,14 +3796,6 @@
                     "json": "### 💾 Storage & Network Performance — For Selected Clusters"
                   },
                   "name": "mc-perf-charts-header"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Latency, IOPS, or Network throughput).",
-                    "style": "upsell"
-                  },
-                  "name": "mc-perf-data-tip"
                 },
                 {
                   "type": 9,

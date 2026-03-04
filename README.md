@@ -39,7 +39,17 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Workloads section**: Renamed header emoji to 📦, added "🖥️ Azure Local VMs on: X" and "☸️ AKS Arc Clusters on: X" section headers
 - **VM table**: Added `linkColumn` fix for portal links, renamed "Cluster" column to "Azure Local Cluster"
 - **AKS table**: Added `linkColumn` fix for portal links, added dedicated section header
-- **AKS Node Resource Usage**: New PromQL tables showing average CPU and Memory usage per AKS node with traffic light status icons (🟢 <80%, 🟡 ≥80%, 🔴 ≥90%), with dedicated Azure Monitor Workspace filter
+- **AKS Node Resource Usage**: New PromQL timecharts showing Top 10 AKS nodes by CPU and Memory usage, with dedicated single-select Azure Monitor Workspace filter and tip explaining cross-cluster data scope limitation
+- **Forecast Y-axis**: All percentage-based forecast charts (CPU, Memory, Storage) now fixed to 0-100% Y-axis range to prevent small changes from appearing alarming
+
+### Bug Fixes & Technical Improvements
+- **100-resource limit fix**: Changed all chart `crossComponentResources` from `{Subscriptions}` to `{MachinesLogAnalyticsWorkspace}` to avoid "Request cannot exceed 100 resources" errors
+- **VM/AKS portal links**: Fixed missing `linkColumn` property across all VM and AKS name link formatters (lost during JSON reformatting)
+- **PromQL visualization**: Converted AKS node resource items to timecharts — Azure Workbooks Prometheus provider doesn't support table visualization with `query_range` data
+- **Prometheus tip styling**: Added purple background (`upsell` style) to Prometheus tip on Overview tab
+- **Forecast line colors**: Disclaimer text updated from "grey" to "yellow" to match actual line colour
+- **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
+- **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

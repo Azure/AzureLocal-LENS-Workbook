@@ -7510,7 +7510,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## � Workloads on Cluster: {SingleCluster:label}"
+                    "json": "## 📦 Workloads on Cluster: {SingleCluster:label}"
                   },
                   "name": "sc-workloads-header"
                 },

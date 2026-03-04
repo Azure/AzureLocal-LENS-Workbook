@@ -3792,7 +3792,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) Data Collection Rule (DCR). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Latency, IOPS, or Network throughput).",
+                    "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Latency, IOPS, or Network throughput).",
                     "style": "upsell"
                   },
                   "name": "mc-perf-data-tip"

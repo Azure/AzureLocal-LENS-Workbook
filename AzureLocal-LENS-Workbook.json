@@ -3615,8 +3615,7 @@
                             "style": "decimal",
                             "maximumFractionDigits": 1
                           }
-                        },
-                        "max": 100
+                        }
                       }
                     }
                   },
@@ -3660,8 +3659,7 @@
                             "style": "decimal",
                             "maximumFractionDigits": 1
                           }
-                        },
-                        "max": 100
+                        }
                       }
                     }
                   },
@@ -4859,8 +4857,7 @@
                       "showLegend": false,
                       "seriesLabelSettings": [],
                       "ySettings": {
-                        "min": 0,
-                        "max": 100
+                        "min": 0
                       }
                     }
                   },
@@ -4895,8 +4892,7 @@
                       "showLegend": false,
                       "seriesLabelSettings": [],
                       "ySettings": {
-                        "min": 0,
-                        "max": 100
+                        "min": 0
                       }
                     }
                   },

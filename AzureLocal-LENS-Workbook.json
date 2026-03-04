@@ -7821,6 +7821,19 @@
                   "name": "sc-aks-perf-header"
                 },
                 {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** Select an **Azure Monitor Workspace** below to view AKS node resource usage. This requires [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters.",
+                    "style": "upsell"
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-aks-amw-tip"
+                },
+                {
                   "type": 9,
                   "content": {
                     "version": "KqlParameterItem/1.0",

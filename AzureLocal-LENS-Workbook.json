@@ -4689,7 +4689,8 @@
                             "style": "decimal",
                             "maximumFractionDigits": 1
                           }
-                        }
+                        },
+                        "max": 100
                       }
                     }
                   },
@@ -4874,7 +4875,8 @@
                             "style": "decimal",
                             "maximumFractionDigits": 1
                           }
-                        }
+                        },
+                        "max": 100
                       }
                     }
                   },
@@ -5059,7 +5061,8 @@
                             "style": "decimal",
                             "maximumFractionDigits": 1
                           }
-                        }
+                        },
+                        "max": 100
                       }
                     }
                   },
@@ -7239,7 +7242,11 @@
                           "seriesName": "Forecast",
                           "color": "yellow"
                         }
-                      ]
+                      ],
+                      "ySettings": {
+                        "min": 0,
+                        "max": 100
+                      }
                     },
                     "mapSettings": {
                       "locInfo": "AzureResource",
@@ -7351,7 +7358,11 @@
                           "seriesName": "Forecast",
                           "color": "yellow"
                         }
-                      ]
+                      ],
+                      "ySettings": {
+                        "min": 0,
+                        "max": 100
+                      }
                     }
                   },
                   "customWidth": "50",
@@ -7392,7 +7403,11 @@
                           "seriesName": "Forecast",
                           "color": "yellow"
                         }
-                      ]
+                      ],
+                      "ySettings": {
+                        "min": 0,
+                        "max": 100
+                      }
                     }
                   },
                   "customWidth": "50",

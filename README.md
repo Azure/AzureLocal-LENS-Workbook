@@ -13,7 +13,6 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 ### Capacity Tab Layout & Navigation Improvements
 - **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability
 - **Navigation Tip**: Added instructional text at the top of the Capacity tab guiding users through the three sub-tabs
-- **Removed duplicate group titles**: Cleaned up redundant "Capacity", "Multi-Cluster View", and "Single Cluster View" headers that appeared alongside the markdown headers
 
 ### Log Analytics Workspace Filter Improvements
 - **Duplicated LA Workspace filter**: Moved from shared Capacity params into each sub-tab (Overview, Multi-cluster, Single cluster) so each tab independently controls its own workspace selection

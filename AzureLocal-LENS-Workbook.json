@@ -7833,14 +7833,24 @@
                         "type": 2,
                         "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
                         "isRequired": true,
+                        "multiSelect": true,
+                        "quote": "'",
+                        "delimiter": ",",
                         "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
                         "crossComponentResources": [
                           "{Subscriptions}"
                         ],
                         "typeSettings": {
-                          "additionalResourceOptions": [],
+                          "additionalResourceOptions": [
+                            "value::all"
+                          ],
+                          "includeAll": true,
                           "showDefault": false
                         },
+                        "defaultValue": "value::all",
+                        "value": [
+                          "value::all"
+                        ],
                         "queryType": 1,
                         "resourceType": "microsoft.resourcegraph/resources"
                       }

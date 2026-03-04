@@ -7870,7 +7870,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc(avg by (cluster, instance) (avg_over_time((1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m]))[1h:])) * 100)\",\"type\":\"instant\"}",
+                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc(avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"instant\"}",
                     "size": 0,
                     "title": "AKS Node CPU Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
@@ -7962,7 +7962,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc((1 - avg by (cluster, instance) (avg_over_time(node_memory_MemAvailable_bytes[1h])) / avg by (cluster, instance) (avg_over_time(node_memory_MemTotal_bytes[1h]))) * 100)\",\"type\":\"instant\"}",
+                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"sort_desc((1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"instant\"}",
                     "size": 0,
                     "title": "AKS Node Memory Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",

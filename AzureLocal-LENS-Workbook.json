@@ -3950,7 +3950,8 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The tables below require [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters. Prometheus metrics are collected into an Azure Monitor Workspace and queried using PromQL."
+                    "json": "💡 **Tip:** The tables below require [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters. Prometheus metrics are collected into an Azure Monitor Workspace and queried using PromQL.",
+                    "style": "upsell"
                   },
                   "conditionalVisibility": {
                     "parameterName": "ClusterFilter",

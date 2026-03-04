@@ -2764,9 +2764,9 @@
                     "aggregation": 3,
                     "title": "CPU Usage (%) — Top 5 Clusters",
                     "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
+                    "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
-                      "{Subscriptions}"
+                      "{MachinesLogAnalyticsWorkspace}"
                     ],
                     "visualization": "linechart",
                     "chartSettings": {

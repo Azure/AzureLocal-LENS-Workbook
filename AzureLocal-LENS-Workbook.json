@@ -4400,7 +4400,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in yellow) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
                     "style": "warning"
                   },
                   "name": "multi-forecast-disclaimer-tip"
@@ -7195,7 +7195,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in yellow) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
                     "style": "warning"
                   },
                   "name": "sc-stor-forecast-disclaimer-tip"
@@ -7314,7 +7314,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in yellow) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
                     "style": "warning"
                   },
                   "name": "sc-compute-forecast-disclaimer-tip"

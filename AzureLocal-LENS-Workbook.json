@@ -6582,336 +6582,6 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 📊 Storage Pool Trends & Forecast"
-                  },
-                  "name": "sc-stor-forecast-header"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
-                    "style": "warning"
-                  },
-                  "name": "sc-stor-forecast-disclaimer-tip"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "// Storage Available (%) - Actual vs Forecast (Single cluster)\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\nlet perDay =\r\nEvent\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n| where EventID == 3002\r\n| extend x = parse_xml(tostring(EventData))\r\n| extend ArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n| where isnotempty(ArmId)\r\n| where ArmId =~ \"{SingleCluster}\"\r\n| extend rdj = parse_json(RenderedDescription)\r\n| mv-expand vol = rdj.VolumeList\r\n| extend TotalCap = tolong(vol.m_Size)\r\n| extend UsedCap  = tolong(vol.m_SizeUsed)\r\n| summarize TotalBytes=sum(TotalCap), UsedBytes=sum(UsedCap) by ArmId, Day = bin(TimeGenerated, step)\r\n| extend AvailableBytes = TotalBytes - UsedBytes\r\n| extend AvailablePct =\r\n    iif(TotalBytes > 0, 100.0 * todouble(AvailableBytes) / todouble(TotalBytes), real(null))\r\n| project TimeGenerated = Day, AvailablePct;\r\n\r\n// Forecast\r\nperDay\r\n| make-series AvgValue = avg(AvailablePct) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double),\r\n    trend to typeof(double)\r\n| extend\r\n    Actual     = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Projection = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Projection)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "Storage Pool Remaining (%) - Single cluster (Actual vs Forecast)",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces",
-                    "crossComponentResources": [
-                      "{MachinesLogAnalyticsWorkspace}"
-                    ],
-                    "visualization": "linechart",
-                    "sortBy": [],
-                    "tileSettings": {
-                      "showBorder": false
-                    },
-                    "graphSettings": {
-                      "type": 0
-                    },
-                    "chartSettings": {
-                      "xAxis": "TimeGenerated",
-                      "yAxis": [
-                        "Value"
-                      ],
-                      "group": "Series",
-                      "seriesLabelKey": "Series",
-                      "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ]
-                    },
-                    "mapSettings": {
-                      "locInfo": "AzureResource",
-                      "locInfoColumn": "ArmId"
-                    }
-                  },
-                  "customWidth": "50",
-                  "name": "single-cluster-storage-pool-trend",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "// Storage Available (TB) - Actual vs Forecast (ClusterFilter multi-select + includeAll)\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));  // remove max_of if you want it pure\r\n\r\n// Detect \"All\" selection (value::all injected by parameter includeAll)\r\nlet isAllClusters = false; // single cluster view\r\n\r\nlet perDay =\r\nEvent\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n| where EventID == 3002\r\n| extend x = parse_xml(EventData)\r\n| extend ArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n| where isnotempty(ArmId)\r\n| where ArmId =~ '{SingleCluster}'\r\n| extend volumes = parse_json(RenderedDescription).VolumeList\r\n| mv-expand volumes\r\n| extend TotalCap = tolong(volumes.m_Size)\r\n| extend UsedCap  = tolong(volumes.m_SizeUsed)\r\n| summarize TotalBytes=sum(TotalCap), UsedBytes=sum(UsedCap) by ArmId, TimeGenerated\r\n| extend AvailableBytes = TotalBytes - UsedBytes\r\n| extend Day = bin(TimeGenerated, step)\r\n// one point per cluster per day (use latest reading that day)\r\n| summarize arg_max(TimeGenerated, AvailableBytes) by ArmId, Day\r\n// sum across clusters for that day (fleet or selected set)\r\n| summarize AvailableBytes = sum(AvailableBytes) by Day\r\n| extend AvailableTB = todouble(AvailableBytes) / 1e12\r\n| project TimeGenerated = Day, AvailableTB;\r\n\r\nperDay\r\n| make-series AvgValue = avg(AvailableTB) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double),\r\n    trend to typeof(double)\r\n| extend\r\n    Actual     = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Projection = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Projection)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "Storage Pool Remaining (TB) - Single cluster (Actual vs Forecast)",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces",
-                    "crossComponentResources": [
-                      "{MachinesLogAnalyticsWorkspace}"
-                    ],
-                    "visualization": "linechart",
-                    "sortBy": [],
-                    "tileSettings": {
-                      "showBorder": false
-                    },
-                    "graphSettings": {
-                      "type": 0
-                    },
-                    "chartSettings": {
-                      "xAxis": "TimeGenerated",
-                      "yAxis": [
-                        "Value"
-                      ],
-                      "group": "Series",
-                      "seriesLabelKey": "Series",
-                      "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ]
-                    },
-                    "mapSettings": {
-                      "locInfo": "AzureResource",
-                      "locInfoColumn": "ArmId"
-                    }
-                  },
-                  "customWidth": "50",
-                  "name": "single-cluster-storage-pool-trend - Copy",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "### ⚙️ Compute Trends & Forecast"
-                  },
-                  "name": "sc-compute-forecast-header"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
-                    "style": "warning"
-                  },
-                  "name": "sc-compute-forecast-disclaimer-tip"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "// CPU % Forecast - Multi-cluster ClusterFilter (multi-select + All) via Event 3002 ArmId mapping\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet lookback = trendEnd - trendStart;\r\nlet horizonDays = toint('{ForecastHorizonDays}');   // set this to 30 in workbook if you want \"future=30d\"\r\nlet step        = 24h;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n\r\n// Detect \"All\" selection\r\nlet isAllClusters = false; // single cluster view\r\n\r\n\r\n// 1) Build Node -> Cluster mapping using Event 3002, applying ClusterFilter\r\nlet NodeToCluster =\r\n    Event\r\n    | where TimeGenerated between (trendStart - 30d .. trendEnd)   // buffer for stability\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(EventData)\r\n    | extend ClusterArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId)\r\n    | where ClusterArmId =~ '{SingleCluster}'\r\n    | summarize ClusterArmId = arg_max(TimeGenerated, ClusterArmId).ClusterArmId by Computer;\r\n\r\n\r\n// 2) Pull Perf (CPU) for nodes belonging to selected clusters, then forecast on fleet/selection aggregate\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\"\r\n  and CounterName == \"% Processor Time\"\r\n  and InstanceName == \"_Total\"\r\n| join kind=inner NodeToCluster on Computer\r\n| summarize AvgValue = avg(todouble(CounterValue)) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend seasonality = toint((lookback / 2) / step)   // matches your lookback upon 2 idea\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonality, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "CPU Usage (%) - Single cluster (Actual vs Forecast)",
-                    "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
-                    "crossComponentResources": [
-                      "{MachinesLogAnalyticsWorkspace}"
-                    ],
-                    "visualization": "linechart",
-                    "chartSettings": {
-                      "xAxis": "TimeGenerated",
-                      "yAxis": [
-                        "Value"
-                      ],
-                      "group": "Series",
-                      "seriesLabelKey": "Series",
-                      "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ]
-                    }
-                  },
-                  "customWidth": "50",
-                  "name": "single-cluster-cpu-trend",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "// Memory % Forecast - Multi-cluster ClusterFilter (multi-select + All) via Event 3002 ArmId mapping\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2, expressed in number of points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\n// Detect \"All\" selection\r\nlet isAllClusters = false; // single cluster view\r\n\r\n// 1) Build Node -> Cluster mapping using Event 3002, applying ClusterFilter\r\nlet NodeToCluster =\r\n    Event\r\n    | where TimeGenerated between (trendStart - 30d .. trendEnd)   // buffer for stability\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(EventData)\r\n    | extend ClusterArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId)\r\n    | where ClusterArmId =~ '{SingleCluster}'\r\n    | summarize ClusterArmId = arg_max(TimeGenerated, ClusterArmId).ClusterArmId by Computer;\r\n\r\n// 2) Pull Perf (Memory) for nodes belonging to selected clusters, then forecast on fleet/selection aggregate\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\"\r\n  and CounterName == \"% Committed Bytes In Use\"\r\n| join kind=inner NodeToCluster on Computer\r\n| summarize AvgValue = avg(todouble(CounterValue)) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "Memory Usage (%) - Single cluster (Actual vs Forecast)",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces",
-                    "crossComponentResources": [
-                      "{MachinesLogAnalyticsWorkspace}"
-                    ],
-                    "visualization": "linechart",
-                    "chartSettings": {
-                      "xAxis": "TimeGenerated",
-                      "yAxis": [
-                        "Value"
-                      ],
-                      "group": "Series",
-                      "seriesLabelKey": "Series",
-                      "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ]
-                    }
-                  },
-                  "customWidth": "50",
-                  "name": "single-cluster-memory-trend",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "// VM drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend machineId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | project machineId, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "noDataMessage": "No VMs found on this cluster.",
-                    "queryType": 1,
-                    "resourceType": "microsoft.resourcegraph/resources",
-                    "crossComponentResources": [
-                      "{Subscriptions}"
-                    ],
-                    "visualization": "table",
-                    "gridSettings": {
-                      "formatters": [
-                        {
-                          "columnMatch": "vmName",
-                          "formatter": 7,
-                          "formatOptions": {
-                            "linkTarget": "Url",
-                            "linkLabel": "",
-                            "linkIsContextBlade": false
-                          }
-                        },
-                        {
-                          "columnMatch": "vmLink",
-                          "formatter": 5
-                        },
-                        {
-                          "columnMatch": "status",
-                          "formatter": 18,
-                          "formatOptions": {
-                            "thresholdsOptions": "icons",
-                            "thresholdsGrid": [
-                              {
-                                "operator": "==",
-                                "thresholdValue": "Connected",
-                                "representation": "success",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "Default",
-                                "representation": "critical",
-                                "text": "{0}{1}"
-                              }
-                            ]
-                          }
-                        }
-                      ],
-                      "labelSettings": [
-                        {
-                          "columnId": "vmName",
-                          "label": "VM Name"
-                        },
-                        {
-                          "columnId": "clusterName",
-                          "label": "Cluster"
-                        },
-                        {
-                          "columnId": "status",
-                          "label": "Status"
-                        },
-                        {
-                          "columnId": "osSku",
-                          "label": "OS"
-                        },
-                        {
-                          "columnId": "osVersion",
-                          "label": "OS Version"
-                        },
-                        {
-                          "columnId": "resourceGroup",
-                          "label": "Resource Group"
-                        }
-                      ]
-                    },
-                    "chartSettings": {
-                      "showLegend": false,
-                      "seriesLabelSettings": []
-                    }
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "neverVisible",
-                    "comparison": "isEqualTo",
-                    "value": "alwaysHidden"
-                  },
-                  "name": "sc-vms-arg-data"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "let perfData = Perf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName in ('% Committed Bytes In Use', '% Used Memory'))\r\n| project Computer, ObjectName, CounterValue;\r\nlet insightsCPU = InsightsMetrics\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Namespace == 'Processor' and Name == 'UtilizationPercentage'\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| project Computer, ObjectName = 'Processor', CounterValue = Val;\r\nunion perfData, insightsCPU\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| project vmName = Computer, AvgCPU, MaxCPU, AvgMemory, MaxMemory",
-                    "size": 0,
-                    "aggregation": 3,
-                    "timeContextFromParameter": "NodeTrendsTimeRange",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces",
-                    "crossComponentResources": [
-                      "{MachinesLogAnalyticsWorkspace}"
-                    ],
-                    "chartSettings": {
-                      "showLegend": false,
-                      "seriesLabelSettings": []
-                    }
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "neverVisible",
-                    "comparison": "isEqualTo",
-                    "value": "alwaysHidden"
-                  },
-                  "name": "sc-vms-perf-data"
-                },
-                {
-                  "type": 1,
-                  "content": {
                     "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Physical Machines"
                   },
                   "name": "sc-perf-charts-header"
@@ -7503,6 +7173,336 @@
                     "margin": "5px",
                     "padding": "5px"
                   }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📊 Storage Pool Trends & Forecast"
+                  },
+                  "name": "sc-stor-forecast-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "style": "warning"
+                  },
+                  "name": "sc-stor-forecast-disclaimer-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "// Storage Available (%) - Actual vs Forecast (Single cluster)\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\nlet perDay =\r\nEvent\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n| where EventID == 3002\r\n| extend x = parse_xml(tostring(EventData))\r\n| extend ArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n| where isnotempty(ArmId)\r\n| where ArmId =~ \"{SingleCluster}\"\r\n| extend rdj = parse_json(RenderedDescription)\r\n| mv-expand vol = rdj.VolumeList\r\n| extend TotalCap = tolong(vol.m_Size)\r\n| extend UsedCap  = tolong(vol.m_SizeUsed)\r\n| summarize TotalBytes=sum(TotalCap), UsedBytes=sum(UsedCap) by ArmId, Day = bin(TimeGenerated, step)\r\n| extend AvailableBytes = TotalBytes - UsedBytes\r\n| extend AvailablePct =\r\n    iif(TotalBytes > 0, 100.0 * todouble(AvailableBytes) / todouble(TotalBytes), real(null))\r\n| project TimeGenerated = Day, AvailablePct;\r\n\r\n// Forecast\r\nperDay\r\n| make-series AvgValue = avg(AvailablePct) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double),\r\n    trend to typeof(double)\r\n| extend\r\n    Actual     = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Projection = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Projection)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "Storage Pool Remaining (%) - Single cluster (Actual vs Forecast)",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "linechart",
+                    "sortBy": [],
+                    "tileSettings": {
+                      "showBorder": false
+                    },
+                    "graphSettings": {
+                      "type": 0
+                    },
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "seriesLabelKey": "Series",
+                      "showLegend": false,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Actual",
+                          "color": "blue"
+                        },
+                        {
+                          "seriesName": "Forecast",
+                          "color": "yellow"
+                        }
+                      ]
+                    },
+                    "mapSettings": {
+                      "locInfo": "AzureResource",
+                      "locInfoColumn": "ArmId"
+                    }
+                  },
+                  "customWidth": "50",
+                  "name": "single-cluster-storage-pool-trend",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "// Storage Available (TB) - Actual vs Forecast (ClusterFilter multi-select + includeAll)\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));  // remove max_of if you want it pure\r\n\r\n// Detect \"All\" selection (value::all injected by parameter includeAll)\r\nlet isAllClusters = false; // single cluster view\r\n\r\nlet perDay =\r\nEvent\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n| where EventID == 3002\r\n| extend x = parse_xml(EventData)\r\n| extend ArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n| where isnotempty(ArmId)\r\n| where ArmId =~ '{SingleCluster}'\r\n| extend volumes = parse_json(RenderedDescription).VolumeList\r\n| mv-expand volumes\r\n| extend TotalCap = tolong(volumes.m_Size)\r\n| extend UsedCap  = tolong(volumes.m_SizeUsed)\r\n| summarize TotalBytes=sum(TotalCap), UsedBytes=sum(UsedCap) by ArmId, TimeGenerated\r\n| extend AvailableBytes = TotalBytes - UsedBytes\r\n| extend Day = bin(TimeGenerated, step)\r\n// one point per cluster per day (use latest reading that day)\r\n| summarize arg_max(TimeGenerated, AvailableBytes) by ArmId, Day\r\n// sum across clusters for that day (fleet or selected set)\r\n| summarize AvailableBytes = sum(AvailableBytes) by Day\r\n| extend AvailableTB = todouble(AvailableBytes) / 1e12\r\n| project TimeGenerated = Day, AvailableTB;\r\n\r\nperDay\r\n| make-series AvgValue = avg(AvailableTB) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double),\r\n    trend to typeof(double)\r\n| extend\r\n    Actual     = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Projection = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Projection)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "Storage Pool Remaining (TB) - Single cluster (Actual vs Forecast)",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "linechart",
+                    "sortBy": [],
+                    "tileSettings": {
+                      "showBorder": false
+                    },
+                    "graphSettings": {
+                      "type": 0
+                    },
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "seriesLabelKey": "Series",
+                      "showLegend": false,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Actual",
+                          "color": "blue"
+                        },
+                        {
+                          "seriesName": "Forecast",
+                          "color": "yellow"
+                        }
+                      ]
+                    },
+                    "mapSettings": {
+                      "locInfo": "AzureResource",
+                      "locInfoColumn": "ArmId"
+                    }
+                  },
+                  "customWidth": "50",
+                  "name": "single-cluster-storage-pool-trend - Copy",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### ⚙️ Compute Trends & Forecast"
+                  },
+                  "name": "sc-compute-forecast-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines (shown in grey) are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "style": "warning"
+                  },
+                  "name": "sc-compute-forecast-disclaimer-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "// CPU % Forecast - Multi-cluster ClusterFilter (multi-select + All) via Event 3002 ArmId mapping\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet lookback = trendEnd - trendStart;\r\nlet horizonDays = toint('{ForecastHorizonDays}');   // set this to 30 in workbook if you want \"future=30d\"\r\nlet step        = 24h;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n\r\n// Detect \"All\" selection\r\nlet isAllClusters = false; // single cluster view\r\n\r\n\r\n// 1) Build Node -> Cluster mapping using Event 3002, applying ClusterFilter\r\nlet NodeToCluster =\r\n    Event\r\n    | where TimeGenerated between (trendStart - 30d .. trendEnd)   // buffer for stability\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(EventData)\r\n    | extend ClusterArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId)\r\n    | where ClusterArmId =~ '{SingleCluster}'\r\n    | summarize ClusterArmId = arg_max(TimeGenerated, ClusterArmId).ClusterArmId by Computer;\r\n\r\n\r\n// 2) Pull Perf (CPU) for nodes belonging to selected clusters, then forecast on fleet/selection aggregate\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\"\r\n  and CounterName == \"% Processor Time\"\r\n  and InstanceName == \"_Total\"\r\n| join kind=inner NodeToCluster on Computer\r\n| summarize AvgValue = avg(todouble(CounterValue)) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend seasonality = toint((lookback / 2) / step)   // matches your lookback upon 2 idea\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonality, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "CPU Usage (%) - Single cluster (Actual vs Forecast)",
+                    "queryType": 0,
+                    "resourceType": "microsoft.resources/subscriptions",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "seriesLabelKey": "Series",
+                      "showLegend": false,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Actual",
+                          "color": "blue"
+                        },
+                        {
+                          "seriesName": "Forecast",
+                          "color": "yellow"
+                        }
+                      ]
+                    }
+                  },
+                  "customWidth": "50",
+                  "name": "single-cluster-cpu-trend",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "// Memory % Forecast - Multi-cluster ClusterFilter (multi-select + All) via Event 3002 ArmId mapping\r\nlet trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2, expressed in number of points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\n// Detect \"All\" selection\r\nlet isAllClusters = false; // single cluster view\r\n\r\n// 1) Build Node -> Cluster mapping using Event 3002, applying ClusterFilter\r\nlet NodeToCluster =\r\n    Event\r\n    | where TimeGenerated between (trendStart - 30d .. trendEnd)   // buffer for stability\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(EventData)\r\n    | extend ClusterArmId = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId)\r\n    | where ClusterArmId =~ '{SingleCluster}'\r\n    | summarize ClusterArmId = arg_max(TimeGenerated, ClusterArmId).ClusterArmId by Computer;\r\n\r\n// 2) Pull Perf (Memory) for nodes belonging to selected clusters, then forecast on fleet/selection aggregate\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\"\r\n  and CounterName == \"% Committed Bytes In Use\"\r\n| join kind=inner NodeToCluster on Computer\r\n| summarize AvgValue = avg(todouble(CounterValue)) by bin(TimeGenerated, step)\r\n| make-series AvgValue = avg(AvgValue) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n| extend AvgValueSmooth = series_fill_linear(AvgValue)\r\n| extend (forecast, trend, seasonal, residual) =\r\n        series_decompose_forecast(AvgValueSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    AvgValueSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, AvgValueSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(\"Actual\",\"Forecast\"),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "Memory Usage (%) - Single cluster (Actual vs Forecast)",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "seriesLabelKey": "Series",
+                      "showLegend": false,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Actual",
+                          "color": "blue"
+                        },
+                        {
+                          "seriesName": "Forecast",
+                          "color": "yellow"
+                        }
+                      ]
+                    }
+                  },
+                  "customWidth": "50",
+                  "name": "single-cluster-memory-trend",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "// VM drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend machineId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | project machineId, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "noDataMessage": "No VMs found on this cluster.",
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "visualization": "table",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "vmName",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "",
+                            "linkIsContextBlade": false
+                          }
+                        },
+                        {
+                          "columnMatch": "vmLink",
+                          "formatter": 5
+                        },
+                        {
+                          "columnMatch": "status",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "icons",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Connected",
+                                "representation": "success",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "representation": "critical",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "labelSettings": [
+                        {
+                          "columnId": "vmName",
+                          "label": "VM Name"
+                        },
+                        {
+                          "columnId": "clusterName",
+                          "label": "Cluster"
+                        },
+                        {
+                          "columnId": "status",
+                          "label": "Status"
+                        },
+                        {
+                          "columnId": "osSku",
+                          "label": "OS"
+                        },
+                        {
+                          "columnId": "osVersion",
+                          "label": "OS Version"
+                        },
+                        {
+                          "columnId": "resourceGroup",
+                          "label": "Resource Group"
+                        }
+                      ]
+                    },
+                    "chartSettings": {
+                      "showLegend": false,
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "neverVisible",
+                    "comparison": "isEqualTo",
+                    "value": "alwaysHidden"
+                  },
+                  "name": "sc-vms-arg-data"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let perfData = Perf\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n     or (ObjectName == 'Memory' and CounterName in ('% Committed Bytes In Use', '% Used Memory'))\r\n| project Computer, ObjectName, CounterValue;\r\nlet insightsCPU = InsightsMetrics\r\n| where TimeGenerated {NodeTrendsTimeRange}\r\n| where Namespace == 'Processor' and Name == 'UtilizationPercentage'\r\n| extend Computer = tostring(split(_ResourceId, '/')[8])\r\n| project Computer, ObjectName = 'Processor', CounterValue = Val;\r\nunion perfData, insightsCPU\r\n| summarize AvgCPU = round(avgif(CounterValue, ObjectName == 'Processor'), 1),\r\n            MaxCPU = round(maxif(CounterValue, ObjectName == 'Processor'), 1),\r\n            AvgMemory = round(avgif(CounterValue, ObjectName == 'Memory'), 1),\r\n            MaxMemory = round(maxif(CounterValue, ObjectName == 'Memory'), 1)\r\n  by Computer\r\n| project vmName = Computer, AvgCPU, MaxCPU, AvgMemory, MaxMemory",
+                    "size": 0,
+                    "aggregation": 3,
+                    "timeContextFromParameter": "NodeTrendsTimeRange",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "chartSettings": {
+                      "showLegend": false,
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "neverVisible",
+                    "comparison": "isEqualTo",
+                    "value": "alwaysHidden"
+                  },
+                  "name": "sc-vms-perf-data"
                 },
                 {
                   "type": 1,

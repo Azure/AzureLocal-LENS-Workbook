@@ -3511,7 +3511,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** Select up to 5 specific clusters to compare, or leave as 'All' (defaults to top 5 by resource usage).",
+                    "json": "💡 **Tip:** Select up to 5 specific clusters to compare using the **'Forecast Clusters'** filter (below), or leave as 'All' (defaults to top 5 by resource usage).",
                     "style": "upsell"
                   },
                   "name": "multi-charts-tip"

@@ -7823,7 +7823,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** Select an **Azure Monitor Workspace** below to view AKS node resource usage. This requires [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters.",
+                    "json": "💡 **Tip:** Select an **Azure Monitor Workspace** below to view AKS node resource usage. This requires [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters.\n\n⚠️ **Note:** These charts show data from **all AKS Arc clusters** reporting to the selected Azure Monitor Workspace, not just those on the selected Azure Local cluster. Prometheus metrics do not contain Azure Local cluster metadata, so cross-cluster filtering is not possible.",
                     "style": "upsell"
                   },
                   "conditionalVisibility": {

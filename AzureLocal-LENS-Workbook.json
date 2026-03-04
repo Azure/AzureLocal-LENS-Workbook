@@ -1728,7 +1728,16 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": []
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
               }
             },
             "customWidth": "33",
@@ -1752,7 +1761,16 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": []
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
               }
             },
             "customWidth": "33",
@@ -1776,7 +1794,16 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": []
+                "seriesLabelSettings": [
+                  {
+                    "seriesName": "Enabled",
+                    "color": "green"
+                  },
+                  {
+                    "seriesName": "Disabled",
+                    "color": "gray"
+                  }
+                ]
               }
             },
             "customWidth": "33",
@@ -5601,7 +5628,26 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = datetime_diff('day', now(), lastModified)\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n    | join kind=leftouter (\r\n        resources\r\n        | where type == \"microsoft.hybridcompute/machines\"\r\n        | where kind == \"HCI\"\r\n        | summarize VMCount = count() by resourceGroup\r\n    ) on resourceGroup\r\n    | join kind=leftouter (\r\n        resources\r\n        | where type == \"microsoft.kubernetes/connectedclusters\"\r\n        | where properties.infrastructure == \"azure_stack_hci\"\r\n        | summarize AKSArcCount = count() by resourceGroup\r\n    ) on resourceGroup\r\n) on resourceGroup\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified, ClusterName = coalesce(hciname, 'Unknown'), clusterLink, HCIClusterConnectivity = coalesce(hcistatus, 'Unknown'), currentVersion, VMCount = coalesce(VMCount, 0), AKSArcCount = coalesce(AKSArcCount, 0)\r\n| order by daysSinceLastModified desc, ARBStatus asc",
+              "query": "resources\r\n| where (type == \"microsoft.hybridcompute/machines\" and kind == \"HCI\")\r\n    or (type == \"microsoft.kubernetes/connectedclusters\" and tostring(properties.infrastructure) == \"azure_stack_hci\")\r\n| extend isVM = (type == \"microsoft.hybridcompute/machines\")\r\n| extend resourceId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type in (\"microsoft.azurestackhci/virtualmachineinstances\", \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend parentId = tolower(iff(\r\n        type == \"microsoft.azurestackhci/virtualmachineinstances\",\r\n        substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")),\r\n        substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\"))))\r\n    | project parentId, customLocId\r\n) on $left.resourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| summarize VMCount = countif(isVM), AKSArcCount = countif(not(isVM)) by arcBridgeRG",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "arb-vm-aks-counts"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = datetime_diff('day', now(), lastModified)\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n\r\n) on resourceGroup\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified, ClusterName = coalesce(hciname, 'Unknown'), clusterLink, HCIClusterConnectivity = coalesce(hcistatus, 'Unknown'), currentVersion\r\n| order by daysSinceLastModified desc, ARBStatus asc",
               "size": 0,
               "showRefreshButton": true,
               "showExportToExcel": true,
@@ -5609,7 +5655,25 @@
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscriptions}"
-              ],
+              ]
+            },
+            "name": "arb-offline-base",
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"arb-merge\", \"mergeType\": \"leftouter\", \"leftTable\": \"arb-offline-base\", \"rightTable\": \"arb-vm-aks-counts\", \"leftColumn\": \"resourceGroup\", \"rightColumn\": \"arcBridgeRG\"}], \"projectRename\": [{\"originalName\": \"[arb-offline-base].ARBResourceName\", \"mergedName\": \"ARBResourceName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].arbLink\", \"mergedName\": \"arbLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].resourceGroup\", \"mergedName\": \"resourceGroup\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].ARBStatus\", \"mergedName\": \"ARBStatus\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].lastModified\", \"mergedName\": \"lastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].daysSinceLastModified\", \"mergedName\": \"daysSinceLastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].ClusterName\", \"mergedName\": \"ClusterName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].clusterLink\", \"mergedName\": \"clusterLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].HCIClusterConnectivity\", \"mergedName\": \"HCIClusterConnectivity\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].currentVersion\", \"mergedName\": \"currentVersion\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].VMCount\", \"mergedName\": \"VMCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].AKSArcCount\", \"mergedName\": \"AKSArcCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].resourceGroup\"}, {\"originalName\": \"[arb-vm-aks-counts].arcBridgeRG\"}]}",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "visualization": "table",
               "gridSettings": {
                 "rowLimit": 2000,
                 "formatters": [
@@ -5770,7 +5834,7 @@
               },
               "sortBy": []
             },
-            "name": "Offline Arcbridges (online Azure Local)"
+            "name": "arb-offline-table"
           },
           {
             "type": 11,
@@ -5867,7 +5931,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = iff(status == \"Running\", toint(-1), datetime_diff('day', now(), lastModified))\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n    | join kind=leftouter (\r\n        resources\r\n        | where type == \"microsoft.hybridcompute/machines\"\r\n        | where kind == \"HCI\"\r\n        | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n        | summarize VMCount = count() by resourceGroup\r\n    ) on resourceGroup\r\n    | join kind=leftouter (\r\n        resources\r\n        | where type == \"microsoft.kubernetes/connectedclusters\"\r\n        | where properties.infrastructure == \"azure_stack_hci\"\r\n        | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n        | summarize AKSArcCount = count() by resourceGroup\r\n    ) on resourceGroup\r\n) on resourceGroup\r\n| where '*' in ({ArbStatusFilter}) or status in ({ArbStatusFilter})\r\n| where '*' in ({ArbClusterFilter}) or hciname in ({ArbClusterFilter}) or isempty(hciname)\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified, ClusterName = coalesce(hciname, 'Unknown'), clusterLink, HCIClusterConnectivity = coalesce(hcistatus, 'Unknown'), currentVersion, VMCount = coalesce(VMCount, 0), AKSArcCount = coalesce(AKSArcCount, 0)\r\n| order by HCIClusterConnectivity desc, ARBStatus asc",
+              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = iff(status == \"Running\", toint(-1), datetime_diff('day', now(), lastModified))\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n\r\n) on resourceGroup\r\n| where '*' in ({ArbStatusFilter}) or status in ({ArbStatusFilter})\r\n| where '*' in ({ArbClusterFilter}) or hciname in ({ArbClusterFilter}) or isempty(hciname)\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified, ClusterName = coalesce(hciname, 'Unknown'), clusterLink, HCIClusterConnectivity = coalesce(hcistatus, 'Unknown'), currentVersion\r\n| order by HCIClusterConnectivity desc, ARBStatus asc",
               "size": 0,
               "showRefreshButton": true,
               "showExportToExcel": true,
@@ -5875,7 +5939,25 @@
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscriptions}"
-              ],
+              ]
+            },
+            "name": "arb-all-base",
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"arb-merge\", \"mergeType\": \"leftouter\", \"leftTable\": \"arb-all-base\", \"rightTable\": \"arb-vm-aks-counts\", \"leftColumn\": \"resourceGroup\", \"rightColumn\": \"arcBridgeRG\"}], \"projectRename\": [{\"originalName\": \"[arb-all-base].ARBResourceName\", \"mergedName\": \"ARBResourceName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].arbLink\", \"mergedName\": \"arbLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].resourceGroup\", \"mergedName\": \"resourceGroup\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].ARBStatus\", \"mergedName\": \"ARBStatus\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].lastModified\", \"mergedName\": \"lastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].daysSinceLastModified\", \"mergedName\": \"daysSinceLastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].ClusterName\", \"mergedName\": \"ClusterName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].clusterLink\", \"mergedName\": \"clusterLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].HCIClusterConnectivity\", \"mergedName\": \"HCIClusterConnectivity\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].currentVersion\", \"mergedName\": \"currentVersion\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].VMCount\", \"mergedName\": \"VMCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].AKSArcCount\", \"mergedName\": \"AKSArcCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].resourceGroup\"}, {\"originalName\": \"[arb-vm-aks-counts].arcBridgeRG\"}]}",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "visualization": "table",
               "gridSettings": {
                 "rowLimit": 2000,
                 "formatters": [
@@ -6032,7 +6114,7 @@
               },
               "sortBy": []
             },
-            "name": "Offline Arcbridges (online Azure Local) - Copy"
+            "name": "arb-all-table"
           },
           {
             "type": 1,

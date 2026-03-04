@@ -377,16 +377,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Connected",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disconnected",
-                    "color": "red"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -410,28 +401,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Healthy",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Warning",
-                    "color": "yellow"
-                  },
-                  {
-                    "seriesName": "Failed",
-                    "color": "red"
-                  },
-                  {
-                    "seriesName": "In Progress",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Unknown",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -455,16 +425,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Online",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Offline",
-                    "color": "red"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -1410,12 +1371,7 @@
                 ],
                 "group": "Series",
                 "showLegend": true,
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Clusters",
-                    "label": "Clusters Registered"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "80",
@@ -1772,16 +1728,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Enabled",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disabled",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -1805,16 +1752,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Enabled",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disabled",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -1838,16 +1776,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Enabled",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disabled",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -2787,148 +2716,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -2970,148 +2758,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -3153,148 +2800,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -3335,148 +2841,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -3517,148 +2882,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -3699,148 +2923,7 @@
                           }
                         }
                       },
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "33",
@@ -4523,164 +3606,7 @@
                       "group": "Series",
                       "createOtherGroup": null,
                       "showLegend": true,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Zurich - Actual",
-                          "color": "green"
-                        },
-                        {
-                          "seriesName": "London - Actual",
-                          "color": "redBright"
-                        },
-                        {
-                          "seriesName": "Tacoma - Actual",
-                          "color": "blue"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -4719,148 +3645,7 @@
                     ],
                     "visualization": "linechart",
                     "chartSettings": {
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "xAxis": "TimeGenerated",
                       "yAxis": [
                         "Value"
@@ -4905,148 +3690,7 @@
                     ],
                     "visualization": "timechart",
                     "chartSettings": {
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "xAxis": "TimeGenerated",
                       "yAxis": [
                         "Value"
@@ -5091,148 +3735,7 @@
                     ],
                     "visualization": "timechart",
                     "chartSettings": {
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "xAxis": "TimeGenerated",
                       "yAxis": [
                         "Value"
@@ -5339,148 +3842,7 @@
                       "group": "clusterName",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -5522,148 +3884,7 @@
                       "group": "clusterName",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -5705,148 +3926,7 @@
                       "group": "clusterName",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -6477,148 +4557,7 @@
                       "group": "nodeName",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -6660,148 +4599,7 @@
                       "group": "nodeName",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Bellevue - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Dallas - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Seattle - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NewYorkCity - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Orlando - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "California - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Zurich - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "London - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Portland - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tacoma - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFran - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Toronto - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Denver - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanJose - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Virginia - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "SanFrancisco - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Redmond - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Chicago - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Atlanta - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Phoenix - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Houston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Boston - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Miami - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "NYC - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Berlin - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Paris - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Tokyo - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Singapore - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Mumbai - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Sydney2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Melbourne - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Amsterdam - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Madrid - Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "numberFormatSettings": {
@@ -6864,18 +4662,7 @@
                       "group": null,
                       "createOtherGroup": null,
                       "showDataPointsCount": true,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "UsedGB",
-                          "label": "Used (GB)",
-                          "color": "orange"
-                        },
-                        {
-                          "seriesName": "AvailableGB",
-                          "label": "Available (GB)",
-                          "color": "green"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "numberFormatSettings": {
                           "unit": 0
@@ -6918,268 +4705,7 @@
                       "group": "Series",
                       "createOtherGroup": null,
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume8 - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     }
                   },
                   "customWidth": "50",
@@ -7233,16 +4759,7 @@
                       "group": "Series",
                       "seriesLabelKey": "Series",
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "max": 100
@@ -7289,16 +4806,7 @@
                       "group": "Series",
                       "seriesLabelKey": "Series",
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ]
+                      "seriesLabelSettings": []
                     },
                     "mapSettings": {
                       "locInfo": "AzureResource",
@@ -7349,16 +4857,7 @@
                       "group": "Series",
                       "seriesLabelKey": "Series",
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "max": 100
@@ -7394,16 +4893,7 @@
                       "group": "Series",
                       "seriesLabelKey": "Series",
                       "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Actual",
-                          "color": "blue"
-                        },
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        }
-                      ],
+                      "seriesLabelSettings": [],
                       "ySettings": {
                         "min": 0,
                         "max": 100
@@ -8977,20 +6467,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Connected",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disconnected",
-                    "color": "red"
-                  },
-                  {
-                    "seriesName": "Error",
-                    "color": "orange"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "33",
@@ -9937,20 +7414,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Up",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disconnected",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Down",
-                    "color": "redBright"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -10358,20 +7822,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Connected",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Disconnected",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Expired",
-                    "color": "orange"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -10911,13 +8362,7 @@
                 "yAxis": [
                   "VMCount"
                 ],
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "VMCount",
-                    "label": "VM Count",
-                    "color": "purple"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "name": "vm-count-by-cluster-bar"
@@ -11013,20 +8458,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Connected",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Offline",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Disconnected",
-                    "color": "orange"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -11077,20 +8509,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Succeeded",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Failed",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Creating",
-                    "color": "blue"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -11153,12 +8572,7 @@
                 ],
                 "group": "Series",
                 "showLegend": true,
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "AKS Clusters",
-                    "label": "AKS Clusters Deployed"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "80",
@@ -11729,16 +9143,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Minor available",
-                    "color": "yellow"
-                  },
-                  {
-                    "seriesName": "Fully upgraded",
-                    "color": "green"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -12320,24 +9725,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Compliant",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Non-Compliant",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Pending",
-                    "color": "orange"
-                  },
-                  {
-                    "seriesName": "Suspended",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -12680,28 +10068,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Success",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Failure",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Warning",
-                    "color": "yellow"
-                  },
-                  {
-                    "seriesName": "InProgress",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Unknown",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -13789,28 +11156,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "AppliedSuccessfully",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "UpdateInProgress",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "UpdateAvailable",
-                    "color": "yellow"
-                  },
-                  {
-                    "seriesName": "UpdateFailed",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "NeedsAttention",
-                    "color": "orange"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -13897,24 +11243,7 @@
                   "InProgress"
                 ],
                 "showLegend": true,
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Succeeded",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Failed",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "InProgress",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Unknown",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "name": "update-attempts-by-day-chart"
@@ -14196,32 +11525,7 @@
               ],
               "visualization": "piechart",
               "chartSettings": {
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "First Time Success",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Resumed After Failure",
-                    "color": "yellow"
-                  },
-                  {
-                    "seriesName": "Succeeded (Multiple Runs)",
-                    "color": "turquoise"
-                  },
-                  {
-                    "seriesName": "In Progress",
-                    "color": "blue"
-                  },
-                  {
-                    "seriesName": "Failed (Not Recovered)",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Other",
-                    "color": "gray"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",
@@ -14391,20 +11695,7 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Succeeded",
-                    "color": "green"
-                  },
-                  {
-                    "seriesName": "Failed",
-                    "color": "red"
-                  },
-                  {
-                    "seriesName": "InProgress",
-                    "color": "blue"
-                  }
-                ]
+                "seriesLabelSettings": []
               }
             },
             "customWidth": "50",

@@ -6217,374 +6217,6 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 💾 Storage Volume Usage"
-                  },
-                  "name": "sc-storage-bar-header"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "💡 **Tip:** The chart below uses [Storage Path](https://learn.microsoft.com/en-us/azure-stack/hci/manage/create-storage-path) resources in Azure to report volume usage data."
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "text-storage-paths-tip"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "resources\r\n| where type == \"microsoft.azurestackhci/storagecontainers\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend pathName = name\r\n| extend totalGB = round(toreal(properties.status.containerSizeMB) / 1024, 0)\r\n| extend availableGB = round(toreal(properties.status.availableSizeMB) / 1024, 0)\r\n| extend usedGB = totalGB - availableGB\r\n| project pathName, UsedGB = usedGB, AvailableGB = availableGB\r\n| order by pathName asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "Storage Volume Usage (GB) — {SingleCluster:label}",
-                    "noDataMessage": "No storage containers found for this cluster.",
-                    "queryType": 1,
-                    "resourceType": "microsoft.resourcegraph/resources",
-                    "crossComponentResources": [
-                      "{Subscriptions}"
-                    ],
-                    "visualization": "barchart",
-                    "chartSettings": {
-                      "xAxis": "pathName",
-                      "yAxis": [
-                        "UsedGB",
-                        "AvailableGB"
-                      ],
-                      "group": null,
-                      "createOtherGroup": null,
-                      "showDataPointsCount": true,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "UsedGB",
-                          "label": "Used (GB)",
-                          "color": "orange"
-                        },
-                        {
-                          "seriesName": "AvailableGB",
-                          "label": "Available (GB)",
-                          "color": "green"
-                        }
-                      ],
-                      "ySettings": {
-                        "numberFormatSettings": {
-                          "unit": 0
-                        }
-                      },
-                      "showLegend": false
-                    }
-                  },
-                  "customWidth": "50",
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "sc-storage-paths-chart",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "let trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\n// 1) Daily Used% per volume (SingleCluster)\r\nlet perVolumePerDay =\r\n    Event\r\n    | where TimeGenerated between (trendStart .. trendEnd)\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(tostring(EventData))\r\n    | extend ClusterArmId_s = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId_s) and ClusterArmId_s =~ \"{SingleCluster}\"\r\n    | extend rdj = parse_json(RenderedDescription)\r\n    | mv-expand vol = rdj.VolumeList\r\n    | extend VolumeLabel = tostring(vol.m_Label)\r\n    | extend TotalBytes  = tolong(vol.m_Size)\r\n    | extend UsedBytes   = tolong(vol.m_SizeUsed)\r\n    | where isnotempty(VolumeLabel) and TotalBytes > 0\n    | where VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n    | summarize TotalBytes = any(TotalBytes), UsedBytes = any(UsedBytes)\r\n        by VolumeLabel, Day = bin(TimeGenerated, step)\r\n    | extend UsedPct = 100.0 * todouble(UsedBytes) / todouble(TotalBytes)\r\n    | project VolumeLabel, TimeGenerated = Day, UsedPct;\r\n\r\n// 2) One series per volume -> forecast per volume -> expand (CPU style)\r\nperVolumePerDay\r\n| make-series UsedPct = avg(UsedPct) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n    by VolumeLabel\r\n| extend UsedSmooth = series_fill_linear(UsedPct)\r\n| extend (forecast, trend, seasonal, residual) =\r\n    series_decompose_forecast(UsedSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    UsedSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, UsedSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(strcat(VolumeLabel, \" - Actual\"), strcat(VolumeLabel, \" - Forecast\")),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
-                    "size": 0,
-                    "aggregation": 3,
-                    "title": "Volume Usage (%) - Single cluster",
-                    "queryType": 0,
-                    "resourceType": "microsoft.resources/subscriptions",
-                    "crossComponentResources": [
-                      "{Subscriptions}"
-                    ],
-                    "visualization": "timechart",
-                    "chartSettings": {
-                      "xAxis": "TimeGenerated",
-                      "yAxis": [
-                        "Value"
-                      ],
-                      "group": "Series",
-                      "createOtherGroup": null,
-                      "showLegend": false,
-                      "seriesLabelSettings": [
-                        {
-                          "seriesName": "Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume1 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume2 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume3 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume4 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume5 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume6 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume7 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Infrastructure_8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "UserStorage_8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Volume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "CSV8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "Vol8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "S2D_Volume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "DataVolume8 - Forecast",
-                          "color": "yellow"
-                        },
-                        {
-                          "seriesName": "WorkloadVolume8 - Forecast",
-                          "color": "yellow"
-                        }
-                      ]
-                    }
-                  },
-                  "customWidth": "50",
-                  "name": "single-cluster-volume-usage",
-                  "styleSettings": {
-                    "margin": "5px",
-                    "padding": "5px"
-                  }
-                },
-                {
-                  "type": 1,
-                  "content": {
                     "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Physical Machines"
                   },
                   "name": "sc-perf-charts-header"
@@ -7172,6 +6804,374 @@
                   },
                   "customWidth": "33",
                   "name": "sc-network-throughput-node",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 💾 Cluster: {SingleCluster:label} — Storage Volume Usage and Forecast"
+                  },
+                  "name": "sc-storage-bar-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** The chart below uses [Storage Path](https://learn.microsoft.com/en-us/azure-stack/hci/manage/create-storage-path) resources in Azure to report volume usage data."
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "text-storage-paths-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.azurestackhci/storagecontainers\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend pathName = name\r\n| extend totalGB = round(toreal(properties.status.containerSizeMB) / 1024, 0)\r\n| extend availableGB = round(toreal(properties.status.availableSizeMB) / 1024, 0)\r\n| extend usedGB = totalGB - availableGB\r\n| project pathName, UsedGB = usedGB, AvailableGB = availableGB\r\n| order by pathName asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "Storage Volume Usage (GB) — {SingleCluster:label}",
+                    "noDataMessage": "No storage containers found for this cluster.",
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "visualization": "barchart",
+                    "chartSettings": {
+                      "xAxis": "pathName",
+                      "yAxis": [
+                        "UsedGB",
+                        "AvailableGB"
+                      ],
+                      "group": null,
+                      "createOtherGroup": null,
+                      "showDataPointsCount": true,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "UsedGB",
+                          "label": "Used (GB)",
+                          "color": "orange"
+                        },
+                        {
+                          "seriesName": "AvailableGB",
+                          "label": "Available (GB)",
+                          "color": "green"
+                        }
+                      ],
+                      "ySettings": {
+                        "numberFormatSettings": {
+                          "unit": 0
+                        }
+                      },
+                      "showLegend": false
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-storage-paths-chart",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart  = {NodeTrendsTimeRange:start};\r\nlet trendEnd    = {NodeTrendsTimeRange:end};\r\nlet horizonDays = toint('{ForecastHorizonDays}');\r\nlet step        = 1d;\r\nlet seriesEnd   = trendEnd + horizonDays*step;\r\n\r\n// seasonality = lookback/2 expressed as #points\r\nlet lookback = trendEnd - trendStart;\r\nlet seasonalityPoints = max_of(2, toint((lookback / 2) / step));\r\n\r\n// 1) Daily Used% per volume (SingleCluster)\r\nlet perVolumePerDay =\r\n    Event\r\n    | where TimeGenerated between (trendStart .. trendEnd)\r\n    | where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\"\r\n    | where EventID == 3002\r\n    | extend x = parse_xml(tostring(EventData))\r\n    | extend ClusterArmId_s = tostring(x.DataItem.UserData.EventData[\"ArmId\"])\r\n    | where isnotempty(ClusterArmId_s) and ClusterArmId_s =~ \"{SingleCluster}\"\r\n    | extend rdj = parse_json(RenderedDescription)\r\n    | mv-expand vol = rdj.VolumeList\r\n    | extend VolumeLabel = tostring(vol.m_Label)\r\n    | extend TotalBytes  = tolong(vol.m_Size)\r\n    | extend UsedBytes   = tolong(vol.m_SizeUsed)\r\n    | where isnotempty(VolumeLabel) and TotalBytes > 0\n    | where VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n    | summarize TotalBytes = any(TotalBytes), UsedBytes = any(UsedBytes)\r\n        by VolumeLabel, Day = bin(TimeGenerated, step)\r\n    | extend UsedPct = 100.0 * todouble(UsedBytes) / todouble(TotalBytes)\r\n    | project VolumeLabel, TimeGenerated = Day, UsedPct;\r\n\r\n// 2) One series per volume -> forecast per volume -> expand (CPU style)\r\nperVolumePerDay\r\n| make-series UsedPct = avg(UsedPct) default=double(null)\r\n    on TimeGenerated\r\n    from trendStart to seriesEnd step step\r\n    by VolumeLabel\r\n| extend UsedSmooth = series_fill_linear(UsedPct)\r\n| extend (forecast, trend, seasonal, residual) =\r\n    series_decompose_forecast(UsedSmooth, horizonDays, seasonalityPoints, \"linefit\")\r\n| mv-expand\r\n    TimeGenerated to typeof(datetime),\r\n    UsedSmooth to typeof(double),\r\n    forecast to typeof(double)\r\n| extend\r\n    Actual   = iff(TimeGenerated <= trendEnd, UsedSmooth, real(null)),\r\n    Forecast = iff(TimeGenerated > trendEnd, forecast, real(null))\r\n| extend\r\n    Series = pack_array(strcat(VolumeLabel, \" - Actual\"), strcat(VolumeLabel, \" - Forecast\")),\r\n    Value  = pack_array(Actual, Forecast)\r\n| mv-expand Series to typeof(string), Value to typeof(double)\r\n| where isnotnull(Value)\r\n| project TimeGenerated, Series, Value\r\n| order by TimeGenerated asc",
+                    "size": 0,
+                    "aggregation": 3,
+                    "title": "Volume Usage (%) - Single cluster",
+                    "queryType": 0,
+                    "resourceType": "microsoft.resources/subscriptions",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "visualization": "timechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "createOtherGroup": null,
+                      "showLegend": false,
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume1 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume2 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume3 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume4 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume5 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume6 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume7 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Infrastructure_8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "UserStorage_8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Volume8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "CSV8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Vol8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "S2D_Volume8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "DataVolume8 - Forecast",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "WorkloadVolume8 - Forecast",
+                          "color": "yellow"
+                        }
+                      ]
+                    }
+                  },
+                  "customWidth": "50",
+                  "name": "single-cluster-volume-usage",
                   "styleSettings": {
                     "margin": "5px",
                     "padding": "5px"

@@ -8,7 +8,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.4)
+## Recent Changes (v0.8.4) — [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37)
 
 ### Capacity Tab Layout & Navigation Improvements
 - **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability

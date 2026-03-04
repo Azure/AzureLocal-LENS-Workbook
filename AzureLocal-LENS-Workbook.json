@@ -7424,7 +7424,8 @@
                           "formatOptions": {
                             "linkTarget": "Url",
                             "linkLabel": "",
-                            "linkIsContextBlade": false
+                            "linkIsContextBlade": false,
+                            "linkColumn": "vmLink"
                           }
                         },
                         {
@@ -7548,7 +7549,8 @@
                           "formatOptions": {
                             "linkTarget": "Url",
                             "linkLabel": "",
-                            "linkIsContextBlade": false
+                            "linkIsContextBlade": false,
+                            "linkColumn": "vmLink"
                           }
                         },
                         {
@@ -7733,6 +7735,7 @@
                           "formatter": 7,
                           "formatOptions": {
                             "linkTarget": "Url",
+                            "linkColumn": "aksLink",
                             "linkLabel": "",
                             "linkIsContextBlade": false
                           }

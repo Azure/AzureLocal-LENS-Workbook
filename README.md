@@ -47,8 +47,11 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **VM/AKS portal links**: Fixed missing `linkColumn` property across all VM and AKS name link formatters (lost during JSON reformatting)
 - **PromQL visualization**: Converted AKS node resource items to timecharts — Azure Workbooks Prometheus provider doesn't support table visualization with `query_range` data
 - **Prometheus tip styling**: Added purple background (`upsell` style) to Prometheus tip on Overview tab
-- **Forecast line colors**: Disclaimer text updated from "grey" to "yellow" to match actual line colour
+- **Forecast line colors**: Removed all hardcoded `seriesLabelSettings` color overrides (not scalable for arbitrary cluster names) — charts now use Azure Workbooks' default color palette
+- **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
+- **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
 - **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
+- **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
 - **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.

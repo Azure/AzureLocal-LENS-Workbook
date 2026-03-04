@@ -4385,9 +4385,17 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "---\r\n### 📊 Cluster-wise Resource Forecast\r\n**Select up to 10 specific clusters to compare, or leave as 'All' (defaults to top 10 by resource usage).**"
+                    "json": "---\r\n### 📊 Cluster-wise Resource Forecast"
                   },
                   "name": "multi-charts-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** Select up to 5 specific clusters to compare, or leave as 'All' (defaults to top 5 by resource usage).",
+                    "style": "upsell"
+                  },
+                  "name": "multi-charts-tip"
                 },
                 {
                   "type": 1,
@@ -4411,7 +4419,7 @@
                         "name": "ChartClusterFilter",
                         "label": "Forecast Clusters",
                         "type": 2,
-                        "description": "Select up to 10 clusters for the forecast charts. Default (All) = Top 10 by resource usage.",
+                        "description": "Select up to 5 clusters for the forecast charts. Default (All) = Top 5 by resource usage.",
                         "isRequired": true,
                         "multiSelect": true,
                         "quote": "'",

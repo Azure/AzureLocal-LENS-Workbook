@@ -3886,7 +3886,7 @@
                         },
                         "defaultValue": "value::all",
                         "value": [
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/orlando/providers/microsoft.monitor/accounts/acxpromethuseus"
+                          "value::all"
                         ],
                         "queryType": 1,
                         "resourceType": "microsoft.resourcegraph/resources"
@@ -4431,11 +4431,7 @@
                         "queryType": 1,
                         "resourceType": "microsoft.resourcegraph/resources",
                         "value": [
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/Bellevue/providers/microsoft.azurestackhci/clusters/Bellevue",
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/London/providers/Microsoft.AzureStackHCI/clusters/London",
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/SanJose/providers/microsoft.azurestackhci/clusters/SanJose",
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/Dallas/providers/Microsoft.AzureStackHCI/clusters/Dallas",
-                          "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/tacoma/providers/microsoft.azurestackhci/clusters/Tacoma"
+                          "value::all"
                         ]
                       },
                       {
@@ -5933,8 +5929,7 @@
                           "showDefault": false
                         },
                         "queryType": 1,
-                        "resourceType": "microsoft.resourcegraph/resources",
-                        "value": "/subscriptions/fbaf508b-cb61-4383-9cda-a42bfa0c7bc9/resourceGroups/London/providers/Microsoft.AzureStackHCI/clusters/London"
+                        "resourceType": "microsoft.resourcegraph/resources"
                       },
                       {
                         "id": "NodeTrendsTimeRange-sc",

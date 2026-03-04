@@ -50,6 +50,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Forecast line colors**: Removed all hardcoded `seriesLabelSettings` color overrides (not scalable for arbitrary cluster names) — charts now use Azure Workbooks' default color palette
 - **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
 - **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
+- **Storage TB forecast fix**: Fixed duplicate event aggregation causing data spikes — now uses `arg_max` to take latest Event 3002 per day per cluster before expanding volumes
 - **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
 - **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
 - **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults

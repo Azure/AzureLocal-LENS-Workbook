@@ -391,12 +391,47 @@ See the repository's LICENSE file for details.
 #### New Capacity Tab (🏗️)
 Added a dedicated **Capacity** tab providing centralized visibility into cluster resource utilization, forecasting, and workload allocation.
 
-- **Cluster Capacity Overview**: Fleet-wide table with P:V CPU Ratio, Memory Used % (N-1), Storage Summary, portal links, and configurable sorting
-- **Resource Trends & Forecast**: Top 5 cluster charts (CPU, Memory, Storage, Latency, IOPS, Network), Predictive Resource Exhaustion Forecast with configurable thresholds
-- **Fleet Capacity Tiles**: Aggregated totals, Node Hardware Summary, Storage Volume Usage chart
-- **Cluster Health Summary Status**: Failed health checks with severity filter, cluster portal links
-- **Cluster Workload Drill-Down**: VM and AKS details with PromQL timecharts from Azure Monitor Workspace
-- **Bug Fixes**: ARG query restructuring, VM/AKS resource discovery fixes, Container Insights fix, disconnected cluster fallbacks
+#### Capacity Overview Table
+- **Cluster Capacity Overview**: Fleet-wide table showing per-cluster resource allocation with clickable **Cluster** column linking to the Azure portal
+- **P:V CPU Ratio**: Physical-to-virtual CPU ratio (e.g., `1:4.2`) with configurable target ratio dropdown and color-coded **% of P:V Target** column
+- **Memory Used % (N-1)**: Memory utilization calculated against N-1 node capacity for multi-node clusters, with traffic light thresholds (🟢 <80%, 🟡 ≥80%, 🔴 ≥95%)
+- **Storage Summary**: Storage Used, Storage Available (with portal **Storage Paths** deep-links), and Storage Used % columns joined via storagecontainers → customlocations → arcBridgeRG chain. Shows "Unknown" for 0% storage
+- **Portal Links**: Cluster, VM vCPUs, AKS vCPUs, Machines, Storage Used, and Storage Available columns all link to their respective Azure portal pages
+- **Column labels**: Compact naming — Cluster, pCPUs, vCPUs, P:V CPU Ratio, Physical Memory (with GiB/TiB unit formatting)
+- **Sorting**: Default sort by Memory Used % descending, then % of P:V Target descending
+
+#### Resource Trends & Forecast
+- **Top 5 Clusters Charts**: CPU, Memory, and Storage utilization trend charts showing the top 5 clusters by usage with legend, powered by Log Analytics (Perf / InsightsMetrics)
+- **Storage Latency, Storage IOPS, and Network Throughput** charts added for per-node performance visibility
+- **AMA Tip**: Info banner with Azure Monitor Agent link above trend charts
+- **Predictive Resource Exhaustion Forecast**: Projected days until warning/critical thresholds using `series_fit_line` linear trend analysis, capped at 365+ days, with color-coded status indicators
+- **Forecast Filters**: Configurable Historic Data Time Range, Log Analytics workspace selector, Resource Group and Cluster multi-select filters, and adjustable warning/critical threshold parameters
+
+#### Cluster Capacity Section
+- **Fleet Capacity Tiles**: Aggregated totals (Clusters, Nodes, Total Cores, Total Memory) across the filtered fleet
+- **Node Hardware Summary**: Per-node physical and logical core counts, Physical Memory (with GiB unit formatting), OS Edition (derived from build number for disconnected clusters), and OS Version
+- **Storage Volume Usage Chart**: Stacked bar chart per storage path showing Used vs Available (GB), visible when a single cluster is selected
+
+#### Cluster Health Summary Status
+- **Failed Health Check Results**: Expanded from update readiness checks with **Severity** multi-select filter (defaults to Critical + Warning, excludes Informational)
+- **Cluster link**: Cluster column links to the cluster's portal page
+- **Check Result** column (renamed from "Step Status") with severity-based icons and Days Since Check indicator
+
+#### Cluster Workload Drill-Down
+- **VMs on Cluster**: Per-VM detail with Avg/Peak CPU % and Avg/Peak Memory % from Log Analytics, with portal links
+- **AKS Clusters on Cluster**: AKS Arc clusters with connectivity status, Kubernetes version, agent version, provisioning state, and node count
+- **AKS Node Resource Usage**: Top 5 AKS nodes by resource usage via PromQL timecharts from Azure Monitor Workspace (Managed Prometheus), showing CPU, Memory, Disk I/O, and Network Throughput over time
+- **Azure Monitor Workspace Parameter**: New dropdown to select the Azure Monitor Workspace collecting Prometheus metrics from AKS Arc clusters
+- **Prometheus Time Range**: Dedicated time range picker (30 min to 7 days, default 4 hours) for Prometheus metric charts
+
+#### Bug Fixes & Technical Improvements (v0.8.3)
+- **ARG Query Fixes**: Removed all `let` statements from `extensibilityresources` queries (ARG constraint), restructured queries to work within single-extensibilityresources-per-query limit
+- **VM/AKS Resource Discovery**: Replaced RG-based joins with proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for correct multi-cluster environments
+- **Container Insights**: Fixed case-sensitive `extract` bug and added `InsightsMetrics` union for modern AMA/DCR support
+- **Network Throughput**: Fixed query to include both `ObjectName` values and both traffic directions; added `materialize()` optimization
+- **VM Perf Query**: Removed incorrect RG filter, added Linux and InsightsMetrics support
+- **Disconnected Cluster Fallbacks**: Arc machine fallback for blank pCPUs/memory, OS Edition derived from build number, `logicalCores/2` for physical core estimation
+- **Physical vs Logical Cores**: Fixed tables to show physical core counts instead of logical cores; excluded guest VMs from node counts
 
 ### v0.8.2
 

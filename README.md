@@ -51,6 +51,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
 - **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
 - **Storage TB forecast fix**: Fixed duplicate event aggregation causing data spikes — now uses `arg_max` to take latest Event 3002 per day per cluster before expanding volumes
+- **ARB table VM/AKS counts**: Fixed Offline ARBs and All ARBs tables to use proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for VM and AKS Arc counts instead of incorrect resource group matching
 - **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
 - **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
 - **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults

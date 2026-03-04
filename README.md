@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.3
+## Latest Version: v0.8.4
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,9 +8,48 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.3)
+## Recent Changes (v0.8.4)
 
-### New Capacity Tab (🏗️)
+### Capacity Tab Layout & Navigation Improvements
+- **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability
+- **Navigation Tip**: Added instructional text at the top of the Capacity tab guiding users through the three sub-tabs
+- **Removed duplicate group titles**: Cleaned up redundant "Capacity", "Multi-Cluster View", and "Single Cluster View" headers that appeared alongside the markdown headers
+
+### Log Analytics Workspace Filter Improvements
+- **Duplicated LA Workspace filter**: Moved from shared Capacity params into each sub-tab (Overview, Multi-cluster, Single cluster) so each tab independently controls its own workspace selection
+- **ClusterRGMap moved to global params**: Prevents "query failed" visibility issues in the Capacity tab header
+
+### Overview Tab Enhancements
+- **Title rename**: "Top 5 Clusters by Resource Usage" → "Top 5 Azure Local Instances by Resource Capacity Usage"
+- **Historic Time Range filter**: Added alongside the LA Workspace filter for the 6 resource usage charts (default: Last 3 days)
+- **Prometheus Time Range**: Default changed from 4 hours to Last 3 days, added Last 14 days and Last 30 days options
+- **Prometheus charts**: Updated all 4 PromQL charts to group by `(cluster, instance)` instead of just `(instance)` for cluster name visibility
+
+### Multi-cluster Tab Enhancements
+- **Forecast cluster selection**: Updated text and tip to recommend up to 5 clusters (from 10)
+- **Forecast disclaimer**: Added warning-styled tip explaining forecasts are statistical extrapolations, not guaranteed predictions
+- **Forecast future-only**: Forecast lines now only show future dates (no longer overlap with actual historic data)
+- **Storage & Network section**: Added 💾 emoji to title, renamed to "For Selected Clusters", added Historic Time Range filter
+
+### Single Cluster Tab — Major Improvements
+- **Cluster selection tip**: Added tip guiding users to select a cluster and optionally a Log Analytics Workspace
+- **6 Physical Machine performance charts**: Added CPU, Memory, and Storage usage charts alongside existing Latency, IOPS, and Network Throughput — all showing per-machine data with "By Machine" labels
+- **Section reordering**: Physical Machines perf charts now appear before Storage Forecast sections for better flow
+- **Storage Volume section**: Renamed to "💾 Cluster: X — Storage Volume Usage and Forecast", moved below perf charts
+- **Forecast disclaimers**: Added to both Storage Pool and Compute Trends forecast sections
+- **Workloads section**: Renamed header emoji to 📦, added "🖥️ Azure Local VMs on: X" and "☸️ AKS Arc Clusters on: X" section headers
+- **VM table**: Added `linkColumn` fix for portal links, renamed "Cluster" column to "Azure Local Cluster"
+- **AKS table**: Added `linkColumn` fix for portal links, added dedicated section header
+- **AKS Node Resource Usage**: New PromQL tables showing average CPU and Memory usage per AKS node with traffic light status icons (🟢 <80%, 🟡 ≥80%, 🔴 ≥90%), with dedicated Azure Monitor Workspace filter (single-select, no "All" option for PromQL compatibility)
+
+### Bug Fixes & Technical Improvements
+- **VM/AKS portal links**: Fixed missing `linkColumn` property across all VM and AKS name link formatters
+- **PromQL table queries**: Switched from `query_range` to `instant` with `avg_over_time` for clean tabular output
+- **Forecast line colors**: Confirmed yellow for all forecast series; disclaimer text updated from "grey" to "yellow"
+- **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
+- **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults
+
+### Previous Changes (v0.8.3)
 Added a dedicated **Capacity** tab providing centralized visibility into cluster resource utilization, forecasting, and workload allocation.
 
 #### Capacity Overview Table

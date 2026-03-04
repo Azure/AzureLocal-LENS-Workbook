@@ -7886,76 +7886,25 @@
                     "crossComponentResources": [
                       "{AzureMonitorWorkspace}"
                     ],
-                    "visualization": "table",
-                    "gridSettings": {
-                      "formatters": [
-                        {
-                          "columnMatch": "Value",
-                          "formatter": 18,
-                          "formatOptions": {
-                            "thresholdsOptions": "icons",
-                            "thresholdsGrid": [
-                              {
-                                "operator": ">=",
-                                "thresholdValue": "90",
-                                "representation": "4",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": ">=",
-                                "thresholdValue": "80",
-                                "representation": "2",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "Default",
-                                "thresholdValue": null,
-                                "representation": "success",
-                                "text": "{0}{1}"
-                              }
-                            ]
-                          },
-                          "numberFormat": {
-                            "unit": 1,
-                            "options": {
-                              "style": "decimal",
-                              "minimumFractionDigits": 1,
-                              "maximumFractionDigits": 1
-                            }
+                    "visualization": "timechart",
+                    "chartSettings": {
+                      "group": "*",
+                      "createOtherGroup": 50,
+                      "ySettings": {
+                        "min": 0,
+                        "max": 100,
+                        "numberFormatSettings": {
+                          "unit": 1,
+                          "options": {
+                            "style": "decimal",
+                            "useGrouping": true,
+                            "minimumFractionDigits": 0,
+                            "maximumFractionDigits": 1
                           }
-                        },
-                        {
-                          "columnMatch": "Timestamp",
-                          "formatter": 5
                         }
-                      ],
-                      "sortBy": [
-                        {
-                          "itemKey": "Value",
-                          "sortOrder": 2
-                        }
-                      ],
-                      "labelSettings": [
-                        {
-                          "columnId": "cluster",
-                          "label": "AKS Cluster"
-                        },
-                        {
-                          "columnId": "instance",
-                          "label": "Node"
-                        },
-                        {
-                          "columnId": "Value",
-                          "label": "Avg CPU %"
-                        }
-                      ]
-                    },
-                    "sortBy": [
-                      {
-                        "itemKey": "Value",
-                        "sortOrder": 2
-                      }
-                    ]
+                      },
+                      "showLegend": true
+                    }
                   },
                   "customWidth": "50",
                   "conditionalVisibility": {
@@ -7982,76 +7931,25 @@
                     "crossComponentResources": [
                       "{AzureMonitorWorkspace}"
                     ],
-                    "visualization": "table",
-                    "gridSettings": {
-                      "formatters": [
-                        {
-                          "columnMatch": "Value",
-                          "formatter": 18,
-                          "formatOptions": {
-                            "thresholdsOptions": "icons",
-                            "thresholdsGrid": [
-                              {
-                                "operator": ">=",
-                                "thresholdValue": "90",
-                                "representation": "4",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": ">=",
-                                "thresholdValue": "80",
-                                "representation": "2",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "Default",
-                                "thresholdValue": null,
-                                "representation": "success",
-                                "text": "{0}{1}"
-                              }
-                            ]
-                          },
-                          "numberFormat": {
-                            "unit": 1,
-                            "options": {
-                              "style": "decimal",
-                              "minimumFractionDigits": 1,
-                              "maximumFractionDigits": 1
-                            }
+                    "visualization": "timechart",
+                    "chartSettings": {
+                      "group": "*",
+                      "createOtherGroup": 50,
+                      "ySettings": {
+                        "min": 0,
+                        "max": 100,
+                        "numberFormatSettings": {
+                          "unit": 1,
+                          "options": {
+                            "style": "decimal",
+                            "useGrouping": true,
+                            "minimumFractionDigits": 0,
+                            "maximumFractionDigits": 1
                           }
-                        },
-                        {
-                          "columnMatch": "Timestamp",
-                          "formatter": 5
                         }
-                      ],
-                      "sortBy": [
-                        {
-                          "itemKey": "Value",
-                          "sortOrder": 2
-                        }
-                      ],
-                      "labelSettings": [
-                        {
-                          "columnId": "cluster",
-                          "label": "AKS Cluster"
-                        },
-                        {
-                          "columnId": "instance",
-                          "label": "Node"
-                        },
-                        {
-                          "columnId": "Value",
-                          "label": "Avg Memory %"
-                        }
-                      ]
-                    },
-                    "sortBy": [
-                      {
-                        "itemKey": "Value",
-                        "sortOrder": 2
-                      }
-                    ]
+                      },
+                      "showLegend": true
+                    }
                   },
                   "customWidth": "50",
                   "conditionalVisibility": {

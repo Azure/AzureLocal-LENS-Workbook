@@ -67,7 +67,7 @@ for (const line of lines) {
         if (suiteName.startsWith(nsPrefix)) {
             suiteName = suiteName.substring(nsPrefix.length);
         }
-        md += `| ${suiteName.replace(/\|/g, '\\|')} | ${name.replace(/\|/g, '\\|')} | ${icon} ${result} |\n`;
+        md += `| ${suiteName.replace(/[\\|]/g, '\\$&')} | ${name.replace(/[\\|]/g, '\\$&')} | ${icon} ${result} |\n`;
     }
 }
 

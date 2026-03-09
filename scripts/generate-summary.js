@@ -21,11 +21,11 @@ const xml = fs.readFileSync(xmlPath, 'utf8');
 
 function decodeXml(str) {
     return str
-        .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'");
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&');
 }
 
 // Overall stats

@@ -562,7 +562,6 @@ testSuite('Resource Type References Validation', () => {
 // --- 13. File Size and Performance Checks ---
 testSuite('File Size and Performance Checks', () => {
     const fileSizeBytes = Buffer.byteLength(workbookRaw, 'utf8');
-    const fileSizeKB = Math.round(fileSizeBytes / 1024);
     const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2);
 
     // Workbook should be under 5MB (reasonable limit for Azure Workbooks)
@@ -606,8 +605,9 @@ testSuite('README Structure Validation', () => {
 // --- 15. Portal Link Integrity ---
 testSuite('Portal Link Integrity', () => {
     // Collect all portal links from queries
+    const portalLinkPattern = /https?:\/\/portal\.azure\.com(?:[\/?"#\s')\]]|$)/;
     const portalLinkQueries = allQueries.filter(q =>
-        q.query && q.query.includes('portal.azure.com')
+        q.query && portalLinkPattern.test(q.query)
     );
     assert(portalLinkQueries.length > 0,
         'Workbook contains queries with portal links', '>0', portalLinkQueries.length);

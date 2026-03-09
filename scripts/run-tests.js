@@ -96,11 +96,11 @@ function generateNUnitXML(results, passed, failed, total) {
             xml += `      <test-case id="0-${suiteId}-${testId}" name="${safeTestName}" fullname="LENS.Workbook.Tests.${safeSuiteName}.${safeTestName}" result="${testResult}">\n`;
 
             if (!test.passed) {
-                const safeExpected = escapeXml(test.expected);
-                const safeActual = escapeXml(test.actual);
+                const rawExpected = String(test.expected).replace(/]]>/g, ']]]]><![CDATA[>');
+                const rawActual = String(test.actual).replace(/]]>/g, ']]]]><![CDATA[>');
                 xml += `        <failure>\n`;
-                xml += `          <message><![CDATA[Expected: ${safeExpected}, Got: ${safeActual}]]></message>\n`;
-                xml += `          <stack-trace><![CDATA[Expected: ${safeExpected}\nActual: ${safeActual}]]></stack-trace>\n`;
+                xml += `          <message><![CDATA[Expected: ${rawExpected}, Got: ${rawActual}]]></message>\n`;
+                xml += `          <stack-trace><![CDATA[Expected: ${rawExpected}\nActual: ${rawActual}]]></stack-trace>\n`;
                 xml += `        </failure>\n`;
             }
 
@@ -207,6 +207,10 @@ try {
 const allItems = collectAllItems(workbook.items || []);
 const allQueries = extractQueries(allItems);
 const allCharts = extractCharts(allItems);
+const allParams = [];
+allItems.filter(i => i.type === 9 && i.content && i.content.parameters).forEach(pi => {
+    pi.content.parameters.forEach(p => allParams.push(p));
+});
 
 console.log('========================================');
 console.log(' Azure Local LENS Workbook - Unit Tests');
@@ -450,12 +454,6 @@ testSuite('Parameter Validation', () => {
         'Workbook contains parameter definitions', '>0', parameterItems.length);
 
     // Check for expected global parameters
-    const allParams = [];
-    parameterItems.forEach(pi => {
-        if (pi.content && pi.content.parameters) {
-            pi.content.parameters.forEach(p => allParams.push(p));
-        }
-    });
 
     // Subscriptions parameter should exist
     const subsParam = allParams.find(p => p.name === 'Subscriptions');
@@ -707,12 +705,7 @@ testSuite('KQL Query Robustness', () => {
     }
 
     // Check for orphaned parameter references - parameters used in queries should be defined
-    const definedParamNames = new Set();
-    allItems.filter(i => i.type === 9 && i.content && i.content.parameters).forEach(pi => {
-        pi.content.parameters.forEach(p => {
-            if (p.name) definedParamNames.add(p.name);
-        });
-    });
+    const definedParamNames = new Set(allParams.filter(p => p.name).map(p => p.name));
     // Also add well-known built-in parameters
     ['TimeRange', 'Subscriptions'].forEach(p => definedParamNames.add(p));
 
@@ -970,10 +963,6 @@ testSuite('Item Count Regression Guard', () => {
 // --- 22. Prometheus / AKS Node Resource Usage Validation ---
 testSuite('Prometheus AKS Node Resource Usage', () => {
     // Verify Azure Monitor Workspace parameter exists
-    const allParams = [];
-    allItems.filter(i => i.type === 9 && i.content && i.content.parameters).forEach(pi => {
-        pi.content.parameters.forEach(p => allParams.push(p));
-    });
     const amwParam = allParams.find(p => p.name === 'AzureMonitorWorkspace');
     assert(amwParam !== undefined,
         'AzureMonitorWorkspace parameter exists', 'found', amwParam ? 'found' : 'not found');
@@ -1005,7 +994,7 @@ testSuite('Prometheus AKS Node Resource Usage', () => {
             'contains text', promTip.content.json.includes('Azure Managed Prometheus') ? 'yes' : 'no');
     }
 
-    // Verify all 6 Prometheus items exist
+    // Verify all 4 Prometheus chart items exist
     const promItemNames = [
         'cluster-aks-node-cpu-chart',
         'cluster-aks-node-memory-chart',

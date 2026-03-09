@@ -718,9 +718,9 @@ testSuite('KQL Query Robustness', () => {
 
     // Extract parameter references from queries
     // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
-    const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*?)(?::[\w]+)?\}/g;
     const referencedParams = new Set();
     allQueries.forEach(q => {
+        const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*?)(?::[\w]+)?\}/g;
         let match;
         while ((match = paramRefPattern.exec(q.query)) !== null) {
             referencedParams.add(match[1]);

@@ -1081,7 +1081,7 @@ testSuite('Prometheus AKS Node Resource Usage', () => {
         promItems.length, promWith50Width.length);
 });
 
-// --- 22. Documentation File Validation ---
+// --- 23. Documentation File Validation ---
 testSuite('Documentation File Validation', () => {
     const contributingPath = path.resolve(__dirname, '..', 'CONTRIBUTING.md');
     const securityPath = path.resolve(__dirname, '..', 'SECURITY.md');

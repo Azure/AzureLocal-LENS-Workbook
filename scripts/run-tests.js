@@ -17,6 +17,8 @@ let totalCount = 0;
 const testResults = [];
 let currentSuite = null;
 
+const GUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
 function assert(condition, testName, expected, actual) {
     totalCount++;
     const result = {
@@ -63,6 +65,17 @@ function generateNUnitXML(results, passed, failed, total) {
         suites[suiteName].push(r);
     });
 
+    // Helper to escape XML special characters in attribute and element values
+    const escapeXml = (value) => {
+        return String(value).replace(/[<>&"']/g, c => ({
+            '<': '&lt;',
+            '>': '&gt;',
+            '&': '&amp;',
+            '"': '&quot;',
+            "'": '&apos;'
+        }[c]));
+    };
+
     let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
     xml += `<test-run id="1" testcasecount="${total}" result="${result}" total="${total}" passed="${passed}" failed="${failed}" inconclusive="0" skipped="0" start-time="${timestamp}" end-time="${timestamp}" duration="0">\n`;
     xml += `  <test-suite type="Assembly" id="0-1" name="LENS.Workbook.Tests" fullname="LENS.Workbook.Tests" testcasecount="${total}" result="${result}" total="${total}" passed="${passed}" failed="${failed}" inconclusive="0" skipped="0">\n`;
@@ -71,20 +84,20 @@ function generateNUnitXML(results, passed, failed, total) {
     Object.entries(suites).forEach(([suiteName, tests]) => {
         const suiteFailures = tests.filter(t => !t.passed).length;
         const suiteResult = suiteFailures > 0 ? 'Failed' : 'Passed';
-        const safeSuiteName = suiteName.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+        const safeSuiteName = escapeXml(suiteName);
 
         xml += `    <test-suite type="TestFixture" id="0-${suiteId}" name="${safeSuiteName}" fullname="LENS.Workbook.Tests.${safeSuiteName}" testcasecount="${tests.length}" result="${suiteResult}" total="${tests.length}" passed="${tests.length - suiteFailures}" failed="${suiteFailures}" inconclusive="0" skipped="0">\n`;
 
         let testId = 1;
         tests.forEach(test => {
-            const safeTestName = test.name.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+            const safeTestName = escapeXml(test.name);
             const testResult = test.passed ? 'Passed' : 'Failed';
 
             xml += `      <test-case id="0-${suiteId}-${testId}" name="${safeTestName}" fullname="LENS.Workbook.Tests.${safeSuiteName}.${safeTestName}" result="${testResult}">\n`;
 
             if (!test.passed) {
-                const safeExpected = String(test.expected).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
-                const safeActual = String(test.actual).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+                const safeExpected = escapeXml(test.expected);
+                const safeActual = escapeXml(test.actual);
                 xml += `        <failure>\n`;
                 xml += `          <message><![CDATA[Expected: ${safeExpected}, Got: ${safeActual}]]></message>\n`;
                 xml += `          <stack-trace><![CDATA[Expected: ${safeExpected}\nActual: ${safeActual}]]></stack-trace>\n`;
@@ -240,7 +253,7 @@ testSuite('Item Structure Validation', () => {
         'All items have a "content" property',
         allItems.length, itemsWithContent.length);
 
-    // Check items have valid types (1=markdown, 3=query, 9=parameter, 10=notebookgroup, 11=link)
+    // Check items have valid types (1=markdown, 3=query, 9=parameter, 10=notebookgroup, 11=link, 12=textParameter)
     const validTypes = [1, 3, 9, 10, 11, 12];
     const itemsWithValidType = allItems.filter(i => validTypes.includes(i.type));
     assert(itemsWithValidType.length === allItems.length,
@@ -635,13 +648,12 @@ testSuite('Portal Link Integrity', () => {
     }
 
     // No hardcoded subscription GUIDs in portal links
-    const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
     const queriesWithHardcodedGuids = portalLinkQueries.filter(q => {
         // Extract just the portal URL construction parts
         const portalParts = q.query.split('portal.azure.com').slice(1);
         return portalParts.some(part => {
             const urlPart = part.substring(0, 500); // check first 500 chars after portal.azure.com
-            return guidPattern.test(urlPart);
+            return GUID_PATTERN.test(urlPart);
         });
     });
     assert(queriesWithHardcodedGuids.length === 0,
@@ -705,6 +717,7 @@ testSuite('KQL Query Robustness', () => {
     ['TimeRange', 'Subscriptions'].forEach(p => definedParamNames.add(p));
 
     // Extract parameter references from queries
+    // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
     const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*?)(?::[\w]+)?\}/g;
     const referencedParams = new Set();
     allQueries.forEach(q => {

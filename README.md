@@ -32,6 +32,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### Update Progress Tab — Unresolved Failures Always Visible
 - **Time range bypass for unresolved failures**: The "Update Run History and Error Details" table now always shows the latest failure for clusters that remain in a failed state with no subsequent successful update run, regardless of the selected time range filter. Previously, if all failed runs for a cluster fell outside the time range window, the cluster would not appear in the table — even though the "All Cluster Update Status" table still showed it as "Failed to update"
+- **Tag filtering added**: The "Update Run History and Error Details" table now honours the cluster tag filter (`ClusterTagName` / `ClusterTagValue`), ensuring only update runs for tag-matched clusters are shown
 
 ### Azure Local Machines Tab — Non-Connected Machines ([#53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53))
 - **Table renamed**: "⚠️ Disconnected Nodes" → "⚠️ Non-Connected Machines"

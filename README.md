@@ -21,7 +21,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 ### Update Progress Tab — Current Step Improvement ([#51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51))
 - **Deepest failing step detection**: Replaced `max(stepName)` aggregation (which picked alphabetically, e.g., "Update OS" over "CAU Attempt") with depth-based selection using `arg_max(deepestErrDepth, deepestErrStep)` — the query now correctly identifies the deepest failing sub-step in the update step tree
 - **Added `'Failed'` status checks**: Extended the step status matching to include `'Failed'` alongside `'Error'` as fallback tiers, catching steps that fail without an explicit error message
-- **Example improvement**: Arizona cluster update `Solution12.2603.1002.15` now correctly shows "CAU Attempt" (depth 8) instead of the top-level "Update OS" (depth 5)
+- **Example of this improvement**: If a cluster experiences a failure during CAU Run of an update, the "Update Run History and Error Details" table now correctly shows "CAU Attempt" (depth 8) in the "Current Step" column, instead of the top-level "Update OS" (depth 5)
 
 ### Update Progress Tab — Missing Clusters Fix ([#52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52))
 - **Null-safe mv-expand**: Clusters whose update step tree is shallower than 7 levels were silently dropped from the "Update Run History and Error Details" table — `mv-expand` on empty step arrays eliminates the row entirely. Fixed by making s6 and s7 expansions produce a null placeholder row instead of dropping
@@ -29,6 +29,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### All Cluster Update Status — Failed Update Link
 - **Update Status link**: When the "Update Status" column shows "Failed to update" or "Action required", it is now a clickable link to the cluster's update run history page in the Azure portal
+
+### Update Progress Tab — Unresolved Failures Always Visible
+- **Time range bypass for unresolved failures**: The "Update Run History and Error Details" table now always shows the latest failure for clusters that remain in a failed state with no subsequent successful update run, regardless of the selected time range filter. Previously, if all failed runs for a cluster fell outside the time range window, the cluster would not appear in the table — even though the "All Cluster Update Status" table still showed it as "Failed to update"
 
 ### Azure Local Machines Tab — Non-Connected Machines ([#53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53))
 - **Table renamed**: "⚠️ Disconnected Nodes" → "⚠️ Non-Connected Machines"

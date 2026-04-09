@@ -17,7 +17,7 @@ let totalCount = 0;
 const testResults = [];
 let currentSuite = null;
 
-const GUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 function assert(condition, testName, expected, actual) {
     totalCount++;
@@ -629,7 +629,8 @@ testSuite('Portal Link Integrity', () => {
     );
     const queriesWithEncodedResourceId = queriesWithResourceIdLink.filter(q => {
         // Check that the link construction uses replace_string or %2F encoding
-        return q.query.includes('%2F') || q.query.includes("replace_string") || q.query.includes('encodedResourceId') || q.query.includes('clusterIdEncoded');
+        const encodingIndicators = ['%2F', 'replace_string', 'encodedResourceId', 'clusterIdEncoded'];
+        return encodingIndicators.some(indicator => q.query.includes(indicator));
     });
     assert(queriesWithEncodedResourceId.length === queriesWithResourceIdLink.length,
         'Portal links use URL-encoded resource IDs',
@@ -651,7 +652,7 @@ testSuite('Portal Link Integrity', () => {
         const portalParts = q.query.split('portal.azure.com').slice(1);
         return portalParts.some(part => {
             const urlPart = part.substring(0, 500); // check first 500 chars after portal.azure.com
-            return GUID_PATTERN.test(urlPart);
+            return guidPattern.test(urlPart);
         });
     });
     assert(queriesWithHardcodedGuids.length === 0,
@@ -713,7 +714,7 @@ testSuite('KQL Query Robustness', () => {
     // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
     const referencedParams = new Set();
     allQueries.forEach(q => {
-        const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g;
+        const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g; // { + param name (letter/underscore, then letters/digits/underscores) + optional :format (\w+) + }
         let match;
         while ((match = paramRefPattern.exec(q.query)) !== null) {
             referencedParams.add(match[1]);

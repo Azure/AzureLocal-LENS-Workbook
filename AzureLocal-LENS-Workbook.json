@@ -2332,7 +2332,7 @@
                                 "operator": "Default",
                                 "thresholdValue": null,
                                 "representation": null,
-                                "text": "1:{0}"
+                                "text": "{0}:1"
                               }
                             ]
                           },

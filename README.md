@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.4
+## Latest Version: v0.8.5
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,54 +8,32 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.4) — Resolves: [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37) | [Issue #39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)
+## Recent Changes (v0.8.5) — Resolves: [Issue #50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50) | [Issue #51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51) | [Issue #52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52) | [Issue #53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53)
 
-### Capacity Tab Layout & Navigation Improvements
-- **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability
-- **Navigation Tip**: Added instructional text at the top of the Capacity tab guiding users through the three sub-tabs
+### Capacity Tab — V:P CPU Ratio Fix ([#50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50))
+- **Ratio direction corrected**: All ratio labels, column headings, and descriptive text changed from "P:V" (Physical:Virtual) to "V:P" (Virtual:Physical) — the industry-standard convention for expressing overcommit ratios (e.g., 4:1 means 4 vCPUs per 1 pCPU)
+- **Parameter labels updated**: "Target pCPU:vCPU Ratio" → "Target vCPU:pCPU Ratio", "Filter by Ratio" description corrected
+- **Dropdown values updated**: Ratio options now display as "2:1", "3:1", "4:1" etc. instead of "1:2", "1:3", "1:4"
+- **Column headings updated**: "P:V CPU Ratio" → "V:P CPU Ratio", "% of P:V Target" → "% of V:P Target"
+- **KQL ratio format**: Output string changed from `1:X` to `X:1`
+- **Descriptive text rewritten**: Updated the Cluster Capacity Overview header paragraph per the issue request
 
-### Log Analytics Workspace Filter Improvements
-- **Duplicated LA Workspace filter**: Moved from shared Capacity params into each sub-tab (Overview, Multi-cluster, Single cluster) so each tab independently controls its own workspace selection
-- **ClusterRGMap moved to global params**: Prevents "query failed" visibility issues in the Capacity tab header
+### Update Progress Tab — Current Step Improvement ([#51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51))
+- **Deepest failing step detection**: Replaced `max(stepName)` aggregation (which picked alphabetically, e.g., "Update OS" over "CAU Attempt") with depth-based selection using `arg_max(deepestErrDepth, deepestErrStep)` — the query now correctly identifies the deepest failing sub-step in the update step tree
+- **Added `'Failed'` status checks**: Extended the step status matching to include `'Failed'` alongside `'Error'` as fallback tiers, catching steps that fail without an explicit error message
+- **Example improvement**: Arizona cluster update `Solution12.2603.1002.15` now correctly shows "CAU Attempt" (depth 8) instead of the top-level "Update OS" (depth 5)
 
-### Overview Tab Enhancements
-- **Title rename**: "Top 5 Clusters by Resource Usage" → "Top 5 Azure Local Instances by Resource Capacity Usage"
-- **Historic Time Range filter**: Added alongside the LA Workspace filter for the 6 resource usage charts (default: Last 3 days)
-- **Prometheus Time Range**: Default changed from 4 hours to Last 3 days, added Last 14 days and Last 30 days options
-- **Prometheus charts**: Updated all 4 PromQL charts to group by `(cluster, instance)` instead of just `(instance)` for cluster name visibility
+### Update Progress Tab — Missing Clusters Fix ([#52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52))
+- **Null-safe mv-expand**: Clusters whose update step tree is shallower than 7 levels were silently dropped from the "Update Run History and Error Details" table — `mv-expand` on empty step arrays eliminates the row entirely. Fixed by making s6 and s7 expansions produce a null placeholder row instead of dropping
+- **Null guards on field extraction**: Added `isnotnull()` checks on e6, e7, and e8 field extractions so null steps don't cause errors
 
-### Multi-cluster Tab Enhancements
-- **Forecast cluster selection**: Updated text and tip to recommend up to 5 clusters (from 10)
-- **Forecast disclaimer**: Added warning-styled tip explaining forecasts are statistical extrapolations, not guaranteed predictions
-- **Forecast future-only**: Forecast lines now only show future dates (no longer overlap with actual historic data)
-- **Storage & Network section**: Added 💾 emoji to title, renamed to "For Selected Clusters", added Historic Time Range filter
+### All Cluster Update Status — Failed Update Link
+- **Update Status link**: When the "Update Status" column shows "Failed to update" or "Action required", it is now a clickable link to the cluster's update run history page in the Azure portal
 
-### Single Cluster Tab — Major Improvements
-- **Cluster selection tip**: Added tip guiding users to select a cluster and optionally a Log Analytics Workspace
-- **6 Physical Machine performance charts**: Added CPU, Memory, and Storage usage charts alongside existing Latency, IOPS, and Network Throughput — all showing per-machine data with "By Machine" labels
-- **Section reordering**: Physical Machines perf charts now appear before Storage Forecast sections for better flow
-- **Storage Volume section**: Renamed to "💾 Cluster: X — Storage Volume Usage and Forecast", moved below perf charts
-- **Forecast disclaimers**: Added to both Storage Pool and Compute Trends forecast sections
-- **Workloads section**: Renamed header emoji to 📦, added "🖥️ Azure Local VMs on: X" and "☸️ AKS Arc Clusters on: X" section headers
-- **VM table**: Added `linkColumn` fix for portal links, renamed "Cluster" column to "Azure Local Cluster"
-- **AKS table**: Added `linkColumn` fix for portal links, added dedicated section header
-- **AKS Node Resource Usage**: New PromQL timecharts showing Top 10 AKS nodes by CPU and Memory usage, with dedicated single-select Azure Monitor Workspace filter and tip explaining cross-cluster data scope limitation
-- **Forecast Y-axis**: All percentage-based forecast charts (CPU, Memory, Storage) now fixed to 0-100% Y-axis range to prevent small changes from appearing alarming
-
-### Bug Fixes & Technical Improvements
-- **100-resource limit fix**: Changed all chart `crossComponentResources` from `{Subscriptions}` to `{MachinesLogAnalyticsWorkspace}` to avoid "Request cannot exceed 100 resources" errors
-- **VM/AKS portal links**: Fixed missing `linkColumn` property across all VM and AKS name link formatters (lost during JSON reformatting)
-- **PromQL visualization**: Converted AKS node resource items to timecharts — Azure Workbooks Prometheus provider doesn't support table visualization with `query_range` data
-- **Prometheus tip styling**: Added purple background (`upsell` style) to Prometheus tip on Overview tab
-- **Forecast line colors**: Removed all hardcoded `seriesLabelSettings` color overrides (not scalable for arbitrary cluster names) — charts now use Azure Workbooks' default color palette
-- **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
-- **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
-- **Storage TB forecast fix**: Fixed duplicate event aggregation causing data spikes — now uses `arg_max` to take latest Event 3002 per day per cluster before expanding volumes
-- **ARB table VM/AKS counts** ([#39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)): Fixed Offline ARBs and All ARBs tables to use proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for VM and AKS Arc counts via 2-query + merge pattern, replacing incorrect resource group matching
-- **Licensing pie chart colors**: Restored Enabled (green) / Disabled (gray) series colors on Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification pie charts
-- **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
-- **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
-- **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults
+### Azure Local Machines Tab — Non-Connected Machines ([#53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53))
+- **Table renamed**: "⚠️ Disconnected Nodes" → "⚠️ Non-Connected Machines"
+- **Query filter broadened**: Changed from `status == "Disconnected"` to `status != "Connected"` to capture all non-connected states (e.g., "Expired", "Error", etc.)
+- **Column renamed**: "Node Name" → "Machine Name" in the first column
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -400,6 +378,55 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.4 — Resolves: [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37) | [Issue #39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)
+
+#### Capacity Tab Layout & Navigation Improvements
+- **Tab Icons**: Added emojis to Capacity sub-tabs — 📋 Overview, 🌍 Multi-cluster, 🔍 Single cluster — for better discoverability
+- **Navigation Tip**: Added instructional text at the top of the Capacity tab guiding users through the three sub-tabs
+
+#### Log Analytics Workspace Filter Improvements
+- **Duplicated LA Workspace filter**: Moved from shared Capacity params into each sub-tab (Overview, Multi-cluster, Single cluster) so each tab independently controls its own workspace selection
+- **ClusterRGMap moved to global params**: Prevents "query failed" visibility issues in the Capacity tab header
+
+#### Overview Tab Enhancements
+- **Title rename**: "Top 5 Clusters by Resource Usage" → "Top 5 Azure Local Instances by Resource Capacity Usage"
+- **Historic Time Range filter**: Added alongside the LA Workspace filter for the 6 resource usage charts (default: Last 3 days)
+- **Prometheus Time Range**: Default changed from 4 hours to Last 3 days, added Last 14 days and Last 30 days options
+- **Prometheus charts**: Updated all 4 PromQL charts to group by `(cluster, instance)` instead of just `(instance)` for cluster name visibility
+
+#### Multi-cluster Tab Enhancements
+- **Forecast cluster selection**: Updated text and tip to recommend up to 5 clusters (from 10)
+- **Forecast disclaimer**: Added warning-styled tip explaining forecasts are statistical extrapolations, not guaranteed predictions
+- **Forecast future-only**: Forecast lines now only show future dates (no longer overlap with actual historic data)
+- **Storage & Network section**: Added 💾 emoji to title, renamed to "For Selected Clusters", added Historic Time Range filter
+
+#### Single Cluster Tab — Major Improvements
+- **Cluster selection tip**: Added tip guiding users to select a cluster and optionally a Log Analytics Workspace
+- **6 Physical Machine performance charts**: Added CPU, Memory, and Storage usage charts alongside existing Latency, IOPS, and Network Throughput — all showing per-machine data with "By Machine" labels
+- **Section reordering**: Physical Machines perf charts now appear before Storage Forecast sections for better flow
+- **Storage Volume section**: Renamed to "💾 Cluster: X — Storage Volume Usage and Forecast", moved below perf charts
+- **Forecast disclaimers**: Added to both Storage Pool and Compute Trends forecast sections
+- **Workloads section**: Renamed header emoji to 📦, added "🖥️ Azure Local VMs on: X" and "☸️ AKS Arc Clusters on: X" section headers
+- **VM table**: Added `linkColumn` fix for portal links, renamed "Cluster" column to "Azure Local Cluster"
+- **AKS table**: Added `linkColumn` fix for portal links, added dedicated section header
+- **AKS Node Resource Usage**: New PromQL timecharts showing Top 10 AKS nodes by CPU and Memory usage, with dedicated single-select Azure Monitor Workspace filter and tip explaining cross-cluster data scope limitation
+- **Forecast Y-axis**: All percentage-based forecast charts (CPU, Memory, Storage) now fixed to 0-100% Y-axis range to prevent small changes from appearing alarming
+
+#### Bug Fixes & Technical Improvements
+- **100-resource limit fix**: Changed all chart `crossComponentResources` from `{Subscriptions}` to `{MachinesLogAnalyticsWorkspace}` to avoid "Request cannot exceed 100 resources" errors
+- **VM/AKS portal links**: Fixed missing `linkColumn` property across all VM and AKS name link formatters (lost during JSON reformatting)
+- **PromQL visualization**: Converted AKS node resource items to timecharts — Azure Workbooks Prometheus provider doesn't support table visualization with `query_range` data
+- **Prometheus tip styling**: Added purple background (`upsell` style) to Prometheus tip on Overview tab
+- **Forecast line colors**: Removed all hardcoded `seriesLabelSettings` color overrides (not scalable for arbitrary cluster names) — charts now use Azure Workbooks' default color palette
+- **Forecast Y-axis**: CPU and Memory forecast charts auto-scale Y-axis; storage charts fixed to 0-100%
+- **Storage forecast titles**: Clarified to "Storage Remaining (%)" and "Storage Available (TB)" to show what the data represents
+- **Storage TB forecast fix**: Fixed duplicate event aggregation causing data spikes — now uses `arg_max` to take latest Event 3002 per day per cluster before expanding volumes
+- **ARB table VM/AKS counts** ([#39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)): Fixed Offline ARBs and All ARBs tables to use proper `extendedLocation` → `customlocations` → `arcBridgeRG` chain for VM and AKS Arc counts via 2-query + merge pattern, replacing incorrect resource group matching
+- **Licensing pie chart colors**: Restored Enabled (green) / Disabled (gray) series colors on Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification pie charts
+- **Corrupted emoji fix**: Fixed broken 📦 emoji on Workloads header
+- **Variable rename**: Renamed unprofessional `yourMom` parameter to `neverVisible`
+- **Environment cleanup**: Removed all hardcoded subscription IDs and cluster-specific ARM resource IDs from parameter defaults
 
 ### v0.8.3
 

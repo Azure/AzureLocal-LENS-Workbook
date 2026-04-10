@@ -10772,7 +10772,7 @@
           {
             "type": 1,
             "content": {
-              "json": "📚 **Documentation:** [Troubleshooting Azure Local Updates](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2#using-powershell)\r\n\r\n📚 **Knowledge:** [Review TroubleShooting Guides (TSGs) in the Azure Local GitHub Supportability Forum, (search for the error or scenario)](https://github.com/Azure/AzureLocal-Supportability)"
+              "json": "📚 **Knowledge:** [Troubleshoot Azure Local Readiness Checks using Azure portal or PowerShell](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2?view=azloc-2601#troubleshoot-readiness-checks)\r\n\r\n📚 **Knowledge:** [Review TroubleShooting Guides (TSGs) in the Azure Local GitHub Supportability Forum, (search for the error or scenario)](https://github.com/Azure/AzureLocal-Supportability)"
             },
             "name": "troubleshooting-link"
           },
@@ -12437,6 +12437,13 @@
             "name": "text-update-history"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "📚 **Knowledge:** [Troubleshooting Azure Local Updates](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2#using-powershell)"
+            },
+            "name": "update-history-knowledge-link"
+          },
+          {
             "type": 9,
             "content": {
               "version": "KqlParameterItem/1.0",
@@ -12675,7 +12682,7 @@
                   },
                   {
                     "columnId": "ErrorMessage",
-                    "label": "Error Details"
+                    "label": "Verbose Error Details"
                   },
                   {
                     "columnId": "Duration",

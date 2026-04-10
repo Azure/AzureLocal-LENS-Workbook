@@ -53,6 +53,19 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Cluster Name links**: "📦 Clusters with Updates Available" and "🔄 All Cluster Update Status" tables now have the Cluster Name column as a clickable link to the cluster's updates page in the Azure portal (previously used a separate column for the link)
 - **"Extracted" status**: Added "Extracted (Health Check Blocked)" to the "Filter by Status" dropdown in the Update Run History table, so users can filter for health-check-blocked updates
 
+### Update Progress Tab — Error Details Flyout and Health Check Context
+- **Markdown-formatted flyout blade**: Clicking "Verbose Error Details" now opens a context blade with structured markdown showing cluster name, update name, current step, and the full error message — replacing the previous small "Value" text box
+- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on SEA-NODE1)
+- **Column renamed**: "Error Details" → "Verbose Error Details"
+
+### Update Progress Tab — Query Performance for Large Environments
+- **Early filtering before mv-expand**: The Update Run History query previously expanded ALL update runs through a 7-level `mv-expand` step hierarchy before applying time range and cluster name filters. In large environments (100+ clusters with years of update history), this generated tens of thousands of intermediate rows, causing ARG `InternalServerError` / `UnexpectedQueryExecutionError` timeouts
+- **Fix**: Moved time range filter (`where timeStarted >= {TimeRange:start} or state == 'Failed'`), cluster name wildcard filter, and update name wildcard filter to execute BEFORE the `mv-expand` chain. This eliminates historical Succeeded runs early, reducing intermediate rows by 40-90% depending on environment size
+
+### Update Progress Tab — Knowledge Link Relocated
+- **Moved**: "Troubleshooting Azure Local Updates" knowledge link moved from System Health tab to Update Progress tab (below the Update Run History table header) where it's more contextually relevant
+- **System Health tab**: Replaced with "Troubleshoot Azure Local Readiness Checks" knowledge link, which is specific to the health check content on that tab
+
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---

@@ -12578,10 +12578,11 @@
                   },
                   {
                     "columnMatch": "ErrorMessage",
-                    "formatter": 1,
+                    "formatter": 7,
                     "formatOptions": {
                       "linkTarget": "CellDetails",
                       "linkIsContextBlade": true,
+                      "linkColumn": "ErrorMessageFull",
                       "customColumnWidthSetting": "45ch"
                     },
                     "tooltipFormat": {

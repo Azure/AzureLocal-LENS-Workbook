@@ -11899,12 +11899,16 @@
                 "rowLimit": 2000,
                 "formatters": [
                   {
-                    "columnMatch": "clusterLink",
+                    "columnMatch": "ClusterName",
                     "formatter": 7,
                     "formatOptions": {
                       "linkTarget": "Url",
-                      "linkLabel": "View History"
+                      "linkColumn": "clusterLink"
                     }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "updateStatusLink",
@@ -12075,10 +12079,6 @@
                   {
                     "columnId": "ClusterName",
                     "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "clusterLink",
-                    "label": "Update History"
                   },
                   {
                     "columnId": "UpdateStatus",
@@ -12341,12 +12341,16 @@
                 "rowLimit": 2000,
                 "formatters": [
                   {
-                    "columnMatch": "clusterLink",
+                    "columnMatch": "ClusterName",
                     "formatter": 7,
                     "formatOptions": {
                       "linkTarget": "Url",
-                      "linkLabel": "View Updates"
+                      "linkColumn": "clusterLink"
                     }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "DependencyLabel",
@@ -12391,10 +12395,6 @@
                   {
                     "columnId": "ClusterName",
                     "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "clusterLink",
-                    "label": "Available Updates"
                   },
                   {
                     "columnId": "CurrentVersion",
@@ -12505,7 +12505,7 @@
                     ],
                     "showDefault": false
                   },
-                  "jsonData": "[\r\n  { \"value\": \"Success\", \"label\": \"Success\" },\r\n  { \"value\": \"Error\", \"label\": \"Error\" },\r\n  { \"value\": \"InProgress\", \"label\": \"In Progress\" }\r\n]",
+                  "jsonData": "[\r\n  { \"value\": \"Success\", \"label\": \"Success\" },\r\n  { \"value\": \"Error\", \"label\": \"Error\" },\r\n  { \"value\": \"Extracted\", \"label\": \"Extracted (Health Check Blocked)\" },\r\n  { \"value\": \"InProgress\", \"label\": \"In Progress\" }\r\n]",
                   "defaultValue": "value::all",
                   "timeContext": {
                     "durationMs": 86400000

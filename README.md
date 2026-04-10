@@ -8,7 +8,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.6)
+## Recent Changes (v0.8.6) — Resolves: [Issue #59](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/59)
 
 ### System Health Tab — Missing Clusters in Health Check Tables
 - **Root cause (empty healthCheckResult)**: Clusters whose `updatesummaries.properties.healthCheckResult` array is null or empty were silently dropped from all health check tables. The `mv-expand` operator on an empty array eliminates the row entirely, meaning clusters blocked from updating due to health check failures would not appear in any health check view — even though the cluster's `healthState` was "Failure"

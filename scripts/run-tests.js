@@ -18,6 +18,11 @@ const testResults = [];
 let currentSuite = null;
 
 const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g;
+const MAX_ALLOWED_DUPLICATE_NAMES = 5;
+const MIN_EXPECTED_ITEMS = 200;
+const MIN_EXPECTED_QUERIES = 120;
+const MIN_EXPECTED_CHARTS = 30;
 
 function assert(condition, testName, expected, actual) {
     totalCount++;
@@ -96,6 +101,8 @@ function generateNUnitXML(results, passed, failed, total) {
             xml += `      <test-case id="0-${suiteId}-${testId}" name="${safeTestName}" fullname="LENS.Workbook.Tests.${safeSuiteName}.${safeTestName}" result="${testResult}">\n`;
 
             if (!test.passed) {
+                // "]]>" closes a CDATA section in XML, so any literal occurrence must be split
+                // by ending CDATA and reopening it: "]]]]><![CDATA[>" preserves the original text.
                 const rawExpected = String(test.expected).replace(/]]>/g, ']]]]><![CDATA[>');
                 const rawActual = String(test.actual).replace(/]]>/g, ']]]]><![CDATA[>');
                 xml += `        <failure>\n`;
@@ -268,9 +275,9 @@ testSuite('Item Structure Validation', () => {
     const namedItems = allItems.filter(i => i.name);
     const uniqueNames = new Set(namedItems.map(i => i.name));
     const duplicateCount = namedItems.length - uniqueNames.size;
-    assert(duplicateCount <= 5,
-        `Named items have minimal duplicates (${duplicateCount} found, <=5 allowed)`,
-        '<=5', duplicateCount);
+    assert(duplicateCount <= MAX_ALLOWED_DUPLICATE_NAMES,
+        `Named items have minimal duplicates (${duplicateCount} found, <=${MAX_ALLOWED_DUPLICATE_NAMES} allowed)`,
+        `<=${MAX_ALLOWED_DUPLICATE_NAMES}`, duplicateCount);
 });
 
 // --- 3. Tab Structure Validation ---
@@ -381,6 +388,9 @@ testSuite('KQL Query Validation', () => {
         // Remove regex patterns and escaped quotes before counting
         const cleaned = q.query.replace(/\\'/g, '').replace(/\\"/g, '');
         const singleQuotes = (cleaned.match(/'/g) || []).length;
+        // Note: Double quotes are not checked because KQL queries stored in JSON
+        // use escaped double quotes (\") for string literals, making balance
+        // validation unreliable after JSON parsing.
         return singleQuotes % 2 === 0;
     });
     assert(queriesWithBalancedQuotes.length === queryItemsForQuotes.length,
@@ -714,8 +724,8 @@ testSuite('KQL Query Robustness', () => {
     // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
     const referencedParams = new Set();
     allQueries.forEach(q => {
-        const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g; // { + param name (letter/underscore, then letters/digits/underscores) + optional :format (\w+) + }
         let match;
+        paramRefPattern.lastIndex = 0;
         while ((match = paramRefPattern.exec(q.query)) !== null) {
             referencedParams.add(match[1]);
         }
@@ -946,19 +956,19 @@ testSuite('Azure Licensing & Verification Pie Charts', () => {
 // --- 21. Item Count Regression Guard ---
 testSuite('Item Count Regression Guard', () => {
     // Total item count should not drop significantly
-    assert(allItems.length >= 200,
-        `Workbook has at least 200 items (actual: ${allItems.length})`,
-        '>=200', allItems.length);
+    assert(allItems.length >= MIN_EXPECTED_ITEMS,
+        `Workbook has at least ${MIN_EXPECTED_ITEMS} items (actual: ${allItems.length})`,
+        `>=${MIN_EXPECTED_ITEMS}`, allItems.length);
 
     // Query count should not drop significantly
-    assert(allQueries.length >= 120,
-        `Workbook has at least 120 queries (actual: ${allQueries.length})`,
-        '>=120', allQueries.length);
+    assert(allQueries.length >= MIN_EXPECTED_QUERIES,
+        `Workbook has at least ${MIN_EXPECTED_QUERIES} queries (actual: ${allQueries.length})`,
+        `>=${MIN_EXPECTED_QUERIES}`, allQueries.length);
 
     // Chart count should not drop significantly
-    assert(allCharts.length >= 30,
-        `Workbook has at least 30 charts (actual: ${allCharts.length})`,
-        '>=30', allCharts.length);
+    assert(allCharts.length >= MIN_EXPECTED_CHARTS,
+        `Workbook has at least ${MIN_EXPECTED_CHARTS} charts (actual: ${allCharts.length})`,
+        `>=${MIN_EXPECTED_CHARTS}`, allCharts.length);
 });
 
 // --- 22. Prometheus / AKS Node Resource Usage Validation ---

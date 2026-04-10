@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.5
+## Latest Version: v0.8.6
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,36 +8,63 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.5) — Resolves: [Issue #50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50) | [Issue #51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51) | [Issue #52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52) | [Issue #53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53)
+## Recent Changes (v0.8.6) — Resolves: [Issue #59](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/59)
 
-### Capacity Tab — V:P CPU Ratio Fix ([#50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50))
-- **Ratio direction corrected**: All ratio labels, column headings, and descriptive text changed from "P:V" (Physical:Virtual) to "V:P" (Virtual:Physical) — the industry-standard convention for expressing overcommit ratios (e.g., 4:1 means 4 vCPUs per 1 pCPU)
-- **Parameter labels updated**: "Target pCPU:vCPU Ratio" → "Target vCPU:pCPU Ratio", "Filter by Ratio" description corrected
-- **Dropdown values updated**: Ratio options now display as "2:1", "3:1", "4:1" etc. instead of "1:2", "1:3", "1:4"
-- **Column headings updated**: "P:V CPU Ratio" → "V:P CPU Ratio", "% of P:V Target" → "% of V:P Target"
-- **KQL ratio format**: Output string changed from `1:X` to `X:1`
-- **Descriptive text rewritten**: Updated the Cluster Capacity Overview header paragraph per the issue request
+### System Health Tab — Missing Clusters in Health Check Tables
+- **Root cause (empty healthCheckResult)**: Clusters whose `updatesummaries.properties.healthCheckResult` array is null or empty were silently dropped from all health check tables. The `mv-expand` operator on an empty array eliminates the row entirely, meaning clusters blocked from updating due to health check failures would not appear in any health check view — even though the cluster's `healthState` was "Failure"
+- **When this happens**: Health checks triggered only during an update run may record results in the update run's progress steps rather than in `updatesummaries.healthCheckResult`. This leaves the health check result array empty while the overall `healthState` correctly reports "Failure" or "Warning"
+- **Fix**: Added a fallback across all 4 affected queries — when `healthCheckResult` is null/empty but `healthState` is "Failure" or "Warning", a synthetic health check entry is injected with severity derived from the health state, a descriptive message, and a link to the troubleshooting documentation. This ensures the cluster always appears in the health tables
 
-### Update Progress Tab — Current Step Improvement ([#51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51))
-- **Deepest failing step detection**: Replaced `max(stepName)` aggregation (which picked alphabetically, e.g., "Update OS" over "CAU Attempt") with depth-based selection using `arg_max(deepestErrDepth, deepestErrStep)` — the query now correctly identifies the deepest failing sub-step in the update step tree
-- **Added `'Failed'` status checks**: Extended the step status matching to include `'Failed'` alongside `'Error'` as fallback tiers, catching steps that fail without an explicit error message
-- **Example of this improvement**: If a cluster experiences a failure during CAU Run of an update, the "Update Run History and Error Details" table now correctly shows "CAU Attempt" (depth 8) in the "Current Step" column, instead of the top-level "Update OS" (depth 5)
+### System Health Tab — ARG Truncation of Large Health Check Arrays
+- **Root cause**: Azure Resource Graph's `mv-expand` operator has a per-resource row limit (~128 rows). Clusters with large `healthCheckResult` arrays (e.g., 166+ entries for a 2-node cluster, 300+ for larger clusters) had their health check data silently truncated. Critical failures near the end of the array — such as "Test PowerShell Module Version" — were dropped entirely, even though they appeared in the ARM API (`updateSummaries/default`) and the Azure portal
+- **Fix**: Added `array_reverse()` before `mv-expand` in all 4 health check queries. Per-node validation checks (ValidatedRecipe, Connectivity, Hardware, etc.) which are most likely to contain Critical/Failed results tend to be appended at the end of the array. Reversing the array ensures these checks are expanded first, within the ARG row limit
+- **Note**: This is a workaround for an ARG limitation. Combined with the `where status != "Succeeded"` early filter and `array_reverse()`, all Failed/Critical checks are now reliably surfaced even for clusters with 300+ health check entries
 
-### Update Progress Tab — Missing Clusters Fix ([#52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52))
-- **Null-safe mv-expand**: Clusters whose update step tree is shallower than 7 levels were silently dropped from the "Update Run History and Error Details" table — `mv-expand` on empty step arrays eliminates the row entirely. Fixed by making s6 and s7 expansions produce a null placeholder row instead of dropping
-- **Null guards on field extraction**: Added `isnotnull()` checks on e6, e7, and e8 field extractions so null steps don't cause errors
+### System Health Tab — Severity Filter Default Widened
+- **Root cause**: The "Severity" filter on the detailed health check table defaulted to **Critical only**. Clusters with failed health checks at Warning or Informational severity (e.g., `StoragePool.PoolCapacityThresholdExceeded`, Proxy ByPassList Recommendations) were filtered out — even when the cluster's overall `healthState` was "Failure"
+- **Fix**: Changed the default severity filter from `["Critical"]` to `["Critical", "Warning"]` so that Warning-severity failures are visible by default alongside Critical ones
 
-### All Cluster Update Status — Failed Update Link
-- **Update Status link**: When the "Update Status" column shows "Failed to update" or "Action required", it is now a clickable link to the cluster's update run history page in the Azure portal
+### System Health Tab — Table Renamed
+- **Renamed**: "🔍 Detailed Health Check Results" → "🔍 24 Hour System Health Checks - Detailed Results" for clarity
 
-### Update Progress Tab — Unresolved Failures Always Visible
-- **Time range bypass for unresolved failures**: The "Update Run History and Error Details" table now always shows the latest failure for clusters that remain in a failed state with no subsequent successful update run, regardless of the selected time range filter. Previously, if all failed runs for a cluster fell outside the time range window, the cluster would not appear in the table — even though the "All Cluster Update Status" table still showed it as "Failed to update"
-- **Tag filtering added**: The "Update Run History and Error Details" table now honours the cluster tag filter (`ClusterTagName` / `ClusterTagValue`), ensuring only update runs for tag-matched clusters are shown
+### System Health Tab — Query Performance Optimization
+- **Succeeded checks filtered early**: The detailed health check query previously expanded all health check entries (~150–350 per cluster) before filtering. Added `where status != "Succeeded"` immediately after `mv-expand` inside the subquery, eliminating ~95% of rows before the join and downstream operations. This significantly reduces query cost and execution time
+- **Succeeded option removed from filter**: Removed "Succeeded" from the "Health Check Result" dropdown since the query no longer returns Succeeded rows
 
-### Azure Local Machines Tab — Non-Connected Machines ([#53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53))
-- **Table renamed**: "⚠️ Disconnected Nodes" → "⚠️ Non-Connected Machines"
-- **Query filter broadened**: Changed from `status == "Disconnected"` to `status != "Connected"` to capture all non-connected states (e.g., "Expired", "Error", etc.)
-- **Column renamed**: "Node Name" → "Machine Name" in the first column
+### Queries fixed across all System Health improvements:
+  - 🔍 **24 Hour System Health Checks - Detailed Results** table — the main detailed health view
+  - 🔽 **Filter by Cluster** dropdown — so affected clusters appear in the filter list
+  - 📊 **Health Check Failures By Reason Summary** table — failure aggregation by type
+  - 🥧 **Top 5 System Health Check Issues** pie chart — visual summary of top issues
+- **Verified safe**: The 8 other health-related queries (health state tiles, pie chart, percentage, distribution summary, and update readiness summary) only use `healthState` directly and were not affected
+
+### Update Progress Tab — Shallow Step Tree Error Extraction
+- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, Seattle's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
+- **Fix**: Extended error extraction to cover all step depths 1–8. The `deepestErrDepth`, `deepestErrStep`, and `mvExpandErrMsg` cascades now check `e1`–`e4` (error message, name, and status) in addition to the existing `e5`–`e8`. The deepest available error is still preferred, with shallower levels used as fallback
+- **Enriched error details for shallow failures**: For step depth 1 failures, the step's `description` field is now appended to `errorMessage` when it contains more detail (e.g., remediation URLs), providing actionable guidance directly in the Error Details column
+- **Result**: Seattle's failed update now shows `CurrentStep = "Update is blocked due to health check failure"` with the remediation link in Error Details, instead of the generic "Preparing to install"
+
+### Update Progress Tab — Stale Failure Resolution Logic Improved
+- **Root cause**: The "Update Run History and Error Details" table only suppressed failed update runs if a **Succeeded run for the exact same update name** existed. Clusters that failed on an older update (e.g., `Solution12.2508.1001.50`) but later succeeded on a newer cumulative update (e.g., `Solution12.2508.1001.52` or `Solution12.2603.1002.15`) still showed the old failure as unresolved
+- **Fix**: Changed the resolution logic to check if the cluster has **any Succeeded update run that started after the failed run**, regardless of update name. This correctly identifies failures that were resolved by a later cumulative update
+- **Example**: Virginia's failures on `Solution12.2508.1001.50` and `.48` (Aug 2025) are now suppressed because the cluster later succeeded on `.52` and many subsequent updates
+
+### Update Progress Tab — Cluster Name Links and Status Filter
+- **Cluster Name links**: "📦 Clusters with Updates Available" and "🔄 All Cluster Update Status" tables now have the Cluster Name column as a clickable link to the cluster's updates page in the Azure portal (previously used a separate column for the link)
+- **"Extracted" status**: Added "Extracted (Health Check Blocked)" to the "Filter by Status" dropdown in the Update Run History table, so users can filter for health-check-blocked updates
+
+### Update Progress Tab — Error Details Flyout and Health Check Context
+- **Markdown-formatted flyout blade**: Clicking "Verbose Error Details" now opens a context blade with structured markdown showing cluster name, update name, current step, and the full error message — replacing the previous small "Value" text box
+- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on SEA-NODE1)
+- **Column renamed**: "Error Details" → "Verbose Error Details"
+
+### Update Progress Tab — Query Performance for Large Environments
+- **Early filtering before mv-expand**: The Update Run History query previously expanded ALL update runs through a 7-level `mv-expand` step hierarchy before applying time range and cluster name filters. In large environments (100+ clusters with years of update history), this generated tens of thousands of intermediate rows, causing ARG `InternalServerError` / `UnexpectedQueryExecutionError` timeouts
+- **Fix**: Moved time range filter (`where timeStarted >= {TimeRange:start} or state == 'Failed'`), cluster name wildcard filter, and update name wildcard filter to execute BEFORE the `mv-expand` chain. This eliminates historical Succeeded runs early, reducing intermediate rows by 40-90% depending on environment size
+
+### Update Progress Tab — Knowledge Link Relocated
+- **Moved**: "Troubleshooting Azure Local Updates" knowledge link moved from System Health tab to Update Progress tab (below the Update Run History table header) where it's more contextually relevant
+- **System Health tab**: Replaced with "Troubleshoot Azure Local Readiness Checks" knowledge link, which is specific to the health check content on that tab
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -124,7 +151,7 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 The workbook is organized into eight tabs:
 
-📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🖥️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | �️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
@@ -144,7 +171,7 @@ A high-level overview of your entire Azure Local estate, including:
   - Hardware vendor/model distribution
 - **All Clusters Table**: Comprehensive list with solution version, node count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, registration date, Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
 - **Licensing & Verification Charts**: Pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
-- **Stale Clusters Warning**: Table showing clusters that haven't synced in 24+ hours with color-coded severity
+- **Clusters Not Synced Recently**: Table showing clusters that haven't synced in 24+ hours with color-coded severity
 
 ![Azure Local Instances](images/summary-dashboard-screenshot.png)
 
@@ -157,7 +184,7 @@ Centralized view of cluster resource utilization, capacity forecasting, and work
   - VM vCPUs and AKS vCPUs (from provisioned workloads)
   - vCPU Total (combined VM + AKS)
   - VM Memory Total (GB)
-  - pCPU:vCPU Ratio (e.g., `1:4.2`) — computed inline via Azure Resource Graph sub-joins
+  - V:P CPU Ratio (e.g., `4.2:1`) — computed inline via Azure Resource Graph sub-joins
 - **Resource Trends & Forecast**: Time-series trend analysis with configurable parameters:
   - Log Analytics Workspace selector (multi-select)
   - Configurable time range, warning threshold (default 80%), and critical threshold (default 90%)
@@ -172,7 +199,7 @@ Centralized view of cluster resource utilization, capacity forecasting, and work
 - **Cluster Workload Drill-Down**: Detailed view of VMs and AKS Arc clusters on a selected cluster:
   - Requires single cluster selection from the Cluster filter
   - Shows individual workload resource allocations (vCPUs, memory, status)
-  - **AKS Node Resource Usage**: Top 5 nodes by CPU, Memory, Disk I/O, and Network Throughput via Prometheus timecharts from Azure Monitor Workspace
+  - **AKS Node Resource Usage**: Top 5/10 nodes by CPU, Memory, Disk I/O, and Network Throughput via Prometheus timecharts from Azure Monitor Workspace
   - Configurable Prometheus Time Range (30 min – 7 days)
 
 ### 📋 System Health
@@ -204,13 +231,13 @@ Track the progress of ongoing updates across your clusters with detailed status 
   - **Details** column (3rd column) with direct link to view update run details in Azure portal
   - State and status with icons (success/failed/in-progress)
   - Current step description showing what the update is doing
-  - **Error Message** column displaying extracted error details for failed updates (click to view full error)
+  - **Error Details** column displaying extracted error details for failed updates (click to view full error)
   - Human-readable duration format (e.g., "1h 7m 15s" instead of ISO 8601 format)
   - Start time and last updated timestamps
 
 ![Update Progress](images/update-progress-screenshot.png)
 
-### 🖥️ Azure Local Machines
+### �️ Azure Local Machines
 Comprehensive view of physical server machines in Azure Local clusters:
 - **Last Refreshed timestamp** and documentation links
 - **Machine Overview**:
@@ -382,6 +409,37 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.5 — Resolves: [Issue #50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50) | [Issue #51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51) | [Issue #52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52) | [Issue #53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53)
+
+#### Capacity Tab — V:P CPU Ratio Fix ([#50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50))
+- **Ratio direction corrected**: All ratio labels, column headings, and descriptive text changed from "P:V" (Physical:Virtual) to "V:P" (Virtual:Physical) — the industry-standard convention for expressing overcommit ratios (e.g., 4:1 means 4 vCPUs per 1 pCPU)
+- **Parameter labels updated**: "Target pCPU:vCPU Ratio" → "Target vCPU:pCPU Ratio", "Filter by Ratio" description corrected
+- **Dropdown values updated**: Ratio options now display as "2:1", "3:1", "4:1" etc. instead of "1:2", "1:3", "1:4"
+- **Column headings updated**: "P:V CPU Ratio" → "V:P CPU Ratio", "% of P:V Target" → "% of V:P Target"
+- **KQL ratio format**: Output string changed from `1:X` to `X:1`
+- **Descriptive text rewritten**: Updated the Cluster Capacity Overview header paragraph per the issue request
+
+#### Update Progress Tab — Current Step Improvement ([#51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51))
+- **Deepest failing step detection**: Replaced `max(stepName)` aggregation (which picked alphabetically, e.g., "Update OS" over "CAU Attempt") with depth-based selection using `arg_max(deepestErrDepth, deepestErrStep)` — the query now correctly identifies the deepest failing sub-step in the update step tree
+- **Added `'Failed'` status checks**: Extended the step status matching to include `'Failed'` alongside `'Error'` as fallback tiers, catching steps that fail without an explicit error message
+- **Example of this improvement**: If a cluster experiences a failure during CAU Run of an update, the "Update Run History and Error Details" table now correctly shows "CAU Attempt" (depth 8) in the "Current Step" column, instead of the top-level "Update OS" (depth 5)
+
+#### Update Progress Tab — Missing Clusters Fix ([#52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52))
+- **Null-safe mv-expand**: Clusters whose update step tree is shallower than 7 levels were silently dropped from the "Update Run History and Error Details" table — `mv-expand` on empty step arrays eliminates the row entirely. Fixed by making s6 and s7 expansions produce a null placeholder row instead of dropping
+- **Null guards on field extraction**: Added `isnotnull()` checks on e6, e7, and e8 field extractions so null steps don't cause errors
+
+#### All Cluster Update Status — Failed Update Link
+- **Update Status link**: When the "Update Status" column shows "Failed to update" or "Action required", it is now a clickable link to the cluster's update run history page in the Azure portal
+
+#### Update Progress Tab — Unresolved Failures Always Visible
+- **Time range bypass for unresolved failures**: The "Update Run History and Error Details" table now always shows the latest failure for clusters that remain in a failed state with no subsequent successful update run, regardless of the selected time range filter. Previously, if all failed runs for a cluster fell outside the time range window, the cluster would not appear in the table — even though the "All Cluster Update Status" table still showed it as "Failed to update"
+- **Tag filtering added**: The "Update Run History and Error Details" table now honours the cluster tag filter (`ClusterTagName` / `ClusterTagValue`), ensuring only update runs for tag-matched clusters are shown
+
+#### Azure Local Machines Tab — Non-Connected Machines ([#53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53))
+- **Table renamed**: "⚠️ Disconnected Nodes" → "⚠️ Non-Connected Machines"
+- **Query filter broadened**: Changed from `status == "Disconnected"` to `status != "Connected"` to capture all non-connected states (e.g., "Expired", "Error", etc.)
+- **Column renamed**: "Node Name" → "Machine Name" in the first column
 
 ### v0.8.4 — Resolves: [Issue #37](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/37) | [Issue #39](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/39)
 

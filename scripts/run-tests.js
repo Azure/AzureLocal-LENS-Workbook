@@ -18,7 +18,9 @@ const testResults = [];
 let currentSuite = null;
 
 const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-const paramRefPattern = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g;
+function getParamRefPattern() {
+    return /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g;
+}
 const MAX_ALLOWED_DUPLICATE_NAMES = 5;
 const MIN_EXPECTED_ITEMS = 200;
 const MIN_EXPECTED_QUERIES = 120;
@@ -723,6 +725,7 @@ testSuite('KQL Query Robustness', () => {
     // Extract parameter references from queries
     // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
     const referencedParams = new Set();
+    const paramRefPattern = getParamRefPattern();
     allQueries.forEach(q => {
         let match;
         paramRefPattern.lastIndex = 0;

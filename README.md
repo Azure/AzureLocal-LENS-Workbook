@@ -38,6 +38,11 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - 🥧 **Top 5 System Health Check Issues** pie chart — visual summary of top issues
 - **Verified safe**: The 8 other health-related queries (health state tiles, pie chart, percentage, distribution summary, and update readiness summary) only use `healthState` directly and were not affected
 
+### Update Progress Tab — Shallow Step Tree Error Extraction
+- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, Seattle's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
+- **Fix**: Extended error extraction to cover all step depths 1–8. The `deepestErrDepth`, `deepestErrStep`, and `mvExpandErrMsg` cascades now check `e1`–`e4` (error message, name, and status) in addition to the existing `e5`–`e8`. The deepest available error is still preferred, with shallower levels used as fallback
+- **Result**: Seattle's failed update now shows `CurrentStep = "Update is blocked due to health check failure"` and `ErrorMessage = "Action plan Check Update readiness ID ... failed with state: Failed"` instead of the generic "Preparing to install"
+
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
 ---

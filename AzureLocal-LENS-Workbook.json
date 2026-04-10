@@ -12439,7 +12439,7 @@
           {
             "type": 1,
             "content": {
-              "json": "📚 **Knowledge:** [Troubleshooting Azure Local Updates](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2#using-powershell)"
+              "json": "📚 **Knowledge:** [Troubleshooting Azure Local Update failure](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2#troubleshoot-update-failures)"
             },
             "name": "update-history-knowledge-link"
           },

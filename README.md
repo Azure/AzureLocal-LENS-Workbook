@@ -39,15 +39,15 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Verified safe**: The 8 other health-related queries (health state tiles, pie chart, percentage, distribution summary, and update readiness summary) only use `healthState` directly and were not affected
 
 ### Update Progress Tab — Shallow Step Tree Error Extraction
-- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, Seattle's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
+- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, a cluster's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
 - **Fix**: Extended error extraction to cover all step depths 1–8. The `deepestErrDepth`, `deepestErrStep`, and `mvExpandErrMsg` cascades now check `e1`–`e4` (error message, name, and status) in addition to the existing `e5`–`e8`. The deepest available error is still preferred, with shallower levels used as fallback
 - **Enriched error details for shallow failures**: For step depth 1 failures, the step's `description` field is now appended to `errorMessage` when it contains more detail (e.g., remediation URLs), providing actionable guidance directly in the Error Details column
-- **Result**: Seattle's failed update now shows `CurrentStep = "Update is blocked due to health check failure"` with the remediation link in Error Details, instead of the generic "Preparing to install"
+- **Result**: A cluster blocked by a health check failure now shows `CurrentStep = "Update is blocked due to health check failure"` with the remediation link in Error Details, instead of the generic "Preparing to install"
 
 ### Update Progress Tab — Stale Failure Resolution Logic Improved
 - **Root cause**: The "Update Run History and Error Details" table only suppressed failed update runs if a **Succeeded run for the exact same update name** existed. Clusters that failed on an older update (e.g., `Solution12.2508.1001.50`) but later succeeded on a newer cumulative update (e.g., `Solution12.2508.1001.52` or `Solution12.2603.1002.15`) still showed the old failure as unresolved
 - **Fix**: Changed the resolution logic to check if the cluster has **any Succeeded update run that started after the failed run**, regardless of update name. This correctly identifies failures that were resolved by a later cumulative update
-- **Example**: Virginia's failures on `Solution12.2508.1001.50` and `.48` (Aug 2025) are now suppressed because the cluster later succeeded on `.52` and many subsequent updates
+- **Example**: A cluster's failures on an older update (e.g., `Solution12.2508.1001.50`) are now suppressed when the cluster later succeeded on a newer cumulative update (e.g., `.52` and beyond)
 
 ### Update Progress Tab — Cluster Name Links and Status Filter
 - **Cluster Name links**: "📦 Clusters with Updates Available" and "🔄 All Cluster Update Status" tables now have the Cluster Name column as a clickable link to the cluster's updates page in the Azure portal (previously used a separate column for the link)
@@ -55,7 +55,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ### Update Progress Tab — Error Details Flyout and Health Check Context
 - **Markdown-formatted flyout blade**: Clicking "Verbose Error Details" now opens a context blade with structured markdown showing cluster name, update name, current step, and the full error message — replacing the previous small "Value" text box
-- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on SEA-NODE1)
+- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on a specific node)
 - **Column renamed**: "Error Details" → "Verbose Error Details"
 
 ### Update Progress Tab — Query Performance for Large Environments
@@ -131,7 +131,10 @@ All pull requests are automatically validated by a GitHub Actions workflow that 
 | Azure Licensing & Verification | Columns, formatters, labels, and pie charts for AHB/WSS/AVVM |
 | Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
 | Conditional Visibility | Tab groups have unique visibility parameters |
+| Resource Type References | Known Azure resource types in queries |
+| File Size & Performance | Workbook file size limits and performance checks |
 | KQL Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
+| Grid Formatter Consistency | Consistent formatter patterns across grids |
 | Regression Guards | Item, query, and chart count minimums |
 | Prometheus AKS Metrics | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
 | README & Docs | Required sections, CONTRIBUTING.md, SECURITY.md, LICENSE |
@@ -151,7 +154,7 @@ This workbook uses Azure Resource Graph queries to aggregate and display real-ti
 
 The workbook is organized into eight tabs:
 
-📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | �️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🗄️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
@@ -237,7 +240,7 @@ Track the progress of ongoing updates across your clusters with detailed status 
 
 ![Update Progress](images/update-progress-screenshot.png)
 
-### �️ Azure Local Machines
+### 🗄️ Azure Local Machines
 Comprehensive view of physical server machines in Azure Local clusters:
 - **Last Refreshed timestamp** and documentation links
 - **Machine Overview**:
@@ -350,12 +353,13 @@ Monitor AKS Arc clusters running on Azure Local:
 ## Quick Actions and Knowledge Links
 
 The workbook includes convenient quick action links to:
-- 🔔 Create Azure Monitor Alert Rules
-- 📜 View Activity Log
-- 💡 Azure Advisor Recommendations
-- 🏥 Azure Service Health Status
+- 💬 Azure Local Supportability Forum
 - 📚 Azure Local Documentation
+- 🧩 Solution Builder Extension (SBE) Updates
 - 🔄 Azure Local Update Guide
+- 📜 View Activity Log
+- 🏥 Azure Service Health Status
+- 🔔 Create Azure Monitor Alert Rules
 
 ## Parameters
 
@@ -376,11 +380,11 @@ The workbook provides several filtering options to help you focus on specific re
 ### Cluster Tag Filter
 - **Cluster Tag Name**: The name of the tag to filter by (e.g., "Environment", "Team", "CostCenter")
 - **Cluster Tag Value**: The value of the tag to match (e.g., "Production", "IT-Ops")
-- **Note**: Tag filtering applies **only to Azure Local clusters** - it does not filter AKS Arc clusters or Azure Local VMs
+- **Note**: Tag filtering is applied to Azure Local clusters. AKS Arc clusters and Azure Local VMs in the same resource group as matching clusters are also filtered via resource group association
 - Both Tag Name and Tag Value must be provided for the filter to take effect
 
 ### Time Range
-- **Time Range**: Select the time range for time-based queries (1 day to 30 days, or custom)
+- **Time Range**: Select the time range for time-based queries (1 day to 60 days, or custom; defaults to 45 days)
 
 ## Usage Tips
 

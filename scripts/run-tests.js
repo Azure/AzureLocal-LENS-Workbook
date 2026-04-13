@@ -103,8 +103,9 @@ function generateNUnitXML(results, passed, failed, total) {
             xml += `      <test-case id="0-${suiteId}-${testId}" name="${safeTestName}" fullname="LENS.Workbook.Tests.${safeSuiteName}.${safeTestName}" result="${testResult}">\n`;
 
             if (!test.passed) {
-                // "]]>" closes a CDATA section in XML, so any literal occurrence must be split
-                // by ending CDATA and reopening it: "]]]]><![CDATA[>" preserves the original text.
+                // "]]>" closes a CDATA section in XML.
+                // Split any literal "]]>" by ending CDATA ("]]>"), inserting literal "]]",
+                // then reopening CDATA ("<![CDATA[>"): "]]]]><![CDATA[>" preserves the original text.
                 const rawExpected = String(test.expected).replace(/]]>/g, ']]]]><![CDATA[>');
                 const rawActual = String(test.actual).replace(/]]>/g, ']]]]><![CDATA[>');
                 xml += `        <failure>\n`;
@@ -536,7 +537,7 @@ testSuite('Grid and Table Settings Validation', () => {
     const gridsWithRowLimit = gridItems.filter(i =>
         i.content.gridSettings.rowLimit && i.content.gridSettings.rowLimit >= 2000
     );
-    assert(gridsWithRowLimit.length >= gridItems.filter(i => i.content.gridSettings.rowLimit).length,
+    assert(gridsWithRowLimit.length === gridItems.filter(i => i.content.gridSettings.rowLimit).length,
         'All grids with row limits have rowLimit >= 2000',
         'all >= 2000',
         `${gridsWithRowLimit.length}/${gridItems.filter(i => i.content.gridSettings.rowLimit).length} >= 2000`);
@@ -649,6 +650,8 @@ testSuite('Portal Link Integrity', () => {
         queriesWithResourceIdLink.length, queriesWithEncodedResourceId.length);
 
     // Clusters Currently Updating: View Progress link should use updateName~/null
+    // `updateName~/null` is the expected generic portal-link form for "View Progress":
+    // it intentionally avoids embedding a specific update name and represents a null/non-specific update context.
     const clusterUpdatingQuery = allQueries.find(q =>
         q.query && q.query.includes('runState == "InProgress"') && q.query.includes('updateRunLink')
     );

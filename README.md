@@ -16,6 +16,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **Required counters table** — maps each of the six charts to the performance counters it consumes, including the cluster-aware `\Cluster CSV File System(*)\...` counters used by the Storage %, Latency and IOPS charts
 - **Portal limitation callout** — explains why the Azure Portal's DCR editor cannot be used: its fixed dropdown only exposes `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process` and `System`. `Cluster CSV File System` / `Cluster Shared Volume` are not listed, so the Storage charts were previously limited to OS / boot-disk data only
 - **Ready-to-deploy ARM template** — embedded as a fenced `json` code block inside the workbook, defining a `Microsoft.Insights/dataCollectionRules` (kind: Windows) resource with all required counter specifiers at a 60-second sampling interval, a Log Analytics destination, and a `Microsoft-Perf` data flow. Users replace three placeholders (workspace resource ID, DCR name, region) and deploy
+- **IMPORTANT caveat on ARM deployment semantics** — the section now warns that redeploying the template against an existing DCR name will overwrite its entire `properties` block (counters, streams, destinations, data flows). Recommends deploying as a new DCR with a unique `dcrName` (associated alongside any existing DCRs — a machine can have multiple DCR associations) or, if merging, exporting the current DCR with `az monitor data-collection rule show` and combining counter specifiers before redeploying
 - **CLI deployment snippet** — two-step `az deployment group create` + `az monitor data-collection rule association create` commands, with a loop that attaches the DCR to every Arc-enabled machine in the cluster's resource group
 - **Documentation quick-links** — AMA performance counters, DCR ARM reference, DCR associations, the portal DCR blade, and Cluster Shared Volume reference
 
@@ -54,6 +55,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - Yes / No pill toggle (hidden by default)
   - Prerequisites, required-counter table, portal-limitation callout
   - Ready-to-deploy ARM template (`Microsoft.Insights/dataCollectionRules`, kind: Windows) covering all Hyper-V counters above; can be deployed alongside or merged into the Capacity DCR from the Overview tab
+  - **IMPORTANT caveat on ARM deployment semantics** — matches the Overview DCR section: redeploying against an existing DCR name overwrites its entire `properties` block. Recommends a unique `dcrName` so the Hyper-V DCR is associated alongside (not on top of) the Capacity DCR, or merging counter specifiers into an exported existing DCR definition before redeploying
   - `az deployment group create` + `az monitor data-collection rule association create` CLI snippet with a loop across Arc-enabled machines in the cluster resource group
   - Docs quick-links (AMA performance counters, DCR ARM reference, DCR associations, Hyper-V performance tuning)
 - **Navigation text** on the Capacity tab updated from "three tabs" to "four tabs" and mentions the new Hyper-V VMs sub-tab

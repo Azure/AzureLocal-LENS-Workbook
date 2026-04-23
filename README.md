@@ -29,15 +29,15 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
 
 ### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab ([#67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67))
-- **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing per-VM inventory and performance data for Hyper-V virtual machines running on Azure Local clusters
-- **Inventory panel (Azure Resource Graph)** — always-on, no DCR required:
-  - Four count tiles: Total VMs, Running, Stopped / Off, Paused / Other
-  - **VM Power State Distribution** pie chart (parses `properties.instanceView.powerState.code` from `microsoft.azurestackhci/virtualmachineinstances`)
-  - **VMs per Azure Local Instance** bar chart
-  - **Allocated Resources** tile showing total vCPU and total memory (GiB) across all *running* VMs
-  - **Hyper-V VM Inventory** table with clickable VM-name and cluster-name links, agent status, vCPUs, memory, OS SKU and resource group
-  - VM → cluster mapping follows the established workbook pattern: `microsoft.hybridcompute/machines (kind=HCI)` → `extensibilityresources / virtualmachineinstances` → `customlocations.hostResourceId` → `microsoft.azurestackhci/clusters`
-- **Performance panel (Log Analytics)** — six charts in the same style as the cluster Overview tab, but at the VM (or VHD) level:
+- **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing Hyper-V VM inventory and performance data sourced **entirely from Log Analytics** (no Azure Resource Graph dependency)
+- **Scope note** — this tab intentionally uses LA-only data so it covers **all hypervisor-visible VMs, including raw Hyper-V VMs that are not onboarded to Arc**. For Arc-enabled VM inventory (vCPU / memory / OS SKU / resource group / links to the Azure resource), the workbook's existing **Azure Local VMs** tab is the authoritative view — this tab deliberately does not duplicate that data
+- **Inventory panel (Log Analytics)** — populated from distinct VM names observed in `Perf` for `Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time` (InstanceName format `<VMName>:Hv VP <n>`):
+  - **Active VMs** tile (distinct VM names in the selected time range)
+  - **Reporting Hosts** tile (distinct `Computer` values)
+  - **VM ↔ Host Pairs** tile (distinct VM-on-host observations — covers VMs seen on multiple hosts during the window, e.g. after a Live Migration)
+  - **VMs per Host** bar chart
+  - **Hyper-V VM List (by Host)** table — VM name, host, last-seen timestamp and sample count, filterable
+- **Performance panel (Log Analytics)** — six charts at the VM (or VHD) level:
   - 📈 **Top VMs by CPU Usage (%)** — from `Hyper-V Hypervisor Virtual Processor\% Guest Run Time`
   - 📈 **Top VMs by Memory Pressure** — from `Hyper-V Dynamic Memory VM\Current Pressure`
   - 📈 **Top Virtual Disks by Storage Throughput (MB/s)** — sum of `Read Bytes/sec` + `Write Bytes/sec`
@@ -45,8 +45,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - 📈 **Top Virtual Disks by Storage Latency** — matches `Latency` / `Average Latency` / `Read Latency` / `Write Latency` (counter name varies by Windows Server version)
   - 📈 **Top VMs by Network Throughput (MB/s)** — from `Hyper-V Virtual Network Adapter` Bytes/sec family
   - Time range parameter offers 1 h → 30 d presets with auto-scaled binning (5 m / 30 m / 2 h / 1 d)
-  - Per-tab Log Analytics workspace parameter (`HyperVLogAnalyticsWorkspace`) so the Hyper-V tab's workspace selection is independent of the other Capacity sub-tabs
+  - Per-tab Log Analytics workspace parameter (`HyperVLogAnalyticsWorkspace`) so the Hyper-V tab's workspace selection is independent of the other Capacity sub-tabs; the workspace + time-range selector sits above the inventory tiles so both inventory and perf charts respect the same scope
 - **Known limitations** — explicitly documented in a callout inside the tab:
+  - Inventory counts are drawn from perf-counter InstanceName and therefore only include VMs that were **powered on at some point in the selected time range** — a VM that has been off the entire window will not appear
   - Storage counters are **per virtual disk (VHD), not per VM** — `Hyper-V Virtual Storage Device` uses the VHD path as its instance identifier, so storage charts display VHD filenames
   - Network counter VM-name extraction is best-effort (text before the first `_` in `InstanceName`)
   - Memory Pressure only reports for VMs using Dynamic Memory

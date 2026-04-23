@@ -10,6 +10,43 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ## Recent Changes (v0.8.7) — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66) | [Issue #67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67)
 
+### Updates Tab — Update Run History: New "Time Range" Filter
+- **New parameter** `UpdateHistoryTimeRange` (label **"Time Range"**, default **45 days**, selectable values 1d / 7d / 14d / 30d / 45d / 60d / 90d / 180d / 1y) sits above the **📜 Update Run History and Error Details** table so users no longer get a blank table on tenants where no update runs occurred in the previously hard-coded window
+- **Unresolved-failure bypass** — the time gate is `where todatetime(timeStarted) >= {UpdateHistoryTimeRange:start} or state == 'Failed'`, so old `Failed` runs always remain visible regardless of the Time Range selection. The downstream supersession join hides a Failed run only once a later `Succeeded` run exists for the same cluster + update
+- Section description updated to clarify the default `Update State = Failed` filter and the supersession behaviour
+
+### Updates Tab — Update Analytics: New "Clusters (Distinct)" Columns
+- **Three Update Analytics tables** now report distinct cluster counts (each cluster can have multiple update runs per update, so the existing "Total Runs" / "Updates" counts can over-state fleet impact):
+  - **Overall Update Duration – Analytical Statistics (Succeeded Updates)** — `Clusters (Distinct)` is the new first column
+  - **Update Duration Statistics by Solution Update** — `Clusters (Distinct)` inserted immediately after `Solution Update`
+  - **Updates – First Time Success Analysis** — `Clusters (Distinct)` inserted before the `Updates` column; the `Outcome` column was also renamed to **`Update Status`** for consistency with other tables on the tab
+- Values are emitted as strings so the grid left-aligns them as text labels rather than right-aligning them as numerics
+
+### Updates Tab — Update Compliance Redesign (Supported / Unsupported / Unknown)
+- **Supported / Unsupported tiles** rewritten to compare each cluster's `currentVersion` (from `microsoft.azurestackhci/clusters/updatesummaries`) against the **latest 6 Microsoft GA YYMMs** derived live from `microsoft.azurestackhci/clusters/updates` (publisher = Microsoft, state = HasPrerequisite/Ready/Installed). Avoids hard-coded version lists that go stale month-to-month
+- **Inline-subquery + leftouter-join pattern** — Azure Resource Graph's cross-component query mode rejects `let` statements, so the latest-6-YYMMs set is materialised as an inline subquery and joined to the cluster list
+- **New "Unknown version" tile** — yellow tile that surfaces clusters where `currentVersion` is missing or doesn't match the `SolutionXX.YYMM.XXXX.XXX` pattern, so Supported + Unsupported + Unknown reconciles to total clusters in scope (previously such clusters silently disappeared from both tiles)
+
+### Multi-cluster Sub-tab — Stale Sync Table: Days Since Last Sync
+- **`📡 Clusters Not Synced in 24+ Hours`** table now includes a **Days Since Last Sync** column (`datetime_diff('day', now(), lastSync)`)
+- Conditional formatting: ≥ 3 days → red, ≥ 2 days → yellow / warning, otherwise neutral — making severely stale clusters visually obvious without sorting
+
+### Capacity Tab — Overview Sub-tab — DCR Setup Section Repositioned
+- The **🔔 Performance Counter DCR Configuration** section (header, Yes/No toggle, collapsible group) now sits **above** the six Top-5 resource-usage charts (CPU / Memory / Storage % / Storage Latency / Storage IOPS / Network Throughput) — directly under the cluster capacity-overview table — instead of beneath the charts. Customers landing on the tab see the setup guidance in their initial viewport before scrolling through "No data" charts
+- Header tip text adjusted accordingly ("The six charts **below** require a DCR…")
+- Each of the six chart `noDataMessage` banners now end with "*— or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.*" so users hitting an empty chart get an inline pointer to the now-above setup section
+
+### Capacity Tab — AKS Node Performance: Single-select "Azure Monitor Workspace" Filter
+- The `AzureMonitorWorkspace` parameter under **📈 AKS Node Performance (Azure Managed Prometheus)** is now a **required single-select** dropdown (`multiSelect: false`, no `value::all`, no `includeAll`). PromQL queries are scoped to one Azure Monitor Workspace at a time — the previous multi-select / "All" option produced misleading results when multiple workspaces existed in scope
+- Description updated: "Only one workspace can be queried at a time."
+
+### Workbook-wide — `noDataMessage` Coverage
+- **130 visible KqlItems** that previously rendered an empty grid / chart now display a contextual info banner (`noDataMessageStyle: 4`) explaining what data was expected and the most likely cause (e.g. workspace not selected, AMA not deployed, no resources in scope). Helper / merge-only queries are excluded
+- A reusable script — `scripts/add-no-data-messages.js` — is included in the repo to keep coverage current as new tiles are added; it is idempotent (skips items that already have a `noDataMessage`) and preserves CRLF line endings
+
+### Capacity Tab — Hyper-V VMs Sub-tab — `noDataMessage` Typo Fix
+- Corrected "expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the **bottom** of this tab" wording in the Hyper-V VM List banner — replaced "below" with "above" so it correctly directs users to the section above the chart
+
 ### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
 - **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
 - **Prerequisites** — summarises AMA extension, Log Analytics workspace, permissions and region-match requirements for a working Data Collection Rule (DCR)

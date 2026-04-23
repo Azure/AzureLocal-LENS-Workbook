@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.6
+## Latest Version: v0.8.7
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,63 +8,24 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.6) — Resolves: [Issue #59](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/59)
+## Recent Changes (v0.8.7)
 
-### System Health Tab — Missing Clusters in Health Check Tables
-- **Root cause (empty healthCheckResult)**: Clusters whose `updatesummaries.properties.healthCheckResult` array is null or empty were silently dropped from all health check tables. The `mv-expand` operator on an empty array eliminates the row entirely, meaning clusters blocked from updating due to health check failures would not appear in any health check view — even though the cluster's `healthState` was "Failure"
-- **When this happens**: Health checks triggered only during an update run may record results in the update run's progress steps rather than in `updatesummaries.healthCheckResult`. This leaves the health check result array empty while the overall `healthState` correctly reports "Failure" or "Warning"
-- **Fix**: Added a fallback across all 4 affected queries — when `healthCheckResult` is null/empty but `healthState` is "Failure" or "Warning", a synthetic health check entry is injected with severity derived from the health state, a descriptive message, and a link to the troubleshooting documentation. This ensures the cluster always appears in the health tables
+### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide
+- **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
+- **Prerequisites** — summarises AMA extension, Log Analytics workspace, permissions and region-match requirements for a working Data Collection Rule (DCR)
+- **Required counters table** — maps each of the six charts to the performance counters it consumes, including the cluster-aware `\Cluster CSV File System(*)\...` counters used by the Storage %, Latency and IOPS charts
+- **Portal limitation callout** — explains why the Azure Portal's DCR editor cannot be used: its fixed dropdown only exposes `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process` and `System`. `Cluster CSV File System` / `Cluster Shared Volume` are not listed, so the Storage charts were previously limited to OS / boot-disk data only
+- **Ready-to-deploy ARM template** — embedded as a fenced `json` code block inside the workbook, defining a `Microsoft.Insights/dataCollectionRules` (kind: Windows) resource with all required counter specifiers at a 60-second sampling interval, a Log Analytics destination, and a `Microsoft-Perf` data flow. Users replace three placeholders (workspace resource ID, DCR name, region) and deploy
+- **CLI deployment snippet** — two-step `az deployment group create` + `az monitor data-collection rule association create` commands, with a loop that attaches the DCR to every Arc-enabled machine in the cluster's resource group
+- **Documentation quick-links** — AMA performance counters, DCR ARM reference, DCR associations, the portal DCR blade, and Cluster Shared Volume reference
 
-### System Health Tab — ARG Truncation of Large Health Check Arrays
-- **Root cause**: Azure Resource Graph's `mv-expand` operator has a per-resource row limit (~128 rows). Clusters with large `healthCheckResult` arrays (e.g., 166+ entries for a 2-node cluster, 300+ for larger clusters) had their health check data silently truncated. Critical failures near the end of the array — such as "Test PowerShell Module Version" — were dropped entirely, even though they appeared in the ARM API (`updateSummaries/default`) and the Azure portal
-- **Fix**: Added `array_reverse()` before `mv-expand` in all 4 health check queries. Per-node validation checks (ValidatedRecipe, Connectivity, Hardware, etc.) which are most likely to contain Critical/Failed results tend to be appended at the end of the array. Reversing the array ensures these checks are expanded first, within the ARG row limit
-- **Note**: This is a workaround for an ARG limitation. Combined with the `where status != "Succeeded"` early filter and `array_reverse()`, all Failed/Critical checks are now reliably surfaced even for clusters with 300+ health check entries
-
-### System Health Tab — Severity Filter Default Widened
-- **Root cause**: The "Severity" filter on the detailed health check table defaulted to **Critical only**. Clusters with failed health checks at Warning or Informational severity (e.g., `StoragePool.PoolCapacityThresholdExceeded`, Proxy ByPassList Recommendations) were filtered out — even when the cluster's overall `healthState` was "Failure"
-- **Fix**: Changed the default severity filter from `["Critical"]` to `["Critical", "Warning"]` so that Warning-severity failures are visible by default alongside Critical ones
-
-### System Health Tab — Table Renamed
-- **Renamed**: "🔍 Detailed Health Check Results" → "🔍 24 Hour System Health Checks - Detailed Results" for clarity
-
-### System Health Tab — Query Performance Optimization
-- **Succeeded checks filtered early**: The detailed health check query previously expanded all health check entries (~150–350 per cluster) before filtering. Added `where status != "Succeeded"` immediately after `mv-expand` inside the subquery, eliminating ~95% of rows before the join and downstream operations. This significantly reduces query cost and execution time
-- **Succeeded option removed from filter**: Removed "Succeeded" from the "Health Check Result" dropdown since the query no longer returns Succeeded rows
-
-### Queries fixed across all System Health improvements:
-  - 🔍 **24 Hour System Health Checks - Detailed Results** table — the main detailed health view
-  - 🔽 **Filter by Cluster** dropdown — so affected clusters appear in the filter list
-  - 📊 **Health Check Failures By Reason Summary** table — failure aggregation by type
-  - 🥧 **Top 5 System Health Check Issues** pie chart — visual summary of top issues
-- **Verified safe**: The 8 other health-related queries (health state tiles, pie chart, percentage, distribution summary, and update readiness summary) only use `healthState` directly and were not affected
-
-### Update Progress Tab — Shallow Step Tree Error Extraction
-- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, a cluster's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
-- **Fix**: Extended error extraction to cover all step depths 1–8. The `deepestErrDepth`, `deepestErrStep`, and `mvExpandErrMsg` cascades now check `e1`–`e4` (error message, name, and status) in addition to the existing `e5`–`e8`. The deepest available error is still preferred, with shallower levels used as fallback
-- **Enriched error details for shallow failures**: For step depth 1 failures, the step's `description` field is now appended to `errorMessage` when it contains more detail (e.g., remediation URLs), providing actionable guidance directly in the Error Details column
-- **Result**: A cluster blocked by a health check failure now shows `CurrentStep = "Update is blocked due to health check failure"` with the remediation link in Error Details, instead of the generic "Preparing to install"
-
-### Update Progress Tab — Stale Failure Resolution Logic Improved
-- **Root cause**: The "Update Run History and Error Details" table only suppressed failed update runs if a **Succeeded run for the exact same update name** existed. Clusters that failed on an older update (e.g., `Solution12.2508.1001.50`) but later succeeded on a newer cumulative update (e.g., `Solution12.2508.1001.52` or `Solution12.2603.1002.15`) still showed the old failure as unresolved
-- **Fix**: Changed the resolution logic to check if the cluster has **any Succeeded update run that started after the failed run**, regardless of update name. This correctly identifies failures that were resolved by a later cumulative update
-- **Example**: A cluster's failures on an older update (e.g., `Solution12.2508.1001.50`) are now suppressed when the cluster later succeeded on a newer cumulative update (e.g., `.52` and beyond)
-
-### Update Progress Tab — Cluster Name Links and Status Filter
-- **Cluster Name links**: "📦 Clusters with Updates Available" and "🔄 All Cluster Update Status" tables now have the Cluster Name column as a clickable link to the cluster's updates page in the Azure portal (previously used a separate column for the link)
-- **"Extracted" status**: Added "Extracted (Health Check Blocked)" to the "Filter by Status" dropdown in the Update Run History table, so users can filter for health-check-blocked updates
-
-### Update Progress Tab — Error Details Flyout and Health Check Context
-- **Markdown-formatted flyout blade**: Clicking "Verbose Error Details" now opens a context blade with structured markdown showing cluster name, update name, current step, and the full error message — replacing the previous small "Value" text box
-- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on a specific node)
-- **Column renamed**: "Error Details" → "Verbose Error Details"
-
-### Update Progress Tab — Query Performance for Large Environments
-- **Early filtering before mv-expand**: The Update Run History query previously expanded ALL update runs through a 7-level `mv-expand` step hierarchy before applying time range and cluster name filters. In large environments (100+ clusters with years of update history), this generated tens of thousands of intermediate rows, causing ARG `InternalServerError` / `UnexpectedQueryExecutionError` timeouts
-- **Fix**: Moved time range filter (`where timeStarted >= {TimeRange:start} or state == 'Failed'`), cluster name wildcard filter, and update name wildcard filter to execute BEFORE the `mv-expand` chain. This eliminates historical Succeeded runs early, reducing intermediate rows by 40-90% depending on environment size
-
-### Update Progress Tab — Knowledge Link Relocated
-- **Moved**: "Troubleshooting Azure Local Updates" knowledge link moved from System Health tab to Update Progress tab (below the Update Run History table header) where it's more contextually relevant
-- **System Health tab**: Replaced with "Troubleshoot Azure Local Readiness Checks" knowledge link, which is specific to the health check content on that tab
+### Capacity Tab — Overview Sub-tab — AKS Prometheus Chart Titles
+- **Removed "5" from four AKS chart titles** to better reflect what users see in the visualisations. The underlying `topk(5, ...)` PromQL expressions are evaluated **per timestamp**, so the set of top nodes can change across the time window — resulting in more than 5 distinct series being rendered on the chart. Renamed:
+  - `📈 Top 5 AKS Nodes by CPU Usage` → `📈 Top AKS Nodes by CPU Usage`
+  - `📈 Top 5 AKS Nodes by Memory Usage` → `📈 Top AKS Nodes by Memory Usage`
+  - `📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)` → `📈 Top AKS Nodes by Disk I/O (bytes/sec)`
+  - `📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)` → `📈 Top AKS Nodes by Network Throughput (bytes/sec)`
+- Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -413,6 +374,66 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.6 — Resolves: [Issue #59](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/59)
+
+#### System Health Tab — Missing Clusters in Health Check Tables
+- **Root cause (empty healthCheckResult)**: Clusters whose `updatesummaries.properties.healthCheckResult` array is null or empty were silently dropped from all health check tables. The `mv-expand` operator on an empty array eliminates the row entirely, meaning clusters blocked from updating due to health check failures would not appear in any health check view — even though the cluster's `healthState` was "Failure"
+- **When this happens**: Health checks triggered only during an update run may record results in the update run's progress steps rather than in `updatesummaries.healthCheckResult`. This leaves the health check result array empty while the overall `healthState` correctly reports "Failure" or "Warning"
+- **Fix**: Added a fallback across all 4 affected queries — when `healthCheckResult` is null/empty but `healthState` is "Failure" or "Warning", a synthetic health check entry is injected with severity derived from the health state, a descriptive message, and a link to the troubleshooting documentation. This ensures the cluster always appears in the health tables
+
+#### System Health Tab — ARG Truncation of Large Health Check Arrays
+- **Root cause**: Azure Resource Graph's `mv-expand` operator has a per-resource row limit (~128 rows). Clusters with large `healthCheckResult` arrays (e.g., 166+ entries for a 2-node cluster, 300+ for larger clusters) had their health check data silently truncated. Critical failures near the end of the array — such as "Test PowerShell Module Version" — were dropped entirely, even though they appeared in the ARM API (`updateSummaries/default`) and the Azure portal
+- **Fix**: Added `array_reverse()` before `mv-expand` in all 4 health check queries. Per-node validation checks (ValidatedRecipe, Connectivity, Hardware, etc.) which are most likely to contain Critical/Failed results tend to be appended at the end of the array. Reversing the array ensures these checks are expanded first, within the ARG row limit
+- **Note**: This is a workaround for an ARG limitation. Combined with the `where status != "Succeeded"` early filter and `array_reverse()`, all Failed/Critical checks are now reliably surfaced even for clusters with 300+ health check entries
+
+#### System Health Tab — Severity Filter Default Widened
+- **Root cause**: The "Severity" filter on the detailed health check table defaulted to **Critical only**. Clusters with failed health checks at Warning or Informational severity (e.g., `StoragePool.PoolCapacityThresholdExceeded`, Proxy ByPassList Recommendations) were filtered out — even when the cluster's overall `healthState` was "Failure"
+- **Fix**: Changed the default severity filter from `["Critical"]` to `["Critical", "Warning"]` so that Warning-severity failures are visible by default alongside Critical ones
+
+#### System Health Tab — Table Renamed
+- **Renamed**: "🔍 Detailed Health Check Results" → "🔍 24 Hour System Health Checks - Detailed Results" for clarity
+
+#### System Health Tab — Query Performance Optimization
+- **Succeeded checks filtered early**: The detailed health check query previously expanded all health check entries (~150–350 per cluster) before filtering. Added `where status != "Succeeded"` immediately after `mv-expand` inside the subquery, eliminating ~95% of rows before the join and downstream operations. This significantly reduces query cost and execution time
+- **Succeeded option removed from filter**: Removed "Succeeded" from the "Health Check Result" dropdown since the query no longer returns Succeeded rows
+
+#### Queries fixed across all System Health improvements:
+  - 🔍 **24 Hour System Health Checks - Detailed Results** table — the main detailed health view
+  - 🔽 **Filter by Cluster** dropdown — so affected clusters appear in the filter list
+  - 📊 **Health Check Failures By Reason Summary** table — failure aggregation by type
+  - 🥧 **Top 5 System Health Check Issues** pie chart — visual summary of top issues
+- **Verified safe**: The 8 other health-related queries (health state tiles, pie chart, percentage, distribution summary, and update readiness summary) only use `healthState` directly and were not affected
+
+#### Update Progress Tab — Shallow Step Tree Error Extraction
+- **Root cause**: The "Update Run History and Error Details" query only extracted error information from step depths 5–8 (`s5` through `s8`). Clusters whose update failed at a shallow depth — such as being blocked by a health check failure before the update even started — had empty "Current Step" and "Error Details" columns. For example, a cluster's update was blocked at the top-level step (`s1`): "Update is blocked due to health check failure", but the query never checked `s1`–`s4` for errors
+- **Fix**: Extended error extraction to cover all step depths 1–8. The `deepestErrDepth`, `deepestErrStep`, and `mvExpandErrMsg` cascades now check `e1`–`e4` (error message, name, and status) in addition to the existing `e5`–`e8`. The deepest available error is still preferred, with shallower levels used as fallback
+- **Enriched error details for shallow failures**: For step depth 1 failures, the step's `description` field is now appended to `errorMessage` when it contains more detail (e.g., remediation URLs), providing actionable guidance directly in the Error Details column
+- **Result**: A cluster blocked by a health check failure now shows `CurrentStep = "Update is blocked due to health check failure"` with the remediation link in Error Details, instead of the generic "Preparing to install"
+
+#### Update Progress Tab — Stale Failure Resolution Logic Improved
+- **Root cause**: The "Update Run History and Error Details" table only suppressed failed update runs if a **Succeeded run for the exact same update name** existed. Clusters that failed on an older update (e.g., `Solution12.2508.1001.50`) but later succeeded on a newer cumulative update (e.g., `Solution12.2508.1001.52` or `Solution12.2603.1002.15`) still showed the old failure as unresolved
+- **Fix**: Changed the resolution logic to check if the cluster has **any Succeeded update run that started after the failed run**, regardless of update name. This correctly identifies failures that were resolved by a later cumulative update
+- **Example**: A cluster's failures on an older update (e.g., `Solution12.2508.1001.50`) are now suppressed when the cluster later succeeded on a newer cumulative update (e.g., `.52` and beyond)
+
+#### Update Progress Tab — Cluster Name Links and Status Filter
+- **Cluster Name links**: "📦 Clusters with Updates Available" and "🔄 All Cluster Update Status" tables now have the Cluster Name column as a clickable link to the cluster's updates page in the Azure portal (previously used a separate column for the link)
+- **"Extracted" status**: Added "Extracted (Health Check Blocked)" to the "Filter by Status" dropdown in the Update Run History table, so users can filter for health-check-blocked updates
+
+#### Update Progress Tab — Error Details Flyout and Health Check Context
+- **Markdown-formatted flyout blade**: Clicking "Verbose Error Details" now opens a context blade with structured markdown showing cluster name, update name, current step, and the full error message — replacing the previous small "Value" text box
+- **Health check failures in flyout**: For clusters with Critical health check failures in `updatesummaries`, the flyout blade now includes a "Failed Health Checks" table showing the check name, target resource, and description — providing the same detail visible in the Azure portal (e.g., "Test PowerShell Module Version" on a specific node)
+- **Column renamed**: "Error Details" → "Verbose Error Details"
+
+#### Update Progress Tab — Query Performance for Large Environments
+- **Early filtering before mv-expand**: The Update Run History query previously expanded ALL update runs through a 7-level `mv-expand` step hierarchy before applying time range and cluster name filters. In large environments (100+ clusters with years of update history), this generated tens of thousands of intermediate rows, causing ARG `InternalServerError` / `UnexpectedQueryExecutionError` timeouts
+- **Fix**: Moved time range filter (`where timeStarted >= {TimeRange:start} or state == 'Failed'`), cluster name wildcard filter, and update name wildcard filter to execute BEFORE the `mv-expand` chain. This eliminates historical Succeeded runs early, reducing intermediate rows by 40-90% depending on environment size
+
+#### Update Progress Tab — Knowledge Link Relocated
+- **Moved**: "Troubleshooting Azure Local Updates" knowledge link moved from System Health tab to Update Progress tab (below the Update Run History table header) where it's more contextually relevant
+- **System Health tab**: Replaced with "Troubleshoot Azure Local Readiness Checks" knowledge link, which is specific to the health check content on that tab
+
+
 
 ### v0.8.5 — Resolves: [Issue #50](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/50) | [Issue #51](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/51) | [Issue #52](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/52) | [Issue #53](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/53)
 

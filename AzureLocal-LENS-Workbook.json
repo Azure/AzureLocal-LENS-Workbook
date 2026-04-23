@@ -1125,7 +1125,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend versionParts = split(currentVersion, '.')\r\n| extend yymm = tostring(versionParts[1])\r\n| extend versionYear = toint(substring(yymm, 0, 2))\r\n| extend versionMonth = toint(substring(yymm, 2, 2))\r\n| extend versionDate = make_datetime(2000 + versionYear, versionMonth, 1)\r\n| extend cutoffDate = datetime_add('month', -6, startofmonth(now()))\r\n| extend isSupported = versionDate >= cutoffDate\r\n| where isSupported == true\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates'\r\n    | where tostring(properties.publisher) =~ 'Microsoft'\r\n    | where tostring(properties.state) != 'Obsolete'\r\n    | extend yymm = tostring(split(tostring(properties.version), '.')[1])\r\n    | where yymm matches regex '^[0-9]{4}$'\r\n    | distinct yymm\r\n    | order by yymm desc\r\n    | take 6\r\n    | extend isSupportedYymm = true\r\n) on yymm\r\n| where hasValidYymm and isSupportedYymm == true\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1149,7 +1149,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters running a release within the 6-month support window"
+                    "tooltip": "Clusters running one of the latest 6 Microsoft GA releases (derived from updates currently offered to clusters in this tenant)"
                   }
                 },
                 "leftContent": {
@@ -1176,7 +1176,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend versionParts = split(currentVersion, '.')\r\n| extend yymm = tostring(versionParts[1])\r\n| extend versionYear = toint(substring(yymm, 0, 2))\r\n| extend versionMonth = toint(substring(yymm, 2, 2))\r\n| extend versionDate = make_datetime(2000 + versionYear, versionMonth, 1)\r\n| extend cutoffDate = datetime_add('month', -6, startofmonth(now()))\r\n| extend isSupported = versionDate >= cutoffDate\r\n| where isSupported == false\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates'\r\n    | where tostring(properties.publisher) =~ 'Microsoft'\r\n    | where tostring(properties.state) != 'Obsolete'\r\n    | extend yymm = tostring(split(tostring(properties.version), '.')[1])\r\n    | where yymm matches regex '^[0-9]{4}$'\r\n    | distinct yymm\r\n    | order by yymm desc\r\n    | take 6\r\n    | extend isSupportedYymm = true\r\n) on yymm\r\n| where hasValidYymm and (isnull(isSupportedYymm) or isSupportedYymm != true)\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1200,7 +1200,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters running an unsupported release older than 6 months"
+                    "tooltip": "Clusters running a release older than the latest 6 Microsoft GA releases offered in this tenant"
                   }
                 },
                 "leftContent": {
@@ -1218,6 +1218,57 @@
             },
             "customWidth": "16",
             "name": "tile-unsupported-version",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| where not(hasValidYymm)\r\n| summarize Unknown = count()\r\n| extend Label = 'Unknown version'",
+              "size": 4,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "colors",
+                    "thresholdsGrid": [
+                      {
+                        "operator": "Default",
+                        "thresholdValue": null,
+                        "representation": "yellow",
+                        "text": "{0}{1}"
+                      }
+                    ]
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Clusters whose currentVersion is missing, empty, or not in SolutionXX.YYMM.XXXX.XXX form (e.g. brand-new clusters that haven't reported a version yet)"
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "Unknown",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "yellow"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "noDataMessage": "All clusters report a recognisable version string.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "16",
+            "name": "tile-unknown-version",
             "styleSettings": {
               "margin": "5px",
               "padding": "5px"
@@ -1893,7 +1944,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| where lastSync < ago(24h)\r\n| extend hoursSinceSync = datetime_diff('hour', now(), lastSync)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| join kind=leftouter (resourcecontainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId, subscriptionName = name) on subscriptionId\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project ClusterName = name, clusterLink, resourceGroup, lastSync, hoursSinceSync, location, SubscriptionName = subscriptionName, subscriptionLink\r\n| order by hoursSinceSync desc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| where lastSync < ago(24h)\r\n| extend daysSinceSync = datetime_diff('day', now(), lastSync)\r\n| extend hoursSinceSync = datetime_diff('hour', now(), lastSync)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| join kind=leftouter (resourcecontainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId, subscriptionName = name) on subscriptionId\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project ClusterName = name, clusterLink, resourceGroup, lastSync, daysSinceSync, hoursSinceSync, location, SubscriptionName = subscriptionName, subscriptionLink\r\n| order by hoursSinceSync desc",
               "size": 0,
               "title": "Clusters Not Synced in 24+ Hours",
               "noDataMessage": "All clusters have synced within the last 24 hours",
@@ -1921,6 +1972,33 @@
                   {
                     "columnMatch": "lastSync",
                     "formatter": 6
+                  },
+                  {
+                    "columnMatch": "daysSinceSync",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "3",
+                          "representation": "4",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "2",
+                          "representation": "warning",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Blank",
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
                   },
                   {
                     "columnMatch": "hoursSinceSync",
@@ -1978,8 +2056,12 @@
                     "label": "Last Sync"
                   },
                   {
+                    "columnId": "daysSinceSync",
+                    "label": "Days Since Last Sync"
+                  },
+                  {
                     "columnId": "hoursSinceSync",
-                    "label": "Hours Since Sync"
+                    "label": "Hours Since Last Sync"
                   },
                   {
                     "columnId": "location",
@@ -2695,6 +2777,135 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "---\r\n## 🔔 Performance Counter DCR Configuration\r\n💡 **Tip:** The six charts below require a **Data Collection Rule (DCR)** that collects specific Windows performance counters from your Azure Local nodes via the Azure Monitor Agent (AMA). Some counters (notably `Cluster CSV File System(*)` for CSV storage) are **not in the Azure Portal's preset dropdown**, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — this is the safest option because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the section for step-by-step guidance."
+                  },
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowDCRSetupSection",
+                        "label": "Show DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\% Committed Bytes In Use` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-required-counters"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor offers a fixed dropdown of performance objects: `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume` — the counters that report real latency, IOPS and capacity data for Storage Spaces Direct (S2D) CSV volumes. Without them, the **Storage %, Storage Latency and Storage IOPS** charts only reflect the OS / boot disk.\r\n\r\nHowever, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Cluster CSV File System(*)\\% Used Space`\r\n   - `\\Cluster CSV File System(*)\\% Free Space`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Write`\r\n   - `\\Cluster CSV File System(*)\\Disk Transfers/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nData typically begins flowing within a few minutes. Repeat for any other counters from the required list that aren't already collected.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for these counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (e.g. `Process`, custom application counters) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (e.g. `dcr-azurelocal-capacity-perf`) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.\r\n\r\n---",
+                          "style": "warning"
+                        },
+                        "name": "dcr-setup-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-capacity.json` and deploy it to the resource group that will host the DCR. Fill in your Log Analytics workspace resource ID when prompted (or via a parameters file).\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\% Committed Bytes In Use\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
+                        },
+                        "name": "dcr-setup-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over the machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-portal-blade",
+                              "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
+                              "linkTarget": "Url",
+                              "linkLabel": "🧭 DCR Portal Blade",
+                              "style": "link"
+                            },
+                            {
+                              "id": "csv-perf-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
+                              "linkTarget": "Url",
+                              "linkLabel": "💾 Cluster Shared Volume Reference",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "dcr-setup-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "dcr-setup-group"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 clusters with the highest average usage for each resource type over the selected time range."
                   },
                   "name": "text-top5-charts-header"
@@ -2829,7 +3040,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No CPU metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node CPU metrics to the selected workspace.",
+                    "noDataMessage": "No CPU metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node CPU metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -2873,7 +3084,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No memory metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node memory metrics to the selected workspace.",
+                    "noDataMessage": "No memory metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node memory metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -2917,7 +3128,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No storage utilisation metrics. Confirm Azure Managed Prometheus is collecting storage metrics from this cluster.",
+                    "noDataMessage": "No storage utilisation metrics. Confirm Azure Managed Prometheus is collecting storage metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -2960,7 +3171,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No storage latency metrics. Confirm Azure Managed Prometheus is collecting S2D / volume latency metrics from this cluster.",
+                    "noDataMessage": "No storage latency metrics. Confirm Azure Managed Prometheus is collecting S2D / volume latency metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -3003,7 +3214,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No storage IOPS metrics. Confirm Azure Managed Prometheus is collecting volume IOPS metrics from this cluster.",
+                    "noDataMessage": "No storage IOPS metrics. Confirm Azure Managed Prometheus is collecting volume IOPS metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -3046,7 +3257,7 @@
                       },
                       "seriesLabelSettings": []
                     },
-                    "noDataMessage": "No network throughput metrics. Confirm Azure Managed Prometheus is collecting NIC counters from this cluster.",
+                    "noDataMessage": "No network throughput metrics. Confirm Azure Managed Prometheus is collecting NIC counters from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -3055,135 +3266,6 @@
                     "margin": "5px",
                     "padding": "5px"
                   }
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "---\r\n## 🔔 Performance Counter DCR Configuration\r\n💡 **Tip:** The six charts above require a **Data Collection Rule (DCR)** that collects specific Windows performance counters from your Azure Local nodes via the Azure Monitor Agent (AMA). Some counters (notably `Cluster CSV File System(*)` for CSV storage) are **not in the Azure Portal's preset dropdown**, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — this is the safest option because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the section for step-by-step guidance."
-                  },
-                  "name": "text-dcr-setup-header"
-                },
-                {
-                  "type": 9,
-                  "content": {
-                    "version": "KqlParameterItem/1.0",
-                    "parameters": [
-                      {
-                        "id": "dcr-setup-toggle",
-                        "version": "KqlParameterItem/1.0",
-                        "name": "ShowDCRSetupSection",
-                        "label": "Show DCR Setup Guide",
-                        "type": 10,
-                        "isRequired": true,
-                        "typeSettings": {
-                          "additionalResourceOptions": [],
-                          "showDefault": false
-                        },
-                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
-                        "value": "no"
-                      }
-                    ],
-                    "style": "pills",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces"
-                  },
-                  "name": "dcr-setup-toggle-param"
-                },
-                {
-                  "type": 12,
-                  "content": {
-                    "version": "NotebookGroup/1.0",
-                    "groupType": "editable",
-                    "items": [
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-prereqs"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\% Committed Bytes In Use` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-required-counters"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor offers a fixed dropdown of performance objects: `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume` — the counters that report real latency, IOPS and capacity data for Storage Spaces Direct (S2D) CSV volumes. Without them, the **Storage %, Storage Latency and Storage IOPS** charts only reflect the OS / boot disk.\r\n\r\nHowever, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Cluster CSV File System(*)\\% Used Space`\r\n   - `\\Cluster CSV File System(*)\\% Free Space`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Write`\r\n   - `\\Cluster CSV File System(*)\\Disk Transfers/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nData typically begins flowing within a few minutes. Repeat for any other counters from the required list that aren't already collected.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for these counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (e.g. `Process`, custom application counters) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (e.g. `dcr-azurelocal-capacity-perf`) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.\r\n\r\n---",
-                          "style": "warning"
-                        },
-                        "name": "dcr-setup-portal-limitation"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-capacity.json` and deploy it to the resource group that will host the DCR. Fill in your Log Analytics workspace resource ID when prompted (or via a parameters file).\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\% Committed Bytes In Use\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
-                        },
-                        "name": "dcr-setup-arm-template"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over the machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-deploy-steps"
-                      },
-                      {
-                        "type": 11,
-                        "content": {
-                          "version": "LinkItem/1.0",
-                          "style": "nav",
-                          "links": [
-                            {
-                              "id": "dcr-ama-perf-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
-                              "linkTarget": "Url",
-                              "linkLabel": "📚 AMA Performance Counters",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-arm-reference",
-                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
-                              "linkTarget": "Url",
-                              "linkLabel": "📘 DCR ARM Reference",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-association-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
-                              "linkTarget": "Url",
-                              "linkLabel": "🔗 DCR Associations",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-portal-blade",
-                              "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
-                              "linkTarget": "Url",
-                              "linkLabel": "🧭 DCR Portal Blade",
-                              "style": "link"
-                            },
-                            {
-                              "id": "csv-perf-counters-docs",
-                              "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
-                              "linkTarget": "Url",
-                              "linkLabel": "💾 Cluster Shared Volume Reference",
-                              "style": "link"
-                            }
-                          ]
-                        },
-                        "name": "dcr-setup-links"
-                      }
-                    ]
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "ShowDCRSetupSection",
-                    "comparison": "isEqualTo",
-                    "value": "yes"
-                  },
-                  "name": "dcr-setup-group"
                 },
                 {
                   "type": 1,
@@ -3203,9 +3285,9 @@
                         "name": "AzureMonitorWorkspace",
                         "label": "Azure Monitor Workspace",
                         "type": 2,
-                        "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
+                        "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters. Only one workspace can be queried at a time.",
                         "isRequired": true,
-                        "multiSelect": true,
+                        "multiSelect": false,
                         "quote": "'",
                         "delimiter": ",",
                         "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
@@ -3213,16 +3295,9 @@
                           "{Subscriptions}"
                         ],
                         "typeSettings": {
-                          "additionalResourceOptions": [
-                            "value::all"
-                          ],
-                          "includeAll": true,
+                          "additionalResourceOptions": [],
                           "showDefault": false
                         },
-                        "defaultValue": "value::all",
-                        "value": [
-                          "value::all"
-                        ],
                         "queryType": 1,
                         "resourceType": "microsoft.resourcegraph/resources"
                       },
@@ -6087,7 +6162,7 @@
                       "{HyperVLogAnalyticsWorkspace}"
                     ],
                     "title": "📋 Hyper-V VM List (by Host)",
-                    "noDataMessage": "No Hyper-V VM data found in the selected workspace(s) for this time range. Confirm AMA + DCR are configured — see the DCR Setup section below.",
+                    "noDataMessage": "No Hyper-V VM data found in the selected workspace(s) for this time range. Confirm AMA + DCR are configured — see the DCR Setup section above.",
                     "visualization": "table",
                     "gridSettings": {
                       "rowLimit": 2000,

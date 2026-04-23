@@ -178,7 +178,7 @@
     {
       "type": 1,
       "content": {
-        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.8.6</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS#readme\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
+        "json": "<div style=\"background-color: #e6f2ff; border-left: 4px solid #0078d4; padding: 10px 15px; margin: 10px 0; border-radius: 4px; color: #1a1a1a;\">\r\n<span style=\"font-size: 16px; color: #1a1a1a;\">📋 <strong>Workbook Version: v0.8.7</strong></span><br/>\r\n<span style=\"font-size: 13px; color: #1a1a1a;\">🔄 <a href=\"https://aka.ms/AzureLocalLENS#readme\" target=\"_blank\" style=\"color: #0078d4;\"><strong>Check GitHub for Updates</strong></a> — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed</span>\r\n</div>",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -378,7 +378,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No Azure Local clusters match the current Subscription / Resource Group / Cluster Tag filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-cluster-connectivity",
@@ -402,7 +404,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No clusters match the current filters, so no health summary is available.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-cluster-health",
@@ -426,7 +430,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No Arc Resource Bridge appliances found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-arb-status",
@@ -504,7 +510,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No clusters match the current filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-total-clusters",
@@ -539,7 +547,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No connected clusters found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-connected-clusters",
@@ -574,7 +584,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No disconnected clusters — all clusters appear to be connected (or no clusters match the filters).",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-disconnected-clusters",
@@ -629,7 +641,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No clusters match the current filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-percent-connected",
@@ -664,7 +678,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No Azure Local nodes (Arc machines with kind=HCI) found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-total-azure-local-nodes",
@@ -726,7 +742,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No offline Arc Resource Bridges in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-arb-offline",
@@ -768,7 +786,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No cluster health data available — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-healthy-clusters",
@@ -803,7 +823,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No warning-level health checks across the fleet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-warnings",
@@ -838,7 +860,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No failed pre-checks across the fleet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-failed-prechecks",
@@ -873,7 +897,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No in-progress health checks.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-inprogress-health",
@@ -908,7 +934,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No failed extensions across Azure Local nodes in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-failed-extensions",
@@ -963,7 +991,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No cluster health data available for the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-percent-healthy",
@@ -1005,7 +1035,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No Arc-enabled VMs found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-total-vms",
@@ -1040,7 +1072,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No AKS Arc clusters found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-total-aks-arc",
@@ -1091,7 +1125,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend versionParts = split(currentVersion, '.')\r\n| extend yymm = tostring(versionParts[1])\r\n| extend versionYear = toint(substring(yymm, 0, 2))\r\n| extend versionMonth = toint(substring(yymm, 2, 2))\r\n| extend versionDate = make_datetime(2000 + versionYear, versionMonth, 1)\r\n| extend cutoffDate = datetime_add('month', -6, startofmonth(now()))\r\n| extend isSupported = versionDate >= cutoffDate\r\n| where isSupported == true\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates'\r\n    | where tostring(properties.publisher) =~ 'Microsoft'\r\n    | where tostring(properties.state) != 'Obsolete'\r\n    | extend yymm = tostring(split(tostring(properties.version), '.')[1])\r\n    | where yymm matches regex '^[0-9]{4}$'\r\n    | distinct yymm\r\n    | order by yymm desc\r\n    | take 6\r\n    | extend isSupportedYymm = true\r\n) on yymm\r\n| where hasValidYymm and isSupportedYymm == true\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1115,7 +1149,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters running a release within the 6-month support window"
+                    "tooltip": "Clusters running one of the latest 6 Microsoft GA releases (derived from updates currently offered to clusters in this tenant)"
                   }
                 },
                 "leftContent": {
@@ -1127,7 +1161,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-supported-version",
@@ -1140,7 +1176,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend versionParts = split(currentVersion, '.')\r\n| extend yymm = tostring(versionParts[1])\r\n| extend versionYear = toint(substring(yymm, 0, 2))\r\n| extend versionMonth = toint(substring(yymm, 2, 2))\r\n| extend versionDate = make_datetime(2000 + versionYear, versionMonth, 1)\r\n| extend cutoffDate = datetime_add('month', -6, startofmonth(now()))\r\n| extend isSupported = versionDate >= cutoffDate\r\n| where isSupported == false\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates'\r\n    | where tostring(properties.publisher) =~ 'Microsoft'\r\n    | where tostring(properties.state) != 'Obsolete'\r\n    | extend yymm = tostring(split(tostring(properties.version), '.')[1])\r\n    | where yymm matches regex '^[0-9]{4}$'\r\n    | distinct yymm\r\n    | order by yymm desc\r\n    | take 6\r\n    | extend isSupportedYymm = true\r\n) on yymm\r\n| where hasValidYymm and (isnull(isSupportedYymm) or isSupportedYymm != true)\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1164,7 +1200,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters running an unsupported release older than 6 months"
+                    "tooltip": "Clusters running a release older than the latest 6 Microsoft GA releases offered in this tenant"
                   }
                 },
                 "leftContent": {
@@ -1176,10 +1212,63 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No clusters on unsupported versions (or no version data available).",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-unsupported-version",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$')\r\n| where not(hasValidYymm)\r\n| summarize Unknown = count()\r\n| extend Label = 'Unknown version'",
+              "size": 4,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "colors",
+                    "thresholdsGrid": [
+                      {
+                        "operator": "Default",
+                        "thresholdValue": null,
+                        "representation": "yellow",
+                        "text": "{0}{1}"
+                      }
+                    ]
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Clusters whose currentVersion is missing, empty, or not in SolutionXX.YYMM.XXXX.XXX form (e.g. brand-new clusters that haven't reported a version yet)"
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "Unknown",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "yellow"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "noDataMessage": "All clusters report a recognisable version string.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "16",
+            "name": "tile-unknown-version",
             "styleSettings": {
               "margin": "5px",
               "padding": "5px"
@@ -1211,7 +1300,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No clusters report an available update at this time.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-update-available",
@@ -1246,7 +1337,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No update runs currently in progress.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-update-in-progress",
@@ -1281,7 +1374,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No clusters in a Failed update state.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "16",
             "name": "tile-update-failed",
@@ -1309,7 +1404,9 @@
                   "Count"
                 ],
                 "showLegend": true
-              }
+              },
+              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "100",
             "name": "chart-solution-version-distribution",
@@ -1372,7 +1469,9 @@
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No cluster deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "80",
             "name": "cluster-deployments-bar"
@@ -1401,7 +1500,9 @@
                     "label": "Clusters Registered"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No cluster deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "20",
             "name": "cluster-deployments-table"
@@ -1707,7 +1808,9 @@
                     "label": "Subscription ID"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No clusters match the current Subscription / Resource Group / Cluster Tag filters.",
+              "noDataMessageStyle": 4
             },
             "name": "table-all-clusters"
           },
@@ -1742,7 +1845,9 @@
                     "color": "gray"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Azure Hybrid Benefit data — no clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-azure-hybrid-benefit",
@@ -1775,7 +1880,9 @@
                     "color": "gray"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Windows Server Subscription data — no clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-windows-server-subscription",
@@ -1808,7 +1915,9 @@
                     "color": "gray"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Azure Verification for VMs data — no clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "pie-azure-verification-vms",
@@ -1835,7 +1944,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| where lastSync < ago(24h)\r\n| extend hoursSinceSync = datetime_diff('hour', now(), lastSync)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| join kind=leftouter (resourcecontainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId, subscriptionName = name) on subscriptionId\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project ClusterName = name, clusterLink, resourceGroup, lastSync, hoursSinceSync, location, SubscriptionName = subscriptionName, subscriptionLink\r\n| order by hoursSinceSync desc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| where lastSync < ago(24h)\r\n| extend daysSinceSync = datetime_diff('day', now(), lastSync)\r\n| extend hoursSinceSync = datetime_diff('hour', now(), lastSync)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| join kind=leftouter (resourcecontainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId, subscriptionName = name) on subscriptionId\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project ClusterName = name, clusterLink, resourceGroup, lastSync, daysSinceSync, hoursSinceSync, location, SubscriptionName = subscriptionName, subscriptionLink\r\n| order by hoursSinceSync desc",
               "size": 0,
               "title": "Clusters Not Synced in 24+ Hours",
               "noDataMessage": "All clusters have synced within the last 24 hours",
@@ -1863,6 +1972,33 @@
                   {
                     "columnMatch": "lastSync",
                     "formatter": 6
+                  },
+                  {
+                    "columnMatch": "daysSinceSync",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "3",
+                          "representation": "4",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "2",
+                          "representation": "warning",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Blank",
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
                   },
                   {
                     "columnMatch": "hoursSinceSync",
@@ -1920,8 +2056,12 @@
                     "label": "Last Sync"
                   },
                   {
+                    "columnId": "daysSinceSync",
+                    "label": "Days Since Last Sync"
+                  },
+                  {
                     "columnId": "hoursSinceSync",
-                    "label": "Hours Since Sync"
+                    "label": "Hours Since Last Sync"
                   },
                   {
                     "columnId": "location",
@@ -1959,7 +2099,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No node OS version data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-os-version",
@@ -1984,7 +2126,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No hardware class data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-hardware-class",
@@ -2009,7 +2153,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No billing model data — no clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-billing-model",
@@ -2034,7 +2180,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No hardware vendor data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-hardware-vendor",
@@ -2059,7 +2207,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No core/billing data available for the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-cores-by-billing",
@@ -2084,7 +2234,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No node-count data — no clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "chart-node-count-distribution",
@@ -2137,7 +2289,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into three tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🔍 Single cluster** to drill into a specific cluster, and its physical nodes for detailed capacity, storage, and workload insights."
+              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -2170,6 +2322,14 @@
                   "linkTarget": "parameter",
                   "linkLabel": "🔍 Single cluster",
                   "subTarget": "single",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-hyperv",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🖥️ Hyper-V VMs",
+                  "subTarget": "hyperv",
                   "style": "link"
                 }
               ]
@@ -2608,9 +2768,140 @@
                         }
                       ]
                     },
-                    "sortBy": []
+                    "sortBy": [],
+                    "noDataMessage": "No capacity data — ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace is receiving metrics from your clusters.",
+                    "noDataMessageStyle": 4
                   },
                   "name": "capacity-overview-table"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 🔔 Performance Counter DCR Configuration\r\n💡 **Tip:** The six charts below require a **Data Collection Rule (DCR)** that collects specific Windows performance counters from your Azure Local nodes via the Azure Monitor Agent (AMA). Some counters (notably `Cluster CSV File System(*)` for CSV storage) are **not in the Azure Portal's preset dropdown**, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — this is the safest option because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the section for step-by-step guidance."
+                  },
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowDCRSetupSection",
+                        "label": "Show DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\% Committed Bytes In Use` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-required-counters"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor offers a fixed dropdown of performance objects: `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume` — the counters that report real latency, IOPS and capacity data for Storage Spaces Direct (S2D) CSV volumes. Without them, the **Storage %, Storage Latency and Storage IOPS** charts only reflect the OS / boot disk.\r\n\r\nHowever, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Cluster CSV File System(*)\\% Used Space`\r\n   - `\\Cluster CSV File System(*)\\% Free Space`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Write`\r\n   - `\\Cluster CSV File System(*)\\Disk Transfers/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nData typically begins flowing within a few minutes. Repeat for any other counters from the required list that aren't already collected.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for these counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (e.g. `Process`, custom application counters) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (e.g. `dcr-azurelocal-capacity-perf`) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.\r\n\r\n---",
+                          "style": "warning"
+                        },
+                        "name": "dcr-setup-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-capacity.json` and deploy it to the resource group that will host the DCR. Fill in your Log Analytics workspace resource ID when prompted (or via a parameters file).\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\% Committed Bytes In Use\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
+                        },
+                        "name": "dcr-setup-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over the machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-portal-blade",
+                              "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
+                              "linkTarget": "Url",
+                              "linkLabel": "🧭 DCR Portal Blade",
+                              "style": "link"
+                            },
+                            {
+                              "id": "csv-perf-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
+                              "linkTarget": "Url",
+                              "linkLabel": "💾 Cluster Shared Volume Reference",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "dcr-setup-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "dcr-setup-group"
                 },
                 {
                   "type": 1,
@@ -2748,7 +3039,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No CPU metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node CPU metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-cpu-trend",
@@ -2790,7 +3083,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No memory metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node memory metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-memory-trend",
@@ -2832,7 +3127,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No storage utilisation metrics. Confirm Azure Managed Prometheus is collecting storage metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-storage-trend",
@@ -2873,7 +3170,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No storage latency metrics. Confirm Azure Managed Prometheus is collecting S2D / volume latency metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-storage-latency-trend",
@@ -2914,7 +3213,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No storage IOPS metrics. Confirm Azure Managed Prometheus is collecting volume IOPS metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-storage-iops-trend",
@@ -2955,7 +3256,9 @@
                         }
                       },
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No network throughput metrics. Confirm Azure Managed Prometheus is collecting NIC counters from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "node-network-throughput-trend",
@@ -2982,9 +3285,9 @@
                         "name": "AzureMonitorWorkspace",
                         "label": "Azure Monitor Workspace",
                         "type": 2,
-                        "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
+                        "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters. Only one workspace can be queried at a time.",
                         "isRequired": true,
-                        "multiSelect": true,
+                        "multiSelect": false,
                         "quote": "'",
                         "delimiter": ",",
                         "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
@@ -2992,16 +3295,9 @@
                           "{Subscriptions}"
                         ],
                         "typeSettings": {
-                          "additionalResourceOptions": [
-                            "value::all"
-                          ],
-                          "includeAll": true,
+                          "additionalResourceOptions": [],
                           "showDefault": false
                         },
-                        "defaultValue": "value::all",
-                        "value": [
-                          "value::all"
-                        ],
                         "queryType": 1,
                         "resourceType": "microsoft.resourcegraph/resources"
                       },
@@ -3081,7 +3377,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by CPU Usage",
+                    "title": "📈 Top AKS Nodes by CPU Usage",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3124,7 +3420,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, (1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Memory Usage",
+                    "title": "📈 Top AKS Nodes by Memory Usage",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3167,7 +3463,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m])))\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)",
+                    "title": "📈 Top AKS Nodes by Disk I/O (bytes/sec)",
                     "noDataMessage": "No Prometheus data found.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3208,7 +3504,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m])))\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)",
+                    "title": "📈 Top AKS Nodes by Network Throughput (bytes/sec)",
                     "noDataMessage": "No Prometheus data found.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3656,7 +3952,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "Not enough historical CPU data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "mc-cpu-forecast",
@@ -3700,7 +3998,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "Not enough historical memory data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "mc-mem-forecast",
@@ -3745,7 +4045,9 @@
                         },
                         "max": 100
                       }
-                    }
+                    },
+                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "mc-stor-pct-forecast",
@@ -3789,7 +4091,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "48",
                   "name": "mc-stor-tb-forecast"
@@ -3890,7 +4194,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "mc-storage-latency",
@@ -3932,7 +4238,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "mc-storage-iops",
@@ -3974,7 +4282,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "mc-network-throughput",
@@ -4383,7 +4693,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node CPU metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-cpu-usage-machine",
@@ -4425,7 +4737,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node memory metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-memory-usage-machine",
@@ -4467,7 +4781,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node storage metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-storage-usage-machine",
@@ -4507,7 +4823,9 @@
                         },
                         "min": 0
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node storage latency metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-storage-latency-node",
@@ -4549,7 +4867,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node storage IOPS metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-storage-iops-node",
@@ -4591,7 +4911,9 @@
                           }
                         }
                       }
-                    }
+                    },
+                    "noDataMessage": "No per-node network throughput metrics for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
                   "name": "sc-network-throughput-node",
@@ -4687,7 +5009,9 @@
                       "createOtherGroup": null,
                       "showLegend": false,
                       "seriesLabelSettings": []
-                    }
+                    },
+                    "noDataMessage": "No volume usage data for this cluster. Confirm Azure Managed Prometheus is collecting cluster_storage_volume_* metrics.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "single-cluster-volume-usage",
@@ -4749,7 +5073,9 @@
                     "mapSettings": {
                       "locInfo": "AzureResource",
                       "locInfoColumn": "ArmId"
-                    }
+                    },
+                    "noDataMessage": "No storage pool capacity data for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "single-cluster-storage-pool-trend",
@@ -4842,7 +5168,9 @@
                       "ySettings": {
                         "min": 0
                       }
-                    }
+                    },
+                    "noDataMessage": "No CPU trend data for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "single-cluster-cpu-trend",
@@ -4877,7 +5205,9 @@
                       "ySettings": {
                         "min": 0
                       }
-                    }
+                    },
+                    "noDataMessage": "No memory trend data for this cluster in the selected time range.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "single-cluster-memory-trend",
@@ -5455,6 +5785,689 @@
               "value": "single"
             },
             "name": "cap-single-section"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## 🖥️ Hyper-V VMs\r\nPerformance data for Hyper-V virtual machines running on your Azure Local clusters, sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the bottom of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
+                  },
+                  "name": "text-hyperv-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters aren't in the portal's preset dropdown, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — the recommended approach because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the section for step-by-step guidance."
+                  },
+                  "name": "text-hyperv-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "hyperv-dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowHyperVDCRSetupSection",
+                        "label": "Show Hyper-V DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "hyperv-dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-counters-table"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor only exposes a fixed set of performance objects in its dropdown (`Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`) — **Hyper-V objects are not listed**. However, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one Hyper-V counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Hyper-V Hypervisor Logical Processor(_Total)\\% Total Run Time`\r\n   - `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure`\r\n   - `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`\r\n   - `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec`\r\n   - `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nThe portal accepts the Hyper-V counter paths even though they contain hyphens and spaces — wildcards (`*`) and the `_Total` instance are supported. Data typically begins flowing within a few minutes.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for Hyper-V counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (including the Capacity DCR counters from the Overview tab) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (the template's default `dcr-azurelocal-hyperv-perf` is distinct from the Capacity DCR) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the Hyper-V counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.",
+                          "style": "warning"
+                        },
+                        "name": "hyperv-dcr-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-hyperv.json` and deploy it to the resource group that will host the DCR. This can be deployed **alongside** the Capacity DCR from the Overview tab — both DCRs can be associated with the same Arc-enabled machines, or combined into a single DCR if you prefer.\r\n\r\n```json\r\n{\r\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\r\n  \"contentVersion\": \"1.0.0.0\",\r\n  \"parameters\": {\r\n    \"dcrName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"dcr-azurelocal-hyperv-perf\",\r\n      \"metadata\": {\r\n        \"description\": \"Name of the Hyper-V Data Collection Rule.\"\r\n      }\r\n    },\r\n    \"location\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"[resourceGroup().location]\",\r\n      \"metadata\": {\r\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\r\n      }\r\n    },\r\n    \"workspaceResourceId\": {\r\n      \"type\": \"string\",\r\n      \"metadata\": {\r\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook's Hyper-V VMs tab.\"\r\n      }\r\n    }\r\n  },\r\n  \"resources\": [\r\n    {\r\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\r\n      \"apiVersion\": \"2022-06-01\",\r\n      \"name\": \"[parameters('dcrName')]\",\r\n      \"location\": \"[parameters('location')]\",\r\n      \"kind\": \"Windows\",\r\n      \"properties\": {\r\n        \"dataSources\": {\r\n          \"performanceCounters\": [\r\n            {\r\n              \"name\": \"azureLocalHyperVCounters\",\r\n              \"streams\": [\r\n                \"Microsoft-Perf\"\r\n              ],\r\n              \"samplingFrequencyInSeconds\": 60,\r\n              \"counterSpecifiers\": [\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"destinations\": {\r\n          \"logAnalytics\": [\r\n            {\r\n              \"name\": \"laDestination\",\r\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\r\n            }\r\n          ]\r\n        },\r\n        \"dataFlows\": [\r\n          {\r\n            \"streams\": [\r\n              \"Microsoft-Perf\"\r\n            ],\r\n            \"destinations\": [\r\n              \"laDestination\"\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  ],\r\n  \"outputs\": {\r\n    \"dcrResourceId\": {\r\n      \"type\": \"string\",\r\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\r\n    }\r\n  }\r\n}\r\n```"
+                        },
+                        "name": "hyperv-dcr-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-hyperv.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-hyperv --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-hyperv-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. If the **Top Virtual Disks by Storage Latency** chart is still empty, check which latency counter your Windows Server version exposes (`Latency`, `Read Latency` or `Write Latency`) and adjust the counter specifier — the KQL query matches all four variants.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "hyperv-dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
+                              "linkTarget": "Url",
+                              "linkLabel": "🖥️ Hyper-V Performance Tuning",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "hyperv-dcr-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowHyperVDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "hyperv-dcr-setup-group"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "parameters": [
+                      {
+                        "id": "hyperv-la-workspace",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "HyperVLogAnalyticsWorkspace",
+                        "label": "Log Analytics Workspace",
+                        "type": 2,
+                        "description": "Select the Log Analytics workspace(s) that receive Hyper-V performance counters from your Azure Local nodes.",
+                        "isRequired": true,
+                        "multiSelect": true,
+                        "quote": "'",
+                        "delimiter": ",",
+                        "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                        "crossComponentResources": [
+                          "{Subscriptions}"
+                        ],
+                        "typeSettings": {
+                          "additionalResourceOptions": [
+                            "value::all"
+                          ],
+                          "includeAll": true,
+                          "showDefault": false
+                        },
+                        "defaultValue": "value::all",
+                        "value": [
+                          "value::all"
+                        ],
+                        "queryType": 1,
+                        "resourceType": "microsoft.resourcegraph/resources"
+                      },
+                      {
+                        "id": "hyperv-time-range",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "HyperVTrendsTimeRange",
+                        "label": "Historic Time Range",
+                        "type": 4,
+                        "description": "Time range for the Top VM / VHD performance charts below.",
+                        "isRequired": true,
+                        "typeSettings": {
+                          "selectableValues": [
+                            {
+                              "durationMs": 3600000
+                            },
+                            {
+                              "durationMs": 14400000
+                            },
+                            {
+                              "durationMs": 43200000
+                            },
+                            {
+                              "durationMs": 86400000
+                            },
+                            {
+                              "durationMs": 259200000
+                            },
+                            {
+                              "durationMs": 604800000
+                            },
+                            {
+                              "durationMs": 1209600000
+                            },
+                            {
+                              "durationMs": 2592000000
+                            }
+                          ],
+                          "allowCustom": true
+                        },
+                        "value": {
+                          "durationMs": 259200000
+                        }
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources"
+                  },
+                  "name": "hyperv-perf-params"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📊 Active VMs (from Log Analytics)"
+                  },
+                  "name": "hyperv-inventory-divider"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
+                    "size": 3,
+                    "timeContext": {
+                      "durationMs": 0
+                    },
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "tiles",
+                    "tileSettings": {
+                      "titleContent": {
+                        "columnMatch": "Label",
+                        "formatter": 1
+                      },
+                      "leftContent": {
+                        "columnMatch": "Count",
+                        "formatter": 12,
+                        "formatOptions": {
+                          "palette": "blue"
+                        }
+                      },
+                      "showBorder": false
+                    },
+                    "noDataMessage": "No active Hyper-V VMs found. Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+                    "noDataMessageStyle": 4
+                  },
+                  "name": "hyperv-tile-active-vms",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
+                    "size": 3,
+                    "timeContext": {
+                      "durationMs": 0
+                    },
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "tiles",
+                    "tileSettings": {
+                      "titleContent": {
+                        "columnMatch": "Label",
+                        "formatter": 1
+                      },
+                      "leftContent": {
+                        "columnMatch": "Count",
+                        "formatter": 12,
+                        "formatOptions": {
+                          "palette": "purple"
+                        }
+                      },
+                      "showBorder": false
+                    },
+                    "noDataMessage": "No Hyper-V hosts found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+                    "noDataMessageStyle": 4
+                  },
+                  "name": "hyperv-tile-hosts",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
+                    "size": 3,
+                    "timeContext": {
+                      "durationMs": 0
+                    },
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "tiles",
+                    "tileSettings": {
+                      "titleContent": {
+                        "columnMatch": "Label",
+                        "formatter": 1
+                      },
+                      "leftContent": {
+                        "columnMatch": "Count",
+                        "formatter": 12,
+                        "formatOptions": {
+                          "palette": "green"
+                        }
+                      },
+                      "showBorder": false
+                    },
+                    "noDataMessage": "No Hyper-V VM/host pairs found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+                    "noDataMessageStyle": 4
+                  },
+                  "name": "hyperv-tile-vm-host-pairs",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize ['VM Count'] = dcount(VMName) by Computer\r\n| order by ['VM Count'] desc",
+                    "size": 0,
+                    "timeContext": {
+                      "durationMs": 0
+                    },
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "title": "🏗️ VMs per Host",
+                    "visualization": "barchart",
+                    "chartSettings": {
+                      "xAxis": "Computer",
+                      "yAxis": [
+                        "VM Count"
+                      ],
+                      "showLegend": false
+                    },
+                    "noDataMessage": "No Hyper-V VM-per-host data. Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+                    "noDataMessageStyle": 4
+                  },
+                  "name": "hyperv-vms-per-host",
+                  "customWidth": "50"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize ['Last Seen'] = max(TimeGenerated), ['Samples'] = count() by ['VM Name'] = VMName, ['Host'] = Computer\r\n| order by ['VM Name'] asc, ['Host'] asc",
+                    "size": 0,
+                    "timeContext": {
+                      "durationMs": 0
+                    },
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "title": "📋 Hyper-V VM List (by Host)",
+                    "noDataMessage": "No Hyper-V VM data found in the selected workspace(s) for this time range. Confirm AMA + DCR are configured — see the DCR Setup section above.",
+                    "visualization": "table",
+                    "gridSettings": {
+                      "rowLimit": 2000,
+                      "filter": true,
+                      "formatters": [
+                        {
+                          "columnMatch": "Samples",
+                          "formatter": 8,
+                          "formatOptions": {
+                            "palette": "blue"
+                          }
+                        },
+                        {
+                          "columnMatch": "Last Seen",
+                          "formatter": 6
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-vm-list",
+                  "customWidth": "50"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 📈 Performance Trends"
+                  },
+                  "name": "hyperv-perf-divider"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** The six charts below read from the `Perf` table and require Hyper-V performance counters to be collected via AMA + DCR. If you see \"No data\", expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the bottom of this tab for a ready-to-deploy ARM template. Storage charts are shown **per virtual disk (VHD)** — see the limitations note beneath the charts.",
+                    "style": "upsell"
+                  },
+                  "name": "hyperv-perf-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Avg CPU %\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by CPU Usage (%)",
+                    "noDataMessage": "No Hyper-V CPU data. Ensure the Hyper-V Hypervisor Virtual Processor performance counter is collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg CPU %"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-cpu",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = InstanceName\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Memory Pressure\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Memory Pressure",
+                    "noDataMessage": "No Hyper-V memory pressure data. Ensure the Hyper-V Dynamic Memory VM performance counter is collected by your DCR. VMs not using Dynamic Memory will not report this counter.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Memory Pressure"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-mempressure",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Bytes/sec\", \"Write Bytes/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vhdName\r\n| project TimeGenerated, vhdName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vhdName\r\n| top 5 by AvgMBps desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Throughput (MB/s)",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device data. Ensure the Hyper-V Virtual Storage Device performance counters are collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-throughput",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Operations/Sec\", \"Write Operations/Sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize Iops = sum(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgIops = avg(Iops) by vhdName\r\n| top 5 by AvgIops desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"IOPS\"] = round(avg(Iops), 0) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage IOPS",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device IOPS data. Ensure Read/Write Operations/Sec counters are collected.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "IOPS"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 0
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-iops",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Latency\", \"Average Latency\", \"Read Latency\", \"Write Latency\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize LatencyMs = avg(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgLatency = avg(LatencyMs) by vhdName\r\n| top 5 by AvgLatency desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Avg Latency\"] = round(avg(LatencyMs), 3) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Latency",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device latency data. Latency counter names vary by Windows Server version — check which counter is available on your nodes (Latency / Average Latency / Read Latency / Write Latency).",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg Latency"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 3
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-latency",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Network Adapter\" and CounterName in (\"Bytes/sec\", \"Bytes Sent/sec\", \"Bytes Received/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vmName = coalesce(extract(@'^(.+?)_', 1, InstanceName), InstanceName)\r\n| where isnotempty(vmName) and vmName != \"_Total\"\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vmName\r\n| project TimeGenerated, vmName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vmName\r\n| top 5 by AvgMBps desc\r\n| project vmName;\r\nperfData\r\n| lookup kind=inner top5 on vmName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vmName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Network Throughput (MB/s)",
+                    "noDataMessage": "No Hyper-V Virtual Network Adapter data. Ensure Bytes/sec counters are collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vmName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-network",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "⚠️ **Known Limitations:**\r\n- **Storage counters report per virtual disk (VHD), not per VM.** The `Hyper-V Virtual Storage Device` performance object uses the VHD path as its instance identifier; there is no reliable per-VM aggregation available in Log Analytics without cross-referencing ARG. Top Virtual Disks charts show the VHD filename as the series name.\r\n- **Network counter VM-name extraction is best-effort.** `Hyper-V Virtual Network Adapter` instance names vary by Windows version; the chart extracts the text before the first `_`, which may be inaccurate for VMs whose names contain underscores.\r\n- **Memory Pressure only reports for VMs with Dynamic Memory enabled.** VMs with static memory assignments will not appear in the Memory Pressure chart.\r\n- **Latency counter names vary by Windows Server version.** The latency chart matches `Latency`, `Average Latency`, `Read Latency` and `Write Latency`; if your nodes expose a different counter, the chart will be empty until the DCR is updated.",
+                    "style": "warning"
+                  },
+                  "name": "hyperv-limitations-note"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "CapacitySection",
+              "comparison": "isEqualTo",
+              "value": "hyperv"
+            },
+            "name": "cap-hyperv-section"
           }
         ]
       },
@@ -5536,7 +6549,9 @@
                         }
                       ]
                     },
-                    "sortBy": []
+                    "sortBy": [],
+                    "noDataMessage": "No Arc Resource Bridge resources found in the selected scope.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "arcbridge-status"
@@ -5548,7 +6563,9 @@
                     "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\",\"mergeType\":\"table\",\"leftTable\":\"arcbridge-status\"}],\"projectRename\":[{\"originalName\":\"[arcbridge-status].ArcBridgeStatus\",\"mergedName\":\"ArcBridgeStatus\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].HCIStatus\",\"mergedName\":\"HCIStatus\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].TotalResources\",\"mergedName\":\"TotalResources\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].ArcBridgeCount\",\"mergedName\":\"ArcBridgeCount\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].HCIClusterCount\",\"mergedName\":\"HCIClusterCount\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].ClusterConnectivityStatus\",\"mergedName\":\"ClusterConnectivityStatus\",\"fromId\":\"unknown\"},{\"originalName\":\"[arcbridge-status].ClusterConnectivity\",\"mergedName\":\"ClusterConnectivity\",\"fromId\":\"unknown\"}]}",
                     "size": 2,
                     "queryType": 7,
-                    "visualization": "piechart"
+                    "visualization": "piechart",
+                    "noDataMessage": "No data available for the current selection.",
+                    "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
                   "name": "query - 1"
@@ -5788,7 +6805,9 @@
                   }
                 ]
               },
-              "sortBy": []
+              "sortBy": [],
+              "noDataMessage": "No offline Arc Resource Bridges — all ARBs in scope appear to be Running.",
+              "noDataMessageStyle": 4
             },
             "name": "arb-offline-table"
           },
@@ -6068,7 +7087,9 @@
                   }
                 ]
               },
-              "sortBy": []
+              "sortBy": [],
+              "noDataMessage": "No Arc Resource Bridge resources found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "name": "arb-all-table"
           },
@@ -6250,7 +7271,9 @@
                           "label": "Activity Log Alert"
                         }
                       ]
-                    }
+                    },
+                    "noDataMessage": "No Resource Health alert rules found for Arc Resource Bridges in the selected scope.",
+                    "noDataMessageStyle": 4
                   },
                   "name": "arb-alert-rules-table"
                 },
@@ -6375,7 +7398,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No Arc-enabled machines (kind=HCI) found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "15",
             "name": "tile-total-machines",
@@ -6422,7 +7447,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No connected Arc machines (kind=HCI) found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "15",
             "name": "tile-connected-machines",
@@ -6469,7 +7496,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No disconnected Arc machines — all nodes in scope appear to be connected.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "15",
             "name": "tile-disconnected-machines",
@@ -6502,7 +7531,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No Arc machines (kind=HCI) match the current filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "node-connection-pie",
@@ -6527,7 +7558,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No vendor data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "node-vendor-pie",
@@ -6552,7 +7585,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No OS version data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "node-version-pie",
@@ -6577,7 +7612,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No Arc agent version data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "node-agent-version-pie",
@@ -6602,7 +7639,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No license-type data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "33",
             "name": "node-license-type-pie",
@@ -6826,7 +7865,9 @@
                     "label": "Subscription"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Azure Local nodes match the current filters.",
+              "noDataMessageStyle": 4
             },
             "name": "all-nodes-table"
           },
@@ -6946,7 +7987,9 @@
                   }
                 ],
                 "noDataMessage": "✅ All machines are connected"
-              }
+              },
+              "noDataMessage": "No disconnected nodes — all nodes in the selected scope appear to be connected.",
+              "noDataMessageStyle": 4
             },
             "name": "disconnected-nodes-table"
           },
@@ -7115,7 +8158,9 @@
                     "label": "Extension"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Arc extension status data found for the nodes in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "60",
             "name": "extension-status-table",
@@ -7168,7 +8213,9 @@
                 "ySettings": {
                   "label": "Count"
                 }
-              }
+              },
+              "noDataMessage": "No Arc extension data found for the nodes in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "40",
             "showPin": false,
@@ -7330,7 +8377,9 @@
                   }
                 },
                 "noDataMessage": "✅ No failed extensions found"
-              }
+              },
+              "noDataMessage": "No failed Arc extensions in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "name": "failed-extensions-table"
           },
@@ -7449,7 +8498,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No NIC status data found for the nodes in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "nic-status-pie-chart"
@@ -7727,7 +8778,9 @@
                     "label": "Resource Group"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No NIC inventory data found for the nodes in scope.",
+              "noDataMessageStyle": 4
             },
             "name": "nic-status-table"
           }
@@ -7800,7 +8853,9 @@
                   }
                 },
                 "showBorder": true
-              }
+              },
+              "noDataMessage": "No Arc-enabled VMs (Azure Local) found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "25",
             "name": "vm-total-tile",
@@ -7831,7 +8886,9 @@
                   }
                 },
                 "showBorder": true
-              }
+              },
+              "noDataMessage": "No connected Arc-enabled VMs found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "25",
             "name": "vm-connected-tile",
@@ -7857,7 +8914,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No VM status data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "vm-status-pie",
@@ -7882,7 +8941,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No VM OS distribution data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "vm-os-distribution",
@@ -7907,7 +8968,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No VMs grouped by resource group — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "vm-by-rg",
@@ -7970,7 +9033,9 @@
                 "group": "Series",
                 "seriesLabelKey": "Series",
                 "showLegend": true
-              }
+              },
+              "noDataMessage": "No VM deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "80",
             "name": "vm-deployments-bar"
@@ -7999,7 +9064,9 @@
                     "label": "VMs Deployed"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No VM deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "20",
             "name": "vm-deployments-table"
@@ -8180,7 +9247,9 @@
                   }
                 ],
                 "noDataMessage": "No Azure Local VMs found in the selected scope"
-              }
+              },
+              "noDataMessage": "No Arc-enabled VMs match the current filters.",
+              "noDataMessageStyle": 4
             },
             "name": "vm-all-list"
           },
@@ -8367,7 +9436,9 @@
                     "columnId": "clusterLink"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
             },
             "name": "vm-by-cluster"
           },
@@ -8397,7 +9468,9 @@
                   "VMCount"
                 ],
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
             },
             "name": "vm-count-by-cluster-bar"
           }
@@ -8467,7 +9540,9 @@
                   }
                 },
                 "showBorder": true
-              }
+              },
+              "noDataMessage": "No AKS Arc clusters found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-summary-tile",
@@ -8493,7 +9568,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No AKS Arc connectivity data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-connectivity-chart",
@@ -8518,7 +9595,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No AKS Arc version data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-version-distribution",
@@ -8544,7 +9623,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No AKS Arc provisioning-state data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-provisioning-state",
@@ -8607,7 +9688,9 @@
                 "group": "Series",
                 "showLegend": true,
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No AKS Arc deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "80",
             "name": "aks-deployments-bar"
@@ -8636,7 +9719,9 @@
                     "label": "Clusters Deployed"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc deployments found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "20",
             "name": "aks-deployments-table"
@@ -8871,7 +9956,9 @@
                     "label": "Location"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc clusters match the current filters.",
+              "noDataMessageStyle": 4
             },
             "name": "aks-all-clusters"
           },
@@ -9054,7 +10141,9 @@
                     "label": "DNS Servers"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc network details available for the selected scope.",
+              "noDataMessageStyle": 4
             },
             "name": "aks-network-details"
           },
@@ -9152,7 +10241,9 @@
                     "label": "Addresses"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc load balancers (MetalLB / SLB / Citrix) found in the selected scope.",
+              "noDataMessageStyle": 4
             },
             "name": "aks-load-balancers"
           },
@@ -9178,7 +10269,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No AKS Arc upgrade status data available.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-upgrade-status-pie"
@@ -9213,7 +10306,9 @@
                     "label": "Clusters"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc version upgrade information available.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "aks-version-upgrade-summary"
@@ -9275,7 +10370,9 @@
                     "label": "Available Upgrades"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc version upgrade detail available.",
+              "noDataMessageStyle": 4
             },
             "name": "aks-version-upgrades-detail"
           },
@@ -9543,7 +10640,9 @@
                     "label": "Extension"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No AKS Arc extension status data found for the clusters in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "60",
             "name": "aks-extension-status-table",
@@ -9569,7 +10668,9 @@
                 "ySettings": {
                   "label": "Count"
                 }
-              }
+              },
+              "noDataMessage": "No AKS Arc extension data found for the clusters in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "40",
             "showPin": false,
@@ -9760,7 +10861,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "flux-compliance-chart",
@@ -9804,7 +10907,9 @@
                     }
                   }
                 }
-              }
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "flux-summary-tiles",
@@ -9930,7 +11035,9 @@
                     "label": "Subscription ID"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
             },
             "name": "flux-all-configurations-table"
           },
@@ -10103,7 +11210,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No update data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "query - 2"
@@ -10124,7 +11233,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "version-distribution-chart"
@@ -10268,7 +11379,9 @@
                     "label": "Unknown"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No data available for the current selection.",
+              "noDataMessageStyle": 4
             },
             "name": "query - 1"
           },
@@ -10434,7 +11547,9 @@
                     "label": "Cluster Count"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No data for the current selection.",
+              "noDataMessageStyle": 4
             },
             "name": "query - 6"
           },
@@ -10454,7 +11569,9 @@
               "chartSettings": {
                 "showLegend": true,
                 "legendPosition": "bottom"
-              }
+              },
+              "noDataMessage": "No failed health checks reported across the fleet.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "top5-health-check-issues-pie"
@@ -10754,7 +11871,9 @@
                     "label": "Node Count"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No data for the current selection.",
+              "noDataMessageStyle": 4
             },
             "name": "query - 3"
           },
@@ -11118,7 +12237,9 @@
                     "label": "Days Since Check"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No data for the current selection.",
+              "noDataMessageStyle": 4
             },
             "name": "query - 4"
           }
@@ -11172,7 +12293,9 @@
                 },
                 "showBorder": true,
                 "size": "auto"
-              }
+              },
+              "noDataMessage": "No update runs found across the fleet for the workbook time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "update-state-tiles"
@@ -11192,7 +12315,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No update runs found across the fleet for the workbook time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "update-state-pie"
@@ -11279,7 +12404,9 @@
                 ],
                 "showLegend": true,
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No update attempts found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "name": "update-attempts-by-day-chart"
           },
@@ -11295,7 +12422,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| extend timeEnded = todatetime(properties.lastUpdatedTime)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| extend duration = iff(state == 'Succeeded' and isnotempty(timeEnded) and timeEnded > timeStarted, timeEnded - timeStarted, timespan(null))\r\n| extend durationMinutes = iff(isnotnull(duration), todouble(duration / 1m), double(null))\r\n| summarize \r\n    TotalRuns = count(),\r\n    SucceededRuns = countif(state == 'Succeeded'),\r\n    FailedRuns = countif(state == 'Failed'),\r\n    InProgressRuns = countif(state == 'InProgress'),\r\n    AvgDurationMinutes = avg(durationMinutes),\r\n    StdDevDurationMinutes = stdev(durationMinutes),\r\n    MinDurationMinutes = min(durationMinutes),\r\n    MaxDurationMinutes = max(durationMinutes),\r\n    P95DurationMinutes = percentile(durationMinutes, 95),\r\n    P99DurationMinutes = percentile(durationMinutes, 99),\r\n    CompletedDurationCount = countif(isnotnull(durationMinutes))\r\n| extend SuccessRate = round(100.0 * SucceededRuns / TotalRuns, 1)\r\n| extend FailureRate = round(100.0 * FailedRuns / TotalRuns, 1)\r\n| extend AvgDurationFormatted = iff(isnotnull(AvgDurationMinutes), strcat(tolong(AvgDurationMinutes / 60), 'h ', tolong(AvgDurationMinutes % 60), 'm'), 'N/A')\r\n| extend StdDevFormatted = iff(isnotnull(StdDevDurationMinutes), strcat(tolong(StdDevDurationMinutes / 60), 'h ', tolong(StdDevDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MinDurationFormatted = iff(isnotnull(MinDurationMinutes), strcat(tolong(MinDurationMinutes / 60), 'h ', tolong(MinDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MaxDurationFormatted = iff(isnotnull(MaxDurationMinutes), strcat(tolong(MaxDurationMinutes / 60), 'h ', tolong(MaxDurationMinutes % 60), 'm'), 'N/A')\r\n| extend P95DurationFormatted = iff(isnotnull(P95DurationMinutes), strcat(tolong(P95DurationMinutes / 60), 'h ', tolong(P95DurationMinutes % 60), 'm'), 'N/A')\r\n| extend P99DurationFormatted = iff(isnotnull(P99DurationMinutes), strcat(tolong(P99DurationMinutes / 60), 'h ', tolong(P99DurationMinutes % 60), 'm'), 'N/A')\r\n| project \r\n    ['Total Runs'] = TotalRuns,\r\n    ['Succeeded'] = SucceededRuns,\r\n    ['Failed'] = FailedRuns,\r\n    ['In Progress'] = InProgressRuns,\r\n    ['Success Rate'] = SuccessRate,\r\n    ['Average Duration'] = AvgDurationFormatted,\r\n    ['Standard Deviation'] = StdDevFormatted,\r\n    ['95th Percentile'] = P95DurationFormatted,\r\n    ['99th Percentile'] = P99DurationFormatted,\r\n    ['Min Duration'] = MinDurationFormatted,\r\n    ['Max Duration'] = MaxDurationFormatted",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| extend timeEnded = todatetime(properties.lastUpdatedTime)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| extend duration = iff(state == 'Succeeded' and isnotempty(timeEnded) and timeEnded > timeStarted, timeEnded - timeStarted, timespan(null))\r\n| extend durationMinutes = iff(isnotnull(duration), todouble(duration / 1m), double(null))\r\n| summarize \r\n    DistinctClusters = dcount(clusterName),\r\n    TotalRuns = count(),\r\n    SucceededRuns = countif(state == 'Succeeded'),\r\n    FailedRuns = countif(state == 'Failed'),\r\n    InProgressRuns = countif(state == 'InProgress'),\r\n    AvgDurationMinutes = avg(durationMinutes),\r\n    StdDevDurationMinutes = stdev(durationMinutes),\r\n    MinDurationMinutes = min(durationMinutes),\r\n    MaxDurationMinutes = max(durationMinutes),\r\n    P95DurationMinutes = percentile(durationMinutes, 95),\r\n    P99DurationMinutes = percentile(durationMinutes, 99),\r\n    CompletedDurationCount = countif(isnotnull(durationMinutes))\r\n| extend SuccessRate = round(100.0 * SucceededRuns / TotalRuns, 1)\r\n| extend FailureRate = round(100.0 * FailedRuns / TotalRuns, 1)\r\n| extend AvgDurationFormatted = iff(isnotnull(AvgDurationMinutes), strcat(tolong(AvgDurationMinutes / 60), 'h ', tolong(AvgDurationMinutes % 60), 'm'), 'N/A')\r\n| extend StdDevFormatted = iff(isnotnull(StdDevDurationMinutes), strcat(tolong(StdDevDurationMinutes / 60), 'h ', tolong(StdDevDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MinDurationFormatted = iff(isnotnull(MinDurationMinutes), strcat(tolong(MinDurationMinutes / 60), 'h ', tolong(MinDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MaxDurationFormatted = iff(isnotnull(MaxDurationMinutes), strcat(tolong(MaxDurationMinutes / 60), 'h ', tolong(MaxDurationMinutes % 60), 'm'), 'N/A')\r\n| extend P95DurationFormatted = iff(isnotnull(P95DurationMinutes), strcat(tolong(P95DurationMinutes / 60), 'h ', tolong(P95DurationMinutes % 60), 'm'), 'N/A')\r\n| extend P99DurationFormatted = iff(isnotnull(P99DurationMinutes), strcat(tolong(P99DurationMinutes / 60), 'h ', tolong(P99DurationMinutes % 60), 'm'), 'N/A')\r\n| project \r\n    ['Clusters (Distinct)'] = tostring(DistinctClusters),\r\n    ['Total Runs'] = TotalRuns,\r\n    ['Succeeded'] = SucceededRuns,\r\n    ['Failed'] = FailedRuns,\r\n    ['In Progress'] = InProgressRuns,\r\n    ['Success Rate'] = SuccessRate,\r\n    ['Average Duration'] = AvgDurationFormatted,\r\n    ['Standard Deviation'] = StdDevFormatted,\r\n    ['95th Percentile'] = P95DurationFormatted,\r\n    ['99th Percentile'] = P99DurationFormatted,\r\n    ['Min Duration'] = MinDurationFormatted,\r\n    ['Max Duration'] = MaxDurationFormatted",
               "size": 4,
               "title": "Overall Update Duration - Analytical Statistics (Succeeded Updates)",
               "queryType": 1,
@@ -11362,7 +12489,9 @@
                     }
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No completed update runs found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "name": "update-duration-statistics"
           },
@@ -11378,7 +12507,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| extend timeEnded = todatetime(properties.lastUpdatedTime)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| extend duration = iff(state == 'Succeeded' and isnotempty(timeEnded) and timeEnded > timeStarted, timeEnded - timeStarted, timespan(null))\r\n| extend durationMinutes = iff(isnotnull(duration), todouble(duration / 1m), double(null))\r\n| summarize \r\n    TotalRuns = count(),\r\n    SucceededRuns = countif(state == 'Succeeded'),\r\n    FailedRuns = countif(state == 'Failed'),\r\n    InProgressRuns = countif(state == 'InProgress'),\r\n    AvgDurationMinutes = avg(durationMinutes),\r\n    StdDevDurationMinutes = stdev(durationMinutes),\r\n    MinDurationMinutes = min(durationMinutes),\r\n    MaxDurationMinutes = max(durationMinutes),\r\n    P95DurationMinutes = percentile(durationMinutes, 95),\r\n    P99DurationMinutes = percentile(durationMinutes, 99),\r\n    CompletedDurationCount = countif(isnotnull(durationMinutes))\r\n    by solutionUpdate\r\n| extend SuccessRate = round(100.0 * SucceededRuns / TotalRuns, 1)\r\n| extend FailureRate = round(100.0 * FailedRuns / TotalRuns, 1)\r\n| extend AvgDurationFormatted = iff(isnotnull(AvgDurationMinutes), strcat(tolong(AvgDurationMinutes / 60), 'h ', tolong(AvgDurationMinutes % 60), 'm'), 'N/A')\r\n| extend StdDevFormatted = iff(isnotnull(StdDevDurationMinutes), strcat(tolong(StdDevDurationMinutes / 60), 'h ', tolong(StdDevDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MinDurationFormatted = iff(isnotnull(MinDurationMinutes), strcat(tolong(MinDurationMinutes / 60), 'h ', tolong(MinDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MaxDurationFormatted = iff(isnotnull(MaxDurationMinutes), strcat(tolong(MaxDurationMinutes / 60), 'h ', tolong(MaxDurationMinutes % 60), 'm'), 'N/A')\r\n| extend P95DurationFormatted = iff(isnotnull(P95DurationMinutes), strcat(tolong(P95DurationMinutes / 60), 'h ', tolong(P95DurationMinutes % 60), 'm'), 'N/A')\r\n| extend P99DurationFormatted = iff(isnotnull(P99DurationMinutes), strcat(tolong(P99DurationMinutes / 60), 'h ', tolong(P99DurationMinutes % 60), 'm'), 'N/A')\r\n| project \r\n    ['Solution Update'] = solutionUpdate,\r\n    ['Total Runs'] = TotalRuns,\r\n    ['Succeeded'] = SucceededRuns,\r\n    ['Failed'] = FailedRuns,\r\n    ['In Progress'] = InProgressRuns,\r\n    ['Success Rate'] = SuccessRate,\r\n    ['Average Duration'] = AvgDurationFormatted,\r\n    ['Standard Deviation'] = StdDevFormatted,\r\n    ['95th Percentile'] = P95DurationFormatted,\r\n    ['99th Percentile'] = P99DurationFormatted,\r\n    ['Min Duration'] = MinDurationFormatted,\r\n    ['Max Duration'] = MaxDurationFormatted\r\n| order by ['Solution Update'] desc",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| extend timeEnded = todatetime(properties.lastUpdatedTime)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| extend duration = iff(state == 'Succeeded' and isnotempty(timeEnded) and timeEnded > timeStarted, timeEnded - timeStarted, timespan(null))\r\n| extend durationMinutes = iff(isnotnull(duration), todouble(duration / 1m), double(null))\r\n| summarize \r\n    TotalRuns = count(),\r\n    SucceededRuns = countif(state == 'Succeeded'),\r\n    FailedRuns = countif(state == 'Failed'),\r\n    InProgressRuns = countif(state == 'InProgress'),\r\n    AvgDurationMinutes = avg(durationMinutes),\r\n    StdDevDurationMinutes = stdev(durationMinutes),\r\n    MinDurationMinutes = min(durationMinutes),\r\n    MaxDurationMinutes = max(durationMinutes),\r\n    P95DurationMinutes = percentile(durationMinutes, 95),\r\n    P99DurationMinutes = percentile(durationMinutes, 99),\r\n    CompletedDurationCount = countif(isnotnull(durationMinutes)),\r\n    DistinctClusters = dcount(clusterName)\r\n    by solutionUpdate\r\n| extend SuccessRate = round(100.0 * SucceededRuns / TotalRuns, 1)\r\n| extend FailureRate = round(100.0 * FailedRuns / TotalRuns, 1)\r\n| extend AvgDurationFormatted = iff(isnotnull(AvgDurationMinutes), strcat(tolong(AvgDurationMinutes / 60), 'h ', tolong(AvgDurationMinutes % 60), 'm'), 'N/A')\r\n| extend StdDevFormatted = iff(isnotnull(StdDevDurationMinutes), strcat(tolong(StdDevDurationMinutes / 60), 'h ', tolong(StdDevDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MinDurationFormatted = iff(isnotnull(MinDurationMinutes), strcat(tolong(MinDurationMinutes / 60), 'h ', tolong(MinDurationMinutes % 60), 'm'), 'N/A')\r\n| extend MaxDurationFormatted = iff(isnotnull(MaxDurationMinutes), strcat(tolong(MaxDurationMinutes / 60), 'h ', tolong(MaxDurationMinutes % 60), 'm'), 'N/A')\r\n| extend P95DurationFormatted = iff(isnotnull(P95DurationMinutes), strcat(tolong(P95DurationMinutes / 60), 'h ', tolong(P95DurationMinutes % 60), 'm'), 'N/A')\r\n| extend P99DurationFormatted = iff(isnotnull(P99DurationMinutes), strcat(tolong(P99DurationMinutes / 60), 'h ', tolong(P99DurationMinutes % 60), 'm'), 'N/A')\r\n| project \r\n    ['Solution Update'] = solutionUpdate,\r\n    ['Clusters (Distinct)'] = tostring(DistinctClusters),\r\n    ['Total Runs'] = TotalRuns,\r\n    ['Succeeded'] = SucceededRuns,\r\n    ['Failed'] = FailedRuns,\r\n    ['In Progress'] = InProgressRuns,\r\n    ['Success Rate'] = SuccessRate,\r\n    ['Average Duration'] = AvgDurationFormatted,\r\n    ['Standard Deviation'] = StdDevFormatted,\r\n    ['95th Percentile'] = P95DurationFormatted,\r\n    ['99th Percentile'] = P99DurationFormatted,\r\n    ['Min Duration'] = MinDurationFormatted,\r\n    ['Max Duration'] = MaxDurationFormatted\r\n| order by ['Solution Update'] desc",
               "size": 0,
               "title": "Update Duration Statistics by Solution Update",
               "showRefreshButton": true,
@@ -11454,7 +12583,9 @@
                     }
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No completed update runs found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "name": "update-duration-statistics-by-solution"
           },
@@ -11462,7 +12593,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| order by updateKey asc, timeStarted asc\r\n| extend runNumber = row_number(1, updateKey != prev(updateKey))\r\n| summarize \r\n    FirstRunState = take_anyif(state, runNumber == 1),\r\n    HasSuccess = countif(state == 'Succeeded') > 0,\r\n    HasFailure = countif(state == 'Failed') > 0,\r\n    TotalRuns = count()\r\n    by updateKey\r\n| extend UpdateOutcome = case(\r\n    FirstRunState == 'Succeeded', 'First Time Success',\r\n    HasSuccess and HasFailure, 'Resumed After Failure',\r\n    HasSuccess and not(HasFailure), 'Succeeded (Multiple Runs)',\r\n    FirstRunState == 'InProgress', 'In Progress',\r\n    HasFailure and not(HasSuccess), 'Failed (Not Recovered)',\r\n    'Other'\r\n)\r\n| summarize Count = count() by UpdateOutcome\r\n| extend JoinKey = 1\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend timeStarted = todatetime(properties.timeStarted)\r\n    | where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n    | extend updateName = tostring(split(id, '/updates/')[1])\r\n    | extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n    | extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n    | where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n    | extend clusterIdParts = split(id, '/')\r\n    | extend clusterName = tostring(clusterIdParts[8])\r\n    | extend updateKey = strcat(clusterName, '|', updateName)\r\n    | summarize by updateKey\r\n    | count\r\n    | project Total = Count, JoinKey = 1\r\n) on JoinKey\r\n| project UpdateOutcome, Count, Percentage = strcat(tostring(round(100.0 * Count / Total, 1)), '%')\r\n| order by Count desc",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n| extend updateName = tostring(split(id, '/updates/')[1])\r\n| extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n| extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n| where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n| extend clusterIdParts = split(id, '/')\r\n| extend clusterName = tostring(clusterIdParts[8])\r\n| extend updateKey = strcat(clusterName, '|', updateName)\r\n| order by updateKey asc, timeStarted asc\r\n| extend runNumber = row_number(1, updateKey != prev(updateKey))\r\n| summarize \r\n    FirstRunState = take_anyif(state, runNumber == 1),\r\n    HasSuccess = countif(state == 'Succeeded') > 0,\r\n    HasFailure = countif(state == 'Failed') > 0,\r\n    TotalRuns = count(),\r\n    clusterName = any(clusterName)\r\n    by updateKey\r\n| extend UpdateOutcome = case(\r\n    FirstRunState == 'Succeeded', 'First Time Success',\r\n    HasSuccess and HasFailure, 'Resumed After Failure',\r\n    HasSuccess and not(HasFailure), 'Succeeded (Multiple Runs)',\r\n    FirstRunState == 'InProgress', 'In Progress',\r\n    HasFailure and not(HasSuccess), 'Failed (Not Recovered)',\r\n    'Other'\r\n)\r\n| summarize Count = count(), DistinctClusters = dcount(clusterName) by UpdateOutcome\r\n| extend DistinctClusters = tostring(DistinctClusters)\r\n| extend JoinKey = 1\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updates/updateruns\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend timeStarted = todatetime(properties.timeStarted)\r\n    | where timeStarted >= ago({UpdateAttemptsTimeFilter}d)\r\n    | extend updateName = tostring(split(id, '/updates/')[1])\r\n    | extend updateName = tostring(split(updateName, '/updateruns')[0])\r\n    | extend solutionUpdate = tostring(split(updateName, '/')[0])\r\n    | where '*' in ({SolutionUpdateFilter}) or solutionUpdate in ({SolutionUpdateFilter})\r\n    | extend clusterIdParts = split(id, '/')\r\n    | extend clusterName = tostring(clusterIdParts[8])\r\n    | extend updateKey = strcat(clusterName, '|', updateName)\r\n    | summarize by updateKey\r\n    | count\r\n    | project Total = Count, JoinKey = 1\r\n) on JoinKey\r\n| project UpdateOutcome, DistinctClusters, Count, Percentage = strcat(tostring(round(100.0 * Count / Total, 1)), '%')\r\n| order by Count desc",
               "size": 0,
               "title": "Updates - First Time Success Analysis",
               "queryType": 1,
@@ -11530,7 +12661,11 @@
                 "labelSettings": [
                   {
                     "columnId": "UpdateOutcome",
-                    "label": "Outcome"
+                    "label": "Update Status"
+                  },
+                  {
+                    "columnId": "DistinctClusters",
+                    "label": "Clusters (Distinct)"
                   },
                   {
                     "columnId": "Count",
@@ -11541,7 +12676,9 @@
                     "label": "Percentage"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No update runs found in the selected time range to compute success analysis.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "update-success-analysis"
@@ -11561,7 +12698,9 @@
               "visualization": "piechart",
               "chartSettings": {
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No update outcomes found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "update-outcomes-pie"
@@ -11702,7 +12841,9 @@
                   "itemKey": "Started",
                   "sortOrder": 2
                 }
-              ]
+              ],
+              "noDataMessage": "No update attempts found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "name": "update-attempts-details-table"
           },
@@ -11731,7 +12872,9 @@
                 "showLegend": true,
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
-              }
+              },
+              "noDataMessage": "No update attempts found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "50",
             "name": "update-attempts-status-pie"
@@ -11804,7 +12947,9 @@
                     "label": "Overall Percentage"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No update attempts found in the selected time range.",
+              "noDataMessageStyle": 4
             },
             "customWidth": "25",
             "name": "update-attempts-summary-table"
@@ -12125,7 +13270,9 @@
                     "label": "Location"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No clusters report update status — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
             },
             "name": "all-cluster-update-status"
           },
@@ -12235,7 +13382,9 @@
                     "label": "Last Checked"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No clusters are currently updating.",
+              "noDataMessageStyle": 4
             },
             "name": "clusters-updating"
           },
@@ -12429,14 +13578,16 @@
                     "label": "One Time Update"
                   }
                 ]
-              }
+              },
+              "noDataMessage": "No clusters in scope have an update available right now (or none match the filters).",
+              "noDataMessageStyle": 4
             },
             "name": "clusters-updates-available"
           },
           {
             "type": 1,
             "content": {
-              "json": "## 📜 Update Run History and Error Details\n\nRecent update runs across all clusters. For failed updates, expand the row to see step failure details.\n\n> **Note:** Default filter applied to table below: 'Update State' = 'Failed'"
+              "json": "## 📜 Update Run History and Error Details\n\nRecent update runs across all clusters. For failed updates, expand the row to see step failure details.\n\n> **Note:** Default filter applied to table below: 'Update State' = 'Failed'. Unresolved Failed runs are always shown regardless of the **Time Range** filter; once a later Succeeded run exists for the same cluster, the older Failed run is hidden."
             },
             "name": "text-update-history"
           },
@@ -12452,6 +13603,46 @@
             "content": {
               "version": "KqlParameterItem/1.0",
               "parameters": [
+                {
+                  "id": "update-history-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "UpdateHistoryTimeRange",
+                  "label": "Time Range",
+                  "type": 4,
+                  "description": "Time window for Succeeded / In-Progress runs. Unresolved Failed runs (i.e. with no later Succeeded run on the same cluster) are always shown regardless of this setting.",
+                  "isRequired": true,
+                  "value": {
+                    "durationMs": 3888000000
+                  },
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      },
+                      {
+                        "durationMs": 3888000000
+                      },
+                      {
+                        "durationMs": 7776000000
+                      },
+                      {
+                        "durationMs": 15552000000
+                      },
+                      {
+                        "durationMs": 31536000000
+                      }
+                    ]
+                  }
+                },
                 {
                   "id": "update-history-cluster-filter",
                   "version": "KqlParameterItem/1.0",
@@ -12533,11 +13724,13 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == 'microsoft.azurestackhci/clusters/updates/updateruns'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| join kind=inner (\r\n    resources\r\n    | where type =~ 'microsoft.azurestackhci/clusters'\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hciClusterName = name\r\n    | distinct hciClusterName\r\n) on hciClusterName\r\n| project-away hciClusterName1\r\n| extend updateName = tostring(split(id, '/')[10])\r\n| where '{UpdateHistoryClusterFilter}' == '' or hciClusterName matches regex strcat('(?i)', replace_string(replace_string('{UpdateHistoryClusterFilter}', '*', '.*'), '?', '.'))\r\n| where '{UpdateHistoryUpdateNameFilter}' == '' or updateName matches regex strcat('(?i)', replace_string(replace_string('{UpdateHistoryUpdateNameFilter}', '*', '.*'), '?', '.'))\r\n| extend runName = name\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where todatetime(timeStarted) >= {TimeRange:start} or state == 'Failed'\r\n| extend lastUpdatedTime = todatetime(properties.lastUpdatedTime)\r\n| extend duration = tostring(properties.duration)\r\n| extend durationHours = iff(duration contains 'H', toint(extract('([0-9]+)H', 1, duration)), 0)\r\n| extend durationMinutes = iff(duration contains 'M', toint(extract('([0-9]+)M', 1, duration)), 0)\r\n| extend durationSeconds = iff(duration contains 'S', toint(extract('([0-9]+)', 1, extract('([0-9.]+)S', 1, duration))), 0)\r\n| extend durationFormatted = strcat(iff(durationHours > 0, strcat(tostring(durationHours), 'h '), ''), iff(durationMinutes > 0 or durationHours > 0, strcat(tostring(durationMinutes), 'm '), ''), tostring(durationSeconds), 's')\r\n| extend progressObj = properties.progress\r\n| extend progressJson = tostring(properties.progress)\r\n| extend progressStatus = tostring(progressObj.status)\r\n| extend progressDescription = tostring(progressObj.description)\r\n| mv-expand s1 = progressObj.steps\r\n| mv-expand s2 = s1.steps\r\n| mv-expand s3 = s2.steps\r\n| mv-expand s4 = s3.steps\r\n| mv-expand s5 = s4.steps\r\n| mv-expand s6 = iff(array_length(s5.steps) > 0, s5.steps, dynamic([null]))\r\n| mv-expand s7 = iff(isnotnull(s6) and array_length(s6.steps) > 0, s6.steps, dynamic([null]))\r\n| extend e5Msg = tostring(s5.errorMessage), e5Name = tostring(s5.name), e5Status = tostring(s5.status)\r\n| extend e4Msg = tostring(s4.errorMessage), e4Name = tostring(s4.name), e4Status = tostring(s4.status)\r\n| extend e3Msg = tostring(s3.errorMessage), e3Name = tostring(s3.name), e3Status = tostring(s3.status)\r\n| extend e2Msg = tostring(s2.errorMessage), e2Name = tostring(s2.name), e2Status = tostring(s2.status)\r\n| extend e1Msg = tostring(s1.errorMessage), e1Name = tostring(s1.name), e1Status = tostring(s1.status), e1Desc = tostring(s1.description)\r\n| extend e6Msg = iff(isnotnull(s6), tostring(s6.errorMessage), ''), e6Name = iff(isnotnull(s6), tostring(s6.name), ''), e6Status = iff(isnotnull(s6), tostring(s6.status), '')\r\n| extend e7Msg = iff(isnotnull(s7), tostring(s7.errorMessage), ''), e7Name = iff(isnotnull(s7), tostring(s7.name), ''), e7Status = iff(isnotnull(s7), tostring(s7.status), '')\r\n| extend e8Arr = iff(isnotnull(s7), s7.steps, dynamic(null))\r\n| extend e8First = iff(isnotnull(e8Arr) and array_length(e8Arr) > 0, e8Arr[0], dynamic(null))\r\n| extend e8Msg = tostring(e8First.errorMessage), e8Name = tostring(e8First.name), e8Status = tostring(e8First.status)\r\n| extend mvExpandErrMsg = coalesce(iff(strlen(e8Msg) > 0, e8Msg, ''), iff(strlen(e7Msg) > 0, e7Msg, ''), iff(strlen(e6Msg) > 0, e6Msg, ''), iff(strlen(e5Msg) > 0, e5Msg, ''), iff(strlen(e4Msg) > 0, e4Msg, ''), iff(strlen(e3Msg) > 0, e3Msg, ''), iff(strlen(e2Msg) > 0, e2Msg, ''), iff(strlen(e1Msg) > 0, iff(strlen(e1Desc) > strlen(e1Msg), strcat(e1Msg, ' | ', e1Desc), e1Msg), ''))\r\n| extend deepExceptionMsg = extract('raised an exception:................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................', 0, progressJson)\r\n| extend deepestErrMsg = iff(strlen(mvExpandErrMsg) > 10, mvExpandErrMsg, deepExceptionMsg)\r\n| extend errorBasedStep = case(\r\n    deepestErrMsg has 'UpdateSecuredCore', 'Update Secured-core',\r\n    deepestErrMsg has 'CAU' or deepestErrMsg has 'Cluster-Aware', 'CAU Update',\r\n    deepestErrMsg has 'RotateSecrets' or deepestErrMsg has 'Rotate Secrets', 'Rotate Secrets',\r\n    deepestErrMsg has 'MocArb' or deepestErrMsg has 'CliExtensions', 'Update Arc Prerequisites',\r\n    deepestErrMsg has 'certificate rotation', 'Certificate Rotation',\r\n    '')\r\n| extend deepestErrDepth = case(strlen(e8Msg) > 0, 8, strlen(e7Msg) > 0, 7, strlen(e6Msg) > 0, 6, strlen(e5Msg) > 0, 5, strlen(e4Msg) > 0, 4, strlen(e3Msg) > 0, 3, strlen(e2Msg) > 0, 2, strlen(e1Msg) > 0, 1, e8Status == 'Error', 8, e7Status == 'Error', 7, e6Status == 'Error', 6, e5Status == 'Error', 5, e4Status == 'Error', 4, e3Status == 'Error', 3, e2Status == 'Error', 2, e1Status == 'Error', 1, e8Status == 'Failed', 8, e7Status == 'Failed', 7, e6Status == 'Failed', 6, e5Status == 'Failed', 5, e4Status == 'Failed', 4, e3Status == 'Failed', 3, e2Status == 'Failed', 2, e1Status == 'Failed', 1, strlen(errorBasedStep) > 0, 1, 0)\r\n| extend deepestErrStep = case(deepestErrDepth == 8, e8Name, deepestErrDepth == 7, e7Name, deepestErrDepth == 6, e6Name, deepestErrDepth == 5, e5Name, deepestErrDepth == 4, e4Name, deepestErrDepth == 3, e3Name, deepestErrDepth == 2, e2Name, deepestErrDepth == 1, iff(isnotempty(errorBasedStep), errorBasedStep, e1Name), '')\r\n| summarize \r\n    arg_max(deepestErrDepth, deepestErrStep),\r\n    ErrorStepMessage = max(deepestErrMsg),\r\n    state = max(state),\r\n    timeStarted = max(timeStarted),\r\n    lastUpdatedTime = max(lastUpdatedTime),\r\n    durationFormatted = max(durationFormatted),\r\n    progressStatus = max(progressStatus),\r\n    progressDescription = max(progressDescription),\r\n    subscriptionId = max(subscriptionId),\r\n    resourceGroup = max(resourceGroup)\r\n    by hciClusterName, updateName, id\r\n| extend CurrentStep = iff(state == 'Failed', iff(isnotempty(deepestErrStep), deepestErrStep, progressDescription), '')\r\n| extend ErrorMessageClean = replace_string(replace_string(ErrorStepMessage, '\\\\r\\\\n', ' '), '\\\\n', ' ')\r\n| extend ErrorMessageDisplay = iff(strlen(ErrorMessageClean) > 0, ErrorMessageClean, iff(state == 'Failed' and progressStatus == 'Error', 'No ''Error Details'' available - click Update Name link to view in Azure portal', ''))\r\n| extend ErrorMessageTruncated = iff(strlen(ErrorMessageDisplay) > 3000, strcat(substring(ErrorMessageDisplay, 0, 3000), '... (truncated)'), ErrorMessageDisplay)\r\n| where '*' in ({UpdateHistoryStateFilter}) or state in ({UpdateHistoryStateFilter})\r\n| where '*' in ({UpdateHistoryStatusFilter}) or progressStatus in ({UpdateHistoryStatusFilter})\r\n| extend hasErrorDetails = iff(isnotempty(ErrorStepMessage), 1, 0)\r\n| extend sortKey = strcat(tostring(hasErrorDetails), '_', format_datetime(timeStarted, 'yyyy-MM-dd HH:mm:ss'))\r\n| extend clusterResourceId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup, '/providers/microsoft.azurestackhci/clusters/', hciClusterName)\r\n| extend encodedResourceId = replace_string(replace_string(clusterResourceId, '/', '%2F'), ' ', '%20')\r\n| extend PortalLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/SingleInstanceHistoryDetails.ReactView/resourceId/', encodedResourceId, '/updateName~/null/updateRunName~/null/refresh~/false')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates/updateruns'\r\n    | extend _rState = tostring(properties.state)\r\n    | where _rState == 'Succeeded'\r\n    | extend _rCluster = tostring(split(id, '/')[8])\r\n    | extend _rStarted = todatetime(properties.timeStarted)\r\n    | summarize _latestSucceeded = max(_rStarted) by _rCluster\r\n) on $left.hciClusterName == $right._rCluster\r\n| where not(state == 'Failed' and isnotnull(_latestSucceeded) and timeStarted < _latestSucceeded)\r\n| extend _dedup = iff(state == 'Failed', strcat(hciClusterName, '|', updateName), id)\r\n| summarize arg_max(lastUpdatedTime, *) by _dedup\r\n| project-away _dedup\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updatesummaries'\r\n    | extend _hcCluster = tostring(split(id, '/')[8])\r\n    | extend _hcr = array_reverse(properties.healthCheckResult)\r\n    | mv-expand _hc = _hcr\r\n    | where tostring(_hc.status) == 'Failed' and tostring(_hc.severity) == 'Critical'\r\n    | extend _hcLine = strcat('| **', tostring(_hc.severity), '** | ', tostring(_hc.displayName), ' | ', tostring(_hc.targetResourceName), ' | ', tostring(_hc.description), ' |')\r\n    | summarize _hcTable = strcat_array(make_list(_hcLine, 20), '\\n') by _hcCluster\r\n    | extend _hcMarkdown = strcat('\\n\\n## Failed Health Checks (from Update Summaries)\\n\\n| Severity | Check Name | Target | Description |\\n|:--|:--|:--|:--|\\n', _hcTable, '\\n\\n📚 [Troubleshoot Azure Local Updates](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2)')\r\n    | project _hcCluster, _hcMarkdown\r\n) on $left.hciClusterName == $right._hcCluster\r\n| extend ErrorMessageBlade = iff(strlen(ErrorMessageDisplay) > 0, strcat('## Error Details\\n\\n**Cluster:** ', hciClusterName, '\\n\\n**Update:** ', updateName, '\\n\\n**Current Step:** ', CurrentStep, '\\n\\n---\\n\\n', ErrorMessageDisplay, coalesce(_hcMarkdown, '')), '')\r\n| extend ClusterLink = strcat('https://portal.azure.com/#@/resource', clusterResourceId, '/overview')\r\n| project ClusterName = hciClusterName, ClusterLink, UpdateName = updateName, PortalLink, State = state, Status = progressStatus, CurrentStep, ErrorMessage = ErrorMessageTruncated, ErrorMessageFull = ErrorMessageDisplay, ErrorMessageBlade, Duration = durationFormatted, TimeStarted = timeStarted, LastUpdated = lastUpdatedTime\r\n| order by TimeStarted desc",
+              "query": "extensibilityresources\r\n| where type == 'microsoft.azurestackhci/clusters/updates/updateruns'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| join kind=inner (\r\n    resources\r\n    | where type =~ 'microsoft.azurestackhci/clusters'\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hciClusterName = name\r\n    | distinct hciClusterName\r\n) on hciClusterName\r\n| project-away hciClusterName1\r\n| extend updateName = tostring(split(id, '/')[10])\r\n| where '{UpdateHistoryClusterFilter}' == '' or hciClusterName matches regex strcat('(?i)', replace_string(replace_string('{UpdateHistoryClusterFilter}', '*', '.*'), '?', '.'))\r\n| where '{UpdateHistoryUpdateNameFilter}' == '' or updateName matches regex strcat('(?i)', replace_string(replace_string('{UpdateHistoryUpdateNameFilter}', '*', '.*'), '?', '.'))\r\n| extend runName = name\r\n| extend state = tostring(properties.state)\r\n| extend timeStarted = todatetime(properties.timeStarted)\r\n| where todatetime(timeStarted) >= {UpdateHistoryTimeRange:start} or state == 'Failed'\r\n| extend lastUpdatedTime = todatetime(properties.lastUpdatedTime)\r\n| extend duration = tostring(properties.duration)\r\n| extend durationHours = iff(duration contains 'H', toint(extract('([0-9]+)H', 1, duration)), 0)\r\n| extend durationMinutes = iff(duration contains 'M', toint(extract('([0-9]+)M', 1, duration)), 0)\r\n| extend durationSeconds = iff(duration contains 'S', toint(extract('([0-9]+)', 1, extract('([0-9.]+)S', 1, duration))), 0)\r\n| extend durationFormatted = strcat(iff(durationHours > 0, strcat(tostring(durationHours), 'h '), ''), iff(durationMinutes > 0 or durationHours > 0, strcat(tostring(durationMinutes), 'm '), ''), tostring(durationSeconds), 's')\r\n| extend progressObj = properties.progress\r\n| extend progressJson = tostring(properties.progress)\r\n| extend progressStatus = tostring(progressObj.status)\r\n| extend progressDescription = tostring(progressObj.description)\r\n| mv-expand s1 = progressObj.steps\r\n| mv-expand s2 = s1.steps\r\n| mv-expand s3 = s2.steps\r\n| mv-expand s4 = s3.steps\r\n| mv-expand s5 = s4.steps\r\n| mv-expand s6 = iff(array_length(s5.steps) > 0, s5.steps, dynamic([null]))\r\n| mv-expand s7 = iff(isnotnull(s6) and array_length(s6.steps) > 0, s6.steps, dynamic([null]))\r\n| extend e5Msg = tostring(s5.errorMessage), e5Name = tostring(s5.name), e5Status = tostring(s5.status)\r\n| extend e4Msg = tostring(s4.errorMessage), e4Name = tostring(s4.name), e4Status = tostring(s4.status)\r\n| extend e3Msg = tostring(s3.errorMessage), e3Name = tostring(s3.name), e3Status = tostring(s3.status)\r\n| extend e2Msg = tostring(s2.errorMessage), e2Name = tostring(s2.name), e2Status = tostring(s2.status)\r\n| extend e1Msg = tostring(s1.errorMessage), e1Name = tostring(s1.name), e1Status = tostring(s1.status), e1Desc = tostring(s1.description)\r\n| extend e6Msg = iff(isnotnull(s6), tostring(s6.errorMessage), ''), e6Name = iff(isnotnull(s6), tostring(s6.name), ''), e6Status = iff(isnotnull(s6), tostring(s6.status), '')\r\n| extend e7Msg = iff(isnotnull(s7), tostring(s7.errorMessage), ''), e7Name = iff(isnotnull(s7), tostring(s7.name), ''), e7Status = iff(isnotnull(s7), tostring(s7.status), '')\r\n| extend e8Arr = iff(isnotnull(s7), s7.steps, dynamic(null))\r\n| extend e8First = iff(isnotnull(e8Arr) and array_length(e8Arr) > 0, e8Arr[0], dynamic(null))\r\n| extend e8Msg = tostring(e8First.errorMessage), e8Name = tostring(e8First.name), e8Status = tostring(e8First.status)\r\n| extend mvExpandErrMsg = coalesce(iff(strlen(e8Msg) > 0, e8Msg, ''), iff(strlen(e7Msg) > 0, e7Msg, ''), iff(strlen(e6Msg) > 0, e6Msg, ''), iff(strlen(e5Msg) > 0, e5Msg, ''), iff(strlen(e4Msg) > 0, e4Msg, ''), iff(strlen(e3Msg) > 0, e3Msg, ''), iff(strlen(e2Msg) > 0, e2Msg, ''), iff(strlen(e1Msg) > 0, iff(strlen(e1Desc) > strlen(e1Msg), strcat(e1Msg, ' | ', e1Desc), e1Msg), ''))\r\n| extend deepExceptionMsg = extract('raised an exception:................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................', 0, progressJson)\r\n| extend deepestErrMsg = iff(strlen(mvExpandErrMsg) > 10, mvExpandErrMsg, deepExceptionMsg)\r\n| extend errorBasedStep = case(\r\n    deepestErrMsg has 'UpdateSecuredCore', 'Update Secured-core',\r\n    deepestErrMsg has 'CAU' or deepestErrMsg has 'Cluster-Aware', 'CAU Update',\r\n    deepestErrMsg has 'RotateSecrets' or deepestErrMsg has 'Rotate Secrets', 'Rotate Secrets',\r\n    deepestErrMsg has 'MocArb' or deepestErrMsg has 'CliExtensions', 'Update Arc Prerequisites',\r\n    deepestErrMsg has 'certificate rotation', 'Certificate Rotation',\r\n    '')\r\n| extend deepestErrDepth = case(strlen(e8Msg) > 0, 8, strlen(e7Msg) > 0, 7, strlen(e6Msg) > 0, 6, strlen(e5Msg) > 0, 5, strlen(e4Msg) > 0, 4, strlen(e3Msg) > 0, 3, strlen(e2Msg) > 0, 2, strlen(e1Msg) > 0, 1, e8Status == 'Error', 8, e7Status == 'Error', 7, e6Status == 'Error', 6, e5Status == 'Error', 5, e4Status == 'Error', 4, e3Status == 'Error', 3, e2Status == 'Error', 2, e1Status == 'Error', 1, e8Status == 'Failed', 8, e7Status == 'Failed', 7, e6Status == 'Failed', 6, e5Status == 'Failed', 5, e4Status == 'Failed', 4, e3Status == 'Failed', 3, e2Status == 'Failed', 2, e1Status == 'Failed', 1, strlen(errorBasedStep) > 0, 1, 0)\r\n| extend deepestErrStep = case(deepestErrDepth == 8, e8Name, deepestErrDepth == 7, e7Name, deepestErrDepth == 6, e6Name, deepestErrDepth == 5, e5Name, deepestErrDepth == 4, e4Name, deepestErrDepth == 3, e3Name, deepestErrDepth == 2, e2Name, deepestErrDepth == 1, iff(isnotempty(errorBasedStep), errorBasedStep, e1Name), '')\r\n| summarize \r\n    arg_max(deepestErrDepth, deepestErrStep),\r\n    ErrorStepMessage = max(deepestErrMsg),\r\n    state = max(state),\r\n    timeStarted = max(timeStarted),\r\n    lastUpdatedTime = max(lastUpdatedTime),\r\n    durationFormatted = max(durationFormatted),\r\n    progressStatus = max(progressStatus),\r\n    progressDescription = max(progressDescription),\r\n    subscriptionId = max(subscriptionId),\r\n    resourceGroup = max(resourceGroup)\r\n    by hciClusterName, updateName, id\r\n| extend CurrentStep = iff(state == 'Failed', iff(isnotempty(deepestErrStep), deepestErrStep, progressDescription), '')\r\n| extend ErrorMessageClean = replace_string(replace_string(ErrorStepMessage, '\\\\r\\\\n', ' '), '\\\\n', ' ')\r\n| extend ErrorMessageDisplay = iff(strlen(ErrorMessageClean) > 0, ErrorMessageClean, iff(state == 'Failed' and progressStatus == 'Error', 'No ''Error Details'' available - click Update Name link to view in Azure portal', ''))\r\n| extend ErrorMessageTruncated = iff(strlen(ErrorMessageDisplay) > 3000, strcat(substring(ErrorMessageDisplay, 0, 3000), '... (truncated)'), ErrorMessageDisplay)\r\n| where '*' in ({UpdateHistoryStateFilter}) or state in ({UpdateHistoryStateFilter})\r\n| where '*' in ({UpdateHistoryStatusFilter}) or progressStatus in ({UpdateHistoryStatusFilter})\r\n| extend hasErrorDetails = iff(isnotempty(ErrorStepMessage), 1, 0)\r\n| extend sortKey = strcat(tostring(hasErrorDetails), '_', format_datetime(timeStarted, 'yyyy-MM-dd HH:mm:ss'))\r\n| extend clusterResourceId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup, '/providers/microsoft.azurestackhci/clusters/', hciClusterName)\r\n| extend encodedResourceId = replace_string(replace_string(clusterResourceId, '/', '%2F'), ' ', '%20')\r\n| extend PortalLink = strcat('https://portal.azure.com/#view/Microsoft_AzureStackHCI_PortalExtension/SingleInstanceHistoryDetails.ReactView/resourceId/', encodedResourceId, '/updateName~/null/updateRunName~/null/refresh~/false')\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updates/updateruns'\r\n    | extend _rState = tostring(properties.state)\r\n    | where _rState == 'Succeeded'\r\n    | extend _rCluster = tostring(split(id, '/')[8])\r\n    | extend _rStarted = todatetime(properties.timeStarted)\r\n    | summarize _latestSucceeded = max(_rStarted) by _rCluster\r\n) on $left.hciClusterName == $right._rCluster\r\n| where not(state == 'Failed' and isnotnull(_latestSucceeded) and timeStarted < _latestSucceeded)\r\n| extend _dedup = iff(state == 'Failed', strcat(hciClusterName, '|', updateName), id)\r\n| summarize arg_max(lastUpdatedTime, *) by _dedup\r\n| project-away _dedup\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == 'microsoft.azurestackhci/clusters/updatesummaries'\r\n    | extend _hcCluster = tostring(split(id, '/')[8])\r\n    | extend _hcr = array_reverse(properties.healthCheckResult)\r\n    | mv-expand _hc = _hcr\r\n    | where tostring(_hc.status) == 'Failed' and tostring(_hc.severity) == 'Critical'\r\n    | extend _hcLine = strcat('| **', tostring(_hc.severity), '** | ', tostring(_hc.displayName), ' | ', tostring(_hc.targetResourceName), ' | ', tostring(_hc.description), ' |')\r\n    | summarize _hcTable = strcat_array(make_list(_hcLine, 20), '\\n') by _hcCluster\r\n    | extend _hcMarkdown = strcat('\\n\\n## Failed Health Checks (from Update Summaries)\\n\\n| Severity | Check Name | Target | Description |\\n|:--|:--|:--|:--|\\n', _hcTable, '\\n\\n📚 [Troubleshoot Azure Local Updates](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2)')\r\n    | project _hcCluster, _hcMarkdown\r\n) on $left.hciClusterName == $right._hcCluster\r\n| extend ErrorMessageBlade = iff(strlen(ErrorMessageDisplay) > 0, strcat('## Error Details\\n\\n**Cluster:** ', hciClusterName, '\\n\\n**Update:** ', updateName, '\\n\\n**Current Step:** ', CurrentStep, '\\n\\n---\\n\\n', ErrorMessageDisplay, coalesce(_hcMarkdown, '')), '')\r\n| extend ClusterLink = strcat('https://portal.azure.com/#@/resource', clusterResourceId, '/overview')\r\n| project ClusterName = hciClusterName, ClusterLink, UpdateName = updateName, PortalLink, State = state, Status = progressStatus, CurrentStep, ErrorMessage = ErrorMessageTruncated, ErrorMessageFull = ErrorMessageDisplay, ErrorMessageBlade, Duration = durationFormatted, TimeStarted = timeStarted, LastUpdated = lastUpdatedTime\r\n| order by TimeStarted desc",
               "size": 0,
               "showAnalytics": true,
               "showRefreshButton": true,
               "showExportToExcel": true,
+              "noDataMessage": "No update runs match the current filters. Try widening the 'Time Range' parameter above, or change the 'Filter by Update State' / 'Filter by Status' selections. Note: unresolved Failed runs are surfaced regardless of time range; once a later Succeeded run exists for the same cluster, the older Failed run is hidden.",
+              "noDataMessageStyle": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [

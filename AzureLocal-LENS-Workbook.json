@@ -2967,6 +2967,135 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "---\r\n## 🔔 Performance Counter DCR Configuration\r\n💡 **Tip:** The six charts above require a **Data Collection Rule (DCR)** that collects specific Windows performance counters from your Azure Local nodes via the Azure Monitor Agent (AMA). Some counters (notably `Cluster CSV File System(*)` for CSV storage) **cannot be selected in the Azure Portal DCR editor** and must be added via ARM or CLI. Expand the section below for the required counter list and a ready-to-deploy ARM template."
+                  },
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowDCRSetupSection",
+                        "label": "Show DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\% Committed Bytes In Use` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-required-counters"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ⚠️ Why ARM / CLI is Required\r\n\r\nThe Azure Portal's DCR editor offers a fixed dropdown of performance objects: `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume`, which are the only counters that report real latency, IOPS and capacity data for Storage Spaces Direct (S2D) CSV volumes.\r\n\r\nWithout these CSV counters, the **Storage %, Storage Latency and Storage IOPS** charts will only reflect the OS / boot disk — not the cluster storage that hosts your workloads.\r\n\r\nThe ARM template below is the reliable, source-controllable way to add them.\r\n\r\n---",
+                          "style": "warning"
+                        },
+                        "name": "dcr-setup-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-capacity.json` and deploy it to the resource group that will host the DCR. Fill in your Log Analytics workspace resource ID when prompted (or via a parameters file).\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\% Committed Bytes In Use\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
+                        },
+                        "name": "dcr-setup-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over the machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes.\r\n\r\n---"
+                        },
+                        "name": "dcr-setup-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "dcr-portal-blade",
+                              "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
+                              "linkTarget": "Url",
+                              "linkLabel": "🧭 DCR Portal Blade",
+                              "style": "link"
+                            },
+                            {
+                              "id": "csv-perf-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
+                              "linkTarget": "Url",
+                              "linkLabel": "💾 Cluster Shared Volume Reference",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "dcr-setup-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "dcr-setup-group"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "---\r\n## 📈 AKS Node Performance (Azure Managed Prometheus)\r\nThe charts below use Prometheus metrics from Azure Monitor Workspace. Requires Azure Managed Prometheus enabled on AKS Arc clusters."
                   },
                   "name": "ov-prometheus-header"
@@ -3081,7 +3210,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by CPU Usage",
+                    "title": "📈 Top AKS Nodes by CPU Usage",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3124,7 +3253,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, (1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Memory Usage",
+                    "title": "📈 Top AKS Nodes by Memory Usage",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3167,7 +3296,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m])))\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)",
+                    "title": "📈 Top AKS Nodes by Disk I/O (bytes/sec)",
                     "noDataMessage": "No Prometheus data found.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,
@@ -3208,7 +3337,7 @@
                     "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m])))\",\"type\":\"query_range\"}",
                     "size": 0,
                     "aggregation": 3,
-                    "title": "📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)",
+                    "title": "📈 Top AKS Nodes by Network Throughput (bytes/sec)",
                     "noDataMessage": "No Prometheus data found.",
                     "timeContextFromParameter": "PrometheusTimeRange",
                     "queryType": 16,

@@ -8,9 +8,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.7)
+## Recent Changes (v0.8.7) — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66)
 
-### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide
+### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
 - **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
 - **Prerequisites** — summarises AMA extension, Log Analytics workspace, permissions and region-match requirements for a working Data Collection Rule (DCR)
 - **Required counters table** — maps each of the six charts to the performance counters it consumes, including the cluster-aware `\Cluster CSV File System(*)\...` counters used by the Storage %, Latency and IOPS charts
@@ -19,13 +19,44 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - **CLI deployment snippet** — two-step `az deployment group create` + `az monitor data-collection rule association create` commands, with a loop that attaches the DCR to every Arc-enabled machine in the cluster's resource group
 - **Documentation quick-links** — AMA performance counters, DCR ARM reference, DCR associations, the portal DCR blade, and Cluster Shared Volume reference
 
-### Capacity Tab — Overview Sub-tab — AKS Prometheus Chart Titles
+### Capacity Tab — Overview Sub-tab — AKS Prometheus Chart Titles ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
 - **Removed "5" from four AKS chart titles** to better reflect what users see in the visualisations. The underlying `topk(5, ...)` PromQL expressions are evaluated **per timestamp**, so the set of top nodes can change across the time window — resulting in more than 5 distinct series being rendered on the chart. Renamed:
   - `📈 Top 5 AKS Nodes by CPU Usage` → `📈 Top AKS Nodes by CPU Usage`
   - `📈 Top 5 AKS Nodes by Memory Usage` → `📈 Top AKS Nodes by Memory Usage`
   - `📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)` → `📈 Top AKS Nodes by Disk I/O (bytes/sec)`
   - `📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)` → `📈 Top AKS Nodes by Network Throughput (bytes/sec)`
 - Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
+
+### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab
+- **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing per-VM inventory and performance data for Hyper-V virtual machines running on Azure Local clusters
+- **Inventory panel (Azure Resource Graph)** — always-on, no DCR required:
+  - Four count tiles: Total VMs, Running, Stopped / Off, Paused / Other
+  - **VM Power State Distribution** pie chart (parses `properties.instanceView.powerState.code` from `microsoft.azurestackhci/virtualmachineinstances`)
+  - **VMs per Azure Local Instance** bar chart
+  - **Allocated Resources** tile showing total vCPU and total memory (GiB) across all *running* VMs
+  - **Hyper-V VM Inventory** table with clickable VM-name and cluster-name links, power-state icon, agent status, vCPUs, memory, OS SKU and resource group
+  - VM → cluster mapping follows the established workbook pattern: `microsoft.hybridcompute/machines (kind=HCI)` → `extensibilityresources / virtualmachineinstances` → `customlocations.hostResourceId` → `microsoft.azurestackhci/clusters`
+- **Performance panel (Log Analytics)** — six charts in the same style as the cluster Overview tab, but at the VM (or VHD) level:
+  - 📈 **Top VMs by CPU Usage (%)** — from `Hyper-V Hypervisor Virtual Processor\% Guest Run Time`
+  - 📈 **Top VMs by Memory Pressure** — from `Hyper-V Dynamic Memory VM\Current Pressure`
+  - 📈 **Top Virtual Disks by Storage Throughput (MB/s)** — sum of `Read Bytes/sec` + `Write Bytes/sec`
+  - 📈 **Top Virtual Disks by Storage IOPS** — sum of `Read Operations/Sec` + `Write Operations/Sec`
+  - 📈 **Top Virtual Disks by Storage Latency** — matches `Latency` / `Average Latency` / `Read Latency` / `Write Latency` (counter name varies by Windows Server version)
+  - 📈 **Top VMs by Network Throughput (MB/s)** — from `Hyper-V Virtual Network Adapter` Bytes/sec family
+  - Time range parameter offers 1 h → 30 d presets with auto-scaled binning (5 m / 30 m / 2 h / 1 d)
+  - Per-tab Log Analytics workspace parameter (`HyperVLogAnalyticsWorkspace`) so the Hyper-V tab's workspace selection is independent of the other Capacity sub-tabs
+- **Known limitations** — explicitly documented in a callout inside the tab:
+  - Storage counters are **per virtual disk (VHD), not per VM** — `Hyper-V Virtual Storage Device` uses the VHD path as its instance identifier, so storage charts display VHD filenames
+  - Network counter VM-name extraction is best-effort (text before the first `_` in `InstanceName`)
+  - Memory Pressure only reports for VMs using Dynamic Memory
+  - Latency counter names vary by Windows Server version
+- **Collapsible "🔔 Hyper-V Performance Counter DCR Configuration"** section at the bottom of the tab, matching the v0.8.7 Overview-tab pattern:
+  - Yes / No pill toggle (hidden by default)
+  - Prerequisites, required-counter table, portal-limitation callout
+  - Ready-to-deploy ARM template (`Microsoft.Insights/dataCollectionRules`, kind: Windows) covering all Hyper-V counters above; can be deployed alongside or merged into the Capacity DCR from the Overview tab
+  - `az deployment group create` + `az monitor data-collection rule association create` CLI snippet with a loop across Arc-enabled machines in the cluster resource group
+  - Docs quick-links (AMA performance counters, DCR ARM reference, DCR associations, Hyper-V performance tuning)
+- **Navigation text** on the Capacity tab updated from "three tabs" to "four tabs" and mentions the new Hyper-V VMs sub-tab
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

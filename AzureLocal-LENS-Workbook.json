@@ -2137,7 +2137,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into three tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🔍 Single cluster** to drill into a specific cluster, and its physical nodes for detailed capacity, storage, and workload insights."
+              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -2170,6 +2170,14 @@
                   "linkTarget": "parameter",
                   "linkLabel": "🔍 Single cluster",
                   "subTarget": "single",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-hyperv",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🖥️ Hyper-V VMs",
+                  "subTarget": "hyperv",
                   "style": "link"
                 }
               ]
@@ -5584,6 +5592,834 @@
               "value": "single"
             },
             "name": "cap-single-section"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "title": "Hyper-V VMs",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## 🖥️ Hyper-V VMs\r\nPer-VM inventory, power-state distribution and performance data for Hyper-V virtual machines running on your Azure Local clusters.\r\n\r\nInventory tiles and the VM list use Azure Resource Graph (always available). The six performance charts require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters — see the collapsible **DCR Setup** section at the bottom of this tab for the ready-to-deploy ARM template (the Hyper-V counters are not selectable in the Azure Portal DCR editor)."
+                  },
+                  "name": "text-hyperv-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📊 Inventory & Power State"
+                  },
+                  "name": "hyperv-inventory-divider"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| summarize Total = count()\r\n| project Label = 'Total VMs', Total",
+                    "size": 3,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "Total VMs",
+                    "visualization": "tiles",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "Label",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Total",
+                          "formatter": 12,
+                          "formatOptions": {
+                            "palette": "blue"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-tile-total-running",
+                  "customWidth": "25"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| summarize Running = countif(tolower(powerState) == 'running')\r\n| project Label = 'Running', Running",
+                    "size": 3,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "Running",
+                    "visualization": "tiles",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "Label",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Running",
+                          "formatter": 12,
+                          "formatOptions": {
+                            "palette": "green"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-tile-running",
+                  "customWidth": "25"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| summarize Stopped = countif(tolower(powerState) in ('stopped','off','deallocated'))\r\n| project Label = 'Stopped', Stopped",
+                    "size": 3,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "Stopped / Off",
+                    "visualization": "tiles",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "Label",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Stopped",
+                          "formatter": 12,
+                          "formatOptions": {
+                            "palette": "gray"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-tile-stopped",
+                  "customWidth": "25"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| summarize Other = countif(tolower(powerState) !in ('running','stopped','off','deallocated'))\r\n| project Label = 'Paused / Other', Other",
+                    "size": 3,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "Paused / Other",
+                    "visualization": "tiles",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "Label",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Other",
+                          "formatter": 12,
+                          "formatOptions": {
+                            "palette": "amber"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-tile-other",
+                  "customWidth": "25"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| extend DisplayState = case(\r\n    tolower(powerState) == 'running', 'Running',\r\n    tolower(powerState) in ('stopped','off','deallocated'), 'Stopped',\r\n    tolower(powerState) == 'paused', 'Paused',\r\n    tolower(powerState) == 'saved', 'Saved',\r\n    isempty(powerState) or tolower(powerState) == 'unknown', 'Unknown',\r\n    powerState)\r\n| summarize Count = count() by DisplayState\r\n| order by Count desc",
+                    "size": 0,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "⚡ VM Power State Distribution",
+                    "visualization": "piechart",
+                    "chartSettings": {
+                      "seriesLabelSettings": [
+                        {
+                          "seriesName": "Running",
+                          "color": "green"
+                        },
+                        {
+                          "seriesName": "Stopped",
+                          "color": "gray"
+                        },
+                        {
+                          "seriesName": "Paused",
+                          "color": "yellow"
+                        },
+                        {
+                          "seriesName": "Saved",
+                          "color": "blue"
+                        },
+                        {
+                          "seriesName": "Unknown",
+                          "color": "redBright"
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-powerstate-pie",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| summarize ['VM Count'] = count() by clusterName\r\n| order by ['VM Count'] desc",
+                    "size": 0,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "🏗️ VMs per Azure Local Instance",
+                    "visualization": "barchart",
+                    "chartSettings": {
+                      "xAxis": "clusterName",
+                      "yAxis": [
+                        "VM Count"
+                      ],
+                      "showLegend": false
+                    }
+                  },
+                  "name": "hyperv-vms-per-cluster",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| where tolower(powerState) == 'running'\r\n| summarize TotalvCPU = sum(vCPUs), TotalMemoryGiB = sum(memGiB)\r\n| extend Label = 'Total Allocated (Running VMs)'\r\n| project Label, ['Total vCPU'] = TotalvCPU, ['Total Memory (GiB)'] = TotalMemoryGiB",
+                    "size": 3,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "💼 Allocated Resources (vCPU / Memory)",
+                    "visualization": "table",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "Label",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Total vCPU",
+                          "formatter": 8,
+                          "formatOptions": {
+                            "palette": "blue"
+                          }
+                        },
+                        {
+                          "columnMatch": "Total Memory (GiB)",
+                          "formatter": 8,
+                          "formatOptions": {
+                            "palette": "purple"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-resource-totals",
+                  "customWidth": "33"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| project ['VM Name'] = vmName, vmLink, ['Cluster'] = clusterName, clusterLink, ['Power State'] = powerState, ['Agent Status'] = agentStatus, vCPUs, ['Memory (GiB)'] = memGiB, ['OS'] = osSku, ['Resource Group'] = resourceGroup\r\n| order by ['Cluster'] asc, ['VM Name'] asc",
+                    "size": 0,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "title": "📋 Hyper-V VM Inventory",
+                    "noDataMessage": "No Hyper-V VMs found. Ensure the selected subscriptions contain Azure Local clusters with VMs.",
+                    "visualization": "table",
+                    "gridSettings": {
+                      "rowLimit": 2000,
+                      "filter": true,
+                      "formatters": [
+                        {
+                          "columnMatch": "VM Name",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "",
+                            "linkIsContextBlade": false,
+                            "linkColumn": "vmLink"
+                          }
+                        },
+                        {
+                          "columnMatch": "vmLink",
+                          "formatter": 5
+                        },
+                        {
+                          "columnMatch": "Cluster",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "",
+                            "linkIsContextBlade": false,
+                            "linkColumn": "clusterLink"
+                          }
+                        },
+                        {
+                          "columnMatch": "clusterLink",
+                          "formatter": 5
+                        },
+                        {
+                          "columnMatch": "Power State",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "icons",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "running",
+                                "representation": "success",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "paused",
+                                "representation": "warning",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "saved",
+                                "representation": "info",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "gray",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "name": "hyperv-vm-list"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 📈 Hyper-V VM Performance (Log Analytics)"
+                  },
+                  "name": "hyperv-perf-divider"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "parameters": [
+                      {
+                        "id": "hyperv-la-workspace",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "HyperVLogAnalyticsWorkspace",
+                        "label": "Log Analytics Workspace",
+                        "type": 2,
+                        "description": "Select the Log Analytics workspace(s) that receive Hyper-V performance counters from your Azure Local nodes.",
+                        "isRequired": true,
+                        "multiSelect": true,
+                        "quote": "'",
+                        "delimiter": ",",
+                        "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                        "crossComponentResources": [
+                          "{Subscriptions}"
+                        ],
+                        "typeSettings": {
+                          "additionalResourceOptions": [
+                            "value::all"
+                          ],
+                          "includeAll": true,
+                          "showDefault": false
+                        },
+                        "defaultValue": "value::all",
+                        "value": [
+                          "value::all"
+                        ],
+                        "queryType": 1,
+                        "resourceType": "microsoft.resourcegraph/resources"
+                      },
+                      {
+                        "id": "hyperv-time-range",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "HyperVTrendsTimeRange",
+                        "label": "Historic Time Range",
+                        "type": 4,
+                        "description": "Time range for the Top VM / VHD performance charts below.",
+                        "isRequired": true,
+                        "typeSettings": {
+                          "selectableValues": [
+                            {
+                              "durationMs": 3600000
+                            },
+                            {
+                              "durationMs": 14400000
+                            },
+                            {
+                              "durationMs": 43200000
+                            },
+                            {
+                              "durationMs": 86400000
+                            },
+                            {
+                              "durationMs": 259200000
+                            },
+                            {
+                              "durationMs": 604800000
+                            },
+                            {
+                              "durationMs": 1209600000
+                            },
+                            {
+                              "durationMs": 2592000000
+                            }
+                          ],
+                          "allowCustom": true
+                        },
+                        "value": {
+                          "durationMs": 259200000
+                        }
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources"
+                  },
+                  "name": "hyperv-perf-params"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** The six charts below read from the `Perf` table and require Hyper-V performance counters to be collected via AMA + DCR. If you see \"No data\", expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the bottom of this tab for a ready-to-deploy ARM template. Storage charts are shown **per virtual disk (VHD)** — see the limitations note beneath the charts.",
+                    "style": "upsell"
+                  },
+                  "name": "hyperv-perf-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Avg CPU %\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by CPU Usage (%)",
+                    "noDataMessage": "No Hyper-V CPU data. Ensure the Hyper-V Hypervisor Virtual Processor performance counter is collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg CPU %"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-cpu",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = InstanceName\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Memory Pressure\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Memory Pressure",
+                    "noDataMessage": "No Hyper-V memory pressure data. Ensure the Hyper-V Dynamic Memory VM performance counter is collected by your DCR. VMs not using Dynamic Memory will not report this counter.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Memory Pressure"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-mempressure",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Bytes/sec\", \"Write Bytes/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vhdName\r\n| project TimeGenerated, vhdName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vhdName\r\n| top 5 by AvgMBps desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Throughput (MB/s)",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device data. Ensure the Hyper-V Virtual Storage Device performance counters are collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-throughput",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Operations/Sec\", \"Write Operations/Sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize Iops = sum(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgIops = avg(Iops) by vhdName\r\n| top 5 by AvgIops desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"IOPS\"] = round(avg(Iops), 0) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage IOPS",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device IOPS data. Ensure Read/Write Operations/Sec counters are collected.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "IOPS"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 0
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-iops",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Latency\", \"Average Latency\", \"Read Latency\", \"Write Latency\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.vhdx?)', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize LatencyMs = avg(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgLatency = avg(LatencyMs) by vhdName\r\n| top 5 by AvgLatency desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Avg Latency\"] = round(avg(LatencyMs), 3) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Latency",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device latency data. Latency counter names vary by Windows Server version — check which counter is available on your nodes (Latency / Average Latency / Read Latency / Write Latency).",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg Latency"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 3
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-storage-latency",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Network Adapter\" and CounterName in (\"Bytes/sec\", \"Bytes Sent/sec\", \"Bytes Received/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vmName = coalesce(extract(@'^(.+?)_', 1, InstanceName), InstanceName)\r\n| where isnotempty(vmName) and vmName != \"_Total\"\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vmName\r\n| project TimeGenerated, vmName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vmName\r\n| top 5 by AvgMBps desc\r\n| project vmName;\r\nperfData\r\n| lookup kind=inner top5 on vmName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vmName\r\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{HyperVLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Network Throughput (MB/s)",
+                    "noDataMessage": "No Hyper-V Virtual Network Adapter data. Ensure Bytes/sec counters are collected by your DCR.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vmName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "name": "hyperv-chart-network",
+                  "customWidth": "50",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "⚠️ **Known Limitations:**\r\n- **Storage counters report per virtual disk (VHD), not per VM.** The `Hyper-V Virtual Storage Device` performance object uses the VHD path as its instance identifier; there is no reliable per-VM aggregation available in Log Analytics without cross-referencing ARG. Top Virtual Disks charts show the VHD filename as the series name.\r\n- **Network counter VM-name extraction is best-effort.** `Hyper-V Virtual Network Adapter` instance names vary by Windows version; the chart extracts the text before the first `_`, which may be inaccurate for VMs whose names contain underscores.\r\n- **Memory Pressure only reports for VMs with Dynamic Memory enabled.** VMs with static memory assignments will not appear in the Memory Pressure chart.\r\n- **Latency counter names vary by Windows Server version.** The latency chart matches `Latency`, `Average Latency`, `Read Latency` and `Write Latency`; if your nodes expose a different counter, the chart will be empty until the DCR is updated.",
+                    "style": "warning"
+                  },
+                  "name": "hyperv-limitations-note"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters are **not selectable in the Azure Portal DCR editor** and must be added via ARM or CLI using custom counter specifiers. Expand the section below for the ready-to-deploy ARM template."
+                  },
+                  "name": "text-hyperv-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "hyperv-dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowHyperVDCRSetupSection",
+                        "label": "Show Hyper-V DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "hyperv-dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-counters-table"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ⚠️ Why ARM / CLI is Required\r\n\r\nThe Azure Portal's DCR editor only exposes a fixed set of performance objects (`Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`). **Hyper-V objects are not listed** and cannot be selected from the dropdown. Typing them as \"Custom counter specifiers\" in the portal is possible but brittle (object names contain hyphens and spaces, and the portal sometimes fails to validate them against the target machine).\r\n\r\nThe ARM template below is the reliable, source-controllable way to deploy the full Hyper-V counter set.",
+                          "style": "warning"
+                        },
+                        "name": "hyperv-dcr-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-hyperv.json` and deploy it to the resource group that will host the DCR. This can be deployed **alongside** the Capacity DCR from the Overview tab — both DCRs can be associated with the same Arc-enabled machines, or combined into a single DCR if you prefer.\r\n\r\n```json\r\n{\r\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\r\n  \"contentVersion\": \"1.0.0.0\",\r\n  \"parameters\": {\r\n    \"dcrName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"dcr-azurelocal-hyperv-perf\",\r\n      \"metadata\": {\r\n        \"description\": \"Name of the Hyper-V Data Collection Rule.\"\r\n      }\r\n    },\r\n    \"location\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"[resourceGroup().location]\",\r\n      \"metadata\": {\r\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\r\n      }\r\n    },\r\n    \"workspaceResourceId\": {\r\n      \"type\": \"string\",\r\n      \"metadata\": {\r\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook's Hyper-V VMs tab.\"\r\n      }\r\n    }\r\n  },\r\n  \"resources\": [\r\n    {\r\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\r\n      \"apiVersion\": \"2022-06-01\",\r\n      \"name\": \"[parameters('dcrName')]\",\r\n      \"location\": \"[parameters('location')]\",\r\n      \"kind\": \"Windows\",\r\n      \"properties\": {\r\n        \"dataSources\": {\r\n          \"performanceCounters\": [\r\n            {\r\n              \"name\": \"azureLocalHyperVCounters\",\r\n              \"streams\": [\r\n                \"Microsoft-Perf\"\r\n              ],\r\n              \"samplingFrequencyInSeconds\": 60,\r\n              \"counterSpecifiers\": [\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"destinations\": {\r\n          \"logAnalytics\": [\r\n            {\r\n              \"name\": \"laDestination\",\r\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\r\n            }\r\n          ]\r\n        },\r\n        \"dataFlows\": [\r\n          {\r\n            \"streams\": [\r\n              \"Microsoft-Perf\"\r\n            ],\r\n            \"destinations\": [\r\n              \"laDestination\"\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  ],\r\n  \"outputs\": {\r\n    \"dcrResourceId\": {\r\n      \"type\": \"string\",\r\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\r\n    }\r\n  }\r\n}\r\n```"
+                        },
+                        "name": "hyperv-dcr-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-hyperv.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-hyperv --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-hyperv-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. If the **Top Virtual Disks by Storage Latency** chart is still empty, check which latency counter your Windows Server version exposes (`Latency`, `Read Latency` or `Write Latency`) and adjust the counter specifier — the KQL query matches all four variants.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "hyperv-dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
+                              "linkTarget": "Url",
+                              "linkLabel": "🖥️ Hyper-V Performance Tuning",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "hyperv-dcr-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowHyperVDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "hyperv-dcr-setup-group"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "CapacitySection",
+              "comparison": "isEqualTo",
+              "value": "hyperv"
+            },
+            "name": "cap-hyperv-section"
           }
         ]
       },

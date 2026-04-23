@@ -35,7 +35,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **VM Power State Distribution** pie chart (parses `properties.instanceView.powerState.code` from `microsoft.azurestackhci/virtualmachineinstances`)
   - **VMs per Azure Local Instance** bar chart
   - **Allocated Resources** tile showing total vCPU and total memory (GiB) across all *running* VMs
-  - **Hyper-V VM Inventory** table with clickable VM-name and cluster-name links, power-state icon, agent status, vCPUs, memory, OS SKU and resource group
+  - **Hyper-V VM Inventory** table with clickable VM-name and cluster-name links, agent status, vCPUs, memory, OS SKU and resource group
   - VM → cluster mapping follows the established workbook pattern: `microsoft.hybridcompute/machines (kind=HCI)` → `extensibilityresources / virtualmachineinstances` → `customlocations.hostResourceId` → `microsoft.azurestackhci/clusters`
 - **Performance panel (Log Analytics)** — six charts in the same style as the cluster Overview tab, but at the VM (or VHD) level:
   - 📈 **Top VMs by CPU Usage (%)** — from `Hyper-V Hypervisor Virtual Processor\% Guest Run Time`

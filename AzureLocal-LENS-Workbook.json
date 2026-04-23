@@ -5850,7 +5850,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| project ['VM Name'] = vmName, vmLink, ['Cluster'] = clusterName, clusterLink, ['Power State'] = powerState, ['Agent Status'] = agentStatus, vCPUs, ['Memory (GiB)'] = memGiB, ['OS'] = osSku, ['Resource Group'] = resourceGroup\r\n| order by ['Cluster'] asc, ['VM Name'] asc",
+                    "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend machineId = tolower(id)\r\n| extend vmName = name\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentStatus = tostring(properties.status)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend machineId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")))\r\n    | extend powerStateRaw = tostring(properties.instanceView.powerState.code)\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project machineId, powerStateRaw, provisioningState, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, hciClusterRG = tolower(resourceGroup), clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend powerState = iff(isempty(powerStateRaw), 'Unknown', tostring(split(powerStateRaw, '/')[1]))\r\n| extend powerState = iff(isempty(powerState), powerStateRaw, powerState)\r\n| project ['VM Name'] = vmName, vmLink, ['Cluster'] = clusterName, clusterLink, ['Agent Status'] = agentStatus, vCPUs, ['Memory (GiB)'] = memGiB, ['OS'] = osSku, ['Resource Group'] = resourceGroup\r\n| order by ['Cluster'] asc, ['VM Name'] asc",
                     "size": 0,
                     "queryType": 1,
                     "resourceType": "microsoft.resourcegraph/resources",
@@ -5891,39 +5891,6 @@
                         {
                           "columnMatch": "clusterLink",
                           "formatter": 5
-                        },
-                        {
-                          "columnMatch": "Power State",
-                          "formatter": 18,
-                          "formatOptions": {
-                            "thresholdsOptions": "icons",
-                            "thresholdsGrid": [
-                              {
-                                "operator": "==",
-                                "thresholdValue": "running",
-                                "representation": "success",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "==",
-                                "thresholdValue": "paused",
-                                "representation": "warning",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "==",
-                                "thresholdValue": "saved",
-                                "representation": "info",
-                                "text": "{0}{1}"
-                              },
-                              {
-                                "operator": "Default",
-                                "thresholdValue": null,
-                                "representation": "gray",
-                                "text": "{0}{1}"
-                              }
-                            ]
-                          }
                         }
                       ]
                     }

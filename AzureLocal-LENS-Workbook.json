@@ -5598,7 +5598,6 @@
             "content": {
               "version": "NotebookGroup/1.0",
               "groupType": "editable",
-              "title": "Hyper-V VMs",
               "items": [
                 {
                   "type": 1,
@@ -5606,6 +5605,128 @@
                     "json": "## 🖥️ Hyper-V VMs\r\nPerformance data for Hyper-V virtual machines running on your Azure Local clusters, sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the bottom of this tab for a ready-to-deploy ARM template (the Hyper-V counters are not selectable in the Azure Portal DCR editor)."
                   },
                   "name": "text-hyperv-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters are **not selectable in the Azure Portal DCR editor** and must be added via ARM or CLI using custom counter specifiers. Expand the section below for the ready-to-deploy ARM template."
+                  },
+                  "name": "text-hyperv-dcr-setup-header"
+                },
+                {
+                  "type": 9,
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "parameters": [
+                      {
+                        "id": "hyperv-dcr-setup-toggle",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "ShowHyperVDCRSetupSection",
+                        "label": "Show Hyper-V DCR Setup Guide",
+                        "type": 10,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                        "value": "no"
+                      }
+                    ],
+                    "style": "pills",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  },
+                  "name": "hyperv-dcr-setup-toggle-param"
+                },
+                {
+                  "type": 12,
+                  "content": {
+                    "version": "NotebookGroup/1.0",
+                    "groupType": "editable",
+                    "items": [
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-prereqs"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-counters-table"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### ⚠️ Why ARM / CLI is Required\r\n\r\nThe Azure Portal's DCR editor only exposes a fixed set of performance objects (`Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`). **Hyper-V objects are not listed** and cannot be selected from the dropdown. Typing them as \"Custom counter specifiers\" in the portal is possible but brittle (object names contain hyphens and spaces, and the portal sometimes fails to validate them against the target machine).\r\n\r\nThe ARM template below is the reliable, source-controllable way to deploy the full Hyper-V counter set.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (including the Capacity DCR counters from the Overview tab) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (the template's default `dcr-azurelocal-hyperv-perf` is distinct from the Capacity DCR) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the Hyper-V counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.",
+                          "style": "warning"
+                        },
+                        "name": "hyperv-dcr-portal-limitation"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-hyperv.json` and deploy it to the resource group that will host the DCR. This can be deployed **alongside** the Capacity DCR from the Overview tab — both DCRs can be associated with the same Arc-enabled machines, or combined into a single DCR if you prefer.\r\n\r\n```json\r\n{\r\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\r\n  \"contentVersion\": \"1.0.0.0\",\r\n  \"parameters\": {\r\n    \"dcrName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"dcr-azurelocal-hyperv-perf\",\r\n      \"metadata\": {\r\n        \"description\": \"Name of the Hyper-V Data Collection Rule.\"\r\n      }\r\n    },\r\n    \"location\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"[resourceGroup().location]\",\r\n      \"metadata\": {\r\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\r\n      }\r\n    },\r\n    \"workspaceResourceId\": {\r\n      \"type\": \"string\",\r\n      \"metadata\": {\r\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook's Hyper-V VMs tab.\"\r\n      }\r\n    }\r\n  },\r\n  \"resources\": [\r\n    {\r\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\r\n      \"apiVersion\": \"2022-06-01\",\r\n      \"name\": \"[parameters('dcrName')]\",\r\n      \"location\": \"[parameters('location')]\",\r\n      \"kind\": \"Windows\",\r\n      \"properties\": {\r\n        \"dataSources\": {\r\n          \"performanceCounters\": [\r\n            {\r\n              \"name\": \"azureLocalHyperVCounters\",\r\n              \"streams\": [\r\n                \"Microsoft-Perf\"\r\n              ],\r\n              \"samplingFrequencyInSeconds\": 60,\r\n              \"counterSpecifiers\": [\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"destinations\": {\r\n          \"logAnalytics\": [\r\n            {\r\n              \"name\": \"laDestination\",\r\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\r\n            }\r\n          ]\r\n        },\r\n        \"dataFlows\": [\r\n          {\r\n            \"streams\": [\r\n              \"Microsoft-Perf\"\r\n            ],\r\n            \"destinations\": [\r\n              \"laDestination\"\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  ],\r\n  \"outputs\": {\r\n    \"dcrResourceId\": {\r\n      \"type\": \"string\",\r\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\r\n    }\r\n  }\r\n}\r\n```"
+                        },
+                        "name": "hyperv-dcr-arm-template"
+                      },
+                      {
+                        "type": 1,
+                        "content": {
+                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-hyperv.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-hyperv --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-hyperv-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. If the **Top Virtual Disks by Storage Latency** chart is still empty, check which latency counter your Windows Server version exposes (`Latency`, `Read Latency` or `Write Latency`) and adjust the counter specifier — the KQL query matches all four variants.\r\n\r\n---"
+                        },
+                        "name": "hyperv-dcr-deploy-steps"
+                      },
+                      {
+                        "type": 11,
+                        "content": {
+                          "version": "LinkItem/1.0",
+                          "style": "nav",
+                          "links": [
+                            {
+                              "id": "hyperv-dcr-ama-perf-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                              "linkTarget": "Url",
+                              "linkLabel": "📚 AMA Performance Counters",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-arm-reference",
+                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                              "linkTarget": "Url",
+                              "linkLabel": "📘 DCR ARM Reference",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-dcr-association-docs",
+                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                              "linkTarget": "Url",
+                              "linkLabel": "🔗 DCR Associations",
+                              "style": "link"
+                            },
+                            {
+                              "id": "hyperv-counters-docs",
+                              "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
+                              "linkTarget": "Url",
+                              "linkLabel": "🖥️ Hyper-V Performance Tuning",
+                              "style": "link"
+                            }
+                          ]
+                        },
+                        "name": "hyperv-dcr-links"
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ShowHyperVDCRSetupSection",
+                    "comparison": "isEqualTo",
+                    "value": "yes"
+                  },
+                  "name": "hyperv-dcr-setup-group"
                 },
                 {
                   "type": 9,
@@ -5703,7 +5824,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\n| where TimeGenerated > ago({HyperVTrendsTimeRange})\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\n| where CounterName == \"% Guest Run Time\"\n| extend VMName = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -5736,7 +5857,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\n| where TimeGenerated > ago({HyperVTrendsTimeRange})\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\n| where CounterName == \"% Guest Run Time\"\n| extend VMName = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -5769,7 +5890,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\n| where TimeGenerated > ago({HyperVTrendsTimeRange})\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\n| where CounterName == \"% Guest Run Time\"\n| extend VMName = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -5802,7 +5923,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\n| where TimeGenerated > ago({HyperVTrendsTimeRange})\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\n| where CounterName == \"% Guest Run Time\"\n| extend VMName = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize ['VM Count'] = dcount(VMName) by Computer\r\n| order by ['VM Count'] desc",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize ['VM Count'] = dcount(VMName) by Computer\r\n| order by ['VM Count'] desc",
                     "size": 0,
                     "timeContext": {
                       "durationMs": 0
@@ -5829,7 +5950,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\n| where TimeGenerated > ago({HyperVTrendsTimeRange})\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\n| where CounterName == \"% Guest Run Time\"\n| extend VMName = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(VMName)\r\n| summarize ['Last Seen'] = max(TimeGenerated), ['Samples'] = count() by ['VM Name'] = VMName, ['Host'] = Computer\r\n| order by ['VM Name'] asc, ['Host'] asc",
+                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize ['Last Seen'] = max(TimeGenerated), ['Samples'] = count() by ['VM Name'] = VMName, ['Host'] = Computer\r\n| order by ['VM Name'] asc, ['Host'] asc",
                     "size": 0,
                     "timeContext": {
                       "durationMs": 0
@@ -6137,128 +6258,6 @@
                     "style": "warning"
                   },
                   "name": "hyperv-limitations-note"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters are **not selectable in the Azure Portal DCR editor** and must be added via ARM or CLI using custom counter specifiers. Expand the section below for the ready-to-deploy ARM template."
-                  },
-                  "name": "text-hyperv-dcr-setup-header"
-                },
-                {
-                  "type": 9,
-                  "content": {
-                    "version": "KqlParameterItem/1.0",
-                    "parameters": [
-                      {
-                        "id": "hyperv-dcr-setup-toggle",
-                        "version": "KqlParameterItem/1.0",
-                        "name": "ShowHyperVDCRSetupSection",
-                        "label": "Show Hyper-V DCR Setup Guide",
-                        "type": 10,
-                        "isRequired": true,
-                        "typeSettings": {
-                          "additionalResourceOptions": [],
-                          "showDefault": false
-                        },
-                        "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
-                        "value": "no"
-                      }
-                    ],
-                    "style": "pills",
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces"
-                  },
-                  "name": "hyperv-dcr-setup-toggle-param"
-                },
-                {
-                  "type": 12,
-                  "content": {
-                    "version": "NotebookGroup/1.0",
-                    "groupType": "editable",
-                    "items": [
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-prereqs"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-counters-table"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### ⚠️ Why ARM / CLI is Required\r\n\r\nThe Azure Portal's DCR editor only exposes a fixed set of performance objects (`Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`). **Hyper-V objects are not listed** and cannot be selected from the dropdown. Typing them as \"Custom counter specifiers\" in the portal is possible but brittle (object names contain hyphens and spaces, and the portal sometimes fails to validate them against the target machine).\r\n\r\nThe ARM template below is the reliable, source-controllable way to deploy the full Hyper-V counter set.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (including the Capacity DCR counters from the Overview tab) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (the template's default `dcr-azurelocal-hyperv-perf` is distinct from the Capacity DCR) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the Hyper-V counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.",
-                          "style": "warning"
-                        },
-                        "name": "hyperv-dcr-portal-limitation"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-hyperv.json` and deploy it to the resource group that will host the DCR. This can be deployed **alongside** the Capacity DCR from the Overview tab — both DCRs can be associated with the same Arc-enabled machines, or combined into a single DCR if you prefer.\r\n\r\n```json\r\n{\r\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\r\n  \"contentVersion\": \"1.0.0.0\",\r\n  \"parameters\": {\r\n    \"dcrName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"dcr-azurelocal-hyperv-perf\",\r\n      \"metadata\": {\r\n        \"description\": \"Name of the Hyper-V Data Collection Rule.\"\r\n      }\r\n    },\r\n    \"location\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"[resourceGroup().location]\",\r\n      \"metadata\": {\r\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\r\n      }\r\n    },\r\n    \"workspaceResourceId\": {\r\n      \"type\": \"string\",\r\n      \"metadata\": {\r\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook's Hyper-V VMs tab.\"\r\n      }\r\n    }\r\n  },\r\n  \"resources\": [\r\n    {\r\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\r\n      \"apiVersion\": \"2022-06-01\",\r\n      \"name\": \"[parameters('dcrName')]\",\r\n      \"location\": \"[parameters('location')]\",\r\n      \"kind\": \"Windows\",\r\n      \"properties\": {\r\n        \"dataSources\": {\r\n          \"performanceCounters\": [\r\n            {\r\n              \"name\": \"azureLocalHyperVCounters\",\r\n              \"streams\": [\r\n                \"Microsoft-Perf\"\r\n              ],\r\n              \"samplingFrequencyInSeconds\": 60,\r\n              \"counterSpecifiers\": [\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"destinations\": {\r\n          \"logAnalytics\": [\r\n            {\r\n              \"name\": \"laDestination\",\r\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\r\n            }\r\n          ]\r\n        },\r\n        \"dataFlows\": [\r\n          {\r\n            \"streams\": [\r\n              \"Microsoft-Perf\"\r\n            ],\r\n            \"destinations\": [\r\n              \"laDestination\"\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  ],\r\n  \"outputs\": {\r\n    \"dcrResourceId\": {\r\n      \"type\": \"string\",\r\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\r\n    }\r\n  }\r\n}\r\n```"
-                        },
-                        "name": "hyperv-dcr-arm-template"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-hyperv.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-hyperv --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-hyperv-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. If the **Top Virtual Disks by Storage Latency** chart is still empty, check which latency counter your Windows Server version exposes (`Latency`, `Read Latency` or `Write Latency`) and adjust the counter specifier — the KQL query matches all four variants.\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-deploy-steps"
-                      },
-                      {
-                        "type": 11,
-                        "content": {
-                          "version": "LinkItem/1.0",
-                          "style": "nav",
-                          "links": [
-                            {
-                              "id": "hyperv-dcr-ama-perf-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
-                              "linkTarget": "Url",
-                              "linkLabel": "📚 AMA Performance Counters",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-dcr-arm-reference",
-                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
-                              "linkTarget": "Url",
-                              "linkLabel": "📘 DCR ARM Reference",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-dcr-association-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
-                              "linkTarget": "Url",
-                              "linkLabel": "🔗 DCR Associations",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-counters-docs",
-                              "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
-                              "linkTarget": "Url",
-                              "linkLabel": "🖥️ Hyper-V Performance Tuning",
-                              "style": "link"
-                            }
-                          ]
-                        },
-                        "name": "hyperv-dcr-links"
-                      }
-                    ]
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "ShowHyperVDCRSetupSection",
-                    "comparison": "isEqualTo",
-                    "value": "yes"
-                  },
-                  "name": "hyperv-dcr-setup-group"
                 }
               ]
             },

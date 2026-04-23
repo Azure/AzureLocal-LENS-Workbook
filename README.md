@@ -8,7 +8,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.7) — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66)
+## Recent Changes (v0.8.7) — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66) | [Issue #67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67)
 
 ### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
 - **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
@@ -27,7 +27,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - `📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)` → `📈 Top AKS Nodes by Network Throughput (bytes/sec)`
 - Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
 
-### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab
+### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab ([#67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67))
 - **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing per-VM inventory and performance data for Hyper-V virtual machines running on Azure Local clusters
 - **Inventory panel (Azure Resource Graph)** — always-on, no DCR required:
   - Four count tiles: Total VMs, Running, Stopped / Off, Paused / Other

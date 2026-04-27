@@ -18,7 +18,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
   - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
 - **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host(s) (comma-list when a VM was seen on multiple hosts due to live migration) · Hosts seen · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · First Seen · Last Seen · CPU Samples (bar formatter for telemetry density)
-- `rowLimit: 3000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
+- `rowLimit: 5000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
 - Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and what `Hosts seen > 1` indicates
 
 ### Capacity Tab — Hyper-V VMs Sub-tab — Network Throughput Chart Filtered to Guest VMs

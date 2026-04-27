@@ -5942,8 +5942,11 @@
                         "name": "HyperVLogAnalyticsWorkspace",
                         "label": "Log Analytics Workspace",
                         "type": 2,
-                        "description": "Select the Log Analytics workspace that receives Hyper-V performance counters from your Azure Local nodes. Only one workspace can be queried at a time.",
+                        "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes.",
                         "isRequired": true,
+                        "multiSelect": true,
+                        "quote": "'",
+                        "delimiter": ",",
                         "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
                         "crossComponentResources": [
                           "{Subscriptions}"

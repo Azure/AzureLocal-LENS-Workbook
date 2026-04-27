@@ -63,7 +63,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - Region mismatch between DCR and destination Log Analytics workspace
 - The `AnyInstance` column in the diagnostic query is highlighted as useful for raising issues — if a Windows build emits an unexpected InstanceName format the dashboard's parsing logic (e.g. `split(InstanceName, ":")[0]` for CPU, the path-extraction regexes for Storage) may need updating
 
-### System Health Tab — Update Readiness Summary Banner: Dark-Mode Readability Fix (Issue [#69](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/69))
+### System Health Tab — Update Readiness Summary Banner: Dark-Mode Readability Fix (Fixes [#69](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/69))
 
 - **Reported by Jake-ThomasTech** — the *Update Readiness Summary by Health State* warning banner above the readiness table was unreadable in Azure Portal **dark mode**: the banner used a hard-coded `<div style="background-color: #fff3cd; ...">` (pale yellow) with no explicit text color, so the workbook's dark-mode foreground (near-white) was drawn on the pale-yellow background — contrast effectively zero
 - **Fix**: replaced the inline-styled HTML `<div>` with the workbook-native `"style": "warning"` markdown style on the `type: 1` content item. This style is theme-aware and renders correctly in both light and dark mode (matching every other warning banner produced by the Workbooks runtime)

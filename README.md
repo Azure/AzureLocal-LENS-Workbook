@@ -18,7 +18,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
   - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
 - **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host(s) (comma-list when a VM was seen on multiple hosts due to live migration) · Hosts seen · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · First Seen · Last Seen · CPU Samples (bar formatter for telemetry density)
-- `rowLimit: 1000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
+- `rowLimit: 2000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
 - Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and what `Hosts seen > 1` indicates
 
 ### Capacity Tab — Hyper-V VMs Sub-tab — Network Throughput Chart Filtered to Guest VMs
@@ -62,6 +62,12 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - Workload-specific counters (e.g. `Current Pressure` only emits for VMs running with Dynamic Memory enabled — static-memory VMs including most AKS-on-AzureLocal worker VMs will never appear)
   - Region mismatch between DCR and destination Log Analytics workspace
 - The `AnyInstance` column in the diagnostic query is highlighted as useful for raising issues — if a Windows build emits an unexpected InstanceName format the dashboard's parsing logic (e.g. `split(InstanceName, ":")[0]` for CPU, the path-extraction regexes for Storage) may need updating
+
+### Capacity Tab — Hyper-V VMs Sub-tab — Workspace Parameter Bug Fix
+
+- **Root cause**: The **Log Analytics Workspace** parameter at the top of the tab was a multi-select dropdown defaulting to `value::all`. When bound through `crossComponentResources: ["{HyperVLogAnalyticsWorkspace}"]`, Workbooks did not always expand the `value::all` literal token to actual workspace resource IDs at query-time. Result: every tile, the inventory table and the six performance charts on the tab returned `0` / no data, even with a workspace explicitly ticked in the dropdown — but the same KQL run directly on the workspace blade returned millions of samples
+- **Fix**: parameter is now a **required single-select** dropdown — `multiSelect`, `quote`, `delimiter`, `additionalResourceOptions: ["value::all"]`, `includeAll: true`, and the `value::all` default values have all been removed. PromQL behavior is consistent with the **AKS Node Performance** workspace dropdown fix shipped in v0.8.7
+- Description updated to read: *"Only one workspace can be queried at a time."*
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

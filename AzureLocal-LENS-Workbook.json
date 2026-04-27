@@ -6238,7 +6238,7 @@
                           }
                         }
                       ],
-                      "rowLimit": 1000,
+                      "rowLimit": 2000,
                       "filter": true,
                       "sortBy": [
                         {

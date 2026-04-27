@@ -6204,7 +6204,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Peak CPU %'] = round(max(VMcpu), 1), ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, Activity, ['Physical Host'], ['vCPUs (observed)'], ['Peak CPU %'], ['Avg CPU %'], ['First Seen'], ['Last Seen']\r\n| order by ['VM Name'] asc",
+                    "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Peak CPU %'] = round(max(VMcpu), 1), ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, Activity, ['Physical Host'], ['vCPUs (observed)'], ['Peak CPU %'], ['Avg CPU %'], ['First Seen'], ['Last Seen']\r\n| order by ['Peak CPU %'] desc nulls last",
                     "size": 0,
                     "showAnalytics": true,
                     "showExportToExcel": true,
@@ -6283,15 +6283,15 @@
                       "filter": true,
                       "sortBy": [
                         {
-                          "itemKey": "VM Name",
-                          "sortOrder": 1
+                          "itemKey": "Peak CPU %",
+                          "sortOrder": 2
                         }
                       ]
                     },
                     "sortBy": [
                       {
-                        "itemKey": "VM Name",
-                        "sortOrder": 1
+                        "itemKey": "Peak CPU %",
+                        "sortOrder": 2
                       }
                     ]
                   },

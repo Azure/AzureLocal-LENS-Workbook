@@ -6014,7 +6014,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
+                    "query": "let trendStart = todatetime('{HyperVTrendsTimeRange:start}');\r\nlet trendEnd = todatetime('{HyperVTrendsTimeRange:end}');\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -6049,7 +6049,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
+                    "query": "let trendStart = todatetime('{HyperVTrendsTimeRange:start}');\r\nlet trendEnd = todatetime('{HyperVTrendsTimeRange:end}');\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -6084,7 +6084,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\r\n| where TimeGenerated between ({HyperVTrendsTimeRange:start} .. {HyperVTrendsTimeRange:end})\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
+                    "query": "let trendStart = todatetime('{HyperVTrendsTimeRange:start}');\r\nlet trendEnd = todatetime('{HyperVTrendsTimeRange:end}');\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0

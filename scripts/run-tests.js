@@ -17,9 +17,12 @@ let totalCount = 0;
 const testResults = [];
 let currentSuite = null;
 
-const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+// Workbook parameter reference pattern: matches {ParamName} or {ParamName:format}; group 1 is the param name.
+// Source kept as a string so each call to getParamRefPattern() returns a FRESH RegExp instance —
+// /g RegExp objects carry mutable lastIndex state, so reusing one across multiple inputs is unsafe.
+const PARAM_REF_PATTERN_SOURCE = '\\{([A-Za-z_][A-Za-z0-9_]*)(?::[\\w]+)?\\}';
 function getParamRefPattern() {
-    return /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g;
+    return new RegExp(PARAM_REF_PATTERN_SOURCE, 'g');
 }
 const MAX_ALLOWED_DUPLICATE_NAMES = 5;
 const MIN_EXPECTED_ITEMS = 200;
@@ -204,14 +207,27 @@ function extractCharts(items) {
 const workbookPath = path.resolve(__dirname, '..', 'AzureLocal-LENS-Workbook.json');
 const readmePath = path.resolve(__dirname, '..', 'README.md');
 
-let workbook, workbookRaw, readme;
+let workbook, workbookRaw;
 try {
     workbookRaw = fs.readFileSync(workbookPath, 'utf8');
     workbook = JSON.parse(workbookRaw);
-    readme = fs.readFileSync(readmePath, 'utf8');
 } catch (e) {
-    console.error('Failed to load workbook or README:', e.message);
+    console.error('Failed to load workbook:', e.message);
     process.exit(1);
+}
+
+// README is loaded lazily — only the Version Consistency and README Structure Validation
+// suites need it, so defer the read until first access.
+let readmeCache = null;
+function getReadme() {
+    if (readmeCache !== null) return readmeCache;
+    try {
+        readmeCache = fs.readFileSync(readmePath, 'utf8');
+        return readmeCache;
+    } catch (e) {
+        console.error('Failed to load README:', e.message);
+        process.exit(1);
+    }
 }
 
 const allItems = collectAllItems(workbook.items || []);
@@ -319,6 +335,7 @@ testSuite('Version Consistency', () => {
         'Workbook JSON contains version banner', 'version found', jsonVersion || 'not found');
 
     // Extract version from README
+    const readme = getReadme();
     const readmeVersionMatch = readme.match(/## Latest Version: v([\d.]+)/);
     const readmeVersion = readmeVersionMatch ? readmeVersionMatch[1] : null;
     assert(readmeVersion !== null,
@@ -604,6 +621,7 @@ testSuite('File Size and Performance Checks', () => {
 
 // --- 14. README Structure Validation ---
 testSuite('README Structure Validation', () => {
+    const readme = getReadme();
     assert(readme.includes('# Azure Local LENS'),
         'README has main title', 'found', readme.includes('# Azure Local LENS') ? 'found' : 'not found');
 
@@ -628,6 +646,8 @@ testSuite('README Structure Validation', () => {
 
 // --- 15. Portal Link Integrity ---
 testSuite('Portal Link Integrity', () => {
+    // GUID pattern is only used here, so keep it local to this suite.
+    const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
     // Collect all portal links from queries
     const portalLinkPattern = /https?:\/\/portal\.azure\.com(?:[\/?"#\s')\]]|$)/;
     const portalLinkQueries = allQueries.filter(q =>
@@ -728,10 +748,10 @@ testSuite('KQL Query Robustness', () => {
     // Extract parameter references from queries
     // Matches workbook parameters in the form {ParamName} or {ParamName:format}; group 1 is the parameter name.
     const referencedParams = new Set();
-    const paramRefPattern = getParamRefPattern();
     allQueries.forEach(q => {
+        // Allocate a fresh /g regex per query so lastIndex never carries over between iterations.
+        const paramRefPattern = getParamRefPattern();
         let match;
-        paramRefPattern.lastIndex = 0;
         while ((match = paramRefPattern.exec(q.query)) !== null) {
             referencedParams.add(match[1]);
         }

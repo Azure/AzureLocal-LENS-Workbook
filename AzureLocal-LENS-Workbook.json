@@ -6272,11 +6272,19 @@
                         },
                         {
                           "columnMatch": "First Seen",
-                          "formatter": 6
+                          "formatter": 6,
+                          "dateFormat": {
+                            "showUtcTime": true,
+                            "formatName": "shortDateTimePattern"
+                          }
                         },
                         {
                           "columnMatch": "Last Seen",
-                          "formatter": 6
+                          "formatter": 6,
+                          "dateFormat": {
+                            "showUtcTime": true,
+                            "formatName": "shortDateTimePattern"
+                          }
                         }
                       ],
                       "rowLimit": 5000,
@@ -6300,7 +6308,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure**; this counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank.",
+                    "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure**; this counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen` / `Last Seen` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen)` which is also UTC).",
                     "style": "info"
                   },
                   "name": "hyperv-inv-help"

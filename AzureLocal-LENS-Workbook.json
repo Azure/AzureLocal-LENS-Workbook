@@ -6204,7 +6204,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nPerf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| where vmFilter == '' or VMName contains vmFilter\r\n| summarize\r\n    ['First Seen'] = min(TimeGenerated),\r\n    ['Last Seen'] = max(TimeGenerated),\r\n    ['CPU Samples'] = count(),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    HostsList = make_set(Computer)\r\n  by ['VM Name'] = VMName\r\n| extend ['Hosts seen'] = array_length(HostsList)\r\n| extend ['Physical Host(s)'] = strcat_array(HostsList, \", \")\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'], Activity, ['Physical Host(s)'], ['Hosts seen'], ['vCPUs (observed)'], ['First Seen'], ['Last Seen'], ['CPU Samples']\r\n| order by ['VM Name'] asc",
+                    "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nPerf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| where vmFilter == '' or VMName contains vmFilter\r\n| summarize\r\n    ['First Seen'] = min(TimeGenerated),\r\n    ['CPU Samples'] = count(),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by ['VM Name'] = VMName\r\n| project-rename ['Last Seen'] = TimeGenerated, ['Physical Host'] = Computer\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'], Activity, ['Physical Host'], ['vCPUs (observed)'], ['First Seen'], ['Last Seen'], ['CPU Samples']\r\n| order by ['VM Name'] asc",
                     "size": 0,
                     "showAnalytics": true,
                     "timeContext": {
@@ -6231,15 +6231,8 @@
                           "formatter": 1
                         },
                         {
-                          "columnMatch": "Physical Host(s)",
+                          "columnMatch": "Physical Host",
                           "formatter": 1
-                        },
-                        {
-                          "columnMatch": "Hosts seen",
-                          "formatter": 8,
-                          "formatOptions": {
-                            "palette": "orange"
-                          }
                         },
                         {
                           "columnMatch": "vCPUs (observed)",
@@ -6285,7 +6278,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Hosts seen > 1`** indicates the VM moved between hosts during the time window (live migration / failover). **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs.",
+                    "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs.",
                     "style": "info"
                   },
                   "name": "hyperv-inv-help"

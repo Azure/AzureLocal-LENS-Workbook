@@ -17,9 +17,9 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **VM Name (contains)** — free-text substring filter
   - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
   - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
-- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host(s) (comma-list when a VM was seen on multiple hosts due to live migration) · Hosts seen · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · First Seen · Last Seen · CPU Samples (bar formatter for telemetry density)
+- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host (the host the VM was last seen on within the window, via `arg_max(TimeGenerated, Computer)` — one row per VM) · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · First Seen · Last Seen · CPU Samples (bar formatter for telemetry density)
 - `rowLimit: 5000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
-- Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and what `Hosts seen > 1` indicates
+- Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and that **Physical Host** reflects the most recent host the VM emitted telemetry from in the window (a live-migrated VM appears once with its latest host)
 
 ### Capacity Tab — Hyper-V VMs Sub-tab — Network Throughput Chart Filtered to Guest VMs
 
@@ -62,6 +62,12 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - Workload-specific counters (e.g. `Current Pressure` only emits for VMs running with Dynamic Memory enabled — static-memory VMs including most AKS-on-AzureLocal worker VMs will never appear)
   - Region mismatch between DCR and destination Log Analytics workspace
 - The `AnyInstance` column in the diagnostic query is highlighted as useful for raising issues — if a Windows build emits an unexpected InstanceName format the dashboard's parsing logic (e.g. `split(InstanceName, ":")[0]` for CPU, the path-extraction regexes for Storage) may need updating
+
+### System Health Tab — Update Readiness Summary Banner: Dark-Mode Readability Fix (Issue [#69](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/69))
+
+- **Reported by Jake-ThomasTech** — the *Update Readiness Summary by Health State* warning banner above the readiness table was unreadable in Azure Portal **dark mode**: the banner used a hard-coded `<div style="background-color: #fff3cd; ...">` (pale yellow) with no explicit text color, so the workbook's dark-mode foreground (near-white) was drawn on the pale-yellow background — contrast effectively zero
+- **Fix**: replaced the inline-styled HTML `<div>` with the workbook-native `"style": "warning"` markdown style on the `type: 1` content item. This style is theme-aware and renders correctly in both light and dark mode (matching every other warning banner produced by the Workbooks runtime)
+- No content changes — same warning copy, same emoji, same emphasis on **Warning** / **Critical** clusters
 
 ### Capacity Tab — Hyper-V VMs Sub-tab — Workspace Parameter Bug Fix
 

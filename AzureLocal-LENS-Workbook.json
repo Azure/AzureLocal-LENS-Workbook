@@ -6021,6 +6021,14 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "> ℹ️ **Note — global filters do not apply on this tab:** The page-level **Resource Group** and **Cluster Tag Name / Value** filters at the top of the workbook scope ARG queries against `microsoft.azurestackhci/clusters`. This tab does **not** query ARG — every tile, chart and the inventory table read directly from the **`Perf`** table in the selected **Log Analytics Workspace(s)**, which has no concept of resource group or cluster tag. Use the **Log Analytics Workspace** picker (above) and the **Physical Host** filter (below the tiles) to scope this tab.",
+                    "style": "info"
+                  },
+                  "name": "hyperv-global-filters-note"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "### 📊 Active VMs (from Log Analytics)"
                   },
                   "name": "hyperv-inventory-divider"

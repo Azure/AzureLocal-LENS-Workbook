@@ -17,7 +17,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
   - **VM Name (contains)** — free-text substring filter
   - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
   - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
-- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host (the host the VM was last seen on within the window, via `arg_max(TimeGenerated, Computer)` — one row per VM) · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · First Seen · Last Seen · CPU Samples (bar formatter for telemetry density)
+- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host (the host the VM was last seen on within the window, via `arg_max(TimeGenerated, Computer)` — one row per VM) · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · **Peak CPU %** · **Avg CPU %** (both computed at the VM level by averaging across vCPUs at each 1-minute bin, then `max`/`avg` across the window — a 100% peak means *all vCPUs were saturated simultaneously*, not a single-vCPU spike) · First Seen · Last Seen
+- **Export to Excel** enabled on the inventory table (`showExportToExcel: true`) so customers can take the filtered view straight into a spreadsheet for further analysis
 - `rowLimit: 5000`, sorted by VM Name, with column-level filtering preserved on top of the KQL pre-filters
 - Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and that **Physical Host** reflects the most recent host the VM emitted telemetry from in the window (a live-migrated VM appears once with its latest host)
 

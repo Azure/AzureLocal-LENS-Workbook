@@ -85,96 +85,6 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
-### Updates Tab — Update Run History: New "Time Range" Filter
-- **New parameter** `UpdateHistoryTimeRange` (label **"Time Range"**, default **45 days**, selectable values 1d / 7d / 14d / 30d / 45d / 60d / 90d / 180d / 1y) sits above the **📜 Update Run History and Error Details** table so users no longer get a blank table on tenants where no update runs occurred in the previously hard-coded window
-- **Unresolved-failure bypass** — the time gate is `where todatetime(timeStarted) >= {UpdateHistoryTimeRange:start} or state == 'Failed'`, so old `Failed` runs always remain visible regardless of the Time Range selection. The downstream supersession join hides a Failed run only once a later `Succeeded` run exists for the same cluster + update
-- Section description updated to clarify the default `Update State = Failed` filter and the supersession behaviour
-
-### Updates Tab — Update Analytics: New "Clusters (Distinct)" Columns
-- **Three Update Analytics tables** now report distinct cluster counts (each cluster can have multiple update runs per update, so the existing "Total Runs" / "Updates" counts can over-state fleet impact):
-  - **Overall Update Duration – Analytical Statistics (Succeeded Updates)** — `Clusters (Distinct)` is the new first column
-  - **Update Duration Statistics by Solution Update** — `Clusters (Distinct)` inserted immediately after `Solution Update`
-  - **Updates – First Time Success Analysis** — `Clusters (Distinct)` inserted before the `Updates` column; the `Outcome` column was also renamed to **`Update Status`** for consistency with other tables on the tab
-- Values are emitted as strings so the grid left-aligns them as text labels rather than right-aligning them as numerics
-
-### Updates Tab — Update Compliance Redesign (Supported / Unsupported / Unknown)
-- **Supported / Unsupported tiles** rewritten to compare each cluster's `currentVersion` (from `microsoft.azurestackhci/clusters/updatesummaries`) against the **latest 6 Microsoft GA YYMMs** derived live from `microsoft.azurestackhci/clusters/updates` (publisher = Microsoft, state = HasPrerequisite/Ready/Installed). Avoids hard-coded version lists that go stale month-to-month
-- **Inline-subquery + leftouter-join pattern** — Azure Resource Graph's cross-component query mode rejects `let` statements, so the latest-6-YYMMs set is materialised as an inline subquery and joined to the cluster list
-- **New "Unknown version" tile** — yellow tile that surfaces clusters where `currentVersion` is missing or doesn't match the `SolutionXX.YYMM.XXXX.XXX` pattern, so Supported + Unsupported + Unknown reconciles to total clusters in scope (previously such clusters silently disappeared from both tiles)
-
-### Multi-cluster Sub-tab — Stale Sync Table: Days Since Last Sync
-- **`📡 Clusters Not Synced in 24+ Hours`** table now includes a **Days Since Last Sync** column (`datetime_diff('day', now(), lastSync)`)
-- Conditional formatting: ≥ 3 days → red, ≥ 2 days → yellow / warning, otherwise neutral — making severely stale clusters visually obvious without sorting
-
-### Capacity Tab — Overview Sub-tab — DCR Setup Section Repositioned
-- The **🔔 Performance Counter DCR Configuration** section (header, Yes/No toggle, collapsible group) now sits **above** the six Top-5 resource-usage charts (CPU / Memory / Storage % / Storage Latency / Storage IOPS / Network Throughput) — directly under the cluster capacity-overview table — instead of beneath the charts. Customers landing on the tab see the setup guidance in their initial viewport before scrolling through "No data" charts
-- Header tip text adjusted accordingly ("The six charts **below** require a DCR…")
-- Each of the six chart `noDataMessage` banners now end with "*— or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.*" so users hitting an empty chart get an inline pointer to the now-above setup section
-
-### Capacity Tab — AKS Node Performance: Single-select "Azure Monitor Workspace" Filter
-- The `AzureMonitorWorkspace` parameter under **📈 AKS Node Performance (Azure Managed Prometheus)** is now a **required single-select** dropdown (`multiSelect: false`, no `value::all`, no `includeAll`). PromQL queries are scoped to one Azure Monitor Workspace at a time — the previous multi-select / "All" option produced misleading results when multiple workspaces existed in scope
-- Description updated: "Only one workspace can be queried at a time."
-
-### Workbook-wide — `noDataMessage` Coverage
-- **130 visible KqlItems** that previously rendered an empty grid / chart now display a contextual info banner (`noDataMessageStyle: 4`) explaining what data was expected and the most likely cause (e.g. workspace not selected, AMA not deployed, no resources in scope). Helper / merge-only queries are excluded
-- A reusable script — `scripts/add-no-data-messages.js` — is included in the repo to keep coverage current as new tiles are added; it is idempotent (skips items that already have a `noDataMessage`) and preserves CRLF line endings
-
-### Capacity Tab — Hyper-V VMs Sub-tab — `noDataMessage` Typo Fix
-- Corrected "expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the **bottom** of this tab" wording in the Hyper-V VM List banner — replaced "below" with "above" so it correctly directs users to the section above the chart
-
-### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
-- **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
-- **Prerequisites** — summarises AMA extension, Log Analytics workspace, permissions and region-match requirements for a working Data Collection Rule (DCR)
-- **Required counters table** — maps each of the six charts to the performance counters it consumes, including the cluster-aware `\Cluster CSV File System(*)\...` counters used by the Storage %, Latency and IOPS charts
-- **Portal limitation callout** — explains why the Azure Portal's DCR editor cannot be used: its fixed dropdown only exposes `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process` and `System`. `Cluster CSV File System` / `Cluster Shared Volume` are not listed, so without the ARM template below the Storage charts only reflect OS / boot-disk data
-- **Ready-to-deploy ARM template** — embedded as a fenced `json` code block inside the workbook, defining a `Microsoft.Insights/dataCollectionRules` (kind: Windows) resource with all required counter specifiers at a 60-second sampling interval, a Log Analytics destination, and a `Microsoft-Perf` data flow. Users replace three placeholders (workspace resource ID, DCR name, region) and deploy
-- **IMPORTANT caveat on ARM deployment semantics** — the section now warns that redeploying the template against an existing DCR name will overwrite its entire `properties` block (counters, streams, destinations, data flows). Recommends deploying as a new DCR with a unique `dcrName` (associated alongside any existing DCRs — a machine can have multiple DCR associations) or, if merging, exporting the current DCR with `az monitor data-collection rule show` and combining counter specifiers before redeploying
-- **CLI deployment snippet** — two-step `az deployment group create` + `az monitor data-collection rule association create` commands, with a loop that attaches the DCR to every Arc-enabled machine in the cluster's resource group
-- **Documentation quick-links** — AMA performance counters, DCR ARM reference, DCR associations, the portal DCR blade, and Cluster Shared Volume reference
-
-### Capacity Tab — Overview Sub-tab — AKS Prometheus Chart Titles ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
-- **Removed "5" from four AKS chart titles** to better reflect what users see in the visualisations. The underlying `topk(5, ...)` PromQL expressions are evaluated **per timestamp**, so the set of top nodes can change across the time window — resulting in more than 5 distinct series being rendered on the chart. Renamed:
-  - `📈 Top 5 AKS Nodes by CPU Usage` → `📈 Top AKS Nodes by CPU Usage`
-  - `📈 Top 5 AKS Nodes by Memory Usage` → `📈 Top AKS Nodes by Memory Usage`
-  - `📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)` → `📈 Top AKS Nodes by Disk I/O (bytes/sec)`
-  - `📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)` → `📈 Top AKS Nodes by Network Throughput (bytes/sec)`
-- Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
-
-### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab ([#67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67))
-- **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing Hyper-V VM inventory and performance data sourced **entirely from Log Analytics** (no Azure Resource Graph dependency)
-- **Scope note** — this tab intentionally uses LA-only data so it covers **all hypervisor-visible VMs, including raw Hyper-V VMs that are not onboarded to Arc**. For Arc-enabled VM inventory (vCPU / memory / OS SKU / resource group / links to the Azure resource), the workbook's existing **Azure Local VMs** tab is the authoritative view — this tab deliberately does not duplicate that data
-- **Inventory panel (Log Analytics)** — populated from distinct VM names observed in `Perf` for `Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time` (InstanceName format `<VMName>:Hv VP <n>`):
-  - **Active VMs** tile (distinct VM names in the selected time range)
-  - **Reporting Hosts** tile (distinct `Computer` values)
-  - **VM ↔ Host Pairs** tile (distinct VM-on-host observations — covers VMs seen on multiple hosts during the window, e.g. after a Live Migration)
-  - **VMs per Host** bar chart
-  - **Hyper-V VM List (by Host)** table — VM name, host, last-seen timestamp and sample count, filterable
-- **Performance panel (Log Analytics)** — six charts at the VM (or VHD) level:
-  - 📈 **Top VMs by CPU Usage (%)** — from `Hyper-V Hypervisor Virtual Processor\% Guest Run Time`
-  - 📈 **Top VMs by Memory Pressure** — from `Hyper-V Dynamic Memory VM\Current Pressure`
-  - 📈 **Top Virtual Disks by Storage Throughput (MB/s)** — sum of `Read Bytes/sec` + `Write Bytes/sec`
-  - 📈 **Top Virtual Disks by Storage IOPS** — sum of `Read Operations/Sec` + `Write Operations/Sec`
-  - 📈 **Top Virtual Disks by Storage Latency** — matches `Latency` / `Average Latency` / `Read Latency` / `Write Latency` (counter name varies by Windows Server version)
-  - 📈 **Top VMs by Network Throughput (MB/s)** — from `Hyper-V Virtual Network Adapter` Bytes/sec family
-  - Time range parameter offers 1 h → 30 d presets with auto-scaled binning (5 m / 30 m / 2 h / 1 d)
-  - Per-tab Log Analytics workspace parameter (`HyperVLogAnalyticsWorkspace`) so the Hyper-V tab's workspace selection is independent of the other Capacity sub-tabs; the workspace + time-range selector sits above the inventory tiles so both inventory and perf charts respect the same scope
-- **Known limitations** — explicitly documented in a callout inside the tab:
-  - Inventory counts are drawn from perf-counter InstanceName and therefore only include VMs that were **powered on at some point in the selected time range** — a VM that has been off the entire window will not appear
-  - Storage counters are **per virtual disk (VHD), not per VM** — `Hyper-V Virtual Storage Device` uses the VHD path as its instance identifier, so storage charts display VHD filenames
-  - Network counter VM-name extraction is best-effort (text before the first `_` in `InstanceName`)
-  - Memory Pressure only reports for VMs using Dynamic Memory
-  - Latency counter names vary by Windows Server version
-- **Collapsible "🔔 Hyper-V Performance Counter DCR Configuration"** section at the bottom of the tab, matching the v0.8.7 Overview-tab pattern:
-  - Yes / No pill toggle (hidden by default)
-  - Prerequisites, required-counter table, portal-limitation callout
-  - Ready-to-deploy ARM template (`Microsoft.Insights/dataCollectionRules`, kind: Windows) covering all Hyper-V counters above; can be deployed alongside or merged into the Capacity DCR from the Overview tab
-  - **IMPORTANT caveat on ARM deployment semantics** — matches the Overview DCR section: redeploying against an existing DCR name overwrites its entire `properties` block. Recommends a unique `dcrName` so the Hyper-V DCR is associated alongside (not on top of) the Capacity DCR, or merging counter specifiers into an exported existing DCR definition before redeploying
-  - `az deployment group create` + `az monitor data-collection rule association create` CLI snippet with a loop across Arc-enabled machines in the cluster resource group
-  - Docs quick-links (AMA performance counters, DCR ARM reference, DCR associations, Hyper-V performance tuning)
-- **Navigation text** on the Capacity tab updated from "three tabs" to "four tabs" and mentions the new Hyper-V VMs sub-tab
-
-> See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
-
 ---
 
 ## How to Import the Workbook
@@ -520,6 +430,98 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.7 — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66) | [Issue #67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67)
+
+#### Updates Tab — Update Run History: New "Time Range" Filter
+- **New parameter** `UpdateHistoryTimeRange` (label **"Time Range"**, default **45 days**, selectable values 1d / 7d / 14d / 30d / 45d / 60d / 90d / 180d / 1y) sits above the **📜 Update Run History and Error Details** table so users no longer get a blank table on tenants where no update runs occurred in the previously hard-coded window
+- **Unresolved-failure bypass** — the time gate is `where todatetime(timeStarted) >= {UpdateHistoryTimeRange:start} or state == 'Failed'`, so old `Failed` runs always remain visible regardless of the Time Range selection. The downstream supersession join hides a Failed run only once a later `Succeeded` run exists for the same cluster + update
+- Section description updated to clarify the default `Update State = Failed` filter and the supersession behaviour
+
+#### Updates Tab — Update Analytics: New "Clusters (Distinct)" Columns
+- **Three Update Analytics tables** now report distinct cluster counts (each cluster can have multiple update runs per update, so the existing "Total Runs" / "Updates" counts can over-state fleet impact):
+  - **Overall Update Duration – Analytical Statistics (Succeeded Updates)** — `Clusters (Distinct)` is the new first column
+  - **Update Duration Statistics by Solution Update** — `Clusters (Distinct)` inserted immediately after `Solution Update`
+  - **Updates – First Time Success Analysis** — `Clusters (Distinct)` inserted before the `Updates` column; the `Outcome` column was also renamed to **`Update Status`** for consistency with other tables on the tab
+- Values are emitted as strings so the grid left-aligns them as text labels rather than right-aligning them as numerics
+
+#### Updates Tab — Update Compliance Redesign (Supported / Unsupported / Unknown)
+- **Supported / Unsupported tiles** rewritten to compare each cluster's `currentVersion` (from `microsoft.azurestackhci/clusters/updatesummaries`) against the **latest 6 Microsoft GA YYMMs** derived live from `microsoft.azurestackhci/clusters/updates` (publisher = Microsoft, state = HasPrerequisite/Ready/Installed). Avoids hard-coded version lists that go stale month-to-month
+- **Inline-subquery + leftouter-join pattern** — Azure Resource Graph's cross-component query mode rejects `let` statements, so the latest-6-YYMMs set is materialised as an inline subquery and joined to the cluster list
+- **New "Unknown version" tile** — yellow tile that surfaces clusters where `currentVersion` is missing or doesn't match the `SolutionXX.YYMM.XXXX.XXX` pattern, so Supported + Unsupported + Unknown reconciles to total clusters in scope (previously such clusters silently disappeared from both tiles)
+
+#### Multi-cluster Sub-tab — Stale Sync Table: Days Since Last Sync
+- **`📡 Clusters Not Synced in 24+ Hours`** table now includes a **Days Since Last Sync** column (`datetime_diff('day', now(), lastSync)`)
+- Conditional formatting: ≥ 3 days → red, ≥ 2 days → yellow / warning, otherwise neutral — making severely stale clusters visually obvious without sorting
+
+#### Capacity Tab — Overview Sub-tab — DCR Setup Section Repositioned
+- The **🔔 Performance Counter DCR Configuration** section (header, Yes/No toggle, collapsible group) now sits **above** the six Top-5 resource-usage charts (CPU / Memory / Storage % / Storage Latency / Storage IOPS / Network Throughput) — directly under the cluster capacity-overview table — instead of beneath the charts. Customers landing on the tab see the setup guidance in their initial viewport before scrolling through "No data" charts
+- Header tip text adjusted accordingly ("The six charts **below** require a DCR…")
+- Each of the six chart `noDataMessage` banners now end with "*— or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.*" so users hitting an empty chart get an inline pointer to the now-above setup section
+
+#### Capacity Tab — AKS Node Performance: Single-select "Azure Monitor Workspace" Filter
+- The `AzureMonitorWorkspace` parameter under **📈 AKS Node Performance (Azure Managed Prometheus)** is now a **required single-select** dropdown (`multiSelect: false`, no `value::all`, no `includeAll`). PromQL queries are scoped to one Azure Monitor Workspace at a time — the previous multi-select / "All" option produced misleading results when multiple workspaces existed in scope
+- Description updated: "Only one workspace can be queried at a time."
+
+#### Workbook-wide — `noDataMessage` Coverage
+- **130 visible KqlItems** that previously rendered an empty grid / chart now display a contextual info banner (`noDataMessageStyle: 4`) explaining what data was expected and the most likely cause (e.g. workspace not selected, AMA not deployed, no resources in scope). Helper / merge-only queries are excluded
+- A reusable script — `scripts/add-no-data-messages.js` — is included in the repo to keep coverage current as new tiles are added; it is idempotent (skips items that already have a `noDataMessage`) and preserves CRLF line endings
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — `noDataMessage` Typo Fix
+- Corrected "expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the **bottom** of this tab" wording in the Hyper-V VM List banner — replaced "below" with "above" so it correctly directs users to the section above the chart
+
+#### Capacity Tab — Overview Sub-tab — Performance Counter DCR Setup Guide ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
+- **New collapsible section** added directly below the six Log Analytics performance graphs (CPU, Memory, Storage %, Storage Latency, Storage IOPS, Network Throughput) titled **"🔔 Performance Counter DCR Configuration"**. Styled to match the existing ARB Alert Rules section with a Yes / No pill toggle (hidden by default)
+- **Prerequisites** — summarises AMA extension, Log Analytics workspace, permissions and region-match requirements for a working Data Collection Rule (DCR)
+- **Required counters table** — maps each of the six charts to the performance counters it consumes, including the cluster-aware `\Cluster CSV File System(*)\...` counters used by the Storage %, Latency and IOPS charts
+- **Portal limitation callout** — explains why the Azure Portal's DCR editor cannot be used: its fixed dropdown only exposes `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process` and `System`. `Cluster CSV File System` / `Cluster Shared Volume` are not listed, so without the ARM template below the Storage charts only reflect OS / boot-disk data
+- **Ready-to-deploy ARM template** — embedded as a fenced `json` code block inside the workbook, defining a `Microsoft.Insights/dataCollectionRules` (kind: Windows) resource with all required counter specifiers at a 60-second sampling interval, a Log Analytics destination, and a `Microsoft-Perf` data flow. Users replace three placeholders (workspace resource ID, DCR name, region) and deploy
+- **IMPORTANT caveat on ARM deployment semantics** — the section now warns that redeploying the template against an existing DCR name will overwrite its entire `properties` block (counters, streams, destinations, data flows). Recommends deploying as a new DCR with a unique `dcrName` (associated alongside any existing DCRs — a machine can have multiple DCR associations) or, if merging, exporting the current DCR with `az monitor data-collection rule show` and combining counter specifiers before redeploying
+- **CLI deployment snippet** — two-step `az deployment group create` + `az monitor data-collection rule association create` commands, with a loop that attaches the DCR to every Arc-enabled machine in the cluster's resource group
+- **Documentation quick-links** — AMA performance counters, DCR ARM reference, DCR associations, the portal DCR blade, and Cluster Shared Volume reference
+
+#### Capacity Tab — Overview Sub-tab — AKS Prometheus Chart Titles ([#66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66))
+- **Removed "5" from four AKS chart titles** to better reflect what users see in the visualisations. The underlying `topk(5, ...)` PromQL expressions are evaluated **per timestamp**, so the set of top nodes can change across the time window — resulting in more than 5 distinct series being rendered on the chart. Renamed:
+  - `📈 Top 5 AKS Nodes by CPU Usage` → `📈 Top AKS Nodes by CPU Usage`
+  - `📈 Top 5 AKS Nodes by Memory Usage` → `📈 Top AKS Nodes by Memory Usage`
+  - `📈 Top 5 AKS Nodes by Disk I/O (bytes/sec)` → `📈 Top AKS Nodes by Disk I/O (bytes/sec)`
+  - `📈 Top 5 AKS Nodes by Network Throughput (bytes/sec)` → `📈 Top AKS Nodes by Network Throughput (bytes/sec)`
+- Queries themselves remain unchanged (still `topk(5, ...)`) — only the user-facing title wording was adjusted
+
+#### Capacity Tab — New "🖥️ Hyper-V VMs" Sub-tab ([#67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67))
+- **New fourth sub-tab** added to the Capacity section (after 📋 Overview, 🌍 Multi-cluster and 🔍 Single cluster) providing Hyper-V VM inventory and performance data sourced **entirely from Log Analytics** (no Azure Resource Graph dependency)
+- **Scope note** — this tab intentionally uses LA-only data so it covers **all hypervisor-visible VMs, including raw Hyper-V VMs that are not onboarded to Arc**. For Arc-enabled VM inventory (vCPU / memory / OS SKU / resource group / links to the Azure resource), the workbook's existing **Azure Local VMs** tab is the authoritative view — this tab deliberately does not duplicate that data
+- **Inventory panel (Log Analytics)** — populated from distinct VM names observed in `Perf` for `Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time` (InstanceName format `<VMName>:Hv VP <n>`):
+  - **Active VMs** tile (distinct VM names in the selected time range)
+  - **Reporting Hosts** tile (distinct `Computer` values)
+  - **VM ↔ Host Pairs** tile (distinct VM-on-host observations — covers VMs seen on multiple hosts during the window, e.g. after a Live Migration)
+  - **VMs per Host** bar chart
+  - **Hyper-V VM List (by Host)** table — VM name, host, last-seen timestamp and sample count, filterable
+- **Performance panel (Log Analytics)** — six charts at the VM (or VHD) level:
+  - 📈 **Top VMs by CPU Usage (%)** — from `Hyper-V Hypervisor Virtual Processor\% Guest Run Time`
+  - 📈 **Top VMs by Memory Pressure** — from `Hyper-V Dynamic Memory VM\Current Pressure`
+  - 📈 **Top Virtual Disks by Storage Throughput (MB/s)** — sum of `Read Bytes/sec` + `Write Bytes/sec`
+  - 📈 **Top Virtual Disks by Storage IOPS** — sum of `Read Operations/Sec` + `Write Operations/Sec`
+  - 📈 **Top Virtual Disks by Storage Latency** — matches `Latency` / `Average Latency` / `Read Latency` / `Write Latency` (counter name varies by Windows Server version)
+  - 📈 **Top VMs by Network Throughput (MB/s)** — from `Hyper-V Virtual Network Adapter` Bytes/sec family
+  - Time range parameter offers 1 h → 30 d presets with auto-scaled binning (5 m / 30 m / 2 h / 1 d)
+  - Per-tab Log Analytics workspace parameter (`HyperVLogAnalyticsWorkspace`) so the Hyper-V tab's workspace selection is independent of the other Capacity sub-tabs; the workspace + time-range selector sits above the inventory tiles so both inventory and perf charts respect the same scope
+- **Known limitations** — explicitly documented in a callout inside the tab:
+  - Inventory counts are drawn from perf-counter InstanceName and therefore only include VMs that were **powered on at some point in the selected time range** — a VM that has been off the entire window will not appear
+  - Storage counters are **per virtual disk (VHD), not per VM** — `Hyper-V Virtual Storage Device` uses the VHD path as its instance identifier, so storage charts display VHD filenames
+  - Network counter VM-name extraction is best-effort (text before the first `_` in `InstanceName`)
+  - Memory Pressure only reports for VMs using Dynamic Memory
+  - Latency counter names vary by Windows Server version
+- **Collapsible "🔔 Hyper-V Performance Counter DCR Configuration"** section at the bottom of the tab, matching the v0.8.7 Overview-tab pattern:
+  - Yes / No pill toggle (hidden by default)
+  - Prerequisites, required-counter table, portal-limitation callout
+  - Ready-to-deploy ARM template (`Microsoft.Insights/dataCollectionRules`, kind: Windows) covering all Hyper-V counters above; can be deployed alongside or merged into the Capacity DCR from the Overview tab
+  - **IMPORTANT caveat on ARM deployment semantics** — matches the Overview DCR section: redeploying against an existing DCR name overwrites its entire `properties` block. Recommends a unique `dcrName` so the Hyper-V DCR is associated alongside (not on top of) the Capacity DCR, or merging counter specifiers into an exported existing DCR definition before redeploying
+  - `az deployment group create` + `az monitor data-collection rule association create` CLI snippet with a loop across Arc-enabled machines in the cluster resource group
+  - Docs quick-links (AMA performance counters, DCR ARM reference, DCR associations, Hyper-V performance tuning)
+- **Navigation text** on the Capacity tab updated from "three tabs" to "four tabs" and mentions the new Hyper-V VMs sub-tab
+
+
 
 ### v0.8.6 — Resolves: [Issue #59](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/59)
 

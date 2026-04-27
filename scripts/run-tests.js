@@ -17,13 +17,27 @@ let totalCount = 0;
 const testResults = [];
 let currentSuite = null;
 
+// Workbook item type constants (from Azure Workbooks schema)
+const ITEM_TYPE_MARKDOWN = 1;
+const ITEM_TYPE_QUERY = 3;
+const ITEM_TYPE_PARAMETER = 9;
+const ITEM_TYPE_NOTEBOOKGROUP = 10;
+const ITEM_TYPE_LINK = 11;
+const ITEM_TYPE_TEXT_PARAMETER = 12;
+
 // Workbook parameter reference pattern: matches {ParamName} or {ParamName:format}; group 1 is the param name.
 // Source kept as a string so each call to getParamRefPattern() returns a FRESH RegExp instance —
 // /g RegExp objects carry mutable lastIndex state, so reusing one across multiple inputs is unsafe.
+// Actual regex: /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g
 const PARAM_REF_PATTERN_SOURCE = '\\{([A-Za-z_][A-Za-z0-9_]*)(?::[\\w]+)?\\}';
 function getParamRefPattern() {
     return new RegExp(PARAM_REF_PATTERN_SOURCE, 'g');
 }
+
+// Azure Workbook visualization types currently allowed by this test suite.
+// NOTE: Update this list when Azure Workbooks adds/removes supported visualization types.
+const VALID_WORKBOOK_VISUALIZATION_TYPES = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar', 'timechart'];
+
 const MAX_ALLOWED_DUPLICATE_NAMES = 5;
 const MIN_EXPECTED_ITEMS = 200;
 const MIN_EXPECTED_QUERIES = 120;
@@ -284,7 +298,14 @@ testSuite('Item Structure Validation', () => {
         allItems.length, itemsWithContent.length);
 
     // Check items have valid types (1=markdown, 3=query, 9=parameter, 10=notebookgroup, 11=link, 12=textParameter)
-    const validTypes = [1, 3, 9, 10, 11, 12];
+    const validTypes = [
+        ITEM_TYPE_MARKDOWN,
+        ITEM_TYPE_QUERY,
+        ITEM_TYPE_PARAMETER,
+        ITEM_TYPE_NOTEBOOKGROUP,
+        ITEM_TYPE_LINK,
+        ITEM_TYPE_TEXT_PARAMETER
+    ];
     const itemsWithValidType = allItems.filter(i => validTypes.includes(i.type));
     assert(itemsWithValidType.length === allItems.length,
         'All items have valid type values (1,3,9,10,11,12)',
@@ -534,9 +555,8 @@ testSuite('Visualization Types Validation', () => {
         .map(i => i.content.visualization);
 
     const uniqueVizTypes = [...new Set(visualizationTypes)];
-    const validVizTypes = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar', 'timechart'];
 
-    const invalidVizTypes = uniqueVizTypes.filter(v => !validVizTypes.includes(v));
+    const invalidVizTypes = uniqueVizTypes.filter(v => !VALID_WORKBOOK_VISUALIZATION_TYPES.includes(v));
     assert(invalidVizTypes.length === 0,
         'All visualization types are valid',
         '[]', JSON.stringify(invalidVizTypes));
@@ -682,11 +702,13 @@ testSuite('Portal Link Integrity', () => {
     }
 
     // No hardcoded subscription GUIDs in portal links
+    // Sufficient to include subscription/resource path segments where GUIDs would appear in a portal URL.
+    const MAX_PORTAL_URL_CHECK_LENGTH = 500;
     const queriesWithHardcodedGuids = portalLinkQueries.filter(q => {
         // Extract just the portal URL construction parts
         const portalParts = q.query.split('portal.azure.com').slice(1);
         return portalParts.some(part => {
-            const urlPart = part.substring(0, 500); // check first 500 chars after portal.azure.com
+            const urlPart = part.substring(0, MAX_PORTAL_URL_CHECK_LENGTH);
             return guidPattern.test(urlPart);
         });
     });

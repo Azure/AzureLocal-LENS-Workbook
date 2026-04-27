@@ -5942,17 +5942,21 @@
                         "name": "HyperVLogAnalyticsWorkspace",
                         "label": "Log Analytics Workspace",
                         "type": 2,
-                        "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes.",
+                        "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions (see tip below if charts are empty).",
                         "isRequired": true,
                         "multiSelect": true,
                         "quote": "'",
                         "delimiter": ",",
+                        "includeAll": true,
+                        "defaultValue": "value::all",
                         "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
                         "crossComponentResources": [
                           "{Subscriptions}"
                         ],
                         "typeSettings": {
-                          "additionalResourceOptions": [],
+                          "additionalResourceOptions": [
+                            "value::all"
+                          ],
                           "showDefault": false
                         },
                         "queryType": 1,
@@ -6005,6 +6009,14 @@
                     "resourceType": "microsoft.resourcegraph/resources"
                   },
                   "name": "hyperv-perf-params"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "> 💡 **Tip — using *All* with many workspaces:** Azure cross-resource queries are limited to ~10 Log Analytics workspaces per query. If you select **All** and tiles/charts on this tab are empty, narrow the **Log Analytics Workspace** picker above to the workspaces that actually receive Hyper-V performance counters from your Azure Local nodes.",
+                    "style": "upsell"
+                  },
+                  "name": "hyperv-workspace-tip"
                 },
                 {
                   "type": 1,

@@ -6109,7 +6109,7 @@
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
-                    "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName, Computer\r\n| summarize Count = count()\r\n| extend Label = 'VM ↔ Host Pairs'",
+                    "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
                     "size": 3,
                     "timeContext": {
                       "durationMs": 0
@@ -6126,6 +6126,10 @@
                         "columnMatch": "Label",
                         "formatter": 1
                       },
+                      "subtitleContent": {
+                        "columnMatch": "Subtitle",
+                        "formatter": 1
+                      },
                       "leftContent": {
                         "columnMatch": "Count",
                         "formatter": 12,
@@ -6135,7 +6139,7 @@
                       },
                       "showBorder": false
                     },
-                    "noDataMessage": "No Hyper-V VM/host pairs found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+                    "noDataMessage": "No migrated VMs detected in the window — every observed VM ran on a single host. (Confirm AMA + a DCR with Hyper-V performance counters is configured if all three tiles are 0.)",
                     "noDataMessageStyle": 4
                   },
                   "name": "hyperv-tile-vm-host-pairs",

@@ -12056,15 +12056,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The **Overall Health State** column reflects the cluster-level rollup from the most recent update summary evaluation, while each row represents an *individual* health check from the historical `healthCheckResult` array. Individual check entries that succeeded are filtered out by design (to keep this view focused on what needs attention in large fleets), so a cluster with `Overall Health State = Success` may still surface historical non-succeeded checks here. Use the **Severity** filter to focus on Critical / Warning items, and review the **Timestamp** to see when each check was evaluated.",
-              "style": "info"
-            },
-            "name": "detailed-health-check-results-tip"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "📚 **Knowledge:** [Troubleshoot Azure Local Readiness Checks using Azure portal or PowerShell](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2?view=azloc-2601#troubleshoot-readiness-checks)\r\n\r\n📚 **Knowledge:** [Review TroubleShooting Guides (TSGs) in the Azure Local GitHub Supportability Forum, (search for the error or scenario)](https://github.com/Azure/AzureLocal-Supportability)"
+              "json": " **Knowledge:** [Troubleshoot Azure Local Readiness Checks using Azure portal or PowerShell](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2?view=azloc-2601#troubleshoot-readiness-checks)\r\n\r\n📚 **Knowledge:** [Review TroubleShooting Guides (TSGs) in the Azure Local GitHub Supportability Forum, (search for the error or scenario)](https://github.com/Azure/AzureLocal-Supportability)"
             },
             "name": "troubleshooting-link"
           },
@@ -12387,6 +12379,14 @@
               "noDataMessageStyle": 4
             },
             "name": "query - 4"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The **Overall Health State** column reflects the cluster-level rollup from the most recent update summary evaluation, while each row represents an *individual* health check from the historical `healthCheckResult` array. Individual check entries that succeeded are filtered out by design (to keep this view focused on what needs attention in large fleets), so a cluster with `Overall Health State = Success` may still surface historical non-succeeded checks here. Use the **Severity** filter to focus on Critical / Warning items, and review the **Timestamp** to see when each check was evaluated.",
+              "style": "info"
+            },
+            "name": "detailed-health-check-results-tip"
           }
         ]
       },

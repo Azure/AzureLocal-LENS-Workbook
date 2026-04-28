@@ -333,7 +333,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 - **System Health UX:** Aligned health-state vocabulary across the Overview and 24-hour Detailed Results tables (raw `Success` / `Failure` / `InProgress` / `Error` mapped to friendly **Healthy / Critical / Warning / In progress / Health check failed / Unknown**); renamed `Health State` → `Overall Health State`; renamed `Severity` → `Check Severity`; renamed three Detailed Results columns to `Health Check - …`; tip banner moved below the table
 - **File-quality:** Replaced generic *"No data for the current selection."* on user-visible tiles with filter-context messages that name the relevant filters and the recovery path (ARB pie, Update Status × Health State matrix, Failure Reason table, System Health Overview table)
 
-See [PR #74](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/74) for full implementation details. Older release notes are in the [Appendix](#appendix-previous-version-changes).
+See [PR #74](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/74) for full implementation details. Older release notes are in the [Appendix](#appendix-previous-versions-change-log).
 
 ## Contributing
 

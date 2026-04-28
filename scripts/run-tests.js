@@ -654,8 +654,8 @@ testSuite('README Structure Validation', () => {
     assert(readme.includes('## Features'),
         'README has features section', 'found', readme.includes('## Features') ? 'found' : 'not found');
 
-    assert(readme.includes('## Appendix: Previous Version Changes'),
-        'README has version history appendix', 'found', readme.includes('## Appendix: Previous Version Changes') ? 'found' : 'not found');
+    assert(readme.includes('## Appendix: Previous Versions Change Log'),
+        'README has version history appendix', 'found', readme.includes('## Appendix: Previous Versions Change Log') ? 'found' : 'not found');
 
     assert(readme.includes('## Contributing'),
         'README has contributing section', 'found', readme.includes('## Contributing') ? 'found' : 'not found');

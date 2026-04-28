@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.8
+## Latest Version: v0.8.9
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,80 +8,32 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.8)
+## Recent Changes (v0.8.9)
 
-### Capacity Tab — Hyper-V VMs Sub-tab — Filterable Inventory Table (Replaces Bar Chart + Static List)
+### Azure Local Instances + ARB Status Tabs — Fix: Duplicate ARB Counts/Rows When Multiple Clusters Share a Resource Group (Resolves [Issue #73](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/73))
 
-- **Removed** the **🏗️ VMs per Host** bar chart and **📋 Hyper-V VM List (by Host)** static table — both became unusable at fleet scale (1000+ hosts rendered as 1000+ bars; the table was capped at `rowLimit: 2000` with no column-level filtering)
-- **New unified inventory table** (`📋 Hyper-V VM Inventory (Perf-derived)`) sourced from `\Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time`, with three pill-style filters above the grid:
-  - **VM Name (contains)** — free-text substring filter
-  - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
-  - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
-- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host (the host the VM was last seen on within the window, via `arg_max(TimeGenerated, Computer)` — one row per VM) · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · **Avg CPU %** (computed at the VM level by averaging across vCPUs at each 1-minute bin, then `avg` across the window) · **Avg Memory %** (`\Hyper-V Dynamic Memory VM(*)\Current Pressure` averaged across the window — a unitless ratio where 100 = at-limit and >100 = under pressure; **blank for static-memory VMs**, since the counter only emits for Dynamic Memory) · First Seen (UTC) · Last Seen (UTC)
-- **Export to Excel** enabled on the inventory table (`showExportToExcel: true`) so customers can take the filtered view straight into a spreadsheet for further analysis
-- `rowLimit: 5000`, sorted by **Avg CPU %** descending (busiest VMs at the top), with column-level filtering preserved on top of the KQL pre-filters
-- Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and that **Physical Host** reflects the most recent host the VM emitted telemetry from in the window (a live-migrated VM appears once with its latest host)
+- **Symptom**: customers running **multiple Azure Local clusters in a single Resource Group** saw inflated **Arc Resource Bridge (ARB)** counts on the **Azure Local Instances** tab tiles (`ARB Status` pie + `ARB Offline` tile) and **duplicate rows** in every ARB table on the **🔗 ARB Status** tab — the same ARB appliance appearing once per cluster sharing its RG
+- **Root cause**: every ARB ↔ Azure Local cluster join in the workbook used `join kind=inner ... on resourceGroup`. ARBs and clusters are not 1:1 by RG — when N clusters live in the same RG, each ARB row gets multiplied by N. ARB ↔ cluster is a **custom-location** relationship, not an RG relationship
+- **Fix**: replaced the RG-keyed joins with the proper `microsoft.resourceconnector/appliances` ↔ `microsoft.extendedlocation/customlocations` (where `properties.hostResourceId` = the ARB's resource id) ↔ `microsoft.azurestackhci/clusters` (where `extendedLocation.name` = the custom location id) chain. This is the same join pattern already used for VM/AKS counts and storage containers elsewhere in the workbook, so behavior is now consistent across the file
+- **Six queries updated**:
+  - **Azure Local Instances tab** — `ARB Status` pie tile (counts now reflect distinct ARBs)
+  - **Azure Local Instances tab** — `ARB Offline` tile (`TotalARB`, `OfflineARB`, `OfflinePercent` corrected)
+  - **🔗 ARB Status tab** — `ARB Status per Azure Local instance` summary table (`TotalResources` / `ArcBridgeCount` corrected)
+  - **🔗 ARB Status tab** — `Offline Azure Resource Bridges` detail table (one row per offline ARB)
+  - **🔗 ARB Status tab** — All ARB appliances filterable table (one row per ARB, no duplicates)
+  - **🔗 ARB Status tab** — Resource Health / Activity Log alert-creation table
+- Each ARB now maps to **exactly one cluster** (or `Unknown` / `N/A` if orphaned — i.e. the underlying custom location's host cluster has been deleted)
 
-### Capacity Tab — Hyper-V VMs Sub-tab — Network Throughput Chart Filtered to Guest VMs
+### System Health Tab — "🔍 24 Hour System Health Checks - Detailed Results" Table — Clarity & Filter Cleanup
 
-- **Root cause**: The `Hyper-V Virtual Network Adapter` performance object emits rows for **every** adapter plumbed into the Hyper-V virtual switch — guest VM virtual NICs, host management vNICs (`vManagement`, `vCompute`, `vSMB` …) and the underlying physical NICs (e.g. `Mellanox ConnectX-…`). The previous query used `extract(@'^(.+?)_', 1, InstanceName)` (text before the first `_`), which silently surfaced host-side adapters and physical NICs alongside actual VMs
-- **Fix**: Network Throughput query now cross-references each row's InstanceName against an authoritative VM list derived from the `Hyper-V Hypervisor Virtual Processor` counter (whose InstanceName format `<VMName>:<vCpuId>` unambiguously identifies real VMs). Resolution uses `mv-apply` + `startswith` + `top 1 by string_size(...) desc` so VMs with underscores in their name resolve correctly and `VM1` doesn't shadow `VM10`. Anything not matching a known VM (host vNICs, physical NICs, vSwitch internal endpoints) is silently dropped
-- **Title updated** to clarify scope: *"📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)"*
-- **Diagnostic crosslink**: a VM whose CPU counter isn't being collected won't appear here either, keeping the Memory Pressure / Network blanks consistent with each other
-
-### Capacity Tab — Hyper-V VMs Sub-tab — Storage Charts: AzureLocal 24H2 InstanceName Compatibility
-
-- **Root cause**: All three Storage charts (Throughput / IOPS / Latency) used `extract(@'([^\\\/]+\.vhdx?)', 1, InstanceName)` to extract a friendly VHD filename. On AzureLocal 24H2, AMA emits `Hyper-V Virtual Storage Device` InstanceNames with **all path separators replaced by hyphens** and frequently **without a `.vhdx` extension** (e.g. `--?-C:-ClusterStorage-UserStorage_1-Hyper-V-<VM>-Virtual Machines-<GUID>.vmgs`). The regex never matched, so series names fell back to the entire 100+ char InstanceName — unreadable, and in some cases collapsing distinct VHDs into a single bucket
-- **Fix**: All three Storage chart queries now use a four-tier `coalesce()` extraction that handles both InstanceName formats:
-  1. Classic backslash/forward-slash path with `.vhdx`/`.avhdx`/`.vmgs`/`.vmrs`/`.iso` extension
-  2. Hyphen-flattened path with one of those extensions (the AzureLocal 24H2 case)
-  3. The GUID segment after `-Virtual Machines-` (Hyper-V VM config folders)
-  4. The last hyphen-delimited segment as a last resort
-- Falls through to `InstanceName` only if all four patterns fail, so the charts never go blank purely because of an unrecognised path shape
-
-### Capacity Tab — Hyper-V VMs Sub-tab — Chart Units & Interpretation Guide
-
-- **Every Performance Trends chart title now states its unit and key context up-front** so users don't have to scroll to the limitations note to discover what the values mean:
-  - `📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)`
-  - `📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)`
-  - `📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)`
-  - `📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)`
-  - `📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)`
-  - `📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)`
-- **`noDataMessage` for every chart** rewritten to name the **exact `\Object\Counter` path** that needs to be in the DCR's `counterSpecifiers`. A user who sees "No data" gets a copy-pasteable counter path, not generic guidance
-- **Replaced the old "Known Limitations" warning** at the bottom of the section with a new **Chart Units & Interpretation Guide** table covering all six charts (unit, what it means, healthy ranges, what high values indicate). Particular focus on Memory Pressure — clarifies that `Current Pressure` is a **unitless ratio (percentage)**, NOT GB/MB, and gives a worked example: a value of `258.7` means the VM wants ~2.6× the memory currently assigned to it
-- Known limitations are kept beneath the units table, plus a new bullet calling out that all charts are Top-5-by-average so noisy short-lived workloads may not appear
-
-### Capacity Tab — Hyper-V VMs Sub-tab — DCR Setup: New "Verify Counters Are Flowing" Section
-
-- **New collapsible subsection** added to the Hyper-V Performance Counter DCR Configuration section, between Deployment Steps and the doc-link nav. Provides a self-serve diagnostic path for the most common DCR-related failure mode: the DCR is configured correctly but AMA isn't actually shipping every counter
-- Includes the **exact diagnostic KQL** (`Perf | where ObjectName startswith "Hyper-V" | summarize Samples, Hosts, AnyInstance by ObjectName, CounterName`) with guidance on comparing the result against the existing **Required Performance Counters** table — any required `(ObjectName, CounterName)` pair that doesn't appear in the result is not being shipped
-- **Five common root causes** explicitly enumerated:
-  - Counter specifier typos / extra whitespace / wrong casing in the DCR
-  - DCRA propagation lag (AMA polls every ~5 minutes; allow up to 20 minutes after a save)
-  - AMA extension unhealthy on the node (`azcmagent extension list` should show `AzureMonitorWindowsAgent` in `Succeeded` state)
-  - Workload-specific counters (e.g. `Current Pressure` only emits for VMs running with Dynamic Memory enabled — static-memory VMs including most AKS-on-AzureLocal worker VMs will never appear)
-  - Region mismatch between DCR and destination Log Analytics workspace
-- The `AnyInstance` column in the diagnostic query is highlighted as useful for raising issues — if a Windows build emits an unexpected InstanceName format the dashboard's parsing logic (e.g. `split(InstanceName, ":")[0]` for CPU, the path-extraction regexes for Storage) may need updating
-
-### System Health Tab — Update Readiness Summary Banner: Dark-Mode Readability Fix (Fixes [#69](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/69))
-
-- **Reported by Jake-ThomasTech** — the *Update Readiness Summary by Health State* warning banner above the readiness table was unreadable in Azure Portal **dark mode**: the banner used a hard-coded `<div style="background-color: #fff3cd; ...">` (pale yellow) with no explicit text color, so the workbook's dark-mode foreground (near-white) was drawn on the pale-yellow background — contrast effectively zero
-- **Fix**: replaced the inline-styled HTML `<div>` with the workbook-native `"style": "warning"` markdown style on the `type: 1` content item. This style is theme-aware and renders correctly in both light and dark mode (matching every other warning banner produced by the Workbooks runtime)
-- No content changes — same warning copy, same emoji, same emphasis on **Warning** / **Critical** clusters
-
-### Capacity Tab — Hyper-V VMs Sub-tab — First-Paint Binding Race Fix (tiles + inventory empty despite valid data)
-
-- **Symptom**: customer with confirmed Hyper-V perf data flowing into a Log Analytics workspace (3,700+ Active VMs, 1,000+ hosts) saw the **Active VMs / Reporting Hosts / VM ↔ Host Pairs** tiles and the **Hyper-V VM Inventory** table render `0` / "No Hyper-V VMs match the current filters" on first paint — but the **same KQL query** run directly on the LA workspace blade against the same time range returned thousands of rows
-- **Root cause**: the tiles and the inventory table used **string substitution** for the time range — `let trendStart = todatetime('{HyperVTrendsTimeRange:start}'); ... | where TimeGenerated between (trendStart .. trendEnd)`. On first paint, before the `HyperVTrendsTimeRange` parameter has resolved, the substitution yields empty strings → `todatetime('')` → `null` → `between(null .. null)` matches no rows. The tile silently renders `0` and caches it. The page param dropdown rendering finished *after* the tile queries had already executed, so re-painting the dropdown didn't re-run the tiles
-- **Fix**: removed all `let trendStart/trendEnd` headers from the three Hyper-V tiles, the inventory table, and the **Physical Host** filter dropdown query. Each item now uses the workbook-native `"timeContext": { "durationMs": 0 }` + `"timeContextFromParameter": "HyperVTrendsTimeRange"` binding, which ties the resolved param directly to the query's time scope at render time — no string substitution, no race
-- Activity bucketing in the inventory query (`AgeMinutes = datetime_diff('minute', trendEnd, ['Last Seen'])`) was rewritten to use `now()` instead of the no-longer-in-scope `trendEnd`. This is arguably more correct anyway: "Active in last 15 min" should be relative to *now*, not the end of an arbitrary historical window
-
-### Capacity Tab — Hyper-V VMs Sub-tab — Workspace Parameter: Multi-Select with All + Tip Banner
-
-- **Multi-select restored**: the **Log Analytics Workspace** parameter at the top of the tab was briefly converted to a required single-select to dodge the empty-tile bug. The real bug turned out to be the time-range binding race (see above), so the workspace param has been restored to a fleet-friendly **multi-select with `includeAll: true` + `additionalResourceOptions: ["value::all"]` + `defaultValue: "value::all"`** — pick All, pick one, or pick several
-- **New inline tip banner** sits between the workspace picker and the Active VMs tiles, using the workbook-native `"style": "upsell"` markdown style: *"💡 Tip — using **All** with many workspaces: Azure cross-resource queries are limited to ~10 Log Analytics workspaces per query. If you select **All** and tiles/charts on this tab are empty, narrow the **Log Analytics Workspace** picker above to the workspaces that actually receive Hyper-V performance counters from your Azure Local nodes."*
-- The banner uses `style: upsell` (theme-aware) rather than hard-coded inline HTML — readable in both light and dark mode
+- **Renamed `Health State` column → `Overall Health State`** to make explicit that this column is the **cluster-level rollup** from the most recent update-summary evaluation, not the per-row check status
+- **New inline tip banner** above the table explains the relationship between the cluster-level rollup and the individual `healthCheckResult` array entries — i.e. why a cluster with `Overall Health State = Success` may still show historical non-succeeded checks here, why succeeded entries are filtered out by design (to keep the view actionable on large fleets), and how to use the **Severity** filter + **Timestamp** column
+- **Removed the misleading `Health Check Result` filter parameter** above the table — the filter dropdown was always populated only with `Failed` because the underlying KQL hard-codes `where tostring(healthCheck.status) != "Succeeded"`. Having a single-option filter that didn't actually narrow anything was confusing customers. The **column itself remains in the grid** with its `Failed` / `InProgress` icon formatting; only the redundant filter UI is gone
+- **Three columns renamed** for clarity that they describe the *individual* check (not the cluster):
+  - `Display Name` → **`Health Check - Display Name`**
+  - `Description` → **`Health Check - Description`**
+  - `Remediation` → **`Health Check - Failure Remediation`**
+- **`noDataMessage` updated** from generic *"No data for the current selection."* to a more actionable *"No health failures present in your environment, using the State and Severity Filter selections above."*
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 
@@ -430,6 +382,81 @@ See the repository's LICENSE file for details.
 ---
 
 ## Appendix: Previous Version Changes
+
+### v0.8.8
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — Filterable Inventory Table (Replaces Bar Chart + Static List)
+
+- **Removed** the **🏗️ VMs per Host** bar chart and **📋 Hyper-V VM List (by Host)** static table — both became unusable at fleet scale (1000+ hosts rendered as 1000+ bars; the table was capped at `rowLimit: 2000` with no column-level filtering)
+- **New unified inventory table** (`📋 Hyper-V VM Inventory (Perf-derived)`) sourced from `\Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time`, with three pill-style filters above the grid:
+  - **VM Name (contains)** — free-text substring filter
+  - **Physical Host** — multi-select dropdown populated from `Perf | summarize by Computer` for the selected workspace + time range
+  - **Activity** — All / Currently active (last 15 min) / Active in last hour / Stale (>1h since last sample)
+- **Columns**: VM Name · Activity (✅ Active 15m / 🟢 Active 1h / 🟡 Idle / 🔴 Stale badge) · Physical Host (the host the VM was last seen on within the window, via `arg_max(TimeGenerated, Computer)` — one row per VM) · vCPUs (observed — distinct count of `:<vCpuId>` instance suffixes) · **Avg CPU %** (computed at the VM level by averaging across vCPUs at each 1-minute bin, then `avg` across the window) · **Avg Memory %** (`\Hyper-V Dynamic Memory VM(*)\Current Pressure` averaged across the window — a unitless ratio where 100 = at-limit and >100 = under pressure; **blank for static-memory VMs**, since the counter only emits for Dynamic Memory) · First Seen (UTC) · Last Seen (UTC)
+- **Export to Excel** enabled on the inventory table (`showExportToExcel: true`) so customers can take the filtered view straight into a spreadsheet for further analysis
+- `rowLimit: 5000`, sorted by **Avg CPU %** descending (busiest VMs at the top), with column-level filtering preserved on top of the KQL pre-filters
+- Inline help note clarifies that **Power State is unavailable from `Perf`** (stopped/paused/saved VMs do not emit performance counters and therefore cannot appear here) and that **Physical Host** reflects the most recent host the VM emitted telemetry from in the window (a live-migrated VM appears once with its latest host)
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — Network Throughput Chart Filtered to Guest VMs
+
+- **Root cause**: The `Hyper-V Virtual Network Adapter` performance object emits rows for **every** adapter plumbed into the Hyper-V virtual switch — guest VM virtual NICs, host management vNICs (`vManagement`, `vCompute`, `vSMB` …) and the underlying physical NICs (e.g. `Mellanox ConnectX-…`). The previous query used `extract(@'^(.+?)_', 1, InstanceName)` (text before the first `_`), which silently surfaced host-side adapters and physical NICs alongside actual VMs
+- **Fix**: Network Throughput query now cross-references each row's InstanceName against an authoritative VM list derived from the `Hyper-V Hypervisor Virtual Processor` counter (whose InstanceName format `<VMName>:<vCpuId>` unambiguously identifies real VMs). Resolution uses `mv-apply` + `startswith` + `top 1 by string_size(...) desc` so VMs with underscores in their name resolve correctly and `VM1` doesn't shadow `VM10`. Anything not matching a known VM (host vNICs, physical NICs, vSwitch internal endpoints) is silently dropped
+- **Title updated** to clarify scope: *"📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)"*
+- **Diagnostic crosslink**: a VM whose CPU counter isn't being collected won't appear here either, keeping the Memory Pressure / Network blanks consistent with each other
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — Storage Charts: AzureLocal 24H2 InstanceName Compatibility
+
+- **Root cause**: All three Storage charts (Throughput / IOPS / Latency) used `extract(@'([^\\\/]+\.vhdx?)', 1, InstanceName)` to extract a friendly VHD filename. On AzureLocal 24H2, AMA emits `Hyper-V Virtual Storage Device` InstanceNames with **all path separators replaced by hyphens** and frequently **without a `.vhdx` extension** (e.g. `--?-C:-ClusterStorage-UserStorage_1-Hyper-V-<VM>-Virtual Machines-<GUID>.vmgs`). The regex never matched, so series names fell back to the entire 100+ char InstanceName — unreadable, and in some cases collapsing distinct VHDs into a single bucket
+- **Fix**: All three Storage chart queries now use a four-tier `coalesce()` extraction that handles both InstanceName formats:
+  1. Classic backslash/forward-slash path with `.vhdx`/`.avhdx`/`.vmgs`/`.vmrs`/`.iso` extension
+  2. Hyphen-flattened path with one of those extensions (the AzureLocal 24H2 case)
+  3. The GUID segment after `-Virtual Machines-` (Hyper-V VM config folders)
+  4. The last hyphen-delimited segment as a last resort
+- Falls through to `InstanceName` only if all four patterns fail, so the charts never go blank purely because of an unrecognised path shape
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — Chart Units & Interpretation Guide
+
+- **Every Performance Trends chart title now states its unit and key context up-front** so users don't have to scroll to the limitations note to discover what the values mean:
+  - `📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)`
+  - `📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)`
+  - `📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)`
+  - `📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)`
+  - `📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)`
+  - `📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)`
+- **`noDataMessage` for every chart** rewritten to name the **exact `\Object\Counter` path** that needs to be in the DCR's `counterSpecifiers`. A user who sees "No data" gets a copy-pasteable counter path, not generic guidance
+- **Replaced the old "Known Limitations" warning** at the bottom of the section with a new **Chart Units & Interpretation Guide** table covering all six charts (unit, what it means, healthy ranges, what high values indicate). Particular focus on Memory Pressure — clarifies that `Current Pressure` is a **unitless ratio (percentage)**, NOT GB/MB, and gives a worked example: a value of `258.7` means the VM wants ~2.6× the memory currently assigned to it
+- Known limitations are kept beneath the units table, plus a new bullet calling out that all charts are Top-5-by-average so noisy short-lived workloads may not appear
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — DCR Setup: New "Verify Counters Are Flowing" Section
+
+- **New collapsible subsection** added to the Hyper-V Performance Counter DCR Configuration section, between Deployment Steps and the doc-link nav. Provides a self-serve diagnostic path for the most common DCR-related failure mode: the DCR is configured correctly but AMA isn't actually shipping every counter
+- Includes the **exact diagnostic KQL** (`Perf | where ObjectName startswith "Hyper-V" | summarize Samples, Hosts, AnyInstance by ObjectName, CounterName`) with guidance on comparing the result against the existing **Required Performance Counters** table — any required `(ObjectName, CounterName)` pair that doesn't appear in the result is not being shipped
+- **Five common root causes** explicitly enumerated:
+  - Counter specifier typos / extra whitespace / wrong casing in the DCR
+  - DCRA propagation lag (AMA polls every ~5 minutes; allow up to 20 minutes after a save)
+  - AMA extension unhealthy on the node (`azcmagent extension list` should show `AzureMonitorWindowsAgent` in `Succeeded` state)
+  - Workload-specific counters (e.g. `Current Pressure` only emits for VMs running with Dynamic Memory enabled — static-memory VMs including most AKS-on-AzureLocal worker VMs will never appear)
+  - Region mismatch between DCR and destination Log Analytics workspace
+- The `AnyInstance` column in the diagnostic query is highlighted as useful for raising issues — if a Windows build emits an unexpected InstanceName format the dashboard's parsing logic (e.g. `split(InstanceName, ":")[0]` for CPU, the path-extraction regexes for Storage) may need updating
+
+#### System Health Tab — Update Readiness Summary Banner: Dark-Mode Readability Fix (Fixes [#69](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/69))
+
+- **Reported by Jake-ThomasTech** — the *Update Readiness Summary by Health State* warning banner above the readiness table was unreadable in Azure Portal **dark mode**: the banner used a hard-coded `<div style="background-color: #fff3cd; ...">` (pale yellow) with no explicit text color, so the workbook's dark-mode foreground (near-white) was drawn on the pale-yellow background — contrast effectively zero
+- **Fix**: replaced the inline-styled HTML `<div>` with the workbook-native `"style": "warning"` markdown style on the `type: 1` content item. This style is theme-aware and renders correctly in both light and dark mode (matching every other warning banner produced by the Workbooks runtime)
+- No content changes — same warning copy, same emoji, same emphasis on **Warning** / **Critical** clusters
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — First-Paint Binding Race Fix (tiles + inventory empty despite valid data)
+
+- **Symptom**: customer with confirmed Hyper-V perf data flowing into a Log Analytics workspace (3,700+ Active VMs, 1,000+ hosts) saw the **Active VMs / Reporting Hosts / VM ↔ Host Pairs** tiles and the **Hyper-V VM Inventory** table render `0` / "No Hyper-V VMs match the current filters" on first paint — but the **same KQL query** run directly on the LA workspace blade against the same time range returned thousands of rows
+- **Root cause**: the tiles and the inventory table used **string substitution** for the time range — `let trendStart = todatetime('{HyperVTrendsTimeRange:start}'); ... | where TimeGenerated between (trendStart .. trendEnd)`. On first paint, before the `HyperVTrendsTimeRange` parameter has resolved, the substitution yields empty strings → `todatetime('')` → `null` → `between(null .. null)` matches no rows. The tile silently renders `0` and caches it. The page param dropdown rendering finished *after* the tile queries had already executed, so re-painting the dropdown didn't re-run the tiles
+- **Fix**: removed all `let trendStart/trendEnd` headers from the three Hyper-V tiles, the inventory table, and the **Physical Host** filter dropdown query. Each item now uses the workbook-native `"timeContext": { "durationMs": 0 }` + `"timeContextFromParameter": "HyperVTrendsTimeRange"` binding, which ties the resolved param directly to the query's time scope at render time — no string substitution, no race
+- Activity bucketing in the inventory query (`AgeMinutes = datetime_diff('minute', trendEnd, ['Last Seen'])`) was rewritten to use `now()` instead of the no-longer-in-scope `trendEnd`. This is arguably more correct anyway: "Active in last 15 min" should be relative to *now*, not the end of an arbitrary historical window
+
+#### Capacity Tab — Hyper-V VMs Sub-tab — Workspace Parameter: Multi-Select with All + Tip Banner
+
+- **Multi-select restored**: the **Log Analytics Workspace** parameter at the top of the tab was briefly converted to a required single-select to dodge the empty-tile bug. The real bug turned out to be the time-range binding race (see above), so the workspace param has been restored to a fleet-friendly **multi-select with `includeAll: true` + `additionalResourceOptions: ["value::all"]` + `defaultValue: "value::all"`** — pick All, pick one, or pick several
+- **New inline tip banner** sits between the workspace picker and the Active VMs tiles, using the workbook-native `"style": "upsell"` markdown style: *"💡 Tip — using **All** with many workspaces: Azure cross-resource queries are limited to ~10 Log Analytics workspaces per query. If you select **All** and tiles/charts on this tab are empty, narrow the **Log Analytics Workspace** picker above to the workspaces that actually receive Hyper-V performance counters from your Azure Local nodes."*
+- The banner uses `style: upsell` (theme-aware) rather than hard-coded inline HTML — readable in both light and dark mode
 
 ### v0.8.7 — Resolves: [Issue #66](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/66) | [Issue #67](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/67)
 

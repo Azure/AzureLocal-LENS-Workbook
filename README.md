@@ -13,27 +13,39 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 ### Azure Local Instances + ARB Status Tabs — Fix: Duplicate ARB Counts/Rows When Multiple Clusters Share a Resource Group (Resolves [Issue #73](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/73))
 
 - **Symptom**: customers running **multiple Azure Local clusters in a single Resource Group** saw inflated **Arc Resource Bridge (ARB)** counts on the **Azure Local Instances** tab tiles (`ARB Status` pie + `ARB Offline` tile) and **duplicate rows** in every ARB table on the **🔗 ARB Status** tab — the same ARB appliance appearing once per cluster sharing its RG
-- **Root cause**: every ARB ↔ Azure Local cluster join in the workbook used `join kind=inner ... on resourceGroup`. ARBs and clusters are not 1:1 by RG — when N clusters live in the same RG, each ARB row gets multiplied by N. ARB ↔ cluster is a **custom-location** relationship, not an RG relationship
-- **Fix**: replaced the RG-keyed joins with the proper `microsoft.resourceconnector/appliances` ↔ `microsoft.extendedlocation/customlocations` (where `properties.hostResourceId` = the ARB's resource id) ↔ `microsoft.azurestackhci/clusters` (where `extendedLocation.name` = the custom location id) chain. This is the same join pattern already used for VM/AKS counts and storage containers elsewhere in the workbook, so behavior is now consistent across the file
+- **Root cause**: every ARB ↔ Azure Local cluster join in the workbook used `join kind=inner ... on resourceGroup` and projected each joined row directly. When N clusters live in the same RG, each ARB row was multiplied by N — both inflating tile counts and duplicating rows in tables
+- **Note on the relationship**: in many Arc-enabled-VM topologies ARB ↔ cluster is a **custom-location** relationship (`microsoft.extendedlocation/customlocations.properties.hostResourceId` ↔ ARB id, and the cluster's `extendedLocation.name` ↔ custom-location id). However, the `microsoft.azurestackhci/clusters` resource type does **not** expose `extendedLocation`, so a custom-location join chain returns zero rows for Azure Local. Resource Group remains the only reliable join key between ARB and Azure Local cluster
+- **Fix**: kept the RG-based `join kind=inner` (validated against `az graph query` — 21 ARBs in the test subscription, 20 Online + 1 Offline) and added **deduplication on `arbId`**:
+  - Tile counts use `summarize Count = dcount(arbId) by Status` so each ARB is counted once even when multiple clusters share its RG
+  - Tables use `summarize ... by arbId` with `make_set(clusterName)` + `strcat_array(..., ', ')` so when an ARB's RG legitimately contains multiple Azure Local clusters, all of them are surfaced as a comma-separated list in a single row rather than dropping data or duplicating the ARB
 - **Six queries updated**:
-  - **Azure Local Instances tab** — `ARB Status` pie tile (counts now reflect distinct ARBs)
-  - **Azure Local Instances tab** — `ARB Offline` tile (`TotalARB`, `OfflineARB`, `OfflinePercent` corrected)
-  - **🔗 ARB Status tab** — `ARB Status per Azure Local instance` summary table (`TotalResources` / `ArcBridgeCount` corrected)
+  - **Azure Local Instances tab** — `ARB Status` pie tile (`dcount(arbId) by Status`)
+  - **Azure Local Instances tab** — `ARB Offline` tile (`TotalARB`, `OfflineARB`, `OfflinePercent` from distinct ARB counts)
+  - **🔗 ARB Status tab** — `ARB Status per Azure Local instance` summary table
   - **🔗 ARB Status tab** — `Offline Azure Resource Bridges` detail table (one row per offline ARB)
-  - **🔗 ARB Status tab** — All ARB appliances filterable table (one row per ARB, no duplicates)
+  - **🔗 ARB Status tab** — All ARB appliances filterable table (one row per ARB; cluster column shows all clusters in the RG when ambiguous)
   - **🔗 ARB Status tab** — Resource Health / Activity Log alert-creation table
-- Each ARB now maps to **exactly one cluster** (or `Unknown` / `N/A` if orphaned — i.e. the underlying custom location's host cluster has been deleted)
 
-### System Health Tab — "🔍 24 Hour System Health Checks - Detailed Results" Table — Clarity & Filter Cleanup
+### System Health Tab — Vocabulary Alignment, Column Clarity, and Tip Placement
 
-- **Renamed `Health State` column → `Overall Health State`** to make explicit that this column is the **cluster-level rollup** from the most recent update-summary evaluation, not the per-row check status
-- **New inline tip banner** above the table explains the relationship between the cluster-level rollup and the individual `healthCheckResult` array entries — i.e. why a cluster with `Overall Health State = Success` may still show historical non-succeeded checks here, why succeeded entries are filtered out by design (to keep the view actionable on large fleets), and how to use the **Severity** filter + **Timestamp** column
-- **Removed the misleading `Health Check Result` filter parameter** above the table — the filter dropdown was always populated only with `Failed` because the underlying KQL hard-codes `where tostring(healthCheck.status) != "Succeeded"`. Having a single-option filter that didn't actually narrow anything was confusing customers. The **column itself remains in the grid** with its `Failed` / `InProgress` icon formatting; only the redundant filter UI is gone
-- **Three columns renamed** for clarity that they describe the *individual* check (not the cluster):
+- **Aligned health-state vocabulary across the System Health Overview and the 24-hour Detailed Results tables.** The Overview table previously used raw API values (`Success` / `Failure` / `InProgress` / `Error` / `Unknown`) while the Detailed Results table already showed friendlier labels. The Overview query now maps `properties.healthState` via a `healthStateDisplay = case(...)` expression to the same friendly set used elsewhere: **Healthy**, **Critical**, **Warning**, **In progress**, **Health check failed**, **Unknown**. Threshold icons, the Health-State filter dropdown values, and placeholder text were updated to match
+- **Renamed `Health State` column → `Overall Health State`** in both tables, to make explicit that this column is the **cluster-level rollup** from the most recent update-summary evaluation, not the per-row check status
+- **Renamed `Severity` → `Check Severity`** in the 24-hour Detailed Results table (column label, filter parameter label, and tip text), to distinguish the per-check severity from the cluster-level `Overall Health State`
+- **Three columns renamed in the Detailed Results table** to make explicit they describe the *individual* check, not the cluster:
   - `Display Name` → **`Health Check - Display Name`**
   - `Description` → **`Health Check - Description`**
   - `Remediation` → **`Health Check - Failure Remediation`**
-- **`noDataMessage` updated** from generic *"No data for the current selection."* to a more actionable *"No health failures present in your environment, using the State and Severity Filter selections above."*
+- **Tip banner moved below the Detailed Results table** (was previously above it) and rewritten to explain the cluster-level rollup vs. per-row check relationship, why succeeded entries are filtered out by design, and how to use the `Check Severity` filter plus the `Timestamp` column
+- **`noDataMessage` updated** from generic *"No data for the current selection."* to *"No health failures present in your environment, using the 'Health Check State' and 'Severity' Filters selected above."*
+
+### File-Quality Cleanup — Filter-Context `noDataMessage` on User-Visible Tiles
+
+Reviewed every user-visible Azure Resource Graph tile and replaced generic empty-state strings with messages that name the relevant filters and the recovery path. Four tiles updated, plus the four placeholder `query - 1 / 3 / 6` items renamed to descriptive names:
+
+- `arb-status-piechart-merge` (Azure Local Instances → ARB Status pie) — names the Subscription / Resource Group / Cluster Tag filters
+- `update-status-by-health-state-matrix` (Update Progress) — suggests widening the time range or clearing filters
+- `health-check-failures-by-reason` (System Health → Failure Reason table) — names the Cluster / Severity filters and the workbook time range
+- `system-health-checks-overview` (System Health Overview table) — names the Subscription / RG / Cluster Tag and Cluster Name / Health Check State filters; suggests verifying clusters are connected and reporting Update Summaries to Azure
 
 > See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
 

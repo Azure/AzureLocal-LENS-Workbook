@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v0.8.9 
+## Latest Version: v0.8.9
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -8,48 +8,43 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 **Important:** This is a community-driven / open-source project, (not officially supported by Microsoft), for any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues.)
 
-## Recent Changes (v0.8.9)
+---
 
-### Azure Local Instances + ARB Status Tabs — Fix: Duplicate ARB Counts/Rows When Multiple Clusters Share a Resource Group (Resolves [Issue #73](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/73))
+## Table of Contents
 
-- **Symptom**: customers running **multiple Azure Local clusters in a single Resource Group** saw inflated **Arc Resource Bridge (ARB)** counts on the **Azure Local Instances** tab tiles (`ARB Status` pie + `ARB Offline` tile) and **duplicate rows** in every ARB table on the **🔗 ARB Status** tab — the same ARB appliance appearing once per cluster sharing its RG
-- **Root cause**: every ARB ↔ Azure Local cluster join in the workbook used `join kind=inner ... on resourceGroup` and projected each joined row directly. When N clusters live in the same RG, each ARB row was multiplied by N — both inflating tile counts and duplicating rows in tables
-- **Note on the relationship**: in many Arc-enabled-VM topologies ARB ↔ cluster is a **custom-location** relationship (`microsoft.extendedlocation/customlocations.properties.hostResourceId` ↔ ARB id, and the cluster's `extendedLocation.name` ↔ custom-location id). However, the `microsoft.azurestackhci/clusters` resource type does **not** expose `extendedLocation`, so a custom-location join chain returns zero rows for Azure Local. Resource Group remains the only reliable join key between ARB and Azure Local cluster
-- **Fix**: kept the RG-based `join kind=inner` (validated against `az graph query` — 21 ARBs in the test subscription, 20 Online + 1 Offline) and added **deduplication on `arbId`**:
-  - Tile counts use `summarize Count = dcount(arbId) by Status` so each ARB is counted once even when multiple clusters share its RG
-  - Tables use `summarize ... by arbId` with `make_set(clusterName)` + `strcat_array(..., ', ')` so when an ARB's RG legitimately contains multiple Azure Local clusters, all of them are surfaced as a comma-separated list in a single row rather than dropping data or duplicating the ARB
-- **Six queries updated**:
-  - **Azure Local Instances tab** — `ARB Status` pie tile (`dcount(arbId) by Status`)
-  - **Azure Local Instances tab** — `ARB Offline` tile (`TotalARB`, `OfflineARB`, `OfflinePercent` from distinct ARB counts)
-  - **🔗 ARB Status tab** — `ARB Status per Azure Local instance` summary table
-  - **🔗 ARB Status tab** — `Offline Azure Resource Bridges` detail table (one row per offline ARB)
-  - **🔗 ARB Status tab** — All ARB appliances filterable table (one row per ARB; cluster column shows all clusters in the RG when ambiguous)
-  - **🔗 ARB Status tab** — Resource Health / Activity Log alert-creation table
-
-### System Health Tab — Vocabulary Alignment, Column Clarity, and Tip Placement
-
-- **Aligned health-state vocabulary across the System Health Overview and the 24-hour Detailed Results tables.** The Overview table previously used raw API values (`Success` / `Failure` / `InProgress` / `Error` / `Unknown`) while the Detailed Results table already showed friendlier labels. The Overview query now maps `properties.healthState` via a `healthStateDisplay = case(...)` expression to the same friendly set used elsewhere: **Healthy**, **Critical**, **Warning**, **In progress**, **Health check failed**, **Unknown**. Threshold icons, the Health-State filter dropdown values, and placeholder text were updated to match
-- **Renamed `Health State` column → `Overall Health State`** in both tables, to make explicit that this column is the **cluster-level rollup** from the most recent update-summary evaluation, not the per-row check status
-- **Renamed `Severity` → `Check Severity`** in the 24-hour Detailed Results table (column label, filter parameter label, and tip text), to distinguish the per-check severity from the cluster-level `Overall Health State`
-- **Three columns renamed in the Detailed Results table** to make explicit they describe the *individual* check, not the cluster:
-  - `Display Name` → **`Health Check - Display Name`**
-  - `Description` → **`Health Check - Description`**
-  - `Remediation` → **`Health Check - Failure Remediation`**
-- **Tip banner moved below the Detailed Results table** (was previously above it) and rewritten to explain the cluster-level rollup vs. per-row check relationship, why succeeded entries are filtered out by design, and how to use the `Check Severity` filter plus the `Timestamp` column
-- **`noDataMessage` updated** from generic *"No data for the current selection."* to *"No health failures present in your environment, using the 'Health Check State' and 'Severity' Filters selected above."*
-
-### File-Quality Cleanup — Filter-Context `noDataMessage` on User-Visible Tiles
-
-Reviewed every user-visible Azure Resource Graph tile and replaced generic empty-state strings with messages that name the relevant filters and the recovery path. Four tiles updated, plus the four placeholder `query - 1 / 3 / 6` items renamed to descriptive names:
-
-- `arb-status-piechart-merge` (Azure Local Instances → ARB Status pie) — names the Subscription / Resource Group / Cluster Tag filters
-- `update-status-by-health-state-matrix` (Update Progress) — suggests widening the time range or clearing filters
-- `health-check-failures-by-reason` (System Health → Failure Reason table) — names the Cluster / Severity filters and the workbook time range
-- `system-health-checks-overview` (System Health Overview table) — names the Subscription / RG / Cluster Tag and Cluster Name / Health Check State filters; suggests verifying clusters are connected and reporting Update Summaries to Azure
-
-> See [Appendix: Previous Version Changes](#appendix-previous-version-changes) for older release notes.
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [How to Import the Workbook](#how-to-import-the-workbook)
+- [Features (per-tab walkthrough)](#features)
+- [Parameters](#parameters)
+- [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
+- [Usage Tips](#usage-tips)
+- [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
+- [What's New (v0.8.9)](#whats-new-v089)
+- [Contributing](#contributing)
+- [CI/CD Validation](#cicd-validation)
+- [License](#license)
+- [Appendix: Previous Version Changes](#appendix-previous-version-changes)
 
 ---
+
+## Overview
+
+This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.
+
+The workbook is organized into eight tabs:
+
+📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🗄️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+
+## Prerequisites
+
+- Access to Azure subscriptions containing Azure Local clusters
+- **Reader permissions** on the resources you want to monitor
+  - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant
+  - You will only see data for resources where you have at least Reader access
+  - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant
+  - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) — you cannot query resources in other tenants without Lighthouse delegation
+- Access to Azure Monitor Workbooks in the Azure portal
 
 ## How to Import the Workbook
 
@@ -74,68 +69,13 @@ Reviewed every user-visible Azure Resource Graph tile and replaced generic empty
    - Click **Save** or **Save As** in the toolbar
    - Provide a name (e.g., "Azure Local LENS Workbook")
    - Select a subscription, resource group, and location to save the workbook
-   - Optional - Set the "Auto refresh: xx minutes" to once every 30 minutes or 1 hour.
+   - Optional — set the "Auto refresh: xx minutes" to once every 30 minutes or 1 hour
    - Click **Save**
 
 5. **Pin to Dashboard (Optional)**
    - After saving, you can pin individual tiles or the entire workbook to an Azure dashboard for quick access
 
-## Prerequisites
-
-- Access to Azure subscriptions containing Azure Local clusters:
-- **Reader permissions** on the resources you want to monitor
-  - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant.
-  - You will only see data for resources where you have at least Reader access
-  - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant.
-  - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) - you cannot query resources in other tenants without Lighthouse delegation
-- Access to Azure Monitor Workbooks in the Azure portal.
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
-
-## CI/CD Validation
-
-All pull requests are automatically validated by a GitHub Actions workflow that runs **137+ unit tests** across 23 test suites. These tests ensure workbook integrity without requiring an Azure environment.
-
-| Test Suite | What It Validates |
-|---|---|
-| JSON Structure | Valid JSON, required top-level properties, Notebook/1.0 schema |
-| Item & Tab Structure | All items have valid types and content, tab groups exist |
-| Version Consistency | Workbook JSON version matches README version and changelog |
-| KQL Query Validation | Non-empty queries, balanced quotes, known resource types, pipe operators |
-| Chart Configuration | Axis configuration, pivot patterns, series settings |
-| Parameter Validation | Required parameters exist (Subscriptions, ResourceGroupFilter, tags) |
-| Markdown & Visualization | Version banner, valid visualization types |
-| Grid & Table Settings | Row limits, formatters, hidden columns, label settings |
-| Cross-Component Resources | All queries reference `{Subscriptions}` |
-| Azure Licensing & Verification | Columns, formatters, labels, and pie charts for AHB/WSS/AVVM |
-| Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
-| Conditional Visibility | Tab groups have unique visibility parameters |
-| Resource Type References | Known Azure resource types in queries |
-| File Size & Performance | Workbook file size limits and performance checks |
-| KQL Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
-| Grid Formatter Consistency | Consistent formatter patterns across grids |
-| Regression Guards | Item, query, and chart count minimums |
-| Prometheus AKS Metrics | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
-| README & Docs | Required sections, CONTRIBUTING.md, SECURITY.md, LICENSE |
-
-Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
-
-Run tests locally:
-```bash
-node scripts/run-tests.js
-```
-
-## Overview
-
-This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.
-
 ## Features
-
-The workbook is organized into eight tabs:
-
-📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🗄️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
@@ -387,9 +327,58 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
+## What's New (v0.8.9)
+
+- **Fix:** Duplicate Arc Resource Bridge counts/rows when multiple Azure Local clusters share a Resource Group ([#73](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/73)). Six ARB queries now use RG-join + dedup (`dcount(arbId)` for tiles; `summarize ... by arbId` with `make_set` / `strcat_array` for tables — when an RG legitimately contains multiple Azure Local clusters, all are surfaced as a comma-separated list in a single row)
+- **System Health UX:** Aligned health-state vocabulary across the Overview and 24-hour Detailed Results tables (raw `Success` / `Failure` / `InProgress` / `Error` mapped to friendly **Healthy / Critical / Warning / In progress / Health check failed / Unknown**); renamed `Health State` → `Overall Health State`; renamed `Severity` → `Check Severity`; renamed three Detailed Results columns to `Health Check - …`; tip banner moved below the table
+- **File-quality:** Replaced generic *"No data for the current selection."* on user-visible tiles with filter-context messages that name the relevant filters and the recovery path (ARB pie, Update Status × Health State matrix, Failure Reason table, System Health Overview table)
+
+See [PR #74](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/74) for full implementation details. Older release notes are in the [Appendix](#appendix-previous-version-changes).
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
+
+## CI/CD Validation
+
+All pull requests are automatically validated by a GitHub Actions workflow that runs **136 unit tests across 23 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+
+| Test Suite | What It Validates |
+|---|---|
+| JSON Structure | Valid JSON, required top-level properties, Notebook/1.0 schema |
+| Item Structure | All items have valid types and content |
+| Tab Structure | Tab groups exist and reference valid items |
+| Version Consistency | Workbook JSON version matches README version and changelog |
+| KQL Query Validation | Non-empty queries, balanced quotes, known resource types, pipe operators |
+| Chart Configuration | Axis configuration, pivot patterns, series settings |
+| Parameter Validation | Required parameters exist (Subscriptions, ResourceGroupFilter, tags) |
+| Markdown Content | Version banner and required documentation strings |
+| Visualization Types | Valid visualization types per tile |
+| Grid and Table Settings | Row limits, formatters, hidden columns, label settings |
+| Cross-Component Resources | All queries reference `{Subscriptions}` |
+| Resource Type References | Known Azure resource types in queries |
+| File Size and Performance | Workbook file size limits and performance checks |
+| README Structure | Required README sections present and ordered |
+| Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
+| Conditional Visibility | Tab groups have unique visibility parameters |
+| KQL Query Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
+| Grid Formatter Consistency | Consistent formatter patterns across grids |
+| Azure Licensing & Verification — Columns | Columns / formatters / labels for AHB / WSS / AVVM |
+| Azure Licensing & Verification — Pie Charts | Pie chart configuration for AHB / WSS / AVVM |
+| Item Count Regression Guard | Item, query, and chart count minimums |
+| Prometheus AKS Node Resource Usage | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
+| Documentation File Validation | CONTRIBUTING.md, SECURITY.md, LICENSE present |
+
+Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
+
+Run tests locally:
+```bash
+node scripts/run-tests.js
+```
+
 ## License
 
-See the repository's LICENSE file for details.
+Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file for the full text.
 
 ---
 

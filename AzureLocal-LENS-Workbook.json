@@ -11715,12 +11715,18 @@
             "name": "health-check-failures-by-reason"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "## 🥇 Top 5 - System Health Check Issues"
+            },
+            "name": "text - top5-health-check-issues-heading"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
               "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n| extend _healthState = tostring(properties.healthState)\r\n| extend healthCheckResult = iff(\r\n    (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and _healthState in (\"Failure\", \"Warning\"),\r\n    pack_array(bag_pack(\r\n        \"status\", \"Failed\",\r\n        \"name\", \"HealthCheckDetailsUnavailable\",\r\n        \"displayName\", strcat(\"Health check details not available - Health State: \", _healthState),\r\n        \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run.\",\r\n        \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n        \"severity\", iff(_healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n        \"targetResourceName\", hciClusterName,\r\n        \"targetResourceType\", \"Cluster\",\r\n        \"timestamp\", todatetime(properties.lastChecked)\r\n    )),\r\n    healthCheckResult\r\n)\r\n| mv-expand healthCheck = healthCheckResult\r\n| where tostring(healthCheck.status) == \"Failed\"\r\n| where todatetime(healthCheck.timestamp) >= {TimeRange:start}\r\n| extend displayName = tostring(split(tostring(healthCheck.name), '/')[0])\r\n| extend severity = tostring(healthCheck.severity)\r\n| where '*' in ({FailureClusterFilter}) or hciClusterName in ({FailureClusterFilter})\r\n| where severity in ({SeverityFilter})\r\n| summarize ClusterCount = dcount(hciClusterName) by displayName\r\n| top 5 by ClusterCount desc\r\n| order by ClusterCount desc",
-              "size": 0,
-              "title": "Top 5 - System Health Check Issues",
+              "size": 1,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -11734,7 +11740,7 @@
               "noDataMessage": "No failed health checks reported across the fleet.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "50",
+            "customWidth": "100",
             "name": "top5-health-check-issues-pie"
           },
           {

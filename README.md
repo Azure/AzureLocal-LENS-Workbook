@@ -102,62 +102,87 @@ A high-level overview of your entire Azure Local estate, including:
 ![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
 
 ### 🏗️ Capacity
-Centralized view of cluster resource utilization, capacity forecasting, and workload allocation:
-- **Cluster Capacity Overview**: Table showing each cluster with:
+Centralized view of cluster resource utilization, capacity forecasting, and workload allocation. The tab is split into four sub-tabs (selectable via the **CapacitySection** picker): **📋 Overview**, **🌍 Multi-cluster**, **🔍 Single cluster**, and **🖥️ Hyper-V VMs**.
+
+#### 📋 Overview sub-tab
+- **Cluster Capacity Overview** table — one row per cluster:
   - Physical Cores and Physical Memory (GB)
   - VM vCPUs and AKS vCPUs (from provisioned workloads)
-  - vCPU Total (combined VM + AKS)
-  - VM Memory Total (GB)
+  - vCPU Total (combined VM + AKS) and VM Memory Total (GB)
   - V:P CPU Ratio (e.g., `4.2:1`) — computed inline via Azure Resource Graph sub-joins
-- **Resource Trends & Forecast**: Time-series trend analysis with configurable parameters:
-  - Log Analytics Workspace selector (multi-select)
-  - Configurable time range, warning threshold (default 80%), and critical threshold (default 90%)
-  - CPU, Memory, and Storage utilization trends per node using Perf and InsightsMetrics data
-- **Resource Exhaustion Forecast by Cluster**: Projected days until resource thresholds are reached using `series_fit_line` linear trend analysis:
-  - Current average utilization percentage
-  - Trend direction (↑ Rising, → Stable, ↓ Declining)
-  - Days to Warning and Days to Critical thresholds
-  - Color-coded status indicators (🟢 OK, 🟡 Warning, 🔴 Critical)
-- **Fleet Capacity**: Aggregated physical hardware tiles (Clusters, Nodes, Total Cores, Total Memory) across the filtered fleet
-- **Node Resource Health Summary**: Per-node hardware details including logical core count, memory, vendor, model, processor, and cluster association
-- **Cluster Workload Drill-Down**: Detailed view of VMs and AKS Arc clusters on a selected cluster:
-  - Requires single cluster selection from the Cluster filter
-  - Shows individual workload resource allocations (vCPUs, memory, status)
-  - **AKS Node Resource Usage**: Top 5/10 nodes by CPU, Memory, Disk I/O, and Network Throughput via Prometheus timecharts from Azure Monitor Workspace
-  - Configurable Prometheus Time Range (30 min – 7 days)
+  - **Target vCPU:pCPU Ratio** drop-down (default `4:1`) lets you flag clusters whose actual ratio exceeds your target
+- **Capacity DCR Setup Guide** (collapsible) — everything required to make the Top 5 Log-Analytics charts work:
+  - Prerequisites (Azure Monitor Agent, Log Analytics workspace, RBAC, regions)
+  - Required Performance Counters table (Processor / Memory / LogicalDisk / Cluster CSV File System / Network Interface)
+  - Recommended **Custom counter specifier** workflow for portal users (covers `Cluster CSV File System` counters that are missing from the portal dropdown)
+  - Sample ARM template (`dcr-azurelocal-capacity.json`) and `az deployment group create` deployment steps
+- **Top 5 Azure Local Instances by Resource Capacity Usage** — Top-5 line/area charts (size: large) sourced from Log Analytics:
+  - CPU Usage (%) · Memory Usage (%) · Storage Usage (%) · Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s)
+- **AKS Node usage** — Prometheus-sourced timecharts of Top AKS Nodes by CPU, Memory, Disk I/O (bytes/sec), and Network Throughput (bytes/sec)
+
+#### 🌍 Multi-cluster sub-tab
+Fleet-wide capacity trending and forecasting:
+- **Predictive Resource Exhaustion Forecast by Cluster** — projected days until each cluster crosses warning / critical utilisation thresholds (computed with `series_fit_line` linear trend analysis); shows current average %, trend direction, and 🟢/🟡/🔴 status
+- **Cluster-wise CPU Forecast** and **Cluster-wise Memory Forecast** — Actual-vs-forecast lines per cluster
+- **Storage Remaining (%) — Cluster Forecast** and **Storage Available (TB) — Cluster Forecast**
+- **💾 Storage & Network Performance — For Selected Clusters**:
+  - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected cluster set
+- Forecast disclaimer banners are shown alongside each forecast chart
+
+#### 🔍 Single cluster sub-tab
+Drill into a single cluster (selected via the `SingleCluster` picker):
+- **🏗️ Cluster Capacity** tiles — Clusters, Nodes, Node Hardware Summary
+- **Capacity & Performance of Physical Machines** — per-node timecharts: CPU Usage (%), Memory Usage (%), Storage Usage (%), Storage Latency (ms), Storage IOPS, Network Throughput (MB/s) — all "By Machine"
+- **💾 Storage Volume Usage and Forecast** — Storage Volume Usage (GB) and Volume Usage (%) charts per cluster volume
+- **📊 Storage Pool Trends & Forecast** — Storage Pool Remaining (%) and Storage Pool Remaining (TB) Actual-vs-Forecast charts
+- **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected cluster
+- **📦 Workloads on Cluster** section:
+  - 🖥️ Azure Local VMs running on the cluster
+  - ☸️ AKS Arc Clusters running on the cluster
+  - **📊 AKS Arc Node Resource Usage** — Top 10 AKS Nodes by CPU and Memory via Azure Managed Prometheus (configurable Prometheus time range)
+
+#### 🖥️ Hyper-V VMs sub-tab
+Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):
+- **Hyper-V DCR Setup Guide** (collapsible) — prerequisites, required Hyper-V counters table (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`), Custom counter specifier walkthrough, sample ARM template (`dcr-azurelocal-hyperv.json`), deployment steps, and a Kusto helper to verify counters are flowing
+- **📊 Active VMs (from Log Analytics)** summary
+- **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
+- **Top VMs / Top Virtual Disks** charts:
+  - 📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)
+  - 📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)
+  - 📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)
+  - 📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)
+  - 📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)
+  - 📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only)
 
 ### 📋 System Health
 Detailed view of cluster system health and update readiness:
-- Health state distribution chart
-- Version distribution across clusters
-- Summary of health states by update status
-- Failed prechecks analysis with filtering by cluster, health state, and severity
-- **Failure By Reason Summary** table with:
-  - Filter by cluster to narrow down to specific clusters
-  - **Filter by severity** to focus on Critical and Warning issues (defaults to excluding Informational)
-  - Sorted by cluster count (highest first) to identify issues affecting the most clusters
-  - Detailed failure reason summaries showing affected clusters and occurrence counts
-- Link to Microsoft documentation for troubleshooting Azure Local updates
+- **Health State Distribution** chart and **Update Readiness Summary** matrix (Update Status × Overall Health State)
+- **System Health Check Filters** — narrow checks by Cluster, Overall Health State, and Check Severity (defaults exclude Informational)
+- **System Health Checks Overview** table — one row per failure reason, sorted by cluster count (highest first), with friendly health-state vocabulary (Healthy / Critical / Warning / In progress / Health check failed / Unknown)
+- **🔍 24 Hour System Health Checks - Detailed Results** — per-check breakdown for the most recent 24 hours, including `Health Check - Name / Description / Remediation` columns
+- Tip banner with link to Microsoft documentation for troubleshooting Azure Local updates
 
 ![System Health](images/update-readiness-and-system-health-screenshot.png)
 
 ### 🔄 Update Progress
-Track the progress of ongoing updates across your clusters with detailed status information:
-- **Update Attempts by Day** stacked bar chart showing update attempts per day with status breakdown (Succeeded, Failed, InProgress)
-- Update state summary tiles and pie chart distribution
-- **Clusters Currently Updating** table with live status
-- **Clusters with Updates Available** table with:
+Track ongoing and historical updates across your clusters:
+- **Update State Summary** tiles and **Update State Distribution** pie chart
+- **Update Attempts by Day** stacked bar chart (Succeeded / Failed / InProgress per day)
+- **Update Duration Statistics by Solution Update** — min/avg/max duration per solution version
+- **Updates - First Time Success Analysis** — first-time success rate per cluster/solution version
+- **Update Outcomes Distribution** and **Update Attempts by Status Percentages** charts
+- **Update Attempts Details** table with cluster, update name, state, status, and link to the run
+- **⏳ Clusters Currently Updating** — live status with current step description
+- **📦 Clusters with Updates Available** table with:
   - Direct link to apply One Time Update in Azure Update Manager
   - Link to Azure Local Known Issues documentation
-- **All Cluster Update Status** table with information about the 6-month support window
-- **Update Run History and Error Details** table showing recent update runs with:
-  - Cluster name and update name
-  - **Details** column (3rd column) with direct link to view update run details in Azure portal
-  - State and status with icons (success/failed/in-progress)
-  - Current step description showing what the update is doing
-  - **Error Details** column displaying extracted error details for failed updates (click to view full error)
-  - Human-readable duration format (e.g., "1h 7m 15s" instead of ISO 8601 format)
-  - Start time and last updated timestamps
+  - SBE (Solution Builder Extension) dependency details
+- **🔄 All Cluster Update Status** table with information about the 6-month support window
+- **📜 Update Run History and Error Details** table:
+  - Default filter: `Update State = Failed` (unresolved failures are surfaced regardless of Time Range; once a later Succeeded run exists for the same cluster, the older Failed run is hidden)
+  - Direct link to view the update run in Azure portal
+  - Current step description and extracted error details for failed updates
+  - Human-readable duration (e.g., `1h 7m 15s`)
 
 ![Update Progress](images/update-progress-screenshot.png)
 
@@ -268,6 +293,9 @@ Monitor AKS Arc clusters running on Azure Local:
   - Filter by extension name
   - Extension status summary table and bar chart (similar to Node Extensions)
   - Failed extensions table with error details
+- **Flux Configurations**:
+  - **📋 All Flux Configurations** — full inventory across AKS Arc clusters
+  - **⚠️ Non-Compliant Flux Configurations** — filtered view of configurations not in a compliant state
 
 ![AKS Arc Clusters](images/aks-clusters-screenshot.png)
 

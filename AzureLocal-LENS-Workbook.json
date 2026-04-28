@@ -6724,11 +6724,11 @@
                     "size": 2,
                     "queryType": 7,
                     "visualization": "piechart",
-                    "noDataMessage": "No data available for the current selection.",
+                    "noDataMessage": "No Arc Resource Bridge appliances found for the current Subscription / Resource Group / Cluster Tag filters. Adjust the filters above to see ARB status.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
-                  "name": "query - 1"
+                  "name": "arb-status-piechart-merge"
                 }
               ]
             },
@@ -11541,10 +11541,10 @@
                   }
                 ]
               },
-              "noDataMessage": "No data available for the current selection.",
+              "noDataMessage": "No update runs found across the selected Subscription / Resource Group / Cluster Tag filters and time range. Try widening the time range or clearing the filters above.",
               "noDataMessageStyle": 4
             },
-            "name": "query - 1"
+            "name": "update-status-by-health-state-matrix"
           },
           {
             "type": 1,
@@ -11709,10 +11709,10 @@
                   }
                 ]
               },
-              "noDataMessage": "No data for the current selection.",
+              "noDataMessage": "No failed health checks across the selected Subscription / Resource Group / Cluster Tag filters within the workbook time range. Try widening the time range, clearing the Cluster / Severity filters above, or confirm clusters are reporting Update Summaries to Azure.",
               "noDataMessageStyle": 4
             },
-            "name": "query - 6"
+            "name": "health-check-failures-by-reason"
           },
           {
             "type": 3,
@@ -12033,10 +12033,10 @@
                   }
                 ]
               },
-              "noDataMessage": "No data for the current selection.",
+              "noDataMessage": "No clusters reporting health summary data match the current Subscription / Resource Group / Cluster Tag and Cluster Name / Health Check State filters. Adjust the filters above, or confirm clusters are connected and reporting Update Summaries to Azure.",
               "noDataMessageStyle": 4
             },
-            "name": "query - 3"
+            "name": "system-health-checks-overview"
           },
           {
             "type": 1,

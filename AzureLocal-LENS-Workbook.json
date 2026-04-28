@@ -12123,7 +12123,7 @@
                   "id": "detail-severity-001",
                   "version": "KqlParameterItem/1.0",
                   "name": "detailSeverity",
-                  "label": "Severity",
+                  "label": "Check Severity",
                   "type": 2,
                   "isRequired": true,
                   "multiSelect": true,
@@ -12359,7 +12359,7 @@
                   },
                   {
                     "columnId": "severity",
-                    "label": "Severity"
+                    "label": "Check Severity"
                   },
                   {
                     "columnId": "targetResourceName",
@@ -12395,7 +12395,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The **Overall Health State** column reflects the cluster-level rollup from the most recent update summary evaluation, while each row represents an *individual* health check from the historical `healthCheckResult` array. Individual check entries that succeeded are filtered out by design (to keep this view focused on what needs attention in large fleets), so a cluster with `Overall Health State = Success` may still surface historical non-succeeded checks here. Use the **Severity** filter to focus on Critical / Warning items, and review the **Timestamp** to see when each check was evaluated.",
+              "json": "💡 **Tip:** The **Overall Health State** column reflects the cluster-level rollup from the most recent update summary evaluation, while each row represents an *individual* health check from the historical `healthCheckResult` array. Individual check entries that succeeded are filtered out by design (to keep this view focused on what needs attention in large fleets), so a cluster with `Overall Health State = Success` may still surface historical non-succeeded checks here. Use the **Check Severity** filter to focus on Critical / Warning items, and review the **Timestamp** to see when each check was evaluated.",
               "style": "info"
             },
             "name": "detailed-health-check-results-tip"

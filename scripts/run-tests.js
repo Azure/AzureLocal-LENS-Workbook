@@ -28,7 +28,7 @@ const ITEM_TYPE_TEXT_PARAMETER = 12;
 // Workbook parameter reference pattern: matches {ParamName} or {ParamName:format}; group 1 is the param name.
 // Source kept as a string so each call to getParamRefPattern() returns a FRESH RegExp instance —
 // /g RegExp objects carry mutable lastIndex state, so reusing one across multiple inputs is unsafe.
-// Actual regex: /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g
+// Compiles to: /\{([A-Za-z_][A-Za-z0-9_]*)(?::[\w]+)?\}/g  (backslashes are double-escaped below for the JS string literal)
 const PARAM_REF_PATTERN_SOURCE = '\\{([A-Za-z_][A-Za-z0-9_]*)(?::[\\w]+)?\\}';
 function getParamRefPattern() {
     return new RegExp(PARAM_REF_PATTERN_SOURCE, 'g');

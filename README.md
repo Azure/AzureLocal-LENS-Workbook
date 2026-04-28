@@ -24,7 +24,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
-- [Appendix: Previous Version Changes](#appendix-previous-version-changes)
+- [Appendix: Previous Versions Change Log](#appendix-previous-versions-change-log)
 
 ---
 
@@ -382,7 +382,7 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 
 ---
 
-## Appendix: Previous Version Changes
+## Appendix: Previous Versions Change Log
 
 ### v0.8.8
 

@@ -1,0 +1,11 @@
+# Workbook JSON and split sub-templates use CRLF natively (Azure Monitor
+# Workbooks markdown convention is \r\n) and the build pipeline writes CRLF.
+# Force CRLF on every platform so round-trip integrity tests pass on Linux CI.
+*.json    text eol=crlf
+*.workbook text eol=crlf
+
+# Scripts and docs follow normal text-with-LF convention.
+*.js      text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.xml     text eol=lf

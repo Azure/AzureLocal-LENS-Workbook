@@ -10,7 +10,7 @@
     {
       "type": 1,
       "content": {
-        "json": "📋 **Workbook Version: v1.0.0**\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
+        "json": "### 📋 Workbook Version: v1.0.0\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
         "style": "info"
       },
       "name": "version-update-banner"

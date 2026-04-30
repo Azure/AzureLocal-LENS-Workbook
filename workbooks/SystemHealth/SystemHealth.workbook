@@ -1,0 +1,1324 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "System Health",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📋 Azure Local System Health\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend healthState = tostring(properties.healthState)\r\n| summarize Count = count() by healthState\r\n| order by Count desc",
+              "size": 0,
+              "title": "Health State Distribution",
+              "showAnalytics": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom",
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No update data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "query - 2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| summarize ClusterCount = count() by currentVersion\r\n| order by ClusterCount desc",
+              "size": 0,
+              "title": "Version Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom"
+              },
+              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "version-distribution-chart"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Update Readiness Summary by Health State** — This table shows the readiness status of all Azure Local clusters. Review clusters with **Warning** or **Critical** health status using the tables below, to remove blockers that prevent applying updates.",
+              "style": "warning"
+            },
+            "name": "update-readiness-table-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "📚 **Knowledge:** [Understand Azure Local update phases](https://learn.microsoft.com/azure/azure-local/update/update-phases-23h2)"
+            },
+            "name": "text - update phases knowledge link"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend healthState = tostring(properties.healthState)\r\n| extend state = tostring(properties.state)\r\n| summarize \r\n    Success = countif(healthState == \"Success\"),\r\n    Warning = countif(healthState == \"Warning\"),\r\n    Failure = countif(healthState == \"Failure\"),\r\n    InProgress = countif(healthState == \"InProgress\"),\r\n    Unknown = countif(healthState == \"Unknown\")\r\n    by state\r\n| extend Total = Success + Warning + Failure + InProgress + Unknown\r\n| project state, Total, Success, Warning, Failure, InProgress, Unknown\r\n| order by Total desc",
+              "size": 0,
+              "title": "Update Readiness Summary",
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "state",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "AppliedSuccessfully",
+                          "representation": "Blank",
+                          "text": "✅ Applied successfully"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpToDate",
+                          "representation": "Blank",
+                          "text": "✅ Up to date"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateFailed",
+                          "representation": "Blank",
+                          "text": "❌ Update failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationFailed",
+                          "representation": "Blank",
+                          "text": "❌ Preparation failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "NeedsAttention",
+                          "representation": "Blank",
+                          "text": "⚠️ Needs attention"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateAvailable",
+                          "representation": "Blank",
+                          "text": "🔄 Updates available"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Update in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Preparation in progress"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Blank",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Success",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "Warning",
+                    "formatter": 0
+                  },
+                  {
+                    "columnMatch": "Failure",
+                    "formatter": 0
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "state",
+                    "label": "Update Status"
+                  },
+                  {
+                    "columnId": "Total",
+                    "label": "Total"
+                  },
+                  {
+                    "columnId": "Success",
+                    "label": "Health State: Success"
+                  },
+                  {
+                    "columnId": "Warning",
+                    "label": "Health State: Warning"
+                  },
+                  {
+                    "columnId": "Failure",
+                    "label": "Health State: Critical",
+                    "comment": "Updates are Blocked"
+                  },
+                  {
+                    "columnId": "InProgress",
+                    "label": "Update In Progress"
+                  },
+                  {
+                    "columnId": "Unknown",
+                    "label": "Unknown"
+                  }
+                ]
+              },
+              "noDataMessage": "No update runs found across the selected Subscription / Resource Group / Cluster Tag filters and time range. Try widening the time range or clearing the filters above.",
+              "noDataMessageStyle": 4
+            },
+            "name": "update-status-by-health-state-matrix"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## ❌ Health Check Failures By Reason Summary"
+            },
+            "name": "text - 7"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "📚 **Knowledge:** [Troubleshoot Azure Local Readiness Checks using Azure portal or PowerShell](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2?view=azloc-2601#troubleshoot-readiness-checks)"
+            },
+            "name": "text - readiness knowledge link"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "This table shows system health failures, sorted by 'Cluster Count', to show you the highest frequency issues at the top of the table, along with the list of 'Affected Clusters'."
+            },
+            "name": "text - health failures description"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "f8a2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "FailureClusterFilter",
+                  "label": "Filter by Cluster",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n| extend _healthState = tostring(properties.healthState)\r\n| extend healthCheckResult = iff(\r\n    (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and _healthState in (\"Failure\", \"Warning\"),\r\n    pack_array(bag_pack(\r\n        \"status\", \"Failed\",\r\n        \"name\", \"HealthCheckDetailsUnavailable\",\r\n        \"displayName\", strcat(\"Health check details not available - Health State: \", _healthState),\r\n        \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run.\",\r\n        \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n        \"severity\", iff(_healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n        \"targetResourceName\", hciClusterName,\r\n        \"targetResourceType\", \"Cluster\",\r\n        \"timestamp\", todatetime(properties.lastChecked)\r\n    )),\r\n    healthCheckResult\r\n)\r\n| mv-expand healthCheck = healthCheckResult\r\n| where tostring(healthCheck.status) == \"Failed\"\r\n| where todatetime(healthCheck.timestamp) >= {TimeRange:start}\r\n| distinct hciClusterName\r\n| order by hciClusterName asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "severity-filter-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SeverityFilter",
+                  "label": "Filter by Severity",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\r\n  { \"value\": \"Critical\", \"label\": \"Critical\" },\r\n  { \"value\": \"Warning\", \"label\": \"Warning\" },\r\n  { \"value\": \"Informational\", \"label\": \"Informational\" }\r\n]",
+                  "defaultValue": [
+                    "Critical",
+                    "Warning"
+                  ],
+                  "value": [
+                    "Critical",
+                    "Warning"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "failure-cluster-filter"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n| extend _healthState = tostring(properties.healthState)\r\n| extend healthCheckResult = iff(\r\n    (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and _healthState in (\"Failure\", \"Warning\"),\r\n    pack_array(bag_pack(\r\n        \"status\", \"Failed\",\r\n        \"name\", \"HealthCheckDetailsUnavailable\",\r\n        \"displayName\", strcat(\"Health check details not available - Health State: \", _healthState),\r\n        \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run.\",\r\n        \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n        \"severity\", iff(_healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n        \"targetResourceName\", hciClusterName,\r\n        \"targetResourceType\", \"Cluster\",\r\n        \"timestamp\", todatetime(properties.lastChecked)\r\n    )),\r\n    healthCheckResult\r\n)\r\n| mv-expand healthCheck = healthCheckResult\r\n| where tostring(healthCheck.status) == \"Failed\"\r\n| where todatetime(healthCheck.timestamp) >= {TimeRange:start}\r\n| extend displayName = tostring(split(tostring(healthCheck.name), '/')[0])\r\n| extend severity = tostring(healthCheck.severity)\r\n| where '*' in ({FailureClusterFilter}) or hciClusterName in ({FailureClusterFilter})\r\n| where severity in ({SeverityFilter})\r\n| summarize FailureCount = count(), AffectedClustersList = make_set(hciClusterName), LatestOccurrence = max(todatetime(healthCheck.timestamp)) by displayName, severity\r\n| extend AffectedClusters = strcat_array(AffectedClustersList, ', '), ClusterCount = array_length(AffectedClustersList)\r\n| extend severityOrder = case(\r\n    severity == \"Critical\", 1,\r\n    severity == \"Warning\", 2,\r\n    severity == \"Informational\", 3,\r\n    4)\r\n| project displayName, severity, FailureCount, ClusterCount, AffectedClusters, LatestOccurrence, severityOrder\r\n| order by ClusterCount desc, severityOrder asc, FailureCount desc\r\n",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "severity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Informational",
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "severityOrder",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "AffectedClustersList",
+                    "formatter": 5
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "displayName",
+                    "label": "Failure Reason"
+                  },
+                  {
+                    "columnId": "severity",
+                    "label": "Failure Severity"
+                  },
+                  {
+                    "columnId": "AffectedClusters",
+                    "label": "Affected Clusters"
+                  },
+                  {
+                    "columnId": "LatestOccurrence",
+                    "label": "Latest Occurrence"
+                  },
+                  {
+                    "columnId": "ClusterCount",
+                    "label": "Cluster Count"
+                  }
+                ]
+              },
+              "noDataMessage": "No failed health checks across the selected Subscription / Resource Group / Cluster Tag filters within the workbook time range. Try widening the time range, clearing the Cluster / Severity filters above, or confirm clusters are reporting Update Summaries to Azure.",
+              "noDataMessageStyle": 4
+            },
+            "name": "health-check-failures-by-reason"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🥇 Top 5 - System Health Check Issues"
+            },
+            "name": "text - top5-health-check-issues-heading"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterName = tolower(tostring(split(id, '/')[8]))\r\n| extend clusterRG = tolower(resourceGroup)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = tolower(name), clusterRG = tolower(resourceGroup)\r\n) on clusterName, clusterRG\r\n| extend hciClusterName = tostring(split(id, '/')[8])\r\n| extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n| extend _healthState = tostring(properties.healthState)\r\n| extend healthCheckResult = iff(\r\n    (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and _healthState in (\"Failure\", \"Warning\"),\r\n    pack_array(bag_pack(\r\n        \"status\", \"Failed\",\r\n        \"name\", \"HealthCheckDetailsUnavailable\",\r\n        \"displayName\", strcat(\"Health check details not available - Health State: \", _healthState),\r\n        \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run.\",\r\n        \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n        \"severity\", iff(_healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n        \"targetResourceName\", hciClusterName,\r\n        \"targetResourceType\", \"Cluster\",\r\n        \"timestamp\", todatetime(properties.lastChecked)\r\n    )),\r\n    healthCheckResult\r\n)\r\n| mv-expand healthCheck = healthCheckResult\r\n| where tostring(healthCheck.status) == \"Failed\"\r\n| where todatetime(healthCheck.timestamp) >= {TimeRange:start}\r\n| extend displayName = tostring(split(tostring(healthCheck.name), '/')[0])\r\n| extend severity = tostring(healthCheck.severity)\r\n| where '*' in ({FailureClusterFilter}) or hciClusterName in ({FailureClusterFilter})\r\n| where severity in ({SeverityFilter})\r\n| summarize ClusterCount = dcount(hciClusterName) by displayName\r\n| top 5 by ClusterCount desc\r\n| order by ClusterCount desc",
+              "size": 1,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom"
+              },
+              "noDataMessage": "No failed health checks reported across the fleet.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "100",
+            "name": "top5-health-check-issues-pie"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📋 System Health Check Filters"
+            },
+            "name": "text - 5"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "b902e267-cb73-433e-a5f4-5627f38003e5",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "clustername",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project name",
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "value": [
+                    "value::all"
+                  ],
+                  "label": "Cluster Name"
+                },
+                {
+                  "id": "4f902e36-2dbc-4bdf-89aa-44d2bb919cc6",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "healthState",
+                  "label": "Health State",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\"Success\",\r\n\"Failure\",\r\n\"Warning\",\r\n\"InProgress\"\r\n]",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "param - cluster"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The 'Age of Health Results' column shows how many days ago the cluster last reported its health check results to Azure. A high value (highlighted in yellow/red) may indicate connectivity issues or that the cluster hasn't performed health checks recently. To troubleshoot: verify the cluster is connected to Azure, check the Azure Arc agent status, and run `Test-EnvironmentReadiness` on the cluster.",
+              "style": "info"
+            },
+            "name": "health-age-tip"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend azureConnection = case(\r\n    properties.status =~ 'NotSpecified', 'Unknown',\r\n    properties.status =~ 'ConnectedRecently', 'Connected',\r\n    properties.status =~ 'NotConnectedRecently', 'Not connected recently',\r\n    properties.status =~ 'NotYetRegistered', 'Not yet registered',\r\n    properties.status =~ 'Error', 'Error',\r\n    properties.status =~ 'Disconnected', 'Disconnected',\r\n    'Unknown'\r\n)\r\n| project clusterName = name, clusterId = id, resourceGroup, subscriptionId, azureConnection\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend hciClusterName = tostring(split(id, '/')[8])\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthStateDisplay = case(\r\n        healthState =~ 'Success', 'Healthy',\r\n        healthState =~ 'Failure', 'Critical',\r\n        healthState =~ 'Warning', 'Warning',\r\n        healthState =~ 'InProgress', 'In progress',\r\n        healthState =~ 'Error', 'Health check failed',\r\n        healthState =~ 'Unknown', 'Unknown',\r\n        healthState\r\n    )\r\n    | extend state = tostring(properties.state)\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend currentVersion = tostring(properties.currentVersion)\r\n    | extend packageVersions = properties.packageVersions\r\n    | project hciClusterName, healthState, healthStateDisplay, state, lastChecked, currentVersion, packageVersions\r\n) on $left.clusterName == $right.hciClusterName\r\n| mv-expand pkg = packageVersions\r\n| extend pkgType = tostring(pkg.packageType)\r\n| extend pkgVersion = tostring(pkg.version)\r\n| summarize sbeVersion = maxif(pkgVersion, pkgType =~ 'SBE') by clusterName, clusterId, resourceGroup, subscriptionId, azureConnection, healthState, healthStateDisplay, state, lastChecked, currentVersion\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n    | summarize nodeCount = count() by resourceGroup\r\n) on resourceGroup\r\n| where clusterName in ({clustername})\r\n| where healthState in ({healthState})\r\n| extend HealthResultsAge = datetime_diff('day', now(), lastChecked)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project clusterName, clusterLink, HealthStatus = healthStateDisplay, healthState, state, currentVersion, azureConnection, sbeVersion = coalesce(sbeVersion, ''), lastChecked, HealthResultsAge, resourceGroup, nodeCount = coalesce(nodeCount, 0)\r\n| order by HealthResultsAge desc, clusterName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "System Health Checks Overview",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "HealthStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Healthy",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "In progress",
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Health check failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "healthState",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "state",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateAvailable",
+                          "representation": "Blank",
+                          "text": "🔄 Updates available"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "NeedsAttention",
+                          "representation": "Blank",
+                          "text": "⚠️ Needs attention"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpToDate",
+                          "representation": "Blank",
+                          "text": "✅ Up to date"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "AppliedSuccessfully",
+                          "representation": "Blank",
+                          "text": "✅ Applied successfully"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Update in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "UpdateFailed",
+                          "representation": "Blank",
+                          "text": "❌ Update failed"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationInProgress",
+                          "representation": "Blank",
+                          "text": "⏳ Preparation in progress"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "PreparationFailed",
+                          "representation": "Blank",
+                          "text": "❌ Preparation failed"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "Blank",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "HealthResultsAge",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "4",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "2",
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "HealthStatus",
+                    "label": "Overall Health State"
+                  },
+                  {
+                    "columnId": "state",
+                    "label": "Update Status"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Current Version"
+                  },
+                  {
+                    "columnId": "azureConnection",
+                    "label": "Azure Connection"
+                  },
+                  {
+                    "columnId": "sbeVersion",
+                    "label": "SBE Version"
+                  },
+                  {
+                    "columnId": "lastChecked",
+                    "label": "Last Checked"
+                  },
+                  {
+                    "columnId": "HealthResultsAge",
+                    "label": "Age of Health Results"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "nodeCount",
+                    "label": "Node Count"
+                  }
+                ]
+              },
+              "noDataMessage": "No clusters reporting health summary data match the current Subscription / Resource Group / Cluster Tag and Cluster Name / Health Check State filters. Adjust the filters above, or confirm clusters are connected and reporting Update Summaries to Azure.",
+              "noDataMessageStyle": 4
+            },
+            "name": "system-health-checks-overview"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** Review the '📦 Clusters with Updates Available' table in the '🔄 Update Progress' tab for more information on available updates, including SBE (Solution Builder Extension) dependency details.",
+              "style": "info"
+            },
+            "name": "health-overview-tip"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔍 24 Hour System Health Checks - Detailed Results"
+            },
+            "name": "detailed-health-check-results-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": " **Knowledge:** [Troubleshoot Azure Local Readiness Checks using Azure portal or PowerShell](https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2?view=azloc-2601#troubleshoot-readiness-checks)\r\n\r\n📚 **Knowledge:** [Review TroubleShooting Guides (TSGs) in the Azure Local GitHub Supportability Forum, (search for the error or scenario)](https://github.com/Azure/AzureLocal-Supportability)"
+            },
+            "name": "troubleshooting-link"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "detail-cluster-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "detailClustername",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project name",
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "value": [
+                    "value::all"
+                  ],
+                  "label": "Cluster Name"
+                },
+                {
+                  "id": "detail-healthstate-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "detailHealthState",
+                  "label": "Health Check State",
+                  "type": 2,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\"Healthy\",\r\n\"Critical\",\r\n\"Warning\",\r\n\"In progress\",\r\n\"Health check failed\",\r\n\"Unknown\"\r\n]",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "Critical",
+                    "Warning"
+                  ]
+                },
+                {
+                  "id": "detail-severity-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "detailSeverity",
+                  "label": "Check Severity",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ]
+                  },
+                  "jsonData": "[\"Critical\", \"Warning\", \"Informational\"]",
+                  "defaultValue": "value::all",
+                  "value": [
+                    "Critical",
+                    "Warning"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "param-detail-filters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project clusterName = name, clusterId = id, resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend hciClusterName = tostring(split(id, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthStateDisplay = case(\r\n        healthState =~ 'Success', 'Healthy',\r\n        healthState =~ 'Failure', 'Critical',\r\n        healthState =~ 'Warning', 'Warning',\r\n        healthState =~ 'InProgress', 'In progress',\r\n        healthState =~ 'Error', 'Health check failed',\r\n        healthState =~ 'Unknown', 'Unknown',\r\n        healthState\r\n    )\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n    | extend healthCheckResult = iff(\r\n        (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and healthState in (\"Failure\", \"Warning\"),\r\n        pack_array(bag_pack(\r\n            \"status\", \"Failed\",\r\n            \"name\", \"HealthCheckDetailsUnavailable\",\r\n            \"displayName\", strcat(\"Health check details not available - Cluster Health State: \", healthStateDisplay),\r\n            \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run. Navigate to the cluster in Azure portal > Updates to view the full health check details.\",\r\n            \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n            \"severity\", iff(healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n            \"targetResourceName\", hciClusterName,\r\n            \"targetResourceType\", \"Cluster\",\r\n            \"timestamp\", lastChecked\r\n        )),\r\n        healthCheckResult\r\n    )\r\n    | mv-expand healthCheck = healthCheckResult\r\n    | where tostring(healthCheck.status) != \"Succeeded\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project hciClusterName, healthState = healthStateDisplay, stepStatus = tostring(healthCheck.status), checkName = tostring(healthCheck.name), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), targetResourceType = tostring(healthCheck.targetResourceType), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on $left.clusterName == $right.hciClusterName\r\n| where clusterName in ({detailClustername})\r\n| where healthState in ({detailHealthState})\r\n| where severity in ({detailSeverity})\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| project clusterName, clusterLink, healthState, stepStatus, displayName, description, remediation, remediationLink, severity, targetResourceName, targetResourceType, timestamp, resourceGroup, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "healthState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Healthy",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "In progress",
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Health check failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "stepStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Succeeded",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "severity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Critical",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Warning",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Informational",
+                          "representation": "info",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "remediation",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "remediationLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "remediationLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "DaysSinceCheck",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "4",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "2",
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "severityOrder",
+                    "formatter": 5
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "healthState",
+                    "label": "Overall Health State"
+                  },
+                  {
+                    "columnId": "stepStatus",
+                    "label": "Check Result"
+                  },
+                  {
+                    "columnId": "displayName",
+                    "label": "Health Check - Display Name"
+                  },
+                  {
+                    "columnId": "description",
+                    "label": "Health Check - Description"
+                  },
+                  {
+                    "columnId": "remediation",
+                    "label": "Health Check - Failure Remediation"
+                  },
+                  {
+                    "columnId": "remediationLink"
+                  },
+                  {
+                    "columnId": "severity",
+                    "label": "Check Severity"
+                  },
+                  {
+                    "columnId": "targetResourceName",
+                    "label": "Target Resource Name"
+                  },
+                  {
+                    "columnId": "targetResourceType",
+                    "label": "Target Resource Type"
+                  },
+                  {
+                    "columnId": "timestamp",
+                    "label": "Timestamp"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "lastChecked",
+                    "label": "Last Checked"
+                  },
+                  {
+                    "columnId": "DaysSinceCheck",
+                    "label": "Days Since Check"
+                  }
+                ]
+              },
+              "noDataMessage": "No health failures present in your environment, using the 'Health Check State' and 'Severity' Filters selected above.",
+              "noDataMessageStyle": 4
+            },
+            "name": "query - 4"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The **Overall Health State** column reflects the cluster-level rollup from the most recent update summary evaluation, while each row represents an *individual* health check from the historical `healthCheckResult` array. Individual check entries that succeeded are filtered out by design (to keep this view focused on what needs attention in large fleets), so a cluster with `Overall Health State = Success` may still surface historical non-succeeded checks here. Use the **Check Severity** filter to focus on Critical / Warning items, and review the **Timestamp** to see when each check was evaluated.",
+              "style": "info"
+            },
+            "name": "detailed-health-check-results-tip"
+          }
+        ]
+      },
+      "name": "grp-update-readiness"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

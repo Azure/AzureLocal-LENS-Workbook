@@ -1,0 +1,1942 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "AKS Arc Clusters",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
+            },
+            "name": "text-aks-header"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "nav",
+              "links": [
+                {
+                  "id": "aks-arc-docs-link",
+                  "cellValue": "https://learn.microsoft.com/azure/aks/hybrid/aks-hybrid-options-overview",
+                  "linkTarget": "Url",
+                  "linkLabel": "📚 Documentation: AKS on Azure Local",
+                  "style": "link"
+                }
+              ]
+            },
+            "name": "aks-arc-docs-link"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend connectivityStatus = tostring(properties.connectivityStatus)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| summarize \r\n    Connected = countif(connectivityStatus == \"Connected\"),\r\n    Offline = countif(connectivityStatus == \"Offline\"),\r\n    Succeeded = countif(provisioningState == \"Succeeded\"),\r\n    Failed = countif(provisioningState == \"Failed\"),\r\n    Total = count()\r\n| extend Title = 'AKS Arc Clusters'",
+              "size": 4,
+              "title": "AKS Arc Summary",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Title",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Total",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true
+              },
+              "noDataMessage": "No AKS Arc clusters found in the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-summary-tile",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend connectivityStatus = tostring(properties.connectivityStatus)\r\n| summarize Count = count() by connectivityStatus\r\n| order by Count desc",
+              "size": 0,
+              "title": "Connectivity Status",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom",
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No AKS Arc connectivity data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-connectivity-chart",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| summarize ClusterCount = count() by kubernetesVersion\r\n| order by ClusterCount desc",
+              "size": 0,
+              "title": "Kubernetes Version Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom"
+              },
+              "noDataMessage": "No AKS Arc version data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-version-distribution",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| summarize Count = count() by provisioningState\r\n| order by Count desc",
+              "size": 0,
+              "title": "Provisioning State",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom",
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No AKS Arc provisioning-state data — no AKS Arc clusters match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-provisioning-state",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📈 AKS Arc Cluster Deployments Over Time"
+            },
+            "name": "text-aks-deployments"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "aks-deployment-months",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AKSDeploymentMonths",
+                  "label": "Time Range",
+                  "type": 2,
+                  "isRequired": true,
+                  "value": "12",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"24\",\"label\":\"24 months\"},{\"value\":\"18\",\"label\":\"18 months\"},{\"value\":\"12\",\"label\":\"12 months\"},{\"value\":\"9\",\"label\":\"9 months\"},{\"value\":\"6\",\"label\":\"6 months\"},{\"value\":\"3\",\"label\":\"3 months\"},{\"value\":\"1\",\"label\":\"1 month\"},{\"value\":\"0.5\",\"label\":\"2 weeks\"},{\"value\":\"0.25\",\"label\":\"1 week\"}]"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "aks-deployment-params"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend createdAt = todatetime(systemData.createdAt)\r\n| where isnotempty(createdAt)\r\n| extend _days = todouble('{AKSDeploymentMonths}') * 30\r\n| where createdAt >= ago(_days * 1d)\r\n| extend TimeBucket = case(\r\n    _days <= 30, startofday(createdAt),\r\n    _days <= 90, startofweek(createdAt),\r\n    startofmonth(createdAt)\r\n)\r\n| summarize Count = count() by TimeBucket\r\n| extend Series = 'AKS Clusters'\r\n| order by TimeBucket asc",
+              "size": 0,
+              "title": "AKS Arc Cluster Deployments Over Time",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeBucket",
+                "yAxis": [
+                  "Count"
+                ],
+                "group": "Series",
+                "showLegend": true,
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No AKS Arc deployments found in the selected time range.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "80",
+            "name": "aks-deployments-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend createdAt = todatetime(systemData.createdAt)\r\n| where isnotempty(createdAt)\r\n| where createdAt >= ago(todouble('{AKSDeploymentMonths}') * 30d)\r\n| extend deploymentMonth = format_datetime(createdAt, 'yyyy-MM')\r\n| summarize ClusterCount = count() by deploymentMonth\r\n| extend sortOrder = 1\r\n| union (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | extend createdAt = todatetime(systemData.createdAt)\r\n    | where isnotempty(createdAt)\r\n    | where createdAt >= ago(todouble('{AKSDeploymentMonths}') * 30d)\r\n    | summarize ClusterCount = count()\r\n    | extend deploymentMonth = 'TOTAL', sortOrder = 0\r\n)\r\n| order by sortOrder asc, deploymentMonth desc\r\n| project deploymentMonth, ClusterCount",
+              "size": 1,
+              "title": "AKS Arc Clusters Deployed by Month",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "labelSettings": [
+                  {
+                    "columnId": "deploymentMonth",
+                    "label": "Month"
+                  },
+                  {
+                    "columnId": "ClusterCount",
+                    "label": "Clusters Deployed"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc deployments found in the selected time range.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "20",
+            "name": "aks-deployments-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## ☸️ All AKS Arc Clusters"
+            },
+            "name": "text-aks-all"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend connectivityStatus = tostring(properties.connectivityStatus)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend totalNodeCount = toint(properties.totalNodeCount)\r\n| extend totalCoreCount = toint(properties.totalCoreCount)\r\n| extend distribution = tostring(properties.distribution)\r\n| extend oidcIssuerUrl = tostring(properties.oidcIssuerProfile.issuerUrl)\r\n| extend adminGroupObjectIds = strcat_array(coalesce(properties.aadProfile.adminGroupObjectIDs, dynamic([])), ', ')\r\n| extend lastConnectivityTime = todatetime(properties.lastConnectivityTime)\r\n| extend certExpiration = todatetime(properties.managedIdentityCertificateExpirationTime)\r\n| extend createdAt = todatetime(systemData.createdAt)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocId = tolower(tostring(extendedLocation.name))\r\n    | extend customLocKey = iff(customLocId startswith \"/\", tolower(trim_end(\"/\", customLocId)), customLocId)\r\n    | extend controlPlaneNodes = toint(properties[\"controlPlane\"][\"count\"])\r\n    | mv-expand agentPool = properties.agentPoolProfiles\r\n    | summarize customLocKey = max(customLocKey), controlPlaneNodes = max(controlPlaneNodes), workerNodes = sum(toint(agentPool[\"count\"])) by id\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project clusterResourceId, customLocKey, controlPlaneNodes, workerNodes\r\n) on clusterResourceId\r\n| project ClusterName = name, clusterLink, clusterResourceId, customLocKey, connectivityStatus, provisioningState, resourceGroup, kubernetesVersion, agentVersion, controlPlaneNodes, workerNodes, totalNodeCount, totalCoreCount, distribution, oidcIssuerUrl, adminGroupObjectIds, lastConnectivityTime, certExpiration, createdAt, location\r\n| order by connectivityStatus asc, ClusterName asc",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "aks-all-clusters-base"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.extendedlocation/customlocations\"\r\n| where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n| extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n| extend customLocKey = tolower(trim_end(\"/\", id))\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup), azureLocalClusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| project customLocKey, azureLocalClusterName, azureLocalClusterLink",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "aks-azurelocal-mapping"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"aks-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"aks-all-clusters-base\",\"rightTable\":\"aks-azurelocal-mapping\",\"leftColumn\":\"customLocKey\",\"rightColumn\":\"customLocKey\"}],\"projectRename\":[{\"originalName\":\"[aks-all-clusters-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].connectivityStatus\",\"mergedName\":\"connectivityStatus\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].provisioningState\",\"mergedName\":\"provisioningState\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-azurelocal-mapping].azureLocalClusterName\",\"mergedName\":\"azureLocalClusterName\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-azurelocal-mapping].azureLocalClusterLink\",\"mergedName\":\"azureLocalClusterLink\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].kubernetesVersion\",\"mergedName\":\"kubernetesVersion\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].agentVersion\",\"mergedName\":\"agentVersion\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].controlPlaneNodes\",\"mergedName\":\"controlPlaneNodes\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].workerNodes\",\"mergedName\":\"workerNodes\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].totalNodeCount\",\"mergedName\":\"totalNodeCount\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].totalCoreCount\",\"mergedName\":\"totalCoreCount\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].distribution\",\"mergedName\":\"distribution\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].oidcIssuerUrl\",\"mergedName\":\"oidcIssuerUrl\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].adminGroupObjectIds\",\"mergedName\":\"adminGroupObjectIds\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].lastConnectivityTime\",\"mergedName\":\"lastConnectivityTime\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].certExpiration\",\"mergedName\":\"certExpiration\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].createdAt\",\"mergedName\":\"createdAt\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].location\",\"mergedName\":\"location\",\"fromId\":\"aks-merge\"},{\"originalName\":\"[aks-all-clusters-base].clusterResourceId\"},{\"originalName\":\"[aks-all-clusters-base].customLocKey\"},{\"originalName\":\"[aks-azurelocal-mapping].customLocKey\"}]}",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "connectivityStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Offline",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "provisioningState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Succeeded",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "azureLocalClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "azureLocalClusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "azureLocalClusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "lastConnectivityTime",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "certExpiration",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "createdAt",
+                    "formatter": 6
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "azureLocalClusterName",
+                    "label": "Azure Local Cluster"
+                  },
+                  {
+                    "columnId": "azureLocalClusterLink"
+                  },
+                  {
+                    "columnId": "connectivityStatus",
+                    "label": "Connectivity Status"
+                  },
+                  {
+                    "columnId": "provisioningState",
+                    "label": "Provisioning State"
+                  },
+                  {
+                    "columnId": "kubernetesVersion",
+                    "label": "Kubernetes Version"
+                  },
+                  {
+                    "columnId": "agentVersion",
+                    "label": "Agent Version"
+                  },
+                  {
+                    "columnId": "controlPlaneNodes",
+                    "label": "Control Plane"
+                  },
+                  {
+                    "columnId": "workerNodes",
+                    "label": "Workers"
+                  },
+                  {
+                    "columnId": "totalNodeCount",
+                    "label": "Total Nodes"
+                  },
+                  {
+                    "columnId": "totalCoreCount",
+                    "label": "Total Core Count"
+                  },
+                  {
+                    "columnId": "distribution",
+                    "label": "Distribution"
+                  },
+                  {
+                    "columnId": "oidcIssuerUrl",
+                    "label": "OIDC Issuer URL"
+                  },
+                  {
+                    "columnId": "adminGroupObjectIds",
+                    "label": "Admin Group Object IDs"
+                  },
+                  {
+                    "columnId": "lastConnectivityTime",
+                    "label": "Last Connectivity Time"
+                  },
+                  {
+                    "columnId": "certExpiration",
+                    "label": "Certificate Expiration"
+                  },
+                  {
+                    "columnId": "createdAt",
+                    "label": "Created At"
+                  },
+                  {
+                    "columnId": "location",
+                    "label": "Location"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc clusters match the current filters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "aks-all-clusters"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🌐 AKS Arc Network Details"
+            },
+            "name": "text-aks-network-details"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterResourceId = tolower(id)\r\n| project ClusterName = name, clusterLink, clusterResourceId, resourceGroup, location\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend podCidr = tostring(properties.networkProfile.podCidr)\r\n    | extend controlPlaneHostIP = tostring(properties.controlPlane.controlPlaneEndpoint.hostIP)\r\n    | extend vnetSubnetIds = properties.cloudProviderProfile.infraNetworkProfile.vnetSubnetIds\r\n    | mv-expand vnetSubnetId = vnetSubnetIds\r\n    | extend logicalNetworkId = tolower(tostring(vnetSubnetId))\r\n    | summarize podCidr = max(podCidr), controlPlaneHostIP = max(controlPlaneHostIP), logicalNetworkIds = make_set(logicalNetworkId) by clusterResourceId\r\n    | project clusterResourceId, podCidr, controlPlaneHostIP, logicalNetworkIds\r\n) on clusterResourceId\r\n| mv-expand logicalNetworkId = logicalNetworkIds\r\n| extend logicalNetworkId = tostring(logicalNetworkId)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/logicalnetworks\"\r\n    | extend logicalNetworkId = tolower(id)\r\n    | extend logicalNetworkLink = strcat('https://portal.azure.com/#@/resource', id)\r\n    | extend logicalNetworkState = tostring(properties.status.provisioningStatus.status)\r\n    | extend subnets = properties.subnets\r\n    | mv-expand subnet = subnets\r\n    | extend addressPrefix = tostring(subnet.properties.addressPrefix)\r\n    | extend vlanId = tostring(subnet.properties.vlan)\r\n    | extend ipPools = subnet.properties.ipPools\r\n    | mv-expand ipPool = ipPools\r\n    | extend ipPoolStart = tostring(ipPool.start)\r\n    | extend ipPoolEnd = tostring(ipPool.['end'])\r\n    | extend ipPoolUsed = tostring(ipPool.info.used)\r\n    | extend ipPoolAvailable = tostring(ipPool.info.available)\r\n    | extend dnsServers = strcat_array(properties.dhcpOptions.dnsServers, ', ')\r\n    | project logicalNetworkId, logicalNetworkName = name, logicalNetworkLink, logicalNetworkState, addressPrefix, vlanId, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, dnsServers\r\n) on logicalNetworkId\r\n| project ClusterName, clusterLink, clusterResourceId, resourceGroup, location, podCidr, controlPlaneHostIP, logicalNetworkName, logicalNetworkLink, logicalNetworkState, addressPrefix, ipPoolStart, ipPoolEnd, ipPoolUsed, ipPoolAvailable, vlanId, dnsServers\r\n| order by ClusterName asc",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "alwaysHidden",
+              "comparison": "isEqualTo",
+              "value": "true"
+            },
+            "name": "aks-network-base"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.kubernetesruntime/loadbalancers\"\r\n| extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesRuntime\")))\r\n| summarize loadBalancers = strcat_array(make_set(name), ', ') by clusterResourceId",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "alwaysHidden",
+              "comparison": "isEqualTo",
+              "value": "true"
+            },
+            "name": "aks-loadbalancers-lookup"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"aks-network-merge\",\"mergeType\":\"leftouter\",\"leftTable\":\"aks-network-base\",\"rightTable\":\"aks-loadbalancers-lookup\",\"leftColumn\":\"clusterResourceId\",\"rightColumn\":\"clusterResourceId\"}],\"projectRename\":[{\"originalName\":\"[aks-network-base].ClusterName\",\"mergedName\":\"ClusterName\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].clusterLink\",\"mergedName\":\"clusterLink\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].resourceGroup\",\"mergedName\":\"resourceGroup\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].location\",\"mergedName\":\"location\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].podCidr\",\"mergedName\":\"podCidr\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].controlPlaneHostIP\",\"mergedName\":\"controlPlaneHostIP\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].logicalNetworkName\",\"mergedName\":\"logicalNetworkName\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].logicalNetworkLink\",\"mergedName\":\"logicalNetworkLink\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].logicalNetworkState\",\"mergedName\":\"logicalNetworkState\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-loadbalancers-lookup].loadBalancers\",\"mergedName\":\"loadBalancers\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].addressPrefix\",\"mergedName\":\"addressPrefix\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].ipPoolStart\",\"mergedName\":\"ipPoolStart\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].ipPoolEnd\",\"mergedName\":\"ipPoolEnd\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].ipPoolUsed\",\"mergedName\":\"ipPoolUsed\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].ipPoolAvailable\",\"mergedName\":\"ipPoolAvailable\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].vlanId\",\"mergedName\":\"vlanId\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].dnsServers\",\"mergedName\":\"dnsServers\",\"fromId\":\"aks-network-merge\"},{\"originalName\":\"[aks-network-base].clusterResourceId\"},{\"originalName\":\"[aks-loadbalancers-lookup].clusterResourceId\"}]}",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "logicalNetworkName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "logicalNetworkLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "logicalNetworkLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "logicalNetworkState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Succeeded",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "location",
+                    "label": "Location"
+                  },
+                  {
+                    "columnId": "podCidr",
+                    "label": "Pod CIDR"
+                  },
+                  {
+                    "columnId": "controlPlaneHostIP",
+                    "label": "Control Plane IP"
+                  },
+                  {
+                    "columnId": "logicalNetworkName",
+                    "label": "Logical Network"
+                  },
+                  {
+                    "columnId": "logicalNetworkLink"
+                  },
+                  {
+                    "columnId": "logicalNetworkState",
+                    "label": "Network State"
+                  },
+                  {
+                    "columnId": "loadBalancers",
+                    "label": "Load Balancers"
+                  },
+                  {
+                    "columnId": "addressPrefix",
+                    "label": "Address Prefix"
+                  },
+                  {
+                    "columnId": "ipPoolStart",
+                    "label": "IP Pool Start"
+                  },
+                  {
+                    "columnId": "ipPoolEnd",
+                    "label": "IP Pool End"
+                  },
+                  {
+                    "columnId": "ipPoolUsed",
+                    "label": "IPs Used"
+                  },
+                  {
+                    "columnId": "ipPoolAvailable",
+                    "label": "IPs Available"
+                  },
+                  {
+                    "columnId": "vlanId",
+                    "label": "VLAN ID"
+                  },
+                  {
+                    "columnId": "dnsServers",
+                    "label": "DNS Servers"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc network details available for the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "name": "aks-network-details"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## ⚖️ Load Balancers"
+            },
+            "name": "text-aks-load-balancers"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.kubernetesruntime/loadbalancers\"\r\n| extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesRuntime\")))\r\n| extend loadBalancerName = name\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend advertiseMode = tostring(properties.advertiseMode)\r\n| extend addresses = properties.addresses\r\n| mv-expand addr = addresses\r\n| extend addressValue = tostring(addr)\r\n| summarize addressList = strcat_array(make_set(addressValue), ', ') by clusterResourceId, loadBalancerName, provisioningState, advertiseMode\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n    | project ClusterName = name, clusterLink, clusterResourceId = tolower(id), resourceGroup\r\n) on clusterResourceId\r\n| project ClusterName, clusterLink, resourceGroup, loadBalancerName, provisioningState, advertiseMode, addressList\r\n| order by ClusterName asc, loadBalancerName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "provisioningState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Succeeded",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "loadBalancerName",
+                    "label": "Load Balancer"
+                  },
+                  {
+                    "columnId": "provisioningState",
+                    "label": "Provisioning State"
+                  },
+                  {
+                    "columnId": "advertiseMode",
+                    "label": "Advertise Mode"
+                  },
+                  {
+                    "columnId": "addressList",
+                    "label": "Addresses"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc load balancers (MetalLB / SLB / Citrix) found in the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "name": "aks-load-balancers"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 📦 Kubernetes Version & Upgrade Status"
+            },
+            "name": "text-aks-upgrade-status"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances/upgradeprofiles\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend currentVersion = coalesce(tostring(properties.controlPlaneProfile.kubernetesVersion), tostring(properties.currentKubernetesVersion), tostring(properties.currentVersion), tostring(properties.kubernetesVersion))\r\n    | extend upgradesRaw = coalesce(properties.controlPlaneProfile.upgrades, properties.upgrades)\r\n    | extend upgradesRaw = iif(isnull(upgradesRaw) or array_length(upgradesRaw) == 0, dynamic([{}]), upgradesRaw)\r\n    | mv-expand upgrade = upgradesRaw\r\n    | extend upgradeVersion = coalesce(tostring(upgrade.kubernetesVersion), tostring(upgrade.version), tostring(upgrade.targetVersion))\r\n    | extend curParts = split(currentVersion, '.')\r\n    | extend upParts = split(upgradeVersion, '.')\r\n    | extend curMajor = toint(curParts[0]), curMinor = toint(curParts[1])\r\n    | extend upMajor = toint(upParts[0]), upMinor = toint(upParts[1])\r\n    | extend isMinorUpgrade = iif(isnotempty(upgradeVersion) and (upMajor > curMajor or (upMajor == curMajor and upMinor > curMinor)), 1, 0)\r\n    | summarize hasMinorUpgrade = max(isMinorUpgrade) by clusterResourceId\r\n    | project clusterResourceId, hasMinorUpgrade\r\n) on clusterResourceId\r\n| extend status = case(hasMinorUpgrade == 1, 'Minor available', 'Fully upgraded')\r\n| summarize Count = count() by status",
+              "size": 3,
+              "title": "Upgrade Status (Minor Available vs Fully Upgraded)",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No AKS Arc upgrade status data available.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-upgrade-status-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances/upgradeprofiles\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend currentVersion = coalesce(tostring(properties.controlPlaneProfile.kubernetesVersion), tostring(properties.currentKubernetesVersion), tostring(properties.currentVersion), tostring(properties.kubernetesVersion))\r\n    | extend upgradesRaw = coalesce(properties.controlPlaneProfile.upgrades, properties.upgrades)\r\n    | extend upgradesRaw = iif(isnull(upgradesRaw) or array_length(upgradesRaw) == 0, dynamic([{}]), upgradesRaw)\r\n    | mv-expand upgrade = upgradesRaw\r\n    | extend upgradeVersion = coalesce(tostring(upgrade.kubernetesVersion), tostring(upgrade.version), tostring(upgrade.targetVersion))\r\n    | summarize currentVersion = any(currentVersion), upgrades = strcat_array(make_set_if(upgradeVersion, isnotempty(upgradeVersion)), ', ') by clusterResourceId\r\n) on clusterResourceId\r\n| extend upgrades = iif(isempty(upgrades), 'No upgrades', upgrades)\r\n| summarize ClusterCount = count() by currentVersion, upgrades\r\n| order by currentVersion asc, upgrades asc",
+              "size": 0,
+              "title": "Version/Upgrade Summary",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "labelSettings": [
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Current Version"
+                  },
+                  {
+                    "columnId": "upgrades",
+                    "label": "Available Upgrades"
+                  },
+                  {
+                    "columnId": "ClusterCount",
+                    "label": "Clusters"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc version upgrade information available.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "aks-version-upgrade-summary"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend clusterResourceId = tolower(id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project clusterResourceId, ClusterName = name, clusterLink, resourceGroup, location\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances/upgradeprofiles\"\r\n    | extend clusterResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | extend currentVersion = coalesce(tostring(properties.controlPlaneProfile.kubernetesVersion), tostring(properties.currentKubernetesVersion), tostring(properties.currentVersion), tostring(properties.kubernetesVersion))\r\n    | extend upgradesRaw = coalesce(properties.controlPlaneProfile.upgrades, properties.upgrades)\r\n    | extend upgradesRaw = iif(isnull(upgradesRaw) or array_length(upgradesRaw) == 0, dynamic([{}]), upgradesRaw)\r\n    | mv-expand upgrade = upgradesRaw\r\n    | extend upgradeVersion = coalesce(tostring(upgrade.kubernetesVersion), tostring(upgrade.version), tostring(upgrade.targetVersion))\r\n    | summarize currentVersion = any(currentVersion), upgrades = strcat_array(make_set_if(upgradeVersion, isnotempty(upgradeVersion)), ', ') by clusterResourceId\r\n) on clusterResourceId\r\n| project ClusterName, clusterLink, resourceGroup, location, currentVersion, upgrades\r\n| order by ClusterName asc",
+              "size": 0,
+              "title": "Kubernetes Version and Available Upgrades",
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "location",
+                    "label": "Location"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Current Version"
+                  },
+                  {
+                    "columnId": "upgrades",
+                    "label": "Available Upgrades"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc version upgrade detail available.",
+              "noDataMessageStyle": 4
+            },
+            "name": "aks-version-upgrades-detail"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔐 Certificate Expiration Warning\r\n*Clusters with managed identity certificates expiring within 30 days*"
+            },
+            "name": "text-cert-warning"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.infrastructure == \"azure_stack_hci\"\r\n| extend aksResourceId = tolower(id)\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksResourceId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\")))\r\n    | project aksResourceId, customLocKey\r\n) on aksResourceId\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project azureLocalClusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)\r\n| extend certExpiration = todatetime(properties.managedIdentityCertificateExpirationTime)\r\n| where isnotempty(certExpiration)\r\n| where certExpiration <= now() + 30d\r\n| extend daysUntilExpiration = datetime_diff('day', certExpiration, now())\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project ClusterName = name, clusterLink, resourceGroup, certExpiration, daysUntilExpiration, location\r\n| order by daysUntilExpiration asc",
+              "size": 0,
+              "title": "Clusters with Certificates Expiring Soon",
+              "noDataMessage": "No clusters with certificates expiring in the next 30 days",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "certExpiration",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "daysUntilExpiration",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "<=",
+                          "thresholdValue": "7",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "<=",
+                          "thresholdValue": "14",
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "green",
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "certExpiration",
+                    "label": "Certificate Expiration"
+                  },
+                  {
+                    "columnId": "daysUntilExpiration",
+                    "label": "Days Until Expiration"
+                  },
+                  {
+                    "columnId": "location",
+                    "label": "Location"
+                  }
+                ]
+              }
+            },
+            "name": "aks-cert-expiration"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🧩 AKS Arc Cluster Extensions\r\nArc agent extensions installed on AKS Arc clusters."
+            },
+            "name": "text-aks-extensions-divider"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "aks-ext-status-filter-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AksExtensionStatusFilter",
+                  "label": "Extension Status",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\"Succeeded\", \"Failed\", \"Creating\", \"Updating\", \"Deleting\"]",
+                  "defaultValue": "value::all"
+                },
+                {
+                  "id": "aks-ext-name-filter-001",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AksExtensionNameFilter",
+                  "label": "Extension Name",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend extensionName = coalesce(tostring(properties.ExtensionType), tostring(properties.extensionType))\r\n| parse tolower(id) with clusterId \"/providers/microsoft.kubernetesconfiguration/extensions/\" *\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| where isnotempty(extensionName)\r\n| distinct extensionName\r\n| order by extensionName asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "aks-extensions-filters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = coalesce(tostring(properties.ProvisioningState), tostring(properties.provisioningState))\r\n| extend extensionName = coalesce(tostring(properties.ExtensionType), tostring(properties.extensionType))\r\n| parse tolower(id) with clusterId \"/providers/microsoft.kubernetesconfiguration/extensions/\" *\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project clusterId = tolower(id), clusterName = name\r\n) on clusterId\r\n| where isnotempty(extensionName)\r\n| where '*' in ({AksExtensionNameFilter}) or extensionName in ({AksExtensionNameFilter})\r\n| where '*' in ({AksExtensionStatusFilter}) or status in ({AksExtensionStatusFilter})\r\n| summarize count() by extensionName, status\r\n| summarize \r\n    Succeeded = sumif(count_, status == \"Succeeded\"),\r\n    Failed = sumif(count_, status == \"Failed\"),\r\n    Creating = sumif(count_, status == \"Creating\"),\r\n    Updating = sumif(count_, status == \"Updating\"),\r\n    Deleting = sumif(count_, status == \"Deleting\"),\r\n    Other = sumif(count_, status !in (\"Succeeded\", \"Failed\", \"Creating\", \"Updating\", \"Deleting\"))\r\n    by extensionName\r\n| project extensionName, Succeeded, Failed, Creating, Updating, Deleting, Other\r\n| order by extensionName asc",
+              "size": 0,
+              "showRefreshButton": true,
+              "title": "AKS Extension Status by Type",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "Succeeded",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">",
+                          "thresholdValue": "0",
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Failed",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">",
+                          "thresholdValue": "0",
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Creating",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">",
+                          "thresholdValue": "0",
+                          "representation": "blue",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Updating",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">",
+                          "thresholdValue": "0",
+                          "representation": "yellow",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "extensionName",
+                    "label": "Extension"
+                  }
+                ]
+              },
+              "noDataMessage": "No AKS Arc extension status data found for the clusters in scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "60",
+            "name": "aks-extension-status-table",
+            "styleSettings": {
+              "margin": "5",
+              "padding": "5",
+              "maxWidth": "60"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"aks-ext-merge-001\",\"mergeType\":\"table\",\"leftTable\":\"aks-extension-status-table\"}],\"projectRename\":[{\"originalName\":\"[aks-extension-status-table].extensionName\",\"mergedName\":\"extensionName\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Succeeded\",\"mergedName\":\"Succeeded\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Failed\",\"mergedName\":\"Failed\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Creating\",\"mergedName\":\"Creating\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Updating\",\"mergedName\":\"Updating\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Deleting\",\"mergedName\":\"Deleting\",\"fromId\":\"aks-ext-merge-001\"},{\"originalName\":\"[aks-extension-status-table].Other\",\"mergedName\":\"Other\",\"fromId\":\"aks-ext-merge-001\"}]}",
+              "size": 0,
+              "title": "AKS Extension Status Chart",
+              "queryType": 7,
+              "visualization": "categoricalbar",
+              "chartSettings": {
+                "xSettings": {
+                  "label": "Extension"
+                },
+                "ySettings": {
+                  "label": "Count"
+                }
+              },
+              "noDataMessage": "No AKS Arc extension data found for the clusters in scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "40",
+            "showPin": false,
+            "name": "aks-extension-status-chart",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px",
+              "maxWidth": "40"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "📚 **Knowledge:** [Troubleshoot extension issues for AKS Arc Kubernetes clusters](https://learn.microsoft.com/azure/azure-arc/kubernetes/extensions-troubleshooting)"
+            },
+            "name": "aks-extensions-knowledge-link"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/extensions\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = coalesce(tostring(properties.ProvisioningState), tostring(properties.provisioningState))\r\n| where status == \"Failed\"\r\n| extend extensionName = coalesce(tostring(properties.ExtensionType), tostring(properties.extensionType))\r\n| extend errorCode = coalesce(tostring(properties.Statuses[0].Code), tostring(properties.Statuses[0].code), tostring(properties.statuses[0].Code), tostring(properties.statuses[0].code))\r\n| extend errorMessage = coalesce(tostring(properties.Statuses[0].Message), tostring(properties.Statuses[0].message), tostring(properties.statuses[0].Message), tostring(properties.statuses[0].message))\r\n| extend errorDetails = iff(isnotempty(errorCode), strcat(errorCode, ': ', errorMessage), errorMessage)\r\n| extend errorDetailsFull = errorDetails\r\n| parse tolower(id) with clusterId \"/providers/microsoft.kubernetesconfiguration/extensions/\" *\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project clusterId = tolower(id), clusterName = name, clusterResourceGroup = resourceGroup, subscriptionId\r\n) on clusterId\r\n| join kind=leftouter (\r\n    resourcecontainers\r\n    | where type == \"microsoft.resources/subscriptions\"\r\n    | project subscriptionId, subscriptionName = name\r\n) on subscriptionId\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project clusterName, clusterLink, extensionName, status, errorDetails, errorDetailsFull, resourceGroup = clusterResourceGroup, subscriptionName, subscriptionLink\r\n| order by clusterName asc, extensionName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "⚠️ Failed AKS Extensions",
+              "noDataMessage": "No failed AKS extensions found",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Failed",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "errorDetails",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "linkTarget": "CellDetails",
+                      "linkIsContextBlade": true,
+                      "customColumnWidthSetting": "45ch"
+                    },
+                    "tooltipFormat": {
+                      "tooltip": "Click to view full error details"
+                    }
+                  },
+                  {
+                    "columnMatch": "errorDetailsFull",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "subscriptionName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "subscriptionLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "subscriptionLink",
+                    "formatter": 5
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "extensionName",
+                    "label": "Extension"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "errorDetails",
+                    "label": "Error Details"
+                  },
+                  {
+                    "columnId": "errorDetailsFull"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "subscriptionName",
+                    "label": "Subscription Name"
+                  },
+                  {
+                    "columnId": "subscriptionLink"
+                  }
+                ],
+                "rowDetails": {
+                  "type": 1,
+                  "title": "Error Details",
+                  "content": {
+                    "json": "### ⚠️ AKS Extension Error Details\r\n\r\n| Property | Value |\r\n|:--|:--|\r\n| **AKS Cluster** | {clusterName} |\r\n| **Extension** | {extensionName} |\r\n| **Status** | {status} |\r\n| **Resource Group** | {resourceGroup} |\r\n\r\n---\r\n\r\n#### Full Error Message\r\n\r\n```\r\n{errorDetailsFull}\r\n```\r\n\r\n---\r\n\r\n💡 **Tip:** Click on the AKS Cluster Name link to view the extension in the Azure Portal for additional details and remediation options."
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "errorDetails",
+                    "comparison": "isNotEqualTo",
+                    "value": ""
+                  }
+                }
+              }
+            },
+            "name": "aks-failed-extensions-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🔄 AKS Arc GitOps / Flux Status\r\n\r\nMonitor Flux configurations and compliance status across your AKS Arc clusters.\r\n\r\n> 💡 **Tip:** GitOps views support filtering by **Subscription** and **Resource Group** only. The **Parent Cluster Tag** filter is not supported due to Azure Resource Graph query limitations."
+            },
+            "name": "text-gitops-header"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "nav",
+              "links": [
+                {
+                  "id": "gitops-docs-link",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/kubernetes/conceptual-gitops-flux2",
+                  "linkTarget": "Url",
+                  "linkLabel": "📚 Documentation: GitOps with Flux v2",
+                  "style": "link"
+                }
+              ]
+            },
+            "name": "gitops-docs-link"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| summarize Count = count() by complianceState",
+              "size": 0,
+              "title": "Flux Compliance Status",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom",
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "flux-compliance-chart",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| summarize Total = count(), Compliant = countif(complianceState == \"Compliant\"), NonCompliant = countif(complianceState == \"Non-Compliant\"), Pending = countif(complianceState == \"Pending\"), Suspended = countif(complianceState == \"Suspended\")\r\n| extend ComplianceRate = iff(Total > 0, round(100.0 * Compliant / Total, 1), 0.0)\r\n| project Total, Compliant, NonCompliant, Pending, Suspended, ComplianceRate",
+              "size": 4,
+              "title": "Flux Configuration Summary",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "showBorder": true,
+                "titleContent": {
+                  "columnMatch": "Total",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "ComplianceRate",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "auto"
+                  },
+                  "numberFormat": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal"
+                    }
+                  }
+                }
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "flux-summary-tiles",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📋 All Flux Configurations"
+            },
+            "name": "text-all-flux-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| parse id with * \"ManagedClusters/\" aksClusterName \"/\" *\r\n| parse id with * \"ConnectedClusters/\" arcClusterName \"/\" *\r\n| extend clusterName = iff(isempty(aksClusterName), arcClusterName, aksClusterName)\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend clusterLink = strcat(\"https://portal.azure.com/#@/resource\", aksId)\r\n| extend configName = name\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| extend sourceKind = tostring(properties.sourceKind)\r\n| extend url = iff(sourceKind =~ \"GitRepository\", tostring(properties.gitRepository.url), iff(sourceKind =~ \"AzureBlob\", tostring(properties.azureBlob.url), tostring(properties.bucket.url)))\r\n| extend branch = tostring(properties.gitRepository.repositoryRef.branch)\r\n| extend namespace = tostring(properties.configNamespace)\r\n| extend lastSourceSyncedAt = todatetime(properties.statuses[0].lastTransitionTime)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| project clusterName, clusterLink, configName, complianceState, sourceKind, url, branch, namespace, lastSourceSyncedAt, resourceGroup, subscriptionId\r\n| order by complianceState asc, clusterName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "All Flux Configurations",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "complianceState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Compliant",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Non-Compliant",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Pending",
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "lastSourceSyncedAt",
+                    "formatter": 6
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "configName",
+                    "label": "Configuration Name"
+                  },
+                  {
+                    "columnId": "complianceState",
+                    "label": "Compliance State"
+                  },
+                  {
+                    "columnId": "sourceKind",
+                    "label": "Source Kind"
+                  },
+                  {
+                    "columnId": "url",
+                    "label": "Source URL"
+                  },
+                  {
+                    "columnId": "branch",
+                    "label": "Branch"
+                  },
+                  {
+                    "columnId": "namespace",
+                    "label": "Namespace"
+                  },
+                  {
+                    "columnId": "lastSourceSyncedAt",
+                    "label": "Last Synced"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "subscriptionId",
+                    "label": "Subscription ID"
+                  }
+                ]
+              },
+              "noDataMessage": "No Flux configurations found on the AKS Arc clusters in scope.",
+              "noDataMessageStyle": 4
+            },
+            "name": "flux-all-configurations-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### ⚠️ Non-Compliant Flux Configurations"
+            },
+            "name": "text-noncompliant-header"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "kubernetesconfigurationresources\r\n| where type == \"microsoft.kubernetesconfiguration/fluxconfigurations\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend complianceState = iff(isnull(properties.complianceState), \"Pending\", tostring(properties.complianceState))\r\n| where complianceState == \"Non-Compliant\" or complianceState == \"Pending\"\r\n| parse id with * \"ManagedClusters/\" aksClusterName \"/\" *\r\n| parse id with * \"ConnectedClusters/\" arcClusterName \"/\" *\r\n| extend clusterName = iff(isempty(aksClusterName), arcClusterName, aksClusterName)\r\n| extend aksId = tolower(substring(id, 0, indexof(id, \"/providers/Microsoft.KubernetesConfiguration\")))\r\n| extend clusterLink = strcat(\"https://portal.azure.com/#@/resource\", aksId)\r\n| extend configName = name\r\n| extend sourceKind = tostring(properties.sourceKind)\r\n| extend url = iff(sourceKind =~ \"GitRepository\", tostring(properties.gitRepository.url), iff(sourceKind =~ \"AzureBlob\", tostring(properties.azureBlob.url), tostring(properties.bucket.url)))\r\n| extend errorMessage = tostring(properties.statuses[0].message)\r\n| extend lastSourceSyncedAt = todatetime(properties.statuses[0].lastTransitionTime)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.kubernetes/connectedclusters\"\r\n    | where properties.infrastructure == \"azure_stack_hci\"\r\n    | project aksId = tolower(id)\r\n) on aksId\r\n| project clusterName, clusterLink, configName, complianceState, sourceKind, url, errorMessage, lastSourceSyncedAt, resourceGroup\r\n| order by clusterName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "Non-Compliant Flux Configurations",
+              "noDataMessage": "✅ All Flux configurations are compliant",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "complianceState",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Non-Compliant",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Pending",
+                          "representation": "pending",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "url",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url"
+                    }
+                  },
+                  {
+                    "columnMatch": "errorMessage",
+                    "formatter": 1,
+                    "formatOptions": {
+                      "linkTarget": "CellDetails",
+                      "linkIsContextBlade": true,
+                      "customColumnWidthSetting": "45ch"
+                    },
+                    "tooltipFormat": {
+                      "tooltip": "Click to view full error details"
+                    }
+                  },
+                  {
+                    "columnMatch": "lastSourceSyncedAt",
+                    "formatter": 6
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "clusterName",
+                    "label": "AKS Cluster Name"
+                  },
+                  {
+                    "columnId": "configName",
+                    "label": "Configuration Name"
+                  },
+                  {
+                    "columnId": "complianceState",
+                    "label": "Compliance State"
+                  },
+                  {
+                    "columnId": "sourceKind",
+                    "label": "Source Kind"
+                  },
+                  {
+                    "columnId": "url",
+                    "label": "Source URL"
+                  },
+                  {
+                    "columnId": "errorMessage",
+                    "label": "Error Details"
+                  },
+                  {
+                    "columnId": "lastSourceSyncedAt",
+                    "label": "Last Synced"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  }
+                ]
+              }
+            },
+            "name": "flux-noncompliant-table"
+          }
+        ]
+      },
+      "name": "aks-arc-clusters"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

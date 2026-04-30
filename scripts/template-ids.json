@@ -1,0 +1,91 @@
+{
+  "$comment": "Maps the LENS workbook tabs to their split-file slugs and gallery template IDs. The order of the 'tabs' array is the canonical items[] order in the assembled monolithic workbook (preserved from v0.8.9: 0,7,1,2,6,4,3,5). selectedTab is the parameter value that triggers visibility in the monolithic build. groupName matches the original root-level item name. galleryTemplateId is empty until the upstream Application-Insights-Workbooks PR is approved by the Azure Monitor team. Capacity has subSections (one sub-template per Capacity section) so each gallery sub-template stays under 200 KB.",
+  "tabs": [
+    {
+      "selectedTab": "0",
+      "slug": "Overview",
+      "groupName": "summary-tiles-group",
+      "label": "📊 Azure Local Instances",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "7",
+      "slug": "Capacity",
+      "groupName": "capacity-tab-group",
+      "label": "🏗️ Capacity",
+      "galleryTemplateId": "",
+      "subSections": [
+        {
+          "value": "overview",
+          "slug": "Capacity-Overview",
+          "groupName": "cap-overview-section",
+          "label": "📋 Overview",
+          "galleryTemplateId": ""
+        },
+        {
+          "value": "multi",
+          "slug": "Capacity-MultiNode",
+          "groupName": "cap-multi-section",
+          "label": "🌍 Multi-cluster",
+          "galleryTemplateId": ""
+        },
+        {
+          "value": "single",
+          "slug": "Capacity-SingleNode",
+          "groupName": "cap-single-section",
+          "label": "🔍 Single cluster",
+          "galleryTemplateId": ""
+        },
+        {
+          "value": "hyperv",
+          "slug": "Capacity-HyperV",
+          "groupName": "cap-hyperv-section",
+          "label": "🖥️ Hyper-V VMs",
+          "galleryTemplateId": ""
+        }
+      ]
+    },
+    {
+      "selectedTab": "1",
+      "slug": "ArbStatus",
+      "groupName": "arcbridge-page",
+      "label": "🔗 ARB Status",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "2",
+      "slug": "Machines",
+      "groupName": "azure-local-nodes",
+      "label": "🗄️ Azure Local Machines",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "6",
+      "slug": "VMs",
+      "groupName": "azure-local-vms",
+      "label": "💻 Azure Local VMs",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "4",
+      "slug": "AksArc",
+      "groupName": "aks-arc-clusters",
+      "label": "☸️ AKS Arc Clusters",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "3",
+      "slug": "SystemHealth",
+      "groupName": "grp-update-readiness",
+      "label": "📋 System Health",
+      "galleryTemplateId": ""
+    },
+    {
+      "selectedTab": "5",
+      "slug": "UpdateProgress",
+      "groupName": "grp-update-progress",
+      "label": "🔄 Update Progress",
+      "galleryTemplateId": ""
+    }
+  ]
+}

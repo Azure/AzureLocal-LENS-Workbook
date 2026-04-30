@@ -1,0 +1,1109 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## 🔗 ARB Status per Azure Local instance"
+                  },
+                  "name": "text - 2"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, resourceGroup, hcistatus\r\n) on resourceGroup\r\n| extend hcistatus = coalesce(hcistatus, \"Unknown\")\r\n| summarize hciname = take_any(hciname), hcistatus = take_any(hcistatus) by arcbridgeId, arcbridgename, resourceGroup, status\r\n| summarize \r\n    TotalResources = count(),\r\n    ArcBridgeCount = dcount(arcbridgename),\r\n    HCIClusterCount = dcount(hciname)\r\n    by ArcBridgeStatus = status, HCIClusterConnectivity = hcistatus\r\n| extend sortOrder = case(ArcBridgeStatus == \"Running\", 0, ArcBridgeStatus == \"Offline\", 2, 1)\r\n| order by sortOrder asc\r\n| project-away sortOrder",
+                    "size": 0,
+                    "showRefreshButton": true,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "gridSettings": {
+                      "rowLimit": 2000,
+                      "formatters": [
+                        {
+                          "columnMatch": "TotalResources",
+                          "formatter": 5
+                        },
+                        {
+                          "columnMatch": "HCIClusterCount",
+                          "formatter": 5
+                        },
+                        {
+                          "columnMatch": "ArcBridgeStatus",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "icons",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Running",
+                                "representation": "success",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Offline",
+                                "representation": "4",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "warning",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    "sortBy": [],
+                    "noDataMessage": "No Arc Resource Bridge resources found in the selected scope.",
+                    "noDataMessageStyle": 4
+                  },
+                  "customWidth": "50",
+                  "name": "arcbridge-status"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "{\"version\":\"Merge/1.0\",\"merges\":[{\"id\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\",\"mergeType\":\"table\",\"leftTable\":\"arcbridge-status\"}],\"projectRename\":[{\"originalName\":\"[arcbridge-status].ArcBridgeStatus\",\"mergedName\":\"ArcBridgeStatus\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].HCIStatus\",\"mergedName\":\"HCIStatus\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].TotalResources\",\"mergedName\":\"TotalResources\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].ArcBridgeCount\",\"mergedName\":\"ArcBridgeCount\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].HCIClusterCount\",\"mergedName\":\"HCIClusterCount\",\"fromId\":\"b39a061e-3234-4dbf-aeb0-c96077ed8030\"},{\"originalName\":\"[arcbridge-status].ClusterConnectivityStatus\",\"mergedName\":\"ClusterConnectivityStatus\",\"fromId\":\"unknown\"},{\"originalName\":\"[arcbridge-status].ClusterConnectivity\",\"mergedName\":\"ClusterConnectivity\",\"fromId\":\"unknown\"}]}",
+                    "size": 2,
+                    "queryType": 7,
+                    "visualization": "piechart",
+                    "noDataMessage": "No Arc Resource Bridge appliances found for the current Subscription / Resource Group / Cluster Tag filters. Adjust the filters above to see ARB status.",
+                    "noDataMessageStyle": 4
+                  },
+                  "customWidth": "50",
+                  "name": "arb-status-piechart-merge"
+                }
+              ]
+            },
+            "customWidth": "100",
+            "conditionalVisibility": {
+              "parameterName": "selectedTab",
+              "comparison": "isEqualTo",
+              "value": "1"
+            },
+            "name": "arcbridge summary",
+            "styleSettings": {
+              "showBorder": true
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## ⚠️ Offline Azure Resource Bridges (ARB) appliances"
+            },
+            "name": "text - 2 - Copy"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Warning:** Azure resource bridge appliance can't be offline for more than 45 days because this inactivity can affect the validity of the security key used for authentication. [Learn more](https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline)"
+            },
+            "name": "arb-offline-warning"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where (type == \"microsoft.hybridcompute/machines\" and kind == \"HCI\")\r\n    or (type == \"microsoft.kubernetes/connectedclusters\" and tostring(properties.infrastructure) == \"azure_stack_hci\")\r\n| extend isVM = (type == \"microsoft.hybridcompute/machines\")\r\n| extend resourceId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type in (\"microsoft.azurestackhci/virtualmachineinstances\", \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend parentId = tolower(iff(\r\n        type == \"microsoft.azurestackhci/virtualmachineinstances\",\r\n        substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")),\r\n        substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\"))))\r\n    | project parentId, customLocId\r\n) on $left.resourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| summarize VMCount = countif(isVM), AKSArcCount = countif(not(isVM)) by arcBridgeRG",
+              "size": 0,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            },
+            "name": "arb-vm-aks-counts"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = datetime_diff('day', now(), lastModified)\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n) on resourceGroup\r\n| summarize\r\n    ClusterName = strcat_array(make_set(coalesce(hciname, 'Unknown')), ', '),\r\n    clusterLink = strcat_array(make_set(strcat('https://portal.azure.com/#@/resource', clusterId)), ', '),\r\n    HCIClusterConnectivity = strcat_array(make_set(coalesce(hcistatus, 'Unknown')), ', '),\r\n    currentVersion = strcat_array(make_set(currentVersion), ', ')\r\n    by arcbridgename, arcbridgeId, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus, lastModified, daysSinceLastModified, ClusterName, clusterLink, HCIClusterConnectivity, currentVersion\r\n| order by daysSinceLastModified desc, ARBStatus asc",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "name": "arb-offline-base",
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"arb-merge\", \"mergeType\": \"leftouter\", \"leftTable\": \"arb-offline-base\", \"rightTable\": \"arb-vm-aks-counts\", \"leftColumn\": \"resourceGroup\", \"rightColumn\": \"arcBridgeRG\"}], \"projectRename\": [{\"originalName\": \"[arb-offline-base].ARBResourceName\", \"mergedName\": \"ARBResourceName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].arbLink\", \"mergedName\": \"arbLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].resourceGroup\", \"mergedName\": \"resourceGroup\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].ARBStatus\", \"mergedName\": \"ARBStatus\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].lastModified\", \"mergedName\": \"lastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].daysSinceLastModified\", \"mergedName\": \"daysSinceLastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].ClusterName\", \"mergedName\": \"ClusterName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].clusterLink\", \"mergedName\": \"clusterLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].HCIClusterConnectivity\", \"mergedName\": \"HCIClusterConnectivity\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].currentVersion\", \"mergedName\": \"currentVersion\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].VMCount\", \"mergedName\": \"VMCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].AKSArcCount\", \"mergedName\": \"AKSArcCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-offline-base].resourceGroup\"}, {\"originalName\": \"[arb-vm-aks-counts].arcBridgeRG\"}]}",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "ARBResourceName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "arbLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "arbLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "ARBStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Running",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Offline",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "lastModified",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "daysSinceLastModified",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">",
+                          "thresholdValue": "14",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "1",
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "green",
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "HCIClusterConnectivity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "ConnectedRecently",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ARBResourceName",
+                    "label": "ARB Resource Name"
+                  },
+                  {
+                    "columnId": "arbLink",
+                    "label": "ARB Link"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "ARBStatus",
+                    "label": "ARB Status"
+                  },
+                  {
+                    "columnId": "lastModified",
+                    "label": "Last Modified"
+                  },
+                  {
+                    "columnId": "daysSinceLastModified",
+                    "label": "Days Since Last Modified"
+                  },
+                  {
+                    "columnId": "ClusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "HCIClusterConnectivity",
+                    "label": "HCI Cluster Connectivity"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Current Version"
+                  },
+                  {
+                    "columnId": "VMCount",
+                    "label": "VM Count"
+                  },
+                  {
+                    "columnId": "AKSArcCount",
+                    "label": "AKS Arc Count"
+                  }
+                ]
+              },
+              "sortBy": [],
+              "noDataMessage": "No offline Arc Resource Bridges — all ARBs in scope appear to be Running.",
+              "noDataMessageStyle": 4
+            },
+            "name": "arb-offline-table"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "nav",
+              "links": [
+                {
+                  "id": "arb-offline-troubleshoot-link",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline",
+                  "linkTarget": "Url",
+                  "linkLabel": "📚 Knowledge Link: Troubleshoot Azure Resource Bridge (ARB) Offline status",
+                  "style": "link"
+                }
+              ]
+            },
+            "name": "arb-offline-knowledge-link"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🔗 All Azure Resource Bridges (ARB) appliances"
+            },
+            "name": "text - 3"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "arb-status-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ArbStatusFilter",
+                  "label": "ARB Status",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| distinct status\r\n| order by status asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "arb-cluster-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ArbClusterFilter",
+                  "label": "Cluster Name",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| distinct name\r\n| order by name asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "arb-all-filters"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** If the 'Cluster Name' column shows 'Unknown', the ARB may have been orphaned. Check if the cluster resource has been deleted."
+            },
+            "name": "arb-orphaned-tip"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModified = iff(status == \"Running\", toint(-1), datetime_diff('day', now(), lastModified))\r\n| project arcbridgename = name, arcbridgeId = id, resourceGroup, status, lastModified, daysSinceLastModified\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | extend hcistatus = tostring(properties.status)\r\n    | project hciname = name, clusterId = id, resourceGroup, hcistatus\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend currentVersion = tostring(properties.currentVersion)\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion\r\n    ) on $left.clusterId == $right.cId\r\n) on resourceGroup\r\n| where '*' in ({ArbStatusFilter}) or status in ({ArbStatusFilter})\r\n| where '*' in ({ArbClusterFilter}) or hciname in ({ArbClusterFilter})\r\n| summarize\r\n    ClusterName = strcat_array(make_set(coalesce(hciname, 'Unknown')), ', '),\r\n    clusterLink = strcat_array(make_set(iff(isempty(clusterId), '', strcat('https://portal.azure.com/#@/resource', clusterId))), ', '),\r\n    HCIClusterConnectivity = strcat_array(make_set(coalesce(hcistatus, 'Unknown')), ', '),\r\n    currentVersion = strcat_array(make_set(currentVersion), ', ')\r\n    by arcbridgename, arcbridgeId, resourceGroup, ARBStatus = status, lastModified, daysSinceLastModified\r\n| extend arbLink = strcat('https://portal.azure.com/#@/resource', arcbridgeId)\r\n| project ARBResourceName = arcbridgename, arbLink, resourceGroup, ARBStatus, lastModified, daysSinceLastModified, ClusterName, clusterLink, HCIClusterConnectivity, currentVersion\r\n| order by HCIClusterConnectivity desc, ARBStatus asc",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ]
+            },
+            "name": "arb-all-base",
+            "conditionalVisibility": {
+              "parameterName": "neverVisible",
+              "comparison": "isEqualTo",
+              "value": "alwaysHidden"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\": \"Merge/1.0\", \"merges\": [{\"id\": \"arb-merge\", \"mergeType\": \"leftouter\", \"leftTable\": \"arb-all-base\", \"rightTable\": \"arb-vm-aks-counts\", \"leftColumn\": \"resourceGroup\", \"rightColumn\": \"arcBridgeRG\"}], \"projectRename\": [{\"originalName\": \"[arb-all-base].ARBResourceName\", \"mergedName\": \"ARBResourceName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].arbLink\", \"mergedName\": \"arbLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].resourceGroup\", \"mergedName\": \"resourceGroup\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].ARBStatus\", \"mergedName\": \"ARBStatus\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].lastModified\", \"mergedName\": \"lastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].daysSinceLastModified\", \"mergedName\": \"daysSinceLastModified\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].ClusterName\", \"mergedName\": \"ClusterName\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].clusterLink\", \"mergedName\": \"clusterLink\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].HCIClusterConnectivity\", \"mergedName\": \"HCIClusterConnectivity\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].currentVersion\", \"mergedName\": \"currentVersion\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].VMCount\", \"mergedName\": \"VMCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-vm-aks-counts].AKSArcCount\", \"mergedName\": \"AKSArcCount\", \"fromId\": \"arb-merge\"}, {\"originalName\": \"[arb-all-base].resourceGroup\"}, {\"originalName\": \"[arb-vm-aks-counts].arcBridgeRG\"}]}",
+              "size": 0,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 7,
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "arbLink",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkLabel": "Open ARB"
+                    }
+                  },
+                  {
+                    "columnMatch": "ARBStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Running",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Offline",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "lastModified",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "daysSinceLastModified",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "<",
+                          "thresholdValue": "0",
+                          "representation": "green",
+                          "text": "Connected"
+                        },
+                        {
+                          "operator": ">",
+                          "thresholdValue": "45",
+                          "representation": "redBright",
+                          "text": "{0}{1} days"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "yellow",
+                          "text": "{0}{1} days"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "HCIClusterConnectivity",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "ConnectedRecently",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ARBResourceName",
+                    "label": "ARB Resource Name"
+                  },
+                  {
+                    "columnId": "arbLink",
+                    "label": "ARB Link"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "ARBStatus",
+                    "label": "ARB Status"
+                  },
+                  {
+                    "columnId": "lastModified",
+                    "label": "Last Modified"
+                  },
+                  {
+                    "columnId": "daysSinceLastModified",
+                    "label": "Days Since Last Modified"
+                  },
+                  {
+                    "columnId": "ClusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "HCIClusterConnectivity",
+                    "label": "HCI Cluster Connectivity"
+                  },
+                  {
+                    "columnId": "currentVersion",
+                    "label": "Current Version"
+                  },
+                  {
+                    "columnId": "VMCount",
+                    "label": "VM Count"
+                  },
+                  {
+                    "columnId": "AKSArcCount",
+                    "label": "AKS Arc Count"
+                  }
+                ]
+              },
+              "sortBy": [],
+              "noDataMessage": "No Arc Resource Bridge resources found in the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "name": "arb-all-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🔔 ARB Alert Rules Configuration\r\n💡 **Tip:** Create alert rules to monitor Arc Resource Bridge(ARB) health and status. Get notified when ARBs go offline or encounter issues. Expand below section to view a step by step guide."
+            },
+            "name": "arb-alert-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "arb-alert-toggle",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ShowAlertRulesSection",
+                  "label": "Show Alert Rules Setup",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show Alert Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide Alert Setup\"}]",
+                  "value": "no"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "arb-alert-toggle-param"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📋 Prerequisites for Alert Rules\r\n\r\n1. **Action Group**: Create or use an existing [Action Group](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/ActionGroupsTemplateBlade) to receive notifications (Email, SMS, Webhook, etc.)\r\n2. **Permissions**: Contributor or Monitoring Contributor role on the subscription/resource group\r\n3. **Resource Health**: Azure Resource Health alerts are supported for Arc Resource Bridge\r\n\r\n---"
+                  },
+                  "name": "arb-alert-prereqs"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🎯 Recommended Alert Rules for Arc Resource Bridge\r\n\r\n| Alert Type | Description | Recommended Severity |\r\n|------------|-------------|---------------------|\r\n| **Offline Status** | ARB appliance status is 'Offline' | Sev 1 (Critical) |\r\n| **Resource Health - Unavailable** | ARB resource health state is unavailable | Sev 1 (Critical) |\r\n| **Resource Health - Degraded** | ARB resource health state is degraded | Sev 2 (Warning) |\r\n| **Extended Offline (>14 days)** | ARB has been offline for more than 14 days | Sev 0 (Critical) |\r\n\r\n⚠️ **Important**: Arc Resource Bridge can't be offline for more than 45 days or the security key will expire.\r\n\r\n---"
+                  },
+                  "name": "arb-alert-types"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🚀 Create Alert Rules\r\n\r\nSelect the Arc Resource Bridges below to create alert rules. Click the **Create Alert Rule** link to open Azure Portal with pre-configured settings."
+                  },
+                  "name": "arb-alert-instructions"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend status = tostring(properties.status)\r\n| extend lastModified = todatetime(systemData.lastModifiedAt)\r\n| extend daysSinceLastModifiedNum = datetime_diff('day', now(), lastModified)\r\n| extend ResourceHealthAlertLink = strcat('https://portal.azure.com/#view/Microsoft_Azure_Monitoring/CreateAlertRuleFromResourceBlade/resourceId/', url_encode(id), '/alertType/ResourceHealth')\r\n| extend ActivityLogAlertLink = strcat('https://portal.azure.com/#view/Microsoft_Azure_Monitoring/CreateAlertRuleFromResourceBlade/resourceId/', url_encode(id), '/alertType/ActivityLog')\r\n| project \r\n    ARBName = name, \r\n    ResourceId = id,\r\n    ResourceGroup = resourceGroup,\r\n    SubscriptionId = subscriptionId,\r\n    Status = status,\r\n    DaysOffline = iff(status == \"Running\", 0, daysSinceLastModifiedNum),\r\n    ResourceHealthAlertLink,\r\n    ActivityLogAlertLink\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project ClusterName = name, resourceGroup\r\n) on $left.ResourceGroup == $right.resourceGroup\r\n| summarize ClusterName = strcat_array(make_set(coalesce(ClusterName, 'N/A')), ', ') by ARBName, ResourceId, ResourceGroup, SubscriptionId, Status, DaysOffline, ResourceHealthAlertLink, ActivityLogAlertLink\r\n| project ARBName, ResourceGroup, ClusterName, Status, DaysOffline, ResourceHealthAlertLink, ActivityLogAlertLink, ResourceId\r\n| order by Status desc, DaysOffline desc",
+                    "size": 0,
+                    "showRefreshButton": true,
+                    "showExportToExcel": true,
+                    "queryType": 1,
+                    "resourceType": "microsoft.resourcegraph/resources",
+                    "crossComponentResources": [
+                      "{Subscriptions}"
+                    ],
+                    "gridSettings": {
+                      "rowLimit": 2000,
+                      "formatters": [
+                        {
+                          "columnMatch": "Status",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "icons",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Running",
+                                "representation": "success",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "Offline",
+                                "representation": "4",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "warning",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "columnMatch": "DaysOffline",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "colors",
+                            "thresholdsGrid": [
+                              {
+                                "operator": ">",
+                                "thresholdValue": "14",
+                                "representation": "redBright",
+                                "text": "{0}{1} days"
+                              },
+                              {
+                                "operator": ">=",
+                                "thresholdValue": "1",
+                                "representation": "yellow",
+                                "text": "{0}{1} days"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "green",
+                                "text": "Online"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "columnMatch": "ResourceHealthAlertLink",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "🔔 Resource Health Alert"
+                          }
+                        },
+                        {
+                          "columnMatch": "ActivityLogAlertLink",
+                          "formatter": 7,
+                          "formatOptions": {
+                            "linkTarget": "Url",
+                            "linkLabel": "📋 Activity Log Alert"
+                          }
+                        },
+                        {
+                          "columnMatch": "ResourceId",
+                          "formatter": 5
+                        }
+                      ],
+                      "filter": true,
+                      "labelSettings": [
+                        {
+                          "columnId": "ARBName",
+                          "label": "Arc Resource Bridge"
+                        },
+                        {
+                          "columnId": "ResourceGroup",
+                          "label": "Resource Group"
+                        },
+                        {
+                          "columnId": "ClusterName",
+                          "label": "Associated Cluster"
+                        },
+                        {
+                          "columnId": "DaysOffline",
+                          "label": "Days Offline"
+                        },
+                        {
+                          "columnId": "ResourceHealthAlertLink",
+                          "label": "Resource Health Alert"
+                        },
+                        {
+                          "columnId": "ActivityLogAlertLink",
+                          "label": "Activity Log Alert"
+                        }
+                      ]
+                    },
+                    "noDataMessage": "No Resource Health alert rules found for Arc Resource Bridges in the selected scope.",
+                    "noDataMessageStyle": 4
+                  },
+                  "name": "arb-alert-rules-table"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "---\r\n### 📝 Manual Alert Rule Creation Steps\r\n\r\n**Option 1: Resource Health Alert (Recommended for Offline Detection)**\r\n1. Click **Resource Health Alert** link above for the specific ARB\r\n2. Configure the alert condition:\r\n   - **Current resource status**: Select `Unavailable`\r\n   - **Previous resource status**: Select `Available`\r\n   - **Reason type**: Select `Platform Initiated` and `User Initiated`\r\n3. Select or create an **Action Group**\r\n4. Set alert severity (Sev 1 recommended for offline)\r\n5. Name the alert rule and create\r\n\r\n**Option 2: Activity Log Alert (For status changes)**\r\n1. Click **Activity Log Alert** link above for the specific ARB\r\n2. Select signal: `All Administrative operations`\r\n3. Filter by operation: `Microsoft.ResourceConnector/appliances/write`\r\n4. Select or create an **Action Group**\r\n5. Name the alert rule and create\r\n\r\n**Option 3: Azure Resource Graph Alert (Advanced - For bulk monitoring)**\r\n1. Go to [Azure Monitor Alert Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/alertsV2)\r\n2. Create a new **Log Search Alert**\r\n3. Use the following ARG query:\r\n```kusto\r\narg(\"\").resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| project name, resourceGroup, status = tostring(properties.status)\r\n```\r\n4. Set condition: `Number of results > 0`\r\n5. Configure frequency (e.g., every 15 minutes)\r\n6. Select Action Group and create"
+                  },
+                  "name": "arb-manual-alert-steps"
+                },
+                {
+                  "type": 11,
+                  "content": {
+                    "version": "LinkItem/1.0",
+                    "style": "nav",
+                    "links": [
+                      {
+                        "id": "create-action-group-link",
+                        "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/ActionGroupsTemplateBlade",
+                        "linkTarget": "Url",
+                        "linkLabel": "➕ Create Action Group",
+                        "style": "link"
+                      },
+                      {
+                        "id": "view-alert-rules-link",
+                        "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/alertsV2",
+                        "linkTarget": "Url",
+                        "linkLabel": "📋 View Existing Alert Rules",
+                        "style": "link"
+                      },
+                      {
+                        "id": "resource-health-docs-link",
+                        "cellValue": "https://learn.microsoft.com/azure/service-health/resource-health-alert-monitor-guide",
+                        "linkTarget": "Url",
+                        "linkLabel": "📚 Resource Health Alerts Docs",
+                        "style": "link"
+                      },
+                      {
+                        "id": "arb-troubleshoot-link",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge",
+                        "linkTarget": "Url",
+                        "linkLabel": "🔧 Troubleshoot ARB",
+                        "style": "link"
+                      }
+                    ]
+                  },
+                  "name": "arb-alert-quick-links"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowAlertRulesSection",
+              "comparison": "isEqualTo",
+              "value": "yes"
+            },
+            "name": "arb-alert-rules-group"
+          }
+        ]
+      },
+      "name": "arcbridge-page"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

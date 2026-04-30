@@ -1,0 +1,1413 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [
+          "{Subscriptions}"
+        ],
+        "parameters": [
+          {
+            "id": "cap-section-driver",
+            "version": "KqlParameterItem/1.0",
+            "name": "CapacitySection",
+            "type": 1,
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "value": "overview"
+          }
+        ],
+        "style": "pills",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "name": "cap-shared-params"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Overview",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🏗️ Cluster Capacity Overview\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
+            },
+            "name": "text-capacity-overview-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "target-ratio-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TargetRatio",
+                  "label": "Target vCPU:pCPU Ratio",
+                  "type": 2,
+                  "description": "Select the target vCPU to pCPU ratio for your environment. Used for color-coding the ratio health indicator.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"1\",\"label\":\"1:1\"},{\"value\":\"2\",\"label\":\"2:1\"},{\"value\":\"3\",\"label\":\"3:1\"},{\"value\":\"4\",\"label\":\"4:1\"},{\"value\":\"5\",\"label\":\"5:1\"},{\"value\":\"6\",\"label\":\"6:1\"}]",
+                  "value": "4"
+                },
+                {
+                  "id": "ratio-filter-param",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "RatioFilter",
+                  "label": "Filter by Ratio",
+                  "type": 2,
+                  "description": "Filter clusters to show only those with a vCPU to pCPU ratio at or above the selected value.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"1\",\"label\":\"≥ 1:1\"},{\"value\":\"2\",\"label\":\"≥ 2:1\"},{\"value\":\"3\",\"label\":\"≥ 3:1\"},{\"value\":\"4\",\"label\":\"≥ 4:1\"},{\"value\":\"5\",\"label\":\"≥ 5:1\"},{\"value\":\"6\",\"label\":\"≥ 6:1\"}]",
+                  "value": "0"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "capacity-ratio-params"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The 'Memory Used % (N-1)' column calculates the percentage of available memory including a N-1 formula, that deducts one machine's worth of memory for multi-machine (2+ nodes) Azure Local instances. This is required to be able to drain each machine without taking workload offline during rolling cluster update operations.",
+              "style": "upsell"
+            },
+            "name": "capacity-n1-memory-tip"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "// Cluster Capacity Overview - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend hciClusterRG = tolower(resourceGroup)\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n| extend storagePathLink = strcat('https://portal.azure.com/#@/resource', id, '/storagePath')\r\n// Join workload aggregation via custom location chain (single extensibilityresources ref)\r\n| join kind=leftouter (\r\n    resources\r\n    | where (type == \"microsoft.hybridcompute/machines\" and kind == \"HCI\")\r\n        or (type == \"microsoft.kubernetes/connectedclusters\" and tostring(properties.infrastructure) == \"azure_stack_hci\")\r\n    | extend isVM = (type == \"microsoft.hybridcompute/machines\")\r\n    | extend vCPUs = iff(isVM, toint(properties.detectedProperties.logicalCoreCount), toint(properties.totalCoreCount))\r\n    | extend memGB = iff(isVM, toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes), 0)\r\n    | extend resourceId = tolower(id)\r\n    | join kind=inner (\r\n        extensibilityresources\r\n        | where type in (\"microsoft.azurestackhci/virtualmachineinstances\", \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n        | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n        | extend parentId = tolower(iff(\r\n            type == \"microsoft.azurestackhci/virtualmachineinstances\",\r\n            substring(id, 0, indexof(id, \"/providers/Microsoft.AzureStackHCI\")),\r\n            substring(id, 0, indexof(id, \"/providers/Microsoft.HybridContainerService\"))))\r\n        | extend isProvCluster = (type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n        | extend cpVmSize = iff(isProvCluster, tostring(properties.controlPlane.vmSize), \"\")\r\n        | extend cpCount = iff(isProvCluster, toint(properties.controlPlane['count']), 0)\r\n        | mv-expand pool = iff(isProvCluster, properties.agentPoolProfiles, dynamic([null]))\r\n        | extend poolVmSize = tostring(pool.vmSize), poolCount = toint(pool['count'])\r\n        | extend poolMemPerVM = case(poolVmSize =~ \"Standard_A2_v2\", 4, poolVmSize =~ \"Standard_A4_v2\", 8, poolVmSize =~ \"Standard_D2s_v3\", 8, poolVmSize =~ \"Standard_D4s_v3\", 16, poolVmSize =~ \"Standard_D8s_v3\", 32, poolVmSize =~ \"Standard_D16s_v3\", 64, poolVmSize =~ \"Standard_D32s_v3\", 128, poolVmSize =~ \"Standard_NC4_A2\", 28, poolVmSize =~ \"Standard_NC8_A2\", 56, poolVmSize =~ \"Standard_NC16_A2\", 112, 0)\r\n        | extend cpMemPerVM = case(cpVmSize =~ \"Standard_A2_v2\", 4, cpVmSize =~ \"Standard_A4_v2\", 8, cpVmSize =~ \"Standard_D2s_v3\", 8, cpVmSize =~ \"Standard_D4s_v3\", 16, cpVmSize =~ \"Standard_D8s_v3\", 32, cpVmSize =~ \"Standard_D16s_v3\", 64, cpVmSize =~ \"Standard_D32s_v3\", 128, cpVmSize =~ \"Standard_NC4_A2\", 28, cpVmSize =~ \"Standard_NC8_A2\", 56, cpVmSize =~ \"Standard_NC16_A2\", 112, 0)\r\n        | summarize customLocId = take_any(customLocId), poolMemGB = sum(poolCount * poolMemPerVM), cpCount = take_any(cpCount), cpMemPerVM = take_any(cpMemPerVM) by parentId\r\n        | extend aksMemGB = poolMemGB + (cpCount * cpMemPerVM)\r\n        | project parentId, customLocId, aksMemGB\r\n    ) on $left.resourceId == $right.parentId\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.extendedlocation/customlocations\"\r\n        | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n        | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n    ) on customLocId\r\n    | summarize vmVCPUTotal = sumif(vCPUs, isVM), vmMemoryTotalGB = sumif(memGB, isVM), aksVCPUTotal = sumif(vCPUs, not(isVM)), aksMemoryTotalGB = sumif(aksMemGB, not(isVM)) by arcBridgeRG\r\n) on $left.hciClusterRG == $right.arcBridgeRG\r\n// Fallback for disconnected clusters - get node data from Arc machines\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\" and properties.cloudMetadata.provider == \"AzSHCI\" and kind != \"HCI\"\r\n    | summarize arcNodeCount = count(), arcLogicalCoresPerNode = take_any(toint(properties.detectedProperties.logicalCoreCount)), arcMemGiBPerNode = take_any(toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)) by arcClusterRG = tolower(resourceGroup)\r\n) on $left.hciClusterRG == $right.arcClusterRG\r\n// Storage volume aggregation\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/storagecontainers\"\r\n    | extend storageCustomLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.extendedlocation/customlocations\"\r\n        | extend storageArcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n        | project storageCustomLocKey = tolower(trim_end(\"/\", id)), storageArcBridgeRG\r\n    ) on storageCustomLocKey\r\n    | summarize storageTotalMB = sum(toreal(properties.status.containerSizeMB)), storageAvailMB = sum(toreal(properties.status.availableSizeMB)) by storageArcBridgeRG\r\n) on $left.hciClusterRG == $right.storageArcBridgeRG\r\n| extend nodeCount = iff(nodeCount > 0, nodeCount, coalesce(arcNodeCount, 0))\r\n| extend physicalCores = iff(physicalCores > 0, physicalCores, coalesce(toint(arcLogicalCoresPerNode / 2) * arcNodeCount, 0))\r\n| extend physicalMemoryGB = iff(physicalMemoryGB > 0, physicalMemoryGB, coalesce(arcMemGiBPerNode * arcNodeCount, 0))\r\n// Compute totals and ratio\r\n| extend vmVCPUTotal = coalesce(vmVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = coalesce(vmMemoryTotalGB, 0)\r\n| extend aksMemoryTotalGB = coalesce(aksMemoryTotalGB, 0)\r\n| extend aksVCPUTotal = coalesce(aksVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = vmMemoryTotalGB + aksMemoryTotalGB\r\n| extend vCPUTotal = vmVCPUTotal + aksVCPUTotal\r\n| extend ratioValue = iff(physicalCores > 0 and vCPUTotal > 0, round(todouble(vCPUTotal) / todouble(physicalCores), 1), 0.0)\r\n| extend pCPUvCPURatio = iff(ratioValue > 0, strcat(tostring(ratioValue), ':1'), 'N/A')\r\n| extend effectiveMemoryGB = iff(nodeCount >= 2, physicalMemoryGB - (physicalMemoryGB / nodeCount), physicalMemoryGB)\r\n| extend memoryUsagePct = iff(effectiveMemoryGB > 0 and vmMemoryTotalGB > 0, round(todouble(vmMemoryTotalGB) / todouble(effectiveMemoryGB) * 100.0, 1), 0.0)\r\n| extend ratioHealthPct = iff(ratioValue > 0 and todouble('{TargetRatio}') > 0, round(ratioValue / todouble('{TargetRatio}') * 100.0, 0), 0.0)\r\n| where '{RatioFilter}' == '0' or ratioValue >= todouble('{RatioFilter}')\r\n// Storage columns\r\n| extend storageUsedGB = iff(isnotempty(storageTotalMB), round((storageTotalMB - storageAvailMB) / 1024, 0), 0.0)\r\n| extend storageAvailGB = iff(isnotempty(storageTotalMB), round(storageAvailMB / 1024, 0), 0.0)\r\n| extend storageTotalGB = storageUsedGB + storageAvailGB\r\n| extend storageUsedPct = iff(storageTotalGB > 0, round(storageUsedGB / storageTotalGB * 100.0, 1), 0.0)\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, storagePathLink, status, nodeCount, pCPUvCPURatio, ratioValue, ratioHealthPct, memoryUsagePct, storageUsedPct, physicalCores, vCPUTotal, physicalMemoryGB, vmMemoryTotalGB, vmVCPUTotal, aksVCPUTotal, storageUsedGB, storageAvailGB\r\n| order by memoryUsagePct desc, ratioHealthPct desc, ClusterName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "title": "Cluster Capacity Overview",
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "aksArcLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "machinesLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "storagePathLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "nodeCount",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "machinesLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "pCPUvCPURatio",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "ratioValue",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "160px",
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "0",
+                          "representation": null,
+                          "text": "N/A"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}:1"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "ratioHealthPct",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 200,
+                      "palette": "greenRedDark"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "memoryUsagePct",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "95",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "physicalCores",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "physicalMemoryGB",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "vmVCPUTotal",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "vmLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "aksVCPUTotal",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "aksArcLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "vCPUTotal",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "vmMemoryTotalGB",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "storageUsedGB",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "storagePathLink"
+                    },
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "storageAvailGB",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "storagePathLink"
+                    },
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "storageUsedPct",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "0",
+                          "representation": "Blank",
+                          "text": "Unknown"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "95",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 1,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  }
+                ],
+                "rowLimit": 2000,
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "ClusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "nodeCount",
+                    "label": "Machines"
+                  },
+                  {
+                    "columnId": "pCPUvCPURatio",
+                    "label": "V:P CPU Ratio"
+                  },
+                  {
+                    "columnId": "ratioValue",
+                    "label": "V:P CPU Ratio"
+                  },
+                  {
+                    "columnId": "ratioHealthPct",
+                    "label": "% of V:P Target"
+                  },
+                  {
+                    "columnId": "memoryUsagePct",
+                    "label": "Memory Used % (N-1)"
+                  },
+                  {
+                    "columnId": "storageUsedPct",
+                    "label": "Storage Used %"
+                  },
+                  {
+                    "columnId": "physicalCores",
+                    "label": "pCPUs"
+                  },
+                  {
+                    "columnId": "vCPUTotal",
+                    "label": "vCPUs"
+                  },
+                  {
+                    "columnId": "physicalMemoryGB",
+                    "label": "Physical Memory"
+                  },
+                  {
+                    "columnId": "vmMemoryTotalGB",
+                    "label": "Workload Memory"
+                  },
+                  {
+                    "columnId": "vmVCPUTotal",
+                    "label": "VM vCPUs"
+                  },
+                  {
+                    "columnId": "aksVCPUTotal",
+                    "label": "AKS vCPUs"
+                  },
+                  {
+                    "columnId": "storageUsedGB",
+                    "label": "Storage Used"
+                  },
+                  {
+                    "columnId": "storageAvailGB",
+                    "label": "Storage Available"
+                  }
+                ]
+              },
+              "sortBy": [],
+              "noDataMessage": "No capacity data — ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace is receiving metrics from your clusters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "capacity-overview-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🔔 Performance Counter DCR Configuration\r\n💡 **Tip:** The six charts below require a **Data Collection Rule (DCR)** that collects specific Windows performance counters from your Azure Local nodes via the Azure Monitor Agent (AMA). Some counters (notably `Cluster CSV File System(*)` for CSV storage) are **not in the Azure Portal's preset dropdown**, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — this is the safest option because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the section for step-by-step guidance."
+            },
+            "name": "text-dcr-setup-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "dcr-setup-toggle",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ShowDCRSetupSection",
+                  "label": "Show DCR Setup Guide",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                  "value": "no"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "dcr-setup-toggle-param"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
+                  },
+                  "name": "dcr-setup-prereqs"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\% Committed Bytes In Use` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
+                  },
+                  "name": "dcr-setup-required-counters"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor offers a fixed dropdown of performance objects: `Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume` — the counters that report real latency, IOPS and capacity data for Storage Spaces Direct (S2D) CSV volumes. Without them, the **Storage %, Storage Latency and Storage IOPS** charts only reflect the OS / boot disk.\r\n\r\nHowever, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Cluster CSV File System(*)\\% Used Space`\r\n   - `\\Cluster CSV File System(*)\\% Free Space`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`\r\n   - `\\Cluster CSV File System(*)\\Avg. Disk sec/Write`\r\n   - `\\Cluster CSV File System(*)\\Disk Transfers/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nData typically begins flowing within a few minutes. Repeat for any other counters from the required list that aren't already collected.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for these counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (e.g. `Process`, custom application counters) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (e.g. `dcr-azurelocal-capacity-perf`) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.\r\n\r\n---",
+                    "style": "warning"
+                  },
+                  "name": "dcr-setup-portal-limitation"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-capacity.json` and deploy it to the resource group that will host the DCR. Fill in your Log Analytics workspace resource ID when prompted (or via a parameters file).\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\% Committed Bytes In Use\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
+                  },
+                  "name": "dcr-setup-arm-template"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over the machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes.\r\n\r\n---"
+                  },
+                  "name": "dcr-setup-deploy-steps"
+                },
+                {
+                  "type": 11,
+                  "content": {
+                    "version": "LinkItem/1.0",
+                    "style": "nav",
+                    "links": [
+                      {
+                        "id": "dcr-ama-perf-docs",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                        "linkTarget": "Url",
+                        "linkLabel": "📚 AMA Performance Counters",
+                        "style": "link"
+                      },
+                      {
+                        "id": "dcr-arm-reference",
+                        "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                        "linkTarget": "Url",
+                        "linkLabel": "📘 DCR ARM Reference",
+                        "style": "link"
+                      },
+                      {
+                        "id": "dcr-association-docs",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                        "linkTarget": "Url",
+                        "linkLabel": "🔗 DCR Associations",
+                        "style": "link"
+                      },
+                      {
+                        "id": "dcr-portal-blade",
+                        "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
+                        "linkTarget": "Url",
+                        "linkLabel": "🧭 DCR Portal Blade",
+                        "style": "link"
+                      },
+                      {
+                        "id": "csv-perf-counters-docs",
+                        "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
+                        "linkTarget": "Url",
+                        "linkLabel": "💾 Cluster Shared Volume Reference",
+                        "style": "link"
+                      }
+                    ]
+                  },
+                  "name": "dcr-setup-links"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowDCRSetupSection",
+              "comparison": "isEqualTo",
+              "value": "yes"
+            },
+            "name": "dcr-setup-group"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 clusters with the highest average usage for each resource type over the selected time range."
+            },
+            "name": "text-top5-charts-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics, this requires that your clusters have the Azure Monitoring Agent (AMA) extension installed, for more information see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).",
+              "style": "upsell"
+            },
+            "name": "capacity-ama-tip"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "parameters": [
+                {
+                  "id": "machines-log-analytics-workspace-ov",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MachinesLogAnalyticsWorkspace",
+                  "label": "Log Analytics Workspace",
+                  "type": 2,
+                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "node-trends-time-range-ov",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "NodeTrendsTimeRange",
+                  "label": "Historic Time Range",
+                  "type": 4,
+                  "description": "Time range for the Top 5 resource usage charts below.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 259200000
+                  }
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "overview-la-workspace-param"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "CPU Usage (%) — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No CPU metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node CPU metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-cpu-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"% Committed Bytes In Use\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "Memory Usage (%) — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No memory metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node memory metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-memory-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perfStorage = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet insightsStorage = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend UsedPercent = 100.0 - Val\r\n| project TimeGenerated, Computer, UsedPercent;\r\nlet allStorage = materialize(union perfStorage, insightsStorage\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allStorage\r\n| summarize AvgUsage = avg(UsedPercent) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nallStorage\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(UsedPercent), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "Storage Usage (%) — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No storage utilisation metrics. Confirm Azure Managed Prometheus is collecting storage metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perfLatency = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend LatencyMs = CounterValue * 1000.0\r\n| project TimeGenerated, Computer, LatencyMs;\r\nlet insightsLatency = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend LatencyMs = Val\r\n| project TimeGenerated, Computer, LatencyMs;\r\nlet allLatency = materialize(union perfLatency, insightsLatency\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allLatency\r\n| summarize AvgLatency = avg(LatencyMs) by clusterName\r\n| top 5 by AvgLatency desc\r\n| project clusterName;\r\nallLatency\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Latency (ms)\"] = round(avg(LatencyMs), 2) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "Storage Latency (ms) — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Latency (ms)"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No storage latency metrics. Confirm Azure Managed Prometheus is collecting S2D / volume latency metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-latency-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perfIOPS = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName == \"Disk Transfers/sec\")\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| project TimeGenerated, Computer, IOPS = CounterValue;\r\nlet insightsIOPS = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| project TimeGenerated, Computer, IOPS = Val;\r\nlet allIOPS = materialize(union perfIOPS, insightsIOPS\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allIOPS\r\n| summarize AvgIOPS = avg(IOPS) by clusterName\r\n| top 5 by AvgIOPS desc\r\n| project clusterName;\r\nallIOPS\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg IOPS\"] = round(avg(IOPS), 0) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "Storage IOPS — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg IOPS"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No storage IOPS metrics. Confirm Azure Managed Prometheus is collecting volume IOPS metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-iops-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perfNet = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Network Adapter\", \"Network Interface\") and CounterName == \"Bytes Total/sec\"\r\n| where InstanceName != \"_Total\"\r\n| summarize BytesPerSec = sum(CounterValue) by TimeGenerated, Computer;\r\nlet insightsNet = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"Network\" and Name in (\"WriteBytesPerSecond\", \"ReadBytesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize BytesPerSec = sum(Val) by TimeGenerated, Computer;\r\nlet allNet = materialize(union perfNet, insightsNet\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allNet\r\n| summarize AvgMBps = avg(BytesPerSec) / 1048576.0 by clusterName\r\n| top 5 by AvgMBps desc\r\n| project clusterName;\r\nallNet\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Throughput (MB/s)\"] = round(avg(BytesPerSec) / 1048576.0, 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "aggregation": 3,
+              "title": "Network Throughput (MB/s) — Top 5 Clusters",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Throughput (MB/s)"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No network throughput metrics. Confirm Azure Managed Prometheus is collecting NIC counters from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-network-throughput-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 📈 AKS Node Performance (Azure Managed Prometheus)\r\nThe charts below use Prometheus metrics from Azure Monitor Workspace. Requires Azure Managed Prometheus enabled on AKS Arc clusters."
+            },
+            "name": "ov-prometheus-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "azure-monitor-workspace",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AzureMonitorWorkspace",
+                  "label": "Azure Monitor Workspace",
+                  "type": 2,
+                  "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters. Only one workspace can be queried at a time.",
+                  "isRequired": true,
+                  "multiSelect": false,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "prometheus-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "PrometheusTimeRange",
+                  "label": "Prometheus Time Range",
+                  "type": 4,
+                  "description": "Time range for Prometheus charts. Shorter ranges provide higher resolution data.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 259200000
+                  }
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "aks-prometheus-params"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** Use the **'Azure Monitor Workspace'** filter to view data in the charts below. These require [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters. Prometheus metrics are collected into an Azure Monitor Workspace and queried using PromQL.",
+              "style": "upsell"
+            },
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "text-prometheus-tip"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 Top AKS Nodes by CPU Usage",
+              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "showLegend": true
+              }
+            },
+            "customWidth": "50",
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-cpu-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, (1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 Top AKS Nodes by Memory Usage",
+              "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "showLegend": true
+              }
+            },
+            "customWidth": "50",
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-memory-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_disk_read_bytes_total[5m]) + rate(node_disk_written_bytes_total[5m])))\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 Top AKS Nodes by Disk I/O (bytes/sec)",
+              "noDataMessage": "No Prometheus data found.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 36,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "showLegend": true
+              }
+            },
+            "customWidth": "50",
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-disk-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(5, avg by (cluster, instance) (rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m])))\",\"type\":\"query_range\"}",
+              "size": 0,
+              "aggregation": 3,
+              "title": "📈 Top AKS Nodes by Network Throughput (bytes/sec)",
+              "noDataMessage": "No Prometheus data found.",
+              "timeContextFromParameter": "PrometheusTimeRange",
+              "queryType": 16,
+              "resourceType": "microsoft.monitor/accounts",
+              "crossComponentResources": [
+                "{AzureMonitorWorkspace}"
+              ],
+              "visualization": "timechart",
+              "chartSettings": {
+                "group": "*",
+                "createOtherGroup": 50,
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 36,
+                    "options": {
+                      "style": "decimal",
+                      "useGrouping": true,
+                      "minimumFractionDigits": 0,
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "showLegend": true
+              }
+            },
+            "customWidth": "50",
+            "conditionalVisibility": {
+              "parameterName": "ClusterFilter",
+              "comparison": "isNotEqualTo",
+              "value": "value::all"
+            },
+            "name": "cluster-aks-node-network-chart"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "CapacitySection",
+        "comparison": "isEqualTo",
+        "value": "overview"
+      },
+      "name": "cap-overview-section"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

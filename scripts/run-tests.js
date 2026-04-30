@@ -1157,6 +1157,218 @@ testSuite('Documentation File Validation', () => {
         'LICENSE file exists', 'true', String(licenseExists));
 });
 
+// --- 24. Split Architecture: Sub-Template Existence ---
+testSuite('Split Architecture - Sub-Template Existence', () => {
+    const tabMap = require('./template-ids.json');
+    const workbooksDir = path.resolve(__dirname, '..', 'workbooks');
+    const sharedParams = path.resolve(__dirname, '..', 'shared', 'parameters.json');
+    const sharedHeader = path.resolve(__dirname, '..', 'shared', 'header.json');
+
+    assert(fs.existsSync(sharedParams),
+        'shared/parameters.json exists', 'true', String(fs.existsSync(sharedParams)));
+    assert(fs.existsSync(sharedHeader),
+        'shared/header.json exists', 'true', String(fs.existsSync(sharedHeader)));
+    assert(fs.existsSync(workbooksDir),
+        'workbooks/ directory exists', 'true', String(fs.existsSync(workbooksDir)));
+
+    for (const tab of tabMap.tabs) {
+        const file = path.join(workbooksDir, tab.slug, `${tab.slug}.workbook`);
+        const exists = fs.existsSync(file);
+        assert(exists, `Sub-template exists: workbooks/${tab.slug}/${tab.slug}.workbook`,
+            'true', String(exists));
+        if (exists) {
+            try {
+                const sub = JSON.parse(fs.readFileSync(file, 'utf8'));
+                assert(sub.version === 'Notebook/1.0',
+                    `${tab.slug} has version Notebook/1.0`, 'Notebook/1.0', sub.version);
+                assert(Array.isArray(sub.items) && sub.items.length === 3,
+                    `${tab.slug} has exactly 3 top-level items (params, main-tabs, content)`,
+                    3, Array.isArray(sub.items) ? sub.items.length : 'not array');
+                if (Array.isArray(sub.items) && sub.items.length === 3) {
+                    assert(sub.items[2].name === tab.groupName,
+                        `${tab.slug} content group name matches template-ids.json`,
+                        tab.groupName, sub.items[2].name);
+                    assert(sub.items[2].conditionalVisibility === undefined,
+                        `${tab.slug} content group has no conditionalVisibility (outer template applies it)`,
+                        'undefined', String(sub.items[2].conditionalVisibility));
+                }
+            } catch (e) {
+                assert(false, `${tab.slug} parses as JSON`, 'parses', e.message);
+            }
+        }
+
+        // Sub-sections (currently only Capacity has them) — each section is its
+        // own gallery-ready sub-template under workbooks/<slug>/.
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) {
+                const sFile = path.join(workbooksDir, sect.slug, `${sect.slug}.workbook`);
+                const sExists = fs.existsSync(sFile);
+                assert(sExists, `Sub-section template exists: workbooks/${sect.slug}/${sect.slug}.workbook`,
+                    'true', String(sExists));
+                if (!sExists) continue;
+                try {
+                    const ss = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+                    assert(ss.version === 'Notebook/1.0',
+                        `${sect.slug} has version Notebook/1.0`, 'Notebook/1.0', ss.version);
+                    assert(Array.isArray(ss.items) && ss.items.length === 3,
+                        `${sect.slug} has exactly 3 top-level items`, 3,
+                        Array.isArray(ss.items) ? ss.items.length : 'not array');
+                    if (Array.isArray(ss.items) && ss.items.length === 3) {
+                        assert(ss.items[2].name === sect.groupName,
+                            `${sect.slug} content group name matches subSections entry`,
+                            sect.groupName, ss.items[2].name);
+                        const cv = ss.items[2].conditionalVisibility;
+                        assert(cv && cv.parameterName === 'CapacitySection' && cv.value === sect.value,
+                            `${sect.slug} content group has CapacitySection=${sect.value} conditionalVisibility`,
+                            `CapacitySection=${sect.value}`, cv ? `${cv.parameterName}=${cv.value}` : 'missing');
+                    }
+                } catch (e) {
+                    assert(false, `${sect.slug} parses as JSON`, 'parses', e.message);
+                }
+            }
+        }
+    }
+});
+
+// --- 25. Split Architecture: Shared Parameters Parity ---
+testSuite('Split Architecture - Shared Parameters Parity', () => {
+    const tabMap = require('./template-ids.json');
+    const sharedParamsPath = path.resolve(__dirname, '..', 'shared', 'parameters.json');
+    const workbooksDir = path.resolve(__dirname, '..', 'workbooks');
+
+    if (!fs.existsSync(sharedParamsPath)) {
+        assert(false, 'shared/parameters.json available for parity check', 'exists', 'missing');
+        return;
+    }
+    const canonical = JSON.stringify(JSON.parse(fs.readFileSync(sharedParamsPath, 'utf8')));
+
+    const slugs = [];
+    for (const tab of tabMap.tabs) {
+        slugs.push(tab.slug);
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) slugs.push(sect.slug);
+        }
+    }
+
+    for (const slug of slugs) {
+        const file = path.join(workbooksDir, slug, `${slug}.workbook`);
+        if (!fs.existsSync(file)) continue;
+        const sub = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const subParamsJson = JSON.stringify(sub.items[0]);
+        assert(subParamsJson === canonical,
+            `${slug} items[0] matches shared/parameters.json`,
+            'identical', subParamsJson === canonical ? 'identical' : 'drift');
+    }
+});
+
+// --- 26. Split Architecture: Round-Trip Integrity ---
+testSuite('Split Architecture - Round-Trip Integrity', () => {
+    // Build the monolithic in-memory and compare against the on-disk root file.
+    // If the round-trip fails the on-disk file must be regenerated:
+    //   node scripts/build-monolithic.js
+    const tabMap = require('./template-ids.json');
+    const sharedParams = JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, '..', 'shared', 'parameters.json'), 'utf8'));
+    const sharedHeader = JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, '..', 'shared', 'header.json'), 'utf8'));
+
+    const items = [sharedParams, ...sharedHeader.items];
+    for (const tab of tabMap.tabs) {
+        const file = path.resolve(__dirname, '..', 'workbooks', tab.slug, `${tab.slug}.workbook`);
+        if (!fs.existsSync(file)) continue;
+        const sub = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const contentGroup = JSON.parse(JSON.stringify(sub.items[2]));
+
+        // Merge in sub-section content groups (currently only Capacity has them).
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) {
+                const sFile = path.resolve(__dirname, '..', 'workbooks', sect.slug, `${sect.slug}.workbook`);
+                if (!fs.existsSync(sFile)) continue;
+                const sSub = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+                contentGroup.content.items.push(JSON.parse(JSON.stringify(sSub.items[2])));
+            }
+        }
+
+        const ordered = {
+            type: contentGroup.type,
+            content: contentGroup.content,
+            conditionalVisibility: {
+                parameterName: 'selectedTab',
+                comparison: 'isEqualTo',
+                value: tab.selectedTab
+            },
+            name: contentGroup.name
+        };
+        for (const k of Object.keys(contentGroup)) {
+            if (!(k in ordered)) ordered[k] = contentGroup[k];
+        }
+        items.push(ordered);
+    }
+
+    const built = {
+        version: 'Notebook/1.0',
+        items,
+        fallbackResourceIds: ['azure monitor'],
+        $schema: 'https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json'
+    };
+    const builtText = JSON.stringify(built, null, 2).replace(/\n/g, '\r\n') + '\r\n';
+
+    assert(builtText === workbookRaw,
+        'AzureLocal-LENS-Workbook.json is in sync with split sources (run scripts/build-monolithic.js if this fails)',
+        'identical', builtText === workbookRaw ? 'identical'
+            : `drift (${builtText.length} vs ${workbookRaw.length} bytes)`);
+});
+
+// --- 27. Split Architecture: Sub-Template Size Recommendations ---
+testSuite('Split Architecture - Sub-Template Size Recommendations', () => {
+    // Azure Monitor Workbooks team recommends sub-templates ≤ 200KB for
+    // gallery submissions. Hard limit here is 350KB; warn but pass at 200-350KB.
+    const tabMap = require('./template-ids.json');
+    const HARD_LIMIT_KB = 350;
+    const WARN_LIMIT_KB = 200;
+
+    const slugs = [];
+    for (const tab of tabMap.tabs) {
+        slugs.push(tab.slug);
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) slugs.push(sect.slug);
+        }
+    }
+
+    for (const slug of slugs) {
+        const file = path.resolve(__dirname, '..', 'workbooks', slug, `${slug}.workbook`);
+        if (!fs.existsSync(file)) continue;
+        const sizeKB = fs.statSync(file).size / 1024;
+        assert(sizeKB < HARD_LIMIT_KB,
+            `${slug} sub-template under hard size limit (${HARD_LIMIT_KB}KB)`,
+            `<${HARD_LIMIT_KB}KB`, `${sizeKB.toFixed(1)}KB`);
+        if (sizeKB >= WARN_LIMIT_KB && sizeKB < HARD_LIMIT_KB) {
+            console.log(`  ⚠️  ${slug}: ${sizeKB.toFixed(1)}KB exceeds gallery recommendation of ${WARN_LIMIT_KB}KB`);
+        }
+    }
+});
+
+// --- 28. Accessibility: No Inline-Style HTML ---
+testSuite('Accessibility - No Inline-Style HTML', () => {
+    // John Gardner (Azure Monitor team) review guidance: replace inline HTML
+    // styling with the workbook text "style" field for accessibility.
+    const inlineStylePattern = /<(?:div|span|font|p|b)\b[^>]*\bstyle\s*=/i;
+    let occurrences = 0;
+    function scan(o) {
+        if (Array.isArray(o)) { o.forEach(scan); return; }
+        if (!o || typeof o !== 'object') return;
+        for (const k of Object.keys(o)) {
+            const v = o[k];
+            if (typeof v === 'string' && inlineStylePattern.test(v)) occurrences++;
+            else if (v && typeof v === 'object') scan(v);
+        }
+    }
+    scan(workbook);
+    assert(occurrences === 0,
+        'No inline-style HTML in markdown items (use workbook style field instead)',
+        '0', String(occurrences));
+});
+
 // ============================================================================
 // RESULTS
 // ============================================================================

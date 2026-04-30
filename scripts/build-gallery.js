@@ -48,6 +48,42 @@ function writeJson(file, obj) {
   fs.writeFileSync(file, out, 'utf8');
 }
 
+function buildCapacityOuter(capacityTab) {
+  // Capacity for the gallery: include the orchestrator base items
+  // (cap-shared-params, cap-instructions-text, cap-section-tabs) and add a
+  // sub-template stub for each section (Capacity-Overview/MultiNode/SingleNode/HyperV).
+  const sub = readJson(path.join(WORKBOOKS_DIR, 'Capacity', 'Capacity.workbook'));
+  const orch = JSON.parse(JSON.stringify(sub));
+  const capGroup = orch.items[2];
+  const baseItems = capGroup.content.items.slice();
+
+  let placeholderCount = 0;
+  const stubs = [];
+  for (const sect of capacityTab.subSections) {
+    const templateId = sect.galleryTemplateId
+      || `Community-Workbooks/Azure Local/${sect.slug}`;
+    if (!sect.galleryTemplateId) placeholderCount++;
+    stubs.push({
+      type: 12,
+      content: {
+        version: 'NotebookGroup/1.0',
+        groupType: 'template',
+        loadFromTemplateId: templateId,
+        items: []
+      },
+      conditionalVisibility: {
+        parameterName: 'CapacitySection',
+        comparison: 'isEqualTo',
+        value: sect.value
+      },
+      name: `${sect.slug.toLowerCase()}-template-group`
+    });
+  }
+
+  capGroup.content.items = [...baseItems, ...stubs];
+  return { workbook: orch, placeholderCount };
+}
+
 function buildOuter() {
   const params = readJson(path.join(SHARED_DIR, 'parameters.json'));
   const header = readJson(path.join(SHARED_DIR, 'header.json'));
@@ -112,15 +148,43 @@ function buildOuter() {
 
 function main() {
   // Outer (inline Overview + 7 sub-template stubs)
-  const { workbook: outer, placeholderCount } = buildOuter();
+  const { workbook: outer, placeholderCount: outerPh } = buildOuter();
   const outerFile = path.join(DIST, 'Overview', 'Overview.workbook');
   writeJson(outerFile, outer);
   const outerKB = (fs.statSync(outerFile).size / 1024).toFixed(1);
   console.log(`✅ ${path.relative(ROOT, outerFile)} (${outerKB} KB outer with inline Overview tab)`);
 
-  // Sub-templates (one per non-Overview tab, copied from workbooks/)
+  let totalPh = outerPh;
+
+  // Sub-templates (one per non-Overview tab)
   for (const tab of TAB_MAP.tabs) {
     if (tab.slug === 'Overview') continue;
+
+    if (Array.isArray(tab.subSections)) {
+      // Capacity gallery file = orchestrator + sub-section stubs
+      const { workbook: capOuter, placeholderCount: capPh } = buildCapacityOuter(tab);
+      totalPh += capPh;
+      const dst = path.join(DIST, tab.slug, `${tab.slug}.workbook`);
+      writeJson(dst, capOuter);
+      const kb = (fs.statSync(dst).size / 1024).toFixed(1);
+      console.log(`✅ ${path.relative(ROOT, dst)} (${kb} KB outer with ${tab.subSections.length} section stubs)`);
+
+      // Emit each Capacity-* sub-section template
+      for (const sect of tab.subSections) {
+        const src = path.join(WORKBOOKS_DIR, sect.slug, `${sect.slug}.workbook`);
+        const subDst = path.join(DIST, sect.slug, `${sect.slug}.workbook`);
+        if (!fs.existsSync(src)) {
+          console.error(`❌ Missing source: ${src}`);
+          process.exit(1);
+        }
+        ensureDir(path.dirname(subDst));
+        fs.copyFileSync(src, subDst);
+        const subKB = (fs.statSync(subDst).size / 1024).toFixed(1);
+        console.log(`✅ ${path.relative(ROOT, subDst)} (${subKB} KB sub-section)`);
+      }
+      continue;
+    }
+
     const src = path.join(WORKBOOKS_DIR, tab.slug, `${tab.slug}.workbook`);
     const dst = path.join(DIST, tab.slug, `${tab.slug}.workbook`);
     if (!fs.existsSync(src)) {
@@ -135,8 +199,8 @@ function main() {
 
   console.log(`\nGallery artifacts written to ${path.relative(ROOT, DIST)}/`);
 
-  if (placeholderCount > 0) {
-    console.log(`\n⚠️  ${placeholderCount} sub-template(s) use placeholder galleryTemplateId.`);
+  if (totalPh > 0) {
+    console.log(`\n⚠️  ${totalPh} sub-template stub(s) use placeholder galleryTemplateId.`);
     console.log('   Once the Azure Monitor team approves the upstream PR and assigns');
     console.log('   real template IDs, populate them in scripts/template-ids.json and re-run.');
   }

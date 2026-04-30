@@ -1196,6 +1196,37 @@ testSuite('Split Architecture - Sub-Template Existence', () => {
                 assert(false, `${tab.slug} parses as JSON`, 'parses', e.message);
             }
         }
+
+        // Sub-sections (currently only Capacity has them) — each section is its
+        // own gallery-ready sub-template under workbooks/<slug>/.
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) {
+                const sFile = path.join(workbooksDir, sect.slug, `${sect.slug}.workbook`);
+                const sExists = fs.existsSync(sFile);
+                assert(sExists, `Sub-section template exists: workbooks/${sect.slug}/${sect.slug}.workbook`,
+                    'true', String(sExists));
+                if (!sExists) continue;
+                try {
+                    const ss = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+                    assert(ss.version === 'Notebook/1.0',
+                        `${sect.slug} has version Notebook/1.0`, 'Notebook/1.0', ss.version);
+                    assert(Array.isArray(ss.items) && ss.items.length === 3,
+                        `${sect.slug} has exactly 3 top-level items`, 3,
+                        Array.isArray(ss.items) ? ss.items.length : 'not array');
+                    if (Array.isArray(ss.items) && ss.items.length === 3) {
+                        assert(ss.items[2].name === sect.groupName,
+                            `${sect.slug} content group name matches subSections entry`,
+                            sect.groupName, ss.items[2].name);
+                        const cv = ss.items[2].conditionalVisibility;
+                        assert(cv && cv.parameterName === 'CapacitySection' && cv.value === sect.value,
+                            `${sect.slug} content group has CapacitySection=${sect.value} conditionalVisibility`,
+                            `CapacitySection=${sect.value}`, cv ? `${cv.parameterName}=${cv.value}` : 'missing');
+                    }
+                } catch (e) {
+                    assert(false, `${sect.slug} parses as JSON`, 'parses', e.message);
+                }
+            }
+        }
     }
 });
 
@@ -1211,13 +1242,21 @@ testSuite('Split Architecture - Shared Parameters Parity', () => {
     }
     const canonical = JSON.stringify(JSON.parse(fs.readFileSync(sharedParamsPath, 'utf8')));
 
+    const slugs = [];
     for (const tab of tabMap.tabs) {
-        const file = path.join(workbooksDir, tab.slug, `${tab.slug}.workbook`);
+        slugs.push(tab.slug);
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) slugs.push(sect.slug);
+        }
+    }
+
+    for (const slug of slugs) {
+        const file = path.join(workbooksDir, slug, `${slug}.workbook`);
         if (!fs.existsSync(file)) continue;
         const sub = JSON.parse(fs.readFileSync(file, 'utf8'));
         const subParamsJson = JSON.stringify(sub.items[0]);
         assert(subParamsJson === canonical,
-            `${tab.slug} items[0] matches shared/parameters.json`,
+            `${slug} items[0] matches shared/parameters.json`,
             'identical', subParamsJson === canonical ? 'identical' : 'drift');
     }
 });
@@ -1239,6 +1278,17 @@ testSuite('Split Architecture - Round-Trip Integrity', () => {
         if (!fs.existsSync(file)) continue;
         const sub = JSON.parse(fs.readFileSync(file, 'utf8'));
         const contentGroup = JSON.parse(JSON.stringify(sub.items[2]));
+
+        // Merge in sub-section content groups (currently only Capacity has them).
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) {
+                const sFile = path.resolve(__dirname, '..', 'workbooks', sect.slug, `${sect.slug}.workbook`);
+                if (!fs.existsSync(sFile)) continue;
+                const sSub = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+                contentGroup.content.items.push(JSON.parse(JSON.stringify(sSub.items[2])));
+            }
+        }
+
         const ordered = {
             type: contentGroup.type,
             content: contentGroup.content,
@@ -1277,15 +1327,23 @@ testSuite('Split Architecture - Sub-Template Size Recommendations', () => {
     const HARD_LIMIT_KB = 350;
     const WARN_LIMIT_KB = 200;
 
+    const slugs = [];
     for (const tab of tabMap.tabs) {
-        const file = path.resolve(__dirname, '..', 'workbooks', tab.slug, `${tab.slug}.workbook`);
+        slugs.push(tab.slug);
+        if (Array.isArray(tab.subSections)) {
+            for (const sect of tab.subSections) slugs.push(sect.slug);
+        }
+    }
+
+    for (const slug of slugs) {
+        const file = path.resolve(__dirname, '..', 'workbooks', slug, `${slug}.workbook`);
         if (!fs.existsSync(file)) continue;
         const sizeKB = fs.statSync(file).size / 1024;
         assert(sizeKB < HARD_LIMIT_KB,
-            `${tab.slug} sub-template under hard size limit (${HARD_LIMIT_KB}KB)`,
+            `${slug} sub-template under hard size limit (${HARD_LIMIT_KB}KB)`,
             `<${HARD_LIMIT_KB}KB`, `${sizeKB.toFixed(1)}KB`);
         if (sizeKB >= WARN_LIMIT_KB && sizeKB < HARD_LIMIT_KB) {
-            console.log(`  ⚠️  ${tab.slug}: ${sizeKB.toFixed(1)}KB exceeds gallery recommendation of ${WARN_LIMIT_KB}KB`);
+            console.log(`  ⚠️  ${slug}: ${sizeKB.toFixed(1)}KB exceeds gallery recommendation of ${WARN_LIMIT_KB}KB`);
         }
     }
 });

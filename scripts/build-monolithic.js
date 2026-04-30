@@ -57,6 +57,34 @@ function buildMonolithic() {
       );
     }
 
+    // If this tab has subSections (currently only Capacity), each sub-section
+    // lives in its own sub-template file. Merge their content groups back into
+    // this tab's content group so the monolithic file matches v0.8.9 layout.
+    if (Array.isArray(tab.subSections)) {
+      for (const sect of tab.subSections) {
+        const sectFile = path.join(WORKBOOKS_DIR, sect.slug, `${sect.slug}.workbook`);
+        if (!fs.existsSync(sectFile)) {
+          throw new Error(`Sub-section template missing: ${sectFile}`);
+        }
+        const sectSub = readJson(sectFile);
+        // Sub-section layout (set by split-capacity.js):
+        //   items[0] = canonical shared parameters (drop)
+        //   items[1] = section-driver param (cap-shared-params; drop, already in orchestrator)
+        //   items[2] = the section group (use this)
+        if (!Array.isArray(sectSub.items) || sectSub.items.length < 3) {
+          throw new Error(`Sub-section ${sect.slug} has fewer than 3 items`);
+        }
+        const sectGroup = JSON.parse(JSON.stringify(sectSub.items[2]));
+        if (sectGroup.name !== sect.groupName) {
+          throw new Error(
+            `Sub-section ${sect.slug} group name mismatch: ` +
+            `expected "${sect.groupName}", got "${sectGroup.name}"`
+          );
+        }
+        contentGroup.content.items.push(sectGroup);
+      }
+    }
+
     // Preserve the historical key order: type, content, conditionalVisibility, name, [styleSettings].
     // Rebuilding the object explicitly is the only way to control JSON.stringify output order.
     const orderedGroup = {

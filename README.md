@@ -21,6 +21,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
 - [What's New (v1.0.0)](#whats-new-v100)
+- [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
@@ -406,6 +407,17 @@ Reported by [Jake-ThomasTech](https://github.com/Jake-ThomasTech) — the column
 The rewritten tip banner above the table notes that the column reflects *provisioned* workload memory (detected VM memory + AKS Arc cluster VM memory — control plane and worker agent pools), not actual committed memory — for real-time committed-memory utilization, the Memory Usage (%) chart further down the same tab and the Hyper-V VMs sub-tab provide the Perf / Prometheus signal.
 
 See [PR #76](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/76) for full implementation details. Older release notes are in the [Appendix](#appendix-previous-versions-change-log).
+
+## v1.1.0 — Planned (post-gallery merge)
+
+Not yet released. The following changes are queued for v1.1.0 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
+
+- **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery and owned via CODEOWNERS by the **Azure Edge PM CAT Team** (`@Azure/azure-edge-pm-cat-team`) in `microsoft/Application-Insights-Workbooks`, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook, owned by the Azure Edge PM CAT Team. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
+- **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
+- **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
+- **`scripts/template-ids.json`** — the empty `galleryTemplateId` fields will be populated with the final IDs assigned by the Azure Monitor team during the upstream PR review, and `scripts/build-gallery.js` re-run so emitted artifacts use the real IDs in `loadFromTemplateId` references rather than the `community-Azure Local/<folder>` placeholders.
+
+**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.0` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.0 wording remains accurate while the gallery PR is in flight.
 
 ## Contributing
 

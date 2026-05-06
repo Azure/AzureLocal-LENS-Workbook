@@ -902,7 +902,7 @@
                 "showLegend": false,
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No volume usage data for this cluster. Confirm Azure Managed Prometheus is collecting cluster_storage_volume_* metrics.",
+              "noDataMessage": "No volume usage data for this cluster. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the cluster nodes.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",

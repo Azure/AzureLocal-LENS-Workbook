@@ -906,7 +906,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No CPU metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node CPU metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No CPU metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Processor(_Total)\\% Processor Time` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -950,7 +950,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No memory metrics. Confirm Azure Managed Prometheus is enabled and the cluster is sending node memory metrics to the selected workspace — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Memory\\% Committed Bytes In Use` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -994,7 +994,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No storage utilisation metrics. Confirm Azure Managed Prometheus is collecting storage metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No storage utilisation metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting LogicalDisk and Cluster CSV File System counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1037,7 +1037,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No storage latency metrics. Confirm Azure Managed Prometheus is collecting S2D / volume latency metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No storage latency metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting LogicalDisk and Cluster CSV File System latency counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1080,7 +1080,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No storage IOPS metrics. Confirm Azure Managed Prometheus is collecting volume IOPS metrics from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No storage IOPS metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting LogicalDisk and Cluster CSV File System IOPS counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1123,7 +1123,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No network throughput metrics. Confirm Azure Managed Prometheus is collecting NIC counters from this cluster — or expand the Performance Counter DCR Configuration section above for AMA / Log Analytics setup guidance.",
+              "noDataMessage": "No network throughput metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Network Adapter(*)\\Bytes Total/sec` (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",

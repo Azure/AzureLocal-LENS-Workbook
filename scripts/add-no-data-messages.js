@@ -1,12 +1,16 @@
-// One-shot script: adds noDataMessage + noDataMessageStyle:4 to every visible
-// KqlItem (type 3) in AzureLocal-LENS-Workbook.json that does not already have
-// one. Skips invisible Merge/helper data sources (no visualization).
+// Source-of-truth-aware: adds noDataMessage + noDataMessageStyle:4 to every
+// visible KqlItem (type 3) in the per-tab workbook files under workbooks/
+// (and shared/header.json) that does not already have one. Skips invisible
+// Merge/helper data sources (no visualization). After running this script,
+// run `node scripts/build-monolithic.js` to refresh the root JSON.
 //
 // Run from repo root:  node scripts/add-no-data-messages.js
 const fs = require('fs');
 const path = require('path');
 
-const FILE = path.resolve(__dirname, '..', 'AzureLocal-LENS-Workbook.json');
+const ROOT = path.resolve(__dirname, '..');
+const WORKBOOKS_DIR = path.join(ROOT, 'workbooks');
+const SHARED_HEADER = path.join(ROOT, 'shared', 'header.json');
 
 // Items used solely as Merge data sources / non-rendered helpers — skip.
 const SKIP_NAMES = new Set([
@@ -196,8 +200,6 @@ function vizOf(c) {
 }
 
 let added = 0, skipped = 0;
-const original = fs.readFileSync(FILE, 'utf8');
-const doc = JSON.parse(original);
 
 function walk(o) {
   if (Array.isArray(o)) { o.forEach(walk); return; }
@@ -222,13 +224,33 @@ function walk(o) {
   for (const k of Object.keys(o)) walk(o[k]);
 }
 
-walk(doc);
+function processFile(file) {
+  const original = fs.readFileSync(file, 'utf8');
+  const doc = JSON.parse(original);
+  walk(doc);
+  let out = JSON.stringify(doc, null, 2);
+  out = out.replace(/\r?\n/g, '\r\n');
+  if (original.endsWith('\r\n') && !out.endsWith('\r\n')) out += '\r\n';
+  if (out !== original) {
+    fs.writeFileSync(file, out, 'utf8');
+    return true;
+  }
+  return false;
+}
 
-let out = JSON.stringify(doc, null, 2);
-// Preserve original CRLF line endings.
-out = out.replace(/\r?\n/g, '\r\n');
-// JSON.stringify does not append a trailing newline; preserve original behaviour.
-if (original.endsWith('\r\n') && !out.endsWith('\r\n')) out += '\r\n';
+const files = [SHARED_HEADER];
+for (const slug of fs.readdirSync(WORKBOOKS_DIR)) {
+  const f = path.join(WORKBOOKS_DIR, slug, `${slug}.workbook`);
+  if (fs.existsSync(f)) files.push(f);
+}
 
-fs.writeFileSync(FILE, out, 'utf8');
+let changed = 0;
+for (const f of files) {
+  if (processFile(f)) changed++;
+}
+
 console.log(`Added noDataMessage to ${added} items; skipped ${skipped} helper/invisible items.`);
+console.log(`Updated ${changed} of ${files.length} source files.`);
+if (changed > 0) {
+  console.log('Next: node scripts/build-monolithic.js');
+}

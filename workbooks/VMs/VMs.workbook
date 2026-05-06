@@ -1,0 +1,937 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "title": "Azure Local VMs",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 💻 Azure Local Virtual Machines\r\nVirtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+            },
+            "name": "text-vm-header"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "nav",
+              "links": [
+                {
+                  "id": "arc-vm-docs-link",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-local/manage/azure-arc-vm-management-overview",
+                  "linkTarget": "Url",
+                  "linkLabel": "📚 Documentation: Azure Arc VM Management",
+                  "style": "link"
+                },
+                {
+                  "id": "arc-vm-troubleshoot-link",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-local/manage/troubleshoot-arc-enabled-vms",
+                  "linkTarget": "Url",
+                  "linkLabel": "🔧 Troubleshoot Arc-enabled VMs",
+                  "style": "link"
+                }
+              ]
+            },
+            "name": "arc-vm-docs-link"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| summarize Count = count()",
+              "size": 4,
+              "title": "Total VMs",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": true
+              },
+              "noDataMessage": "No Arc-enabled VMs (Azure Local) found in the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "25",
+            "name": "vm-total-tile",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| where tostring(properties.status) == \"Connected\"\r\n| summarize Count = count()",
+              "size": 4,
+              "title": "Connected VMs",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  }
+                },
+                "showBorder": true
+              },
+              "noDataMessage": "No connected Arc-enabled VMs found in the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "25",
+            "name": "vm-connected-tile",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend status = tostring(properties.status)\r\n| summarize Count = count() by status\r\n| order by Count desc",
+              "size": 0,
+              "title": "VM Connection Status",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom",
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No VM status data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "vm-status-pie",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osType = iff(isempty(osSku), \"Unknown\", osSku)\r\n| summarize Count = count() by osType\r\n| order by Count desc",
+              "size": 0,
+              "title": "OS Distribution",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom"
+              },
+              "noDataMessage": "No VM OS distribution data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "vm-os-distribution",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| summarize Count = count() by resourceGroup\r\n| order by Count desc\r\n| take 10",
+              "size": 0,
+              "title": "VMs by Resource Group (Top 10)",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "piechart",
+              "chartSettings": {
+                "showLegend": true,
+                "legendPosition": "bottom"
+              },
+              "noDataMessage": "No VMs grouped by resource group — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "50",
+            "name": "vm-by-rg",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📈 VM Deployments Over Time\r\n*Based on OS installation date (properties.osInstallDate)*"
+            },
+            "name": "text-vm-deployments"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "vm-deployment-months",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMDeploymentMonths",
+                  "label": "Time Range (Months)",
+                  "type": 2,
+                  "isRequired": true,
+                  "value": "12",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"24\",\"label\":\"24 months\"},{\"value\":\"18\",\"label\":\"18 months\"},{\"value\":\"12\",\"label\":\"12 months\"},{\"value\":\"9\",\"label\":\"9 months\"},{\"value\":\"6\",\"label\":\"6 months\"},{\"value\":\"5\",\"label\":\"5 months\"},{\"value\":\"4\",\"label\":\"4 months\"},{\"value\":\"3\",\"label\":\"3 months\"},{\"value\":\"2\",\"label\":\"2 months\"},{\"value\":\"1\",\"label\":\"1 month\"}]"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "vm-deployment-params"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend osInstallDate = todatetime(properties.osInstallDate)\r\n| where isnotempty(osInstallDate)\r\n| where osInstallDate >= ago(toint('{VMDeploymentMonths}') * 30d)\r\n| extend deploymentMonth = startofmonth(osInstallDate)\r\n| summarize Count = count() by deploymentMonth\r\n| extend Series = 'VMs'\r\n| order by deploymentMonth asc",
+              "size": 0,
+              "title": "VM Deployments by Month (OS Install Date)",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "deploymentMonth",
+                "yAxis": [
+                  "Count"
+                ],
+                "group": "Series",
+                "seriesLabelKey": "Series",
+                "showLegend": true
+              },
+              "noDataMessage": "No VM deployments found in the selected time range.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "80",
+            "name": "vm-deployments-bar"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterRG = resourceGroup\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend osInstallDate = todatetime(properties.osInstallDate)\r\n| where isnotempty(osInstallDate)\r\n| where osInstallDate >= ago(toint('{VMDeploymentMonths}') * 30d)\r\n| extend deploymentMonth = format_datetime(osInstallDate, 'yyyy-MM')\r\n| summarize VMCount = count() by deploymentMonth\r\n| extend sortOrder = 1\r\n| union (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where kind == \"HCI\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.azurestackhci/clusters\"\r\n        | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n        | project clusterRG = resourceGroup\r\n    ) on $left.resourceGroup == $right.clusterRG\r\n    | extend osInstallDate = todatetime(properties.osInstallDate)\r\n    | where isnotempty(osInstallDate)\r\n    | where osInstallDate >= ago(toint('{VMDeploymentMonths}') * 30d)\r\n    | summarize VMCount = count()\r\n    | extend deploymentMonth = 'TOTAL', sortOrder = 0\r\n)\r\n| order by sortOrder asc, deploymentMonth desc\r\n| project deploymentMonth, VMCount",
+              "size": 1,
+              "title": "VMs Deployed by Month",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "labelSettings": [
+                  {
+                    "columnId": "deploymentMonth",
+                    "label": "Month"
+                  },
+                  {
+                    "columnId": "VMCount",
+                    "label": "VMs Deployed"
+                  }
+                ]
+              },
+              "noDataMessage": "No VM deployments found in the selected time range.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "20",
+            "name": "vm-deployments-table"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 💻 All Azure Local VMs"
+            },
+            "name": "text-vm-all"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = resourceGroup, clusterId = id\r\n) on $left.resourceGroup == $right.clusterRG\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend processor = tostring(properties.detectedProperties.processorNames)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| extend domainName = tostring(properties.domainName)\r\n| extend osInstallDate = todatetime(properties.osInstallDate)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend statusSort = case(status == 'Connected', 0, 1)\r\n| project VMName = name, vmLink, resourceGroup, clusterName, clusterLink, status, osSku, osVersion, vCPUs, memoryGB, ipAddress, domainName, agentVersion, osInstallDate, lastStatusChange, location, statusSort\r\n| order by statusSort asc, VMName asc\r\n| project-away statusSort",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "VMName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "vmLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "clusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Disconnected",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Expired",
+                          "representation": "warning",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "lastStatusChange",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "osInstallDate",
+                    "formatter": 6
+                  },
+                  {
+                    "columnMatch": "vCPUs",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal"
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "memoryGB",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 5,
+                      "options": {
+                        "style": "decimal"
+                      }
+                    }
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "VMName",
+                    "label": "VM Name"
+                  },
+                  {
+                    "columnId": "vmLink"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
+                  },
+                  {
+                    "columnId": "clusterName",
+                    "label": "Cluster"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  },
+                  {
+                    "columnId": "status",
+                    "label": "Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "osVersion",
+                    "label": "OS Version"
+                  },
+                  {
+                    "columnId": "vCPUs",
+                    "label": "vCPUs"
+                  },
+                  {
+                    "columnId": "memoryGB",
+                    "label": "Memory (GB)"
+                  },
+                  {
+                    "columnId": "ipAddress",
+                    "label": "IP Address"
+                  },
+                  {
+                    "columnId": "domainName",
+                    "label": "Domain Name"
+                  },
+                  {
+                    "columnId": "agentVersion",
+                    "label": "Agent Version"
+                  },
+                  {
+                    "columnId": "osInstallDate",
+                    "label": "OS Install Date"
+                  },
+                  {
+                    "columnId": "lastStatusChange",
+                    "label": "Last Status Change"
+                  },
+                  {
+                    "columnId": "location",
+                    "label": "Location"
+                  }
+                ],
+                "noDataMessage": "No Azure Local VMs found in the selected scope"
+              },
+              "noDataMessage": "No Arc-enabled VMs match the current filters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "vm-all-list"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 📊 VMs by Azure Local Cluster"
+            },
+            "name": "text-vm-by-cluster"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "vm-cluster-name-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMClusterVMNameFilter",
+                  "label": "Filter by VM Name",
+                  "type": 1,
+                  "description": "Optional: Filter by VM name using wildcards. Example: *vm01* or *web*",
+                  "isRequired": false,
+                  "value": "",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                },
+                {
+                  "id": "vm-cluster-status-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMClusterStatusFilter",
+                  "label": "VM Status",
+                  "type": 2,
+                  "description": "Filter by VM connection status",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\"Connected\", \"Disconnected\", \"Expired\", \"Error\"]",
+                  "defaultValue": "value::all"
+                },
+                {
+                  "id": "vm-cluster-ossku-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMClusterOsSkuFilter",
+                  "label": "OS SKU",
+                  "type": 2,
+                  "description": "Filter by OS SKU",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend osSku = tostring(properties.osSku)\r\n| where isnotempty(osSku)\r\n| distinct osSku\r\n| order by osSku asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "vm-by-cluster-filters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| project vmName = name, vmResourceGroup = resourceGroup, vmId = id, vmStatus = tostring(properties.status), osSku = tostring(properties.osSku), vCPUs, memoryGB, ipAddress\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n) on $left.vmResourceGroup == $right.clusterResourceGroup\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', vmId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{VMClusterVMNameFilter}' == '' or vmName matches regex strcat('(?i)', replace_string(replace_string('{VMClusterVMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterStatusFilter}) or vmStatus in ({VMClusterStatusFilter})\r\n| where '*' in ({VMClusterOsSkuFilter}) or osSku in ({VMClusterOsSkuFilter})\r\n| project vmName, vmLink, vmStatus, osSku, vCPUs, memoryGB, ipAddress, ClusterName = coalesce(clusterName, 'Unknown'), clusterLink\r\n| order by ClusterName asc, vmName asc",
+              "size": 0,
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "gridSettings": {
+                "rowLimit": 2000,
+                "formatters": [
+                  {
+                    "columnMatch": "vmName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "vmLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "vmStatus",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Connected",
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "Disconnected",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "unknown",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "ClusterName",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  }
+                ],
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "vmName",
+                    "label": "VM Name"
+                  },
+                  {
+                    "columnId": "vmLink"
+                  },
+                  {
+                    "columnId": "vmStatus",
+                    "label": "VM Status"
+                  },
+                  {
+                    "columnId": "osSku",
+                    "label": "OS SKU"
+                  },
+                  {
+                    "columnId": "vCPUs",
+                    "label": "vCPUs"
+                  },
+                  {
+                    "columnId": "memoryGB",
+                    "label": "Memory (GB)"
+                  },
+                  {
+                    "columnId": "ipAddress",
+                    "label": "IP Address"
+                  },
+                  {
+                    "columnId": "ClusterName",
+                    "label": "Cluster Name"
+                  },
+                  {
+                    "columnId": "clusterLink"
+                  }
+                ]
+              },
+              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "vm-by-cluster"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## #️⃣ VM Count by Cluster"
+            },
+            "name": "text-vm-count-cluster"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project vmName = name, vmResourceGroup = resourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n) on $left.vmResourceGroup == $right.clusterResourceGroup\r\n| summarize VMCount = count() by ClusterName = coalesce(clusterName, 'Unknown')\r\n| order by VMCount desc",
+              "size": 0,
+              "title": "VM Distribution by Cluster",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "ClusterName",
+                "yAxis": [
+                  "VMCount"
+                ],
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "vm-count-by-cluster-bar"
+          }
+        ]
+      },
+      "name": "azure-local-vms"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

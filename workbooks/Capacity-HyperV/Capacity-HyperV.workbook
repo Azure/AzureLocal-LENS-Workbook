@@ -1,0 +1,1045 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [
+          "{Subscriptions}"
+        ],
+        "parameters": [
+          {
+            "id": "cap-section-driver",
+            "version": "KqlParameterItem/1.0",
+            "name": "CapacitySection",
+            "type": 1,
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "value": "overview"
+          }
+        ],
+        "style": "pills",
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "name": "cap-shared-params"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🖥️ Hyper-V VMs\r\nPerformance data for Hyper-V virtual machines running on your Azure Local clusters, sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the top of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
+            },
+            "name": "text-hyperv-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters aren't in the portal's preset dropdown, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — the recommended approach because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the **Show Hyper-V DCR Setup Guide** section below for step-by-step guidance."
+            },
+            "name": "text-hyperv-dcr-setup-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "hyperv-dcr-setup-toggle",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "ShowHyperVDCRSetupSection",
+                  "label": "Show Hyper-V DCR Setup Guide",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+                  "value": "no"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "hyperv-dcr-setup-toggle-param"
+          },
+          {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
+                  },
+                  "name": "hyperv-dcr-prereqs"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
+                  },
+                  "name": "hyperv-dcr-counters-table"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### ✅ Recommended — Add Counters via the Portal (Custom counter specifier)\r\n\r\nThe Azure Portal's DCR editor only exposes a fixed set of performance objects in its dropdown (`Processor`, `Processor Information`, `LogicalDisk`, `Memory`, `Network Interface`, `Process`, `System`) — **Hyper-V objects are not listed**. However, the portal **does** let you add any counter by path via the **Custom counter specifier** input. This is the **easiest and safest** method because it **adds to** an existing DCR instead of replacing it — no risk of losing previously configured counters.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the DCR already associated with your Azure Local nodes — or create a new Windows DCR and associate it with your Arc machines.\r\n2. Under **Data sources → Performance Counters**, click **Add data source** (or edit the existing Performance Counters data source).\r\n3. Set **Performance counter selection mode** to **Custom**.\r\n4. In the **Custom counter specifier** box, enter one Hyper-V counter path per entry (click **Add** between each). Paste the counter paths from the table above, for example:\r\n   - `\\Hyper-V Hypervisor Logical Processor(_Total)\\% Total Run Time`\r\n   - `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure`\r\n   - `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`\r\n   - `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec`\r\n   - `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec`\r\n5. Leave **Sample rate** at **60** seconds and save.\r\n\r\nThe portal accepts the Hyper-V counter paths even though they contain hyphens and spaces — wildcards (`*`) and the `_Total` instance are supported. Data typically begins flowing within a few minutes.\r\n\r\n---\r\n\r\n### 🛠️ Alternative — ARM / CLI Deployment\r\n\r\nUse the ARM template below if you prefer source-controlled, repeatable deployments or want to stand up a dedicated DCR for Hyper-V counters.\r\n\r\n> **IMPORTANT:** ARM deployments are **declarative and replace the entire `properties` block** of a Data Collection Rule. Redeploying this template against the name of an **existing** DCR will overwrite its `performanceCounters`, `streams`, `destinations` and `dataFlows` — any counters you previously added (including the Capacity DCR counters from the Overview tab) will be removed.\r\n>\r\n> **Safe options:**\r\n> 1. **Recommended — deploy as a new DCR** with a unique `dcrName` (the template's default `dcr-azurelocal-hyperv-perf` is distinct from the Capacity DCR) and associate it **alongside** your existing DCRs. A single Arc-enabled machine can have multiple DCR associations; counter collection is the union of all associated DCRs.\r\n> 2. **Merging into an existing DCR** — first export the current definition (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing-dcr.json`), merge the Hyper-V counter specifiers from the template below into its `properties.dataSources.performanceCounters` array, then redeploy.\r\n>\r\n> Always review the counter list against what you already collect before deploying.",
+                    "style": "warning"
+                  },
+                  "name": "hyperv-dcr-portal-limitation"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 📄 Sample ARM Template\r\n\r\nSave the template below as `dcr-azurelocal-hyperv.json` and deploy it to the resource group that will host the DCR. This can be deployed **alongside** the Capacity DCR from the Overview tab — both DCRs can be associated with the same Arc-enabled machines, or combined into a single DCR if you prefer.\r\n\r\n```json\r\n{\r\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\r\n  \"contentVersion\": \"1.0.0.0\",\r\n  \"parameters\": {\r\n    \"dcrName\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"dcr-azurelocal-hyperv-perf\",\r\n      \"metadata\": {\r\n        \"description\": \"Name of the Hyper-V Data Collection Rule.\"\r\n      }\r\n    },\r\n    \"location\": {\r\n      \"type\": \"string\",\r\n      \"defaultValue\": \"[resourceGroup().location]\",\r\n      \"metadata\": {\r\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\r\n      }\r\n    },\r\n    \"workspaceResourceId\": {\r\n      \"type\": \"string\",\r\n      \"metadata\": {\r\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook's Hyper-V VMs tab.\"\r\n      }\r\n    }\r\n  },\r\n  \"resources\": [\r\n    {\r\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\r\n      \"apiVersion\": \"2022-06-01\",\r\n      \"name\": \"[parameters('dcrName')]\",\r\n      \"location\": \"[parameters('location')]\",\r\n      \"kind\": \"Windows\",\r\n      \"properties\": {\r\n        \"dataSources\": {\r\n          \"performanceCounters\": [\r\n            {\r\n              \"name\": \"azureLocalHyperVCounters\",\r\n              \"streams\": [\r\n                \"Microsoft-Perf\"\r\n              ],\r\n              \"samplingFrequencyInSeconds\": 60,\r\n              \"counterSpecifiers\": [\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\r\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\r\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\r\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\r\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\r\n              ]\r\n            }\r\n          ]\r\n        },\r\n        \"destinations\": {\r\n          \"logAnalytics\": [\r\n            {\r\n              \"name\": \"laDestination\",\r\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\r\n            }\r\n          ]\r\n        },\r\n        \"dataFlows\": [\r\n          {\r\n            \"streams\": [\r\n              \"Microsoft-Perf\"\r\n            ],\r\n            \"destinations\": [\r\n              \"laDestination\"\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    }\r\n  ],\r\n  \"outputs\": {\r\n    \"dcrResourceId\": {\r\n      \"type\": \"string\",\r\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\r\n    }\r\n  }\r\n}\r\n```"
+                  },
+                  "name": "hyperv-dcr-arm-template"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-hyperv.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n**2. Associate the DCR to every Azure Local node** (Arc-enabled machine). Loop over machines in the cluster's resource group:\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-hyperv --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-hyperv-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\nData typically begins flowing within a few minutes. If the **Top Virtual Disks by Storage Latency** chart is still empty, check which latency counter your Windows Server version exposes (`Latency`, `Read Latency` or `Write Latency`) and adjust the counter specifier — the KQL query matches all four variants.\r\n\r\n---"
+                  },
+                  "name": "hyperv-dcr-deploy-steps"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### 🔍 Verify Counters Are Flowing\r\n\r\nA correctly-deployed DCR can still result in empty charts if AMA isn't actually shipping every counter you listed (most commonly: a typo / extra whitespace in `counterSpecifiers`, AMA still propagating after a DCR change, or a DCRA missing on some nodes). Use this query to confirm what's **actually** arriving in the workspace selected on this tab:\r\n\r\n```kusto\r\nPerf\r\n| where TimeGenerated > ago(1h)\r\n| where ObjectName startswith \"Hyper-V\"\r\n| summarize Samples = count(), Hosts = dcount(Computer), AnyInstance = any(InstanceName)\r\n    by ObjectName, CounterName\r\n| order by ObjectName asc, CounterName asc\r\n```\r\n\r\nCompare the result against the **Required Performance Counters** table above. Any required `(ObjectName, CounterName)` pair that **does not appear** is not being shipped — the corresponding chart will be empty until you fix the upstream collection.\r\n\r\n**Common causes when a counter is missing:**\r\n- The counter specifier in the DCR has a typo, an extra space, or wrong casing (e.g. `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure ` with a trailing space). DCRs are case-sensitive on counter paths.\r\n- The DCR was saved but its DCRAs were not yet (re)applied. AMA polls for DCR changes every ~5 minutes; allow up to 20 minutes after a save.\r\n- The DCRA exists on the node but the AMA extension is unhealthy. On the node: `azcmagent extension list` should show **AzureMonitorWindowsAgent** in `Succeeded` state.\r\n- The counter only exists on certain workloads — for example `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` is only emitted for VMs running with **Dynamic Memory enabled**. VMs with static memory (including most AKS-on-AzureLocal worker VMs) will not appear under this object.\r\n- **Region mismatch**: DCR and the destination Log Analytics workspace must be in the same Azure region.\r\n\r\nThe `AnyInstance` column is also useful — it shows the InstanceName format on your Windows version. The dashboard's per-VM/per-VHD parsing logic depends on it; if the format differs significantly from the expected `<VMName>:<vCpuId>` (CPU) or path-with-extension (Storage) shape, raise an issue against this workbook.\r\n\r\n---"
+                  },
+                  "name": "hyperv-dcr-verify"
+                },
+                {
+                  "type": 11,
+                  "content": {
+                    "version": "LinkItem/1.0",
+                    "style": "nav",
+                    "links": [
+                      {
+                        "id": "hyperv-dcr-ama-perf-docs",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
+                        "linkTarget": "Url",
+                        "linkLabel": "📚 AMA Performance Counters",
+                        "style": "link"
+                      },
+                      {
+                        "id": "hyperv-dcr-arm-reference",
+                        "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
+                        "linkTarget": "Url",
+                        "linkLabel": "📘 DCR ARM Reference",
+                        "style": "link"
+                      },
+                      {
+                        "id": "hyperv-dcr-association-docs",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
+                        "linkTarget": "Url",
+                        "linkLabel": "🔗 DCR Associations",
+                        "style": "link"
+                      },
+                      {
+                        "id": "hyperv-counters-docs",
+                        "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
+                        "linkTarget": "Url",
+                        "linkLabel": "🖥️ Hyper-V Performance Tuning",
+                        "style": "link"
+                      }
+                    ]
+                  },
+                  "name": "hyperv-dcr-links"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowHyperVDCRSetupSection",
+              "comparison": "isEqualTo",
+              "value": "yes"
+            },
+            "name": "hyperv-dcr-setup-group"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "parameters": [
+                {
+                  "id": "hyperv-la-workspace",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVLogAnalyticsWorkspace",
+                  "label": "Log Analytics Workspace",
+                  "type": 2,
+                  "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions (see tip below if charts are empty).",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "includeAll": true,
+                  "defaultValue": "value::all",
+                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "hyperv-time-range",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVTrendsTimeRange",
+                  "label": "Historic Time Range",
+                  "type": 4,
+                  "description": "Time range for the Top VM / VHD performance charts below.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ],
+                    "allowCustom": true
+                  },
+                  "value": {
+                    "durationMs": 259200000
+                  }
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "hyperv-perf-params"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "> 💡 **Tip — using *All* with many workspaces:** Azure cross-resource queries are limited to ~10 Log Analytics workspaces per query. If you select **All** and tiles/charts on this tab are empty, narrow the **Log Analytics Workspace** picker above to the workspaces that actually receive Hyper-V performance counters from your Azure Local nodes.",
+              "style": "upsell"
+            },
+            "name": "hyperv-workspace-tip"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "> ℹ️ **Note — global filters do not apply on this tab:** The page-level **Resource Group** and **Cluster Tag Name / Value** filters at the top of the workbook scope ARG queries against `microsoft.azurestackhci/clusters`. This tab does **not** query ARG — every tile, chart and the inventory table read directly from the **`Perf`** table in the selected **Log Analytics Workspace(s)**, which has no concept of resource group or cluster tag. Use the **Log Analytics Workspace** picker (above) and the **Physical Host** filter (below the tiles) to scope this tab.",
+              "style": "info"
+            },
+            "name": "hyperv-global-filters-note"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📊 Active VMs (from Log Analytics)"
+            },
+            "name": "hyperv-inventory-divider"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
+              "size": 3,
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "HyperVTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "blue"
+                  }
+                },
+                "showBorder": false
+              },
+              "noDataMessage": "No active Hyper-V VMs found. Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+              "noDataMessageStyle": 4
+            },
+            "name": "hyperv-tile-active-vms",
+            "customWidth": "33"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
+              "size": 3,
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "HyperVTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "purple"
+                  }
+                },
+                "showBorder": false
+              },
+              "noDataMessage": "No Hyper-V hosts found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+              "noDataMessageStyle": 4
+            },
+            "name": "hyperv-tile-hosts",
+            "customWidth": "33"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
+              "size": 3,
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "HyperVTrendsTimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "subtitleContent": {
+                  "columnMatch": "Subtitle",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Count",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "green"
+                  }
+                },
+                "showBorder": false
+              },
+              "noDataMessage": "No migrated VMs detected in the window — every observed VM ran on a single host. (Confirm AMA + a DCR with Hyper-V performance counters is configured if all three tiles are 0.)",
+              "noDataMessageStyle": 4
+            },
+            "name": "hyperv-tile-vm-host-pairs",
+            "customWidth": "33"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "parameters": [
+                {
+                  "id": "hyperv-inv-vm-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvVMFilter",
+                  "label": "VM Name (contains)",
+                  "type": 1,
+                  "description": "Filter the inventory table to VM names containing this text. Leave blank for all VMs.",
+                  "value": ""
+                },
+                {
+                  "id": "hyperv-inv-host-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvHostFilter",
+                  "label": "Physical Host",
+                  "type": 2,
+                  "description": "Filter the inventory table to one or more physical Hyper-V hosts.",
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| summarize by Computer\r\n| order by Computer asc",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{HyperVLogAnalyticsWorkspace}"
+                  ],
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "HyperVTrendsTimeRange"
+                },
+                {
+                  "id": "hyperv-inv-activity-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvActivity",
+                  "label": "Activity",
+                  "type": 2,
+                  "description": "Filter VMs by how recently they emitted Hyper-V performance counters relative to the end of the selected time range.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"all\",\"label\":\"All VMs in window\",\"selected\":true},{\"value\":\"recent\",\"label\":\"Currently active (last 15 min)\"},{\"value\":\"hour\",\"label\":\"Active in last hour\"},{\"value\":\"stale\",\"label\":\"Stale (>1 hour since last sample)\"}]",
+                  "value": "all"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "hyperv-inv-filters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nlet memStats = Perf\r\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\r\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen (UTC)'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| join kind=leftouter memStats on VMName\r\n| project-away VMName1\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, Activity, ['Physical Host'], ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\r\n| order by ['Avg CPU %'] desc nulls last",
+              "size": 0,
+              "showAnalytics": true,
+              "showExportToExcel": true,
+              "timeContext": {
+                "durationMs": 0
+              },
+              "timeContextFromParameter": "HyperVTrendsTimeRange",
+              "title": "📋 Hyper-V VM Inventory (Perf-derived)",
+              "noDataMessage": "No Hyper-V VMs match the current filters in the selected workspace(s) and time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the nodes — expand the **Show Hyper-V DCR Setup Guide** section at the top of this tab for step-by-step guidance.",
+              "noDataMessageStyle": 4,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "VM Name",
+                    "formatter": 1
+                  },
+                  {
+                    "columnMatch": "Activity",
+                    "formatter": 1
+                  },
+                  {
+                    "columnMatch": "Physical Host",
+                    "formatter": 1
+                  },
+                  {
+                    "columnMatch": "vCPUs (observed)",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "purple"
+                    }
+                  },
+                  {
+                    "columnMatch": "Avg CPU %",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "palette": "blue"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Avg Memory %",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "100",
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "yellow",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "First Seen (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  },
+                  {
+                    "columnMatch": "Last Seen (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  }
+                ],
+                "rowLimit": 5000,
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "Avg CPU %",
+                    "sortOrder": 2
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "Avg CPU %",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "hyperv-vm-inventory"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure** (guest paging to disk); cells are coloured **green &lt;80**, **yellow 80–99**, **red ≥100**. This counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen (UTC)` / `Last Seen (UTC)` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen (UTC))` which is also UTC).",
+              "style": "info"
+            },
+            "name": "hyperv-inv-help"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "---\r\n## 📈 Performance Trends"
+            },
+            "name": "hyperv-perf-divider"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "💡 **Tip:** The six charts below read from the `Perf` table and require Hyper-V performance counters to be collected via AMA + DCR. If you see \"No data\", expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of this tab for a ready-to-deploy ARM template. Storage charts are shown **per virtual disk (VHD)** — see the limitations note beneath the charts.",
+              "style": "upsell"
+            },
+            "name": "hyperv-perf-tip"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Avg CPU %\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)",
+              "noDataMessage": "No Hyper-V CPU data. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every node.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg CPU %"
+                ],
+                "group": "seriesKey",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-cpu",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = InstanceName\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Memory Pressure\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)",
+              "noDataMessage": "No Hyper-V memory pressure data. Memory Pressure is a Dynamic Memory metric — only VMs with Dynamic Memory enabled report it. Static-memory VMs (including AKS Arc workloads) will never appear here. If no VMs use Dynamic Memory this chart will always be empty by design.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Memory Pressure"
+                ],
+                "group": "seriesKey",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-mempressure",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Bytes/sec\", \"Write Bytes/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vhdName\r\n| project TimeGenerated, vhdName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vhdName\r\n| top 5 by AvgMBps desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)",
+              "noDataMessage": "No Hyper-V Virtual Storage Device throughput data. Ensure '\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec' and 'Write Bytes/sec' are in the DCR's counterSpecifiers.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Throughput (MB/s)"
+                ],
+                "group": "vhdName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-storage-throughput",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Operations/Sec\", \"Write Operations/Sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize Iops = sum(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgIops = avg(Iops) by vhdName\r\n| top 5 by AvgIops desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"IOPS\"] = round(avg(Iops), 0) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)",
+              "noDataMessage": "No Hyper-V Virtual Storage Device IOPS data. Ensure '\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec' and 'Write Operations/Sec' are in the DCR's counterSpecifiers.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "IOPS"
+                ],
+                "group": "vhdName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-storage-iops",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Latency\", \"Average Latency\", \"Read Latency\", \"Write Latency\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize LatencyMs = avg(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgLatency = avg(LatencyMs) by vhdName\r\n| top 5 by AvgLatency desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Avg Latency\"] = round(avg(LatencyMs), 3) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)",
+              "noDataMessage": "No Hyper-V Virtual Storage Device latency data. Latency counter names vary by Windows Server version — the chart matches Latency / Average Latency / Read Latency / Write Latency. Ensure at least one is in the DCR's counterSpecifiers.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Latency"
+                ],
+                "group": "vhdName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 3
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-storage-latency",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\n// Build the authoritative VM list from the Hyper-V Hypervisor Virtual Processor counter (which uses '<VMName>:<vCpuId>' as InstanceName).\r\n// The 'Hyper-V Virtual Network Adapter' object reports rows for *everything* attached to the virtual switch — guest VM vNICs, host management vNICs (vManagement, vCompute, vSMB …), and even the underlying physical adapters — so we must filter network rows to only those whose InstanceName starts with a known VM name.\r\nlet vmList = toscalar(\r\n    Perf\r\n    | where TimeGenerated between (trendStart .. trendEnd)\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | summarize make_set(VMName)\r\n);\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Network Adapter\" and CounterName in (\"Bytes/sec\", \"Bytes Sent/sec\", \"Bytes Received/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n// Cheap pre-filter: instance must contain a known VM name somewhere\r\n| where InstanceName has_any (vmList)\r\n// Resolve the VM name by prefix-matching against the VM list, picking the longest match (handles VM names that contain underscores)\r\n| mv-apply vmCandidate = vmList to typeof(string) on (\r\n    where InstanceName startswith vmCandidate\r\n    | top 1 by string_size(vmCandidate) desc\r\n  )\r\n| extend vmName = vmCandidate\r\n| where isnotempty(vmName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vmName\r\n| project TimeGenerated, vmName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vmName\r\n| top 5 by AvgMBps desc\r\n| project vmName;\r\nperfData\r\n| lookup kind=inner top5 on vmName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vmName\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "aggregation": 3,
+              "title": "📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)",
+              "noDataMessage": "No Hyper-V Virtual Network Adapter data for guest VMs. The chart cross-references against the Hyper-V Hypervisor Virtual Processor counter to filter out host vNICs (vManagement, vCompute, etc.) and physical NICs — if no VMs are visible in the CPU chart, none can be matched here either. Confirm '\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec' (or 'Bytes Sent/sec' + 'Bytes Received/sec') is in the DCR's counterSpecifiers.",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Throughput (MB/s)"
+                ],
+                "group": "vmName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            },
+            "name": "hyperv-chart-network",
+            "customWidth": "50",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Chart Units & Interpretation Guide:**\r\n\r\n| Chart | Unit | Healthy / What to look for |\r\n|---|---|---|\r\n| **Top VMs by CPU Usage** | **Percent (%)** — averaged across all of the VM's virtual processors. `% Guest Run Time` is the share of time each vCPU was running guest code. | Sustained values **<70%** are typical; **>85%** for hours = the VM is CPU-bound (consider adding vCPUs or right-sizing the workload). 100% across all vCPUs = fully pegged. |\r\n| **Top VMs by Memory Pressure** | **Unitless ratio expressed as a percentage** — `(memory the VM is requesting / memory currently assigned) × 100`. **NOT** GB / MB. | **≤80** = healthy (Dynamic Memory target, ~25% headroom); **~100** = at limit; **>100** = under pressure (host is paging guest memory via Smart Paging). Example: `258.7` means the VM wants ~2.6× the memory currently assigned to it — undersized. |\r\n| **Top Virtual Disks by Throughput** | **Megabytes / second (MB/s)** — sum of Read Bytes/sec + Write Bytes/sec, divided by 1,048,576. Reported **per VHD/VHDX**, not per VM. | Compare against the underlying disk's expected throughput. NVMe-backed S2D pools comfortably sustain hundreds of MB/s per VHD; HDD-tiered pools much less. Sudden sustained spikes per VHD often indicate workload changes (backups, indexing, log truncation). |\r\n| **Top Virtual Disks by IOPS** | **Operations / second (IOPS)** — sum of Read Operations/Sec + Write Operations/Sec. Reported **per VHD/VHDX**. | A single all-flash S2D VHD typically sustains 5k–20k IOPS depending on block size; an HDD-tier VHD should rarely exceed a few hundred. Pair with the Latency chart — high IOPS at low latency is healthy; high IOPS at high latency = saturation. |\r\n| **Top Virtual Disks by Latency** | **Milliseconds (ms)** — average per-operation latency reported by the Hyper-V Virtual Storage Device. | **<10 ms** = healthy for SSD/NVMe-backed storage. **10–20 ms** = monitor (queue depth or storage congestion). **>20 ms** sustained = the storage layer is stressed; investigate S2D health, repair jobs, or noisy-neighbour VHDs. HDD-tier latency is naturally higher (~15–30 ms acceptable). |\r\n| **Top VMs by Network Throughput** | **Megabytes / second (MB/s)** — sum of all Bytes/sec (or Sent + Received) across the VM's virtual NICs. Multiply by 8 for Mb/s (e.g. 125 MB/s ≈ 1 Gbps). | Compare against the virtual switch / physical NIC capacity. RDMA/SET teams on Azure Local typically expose 25–100 Gbps; a single VM rarely exceeds a few hundred MB/s sustained outside backup/migration windows. |\r\n\r\n---\r\n\r\n⚠️ **Known Limitations:**\r\n- **Memory Pressure only reports for VMs with Dynamic Memory enabled.** VMs with static memory assignments (including most AKS-on-AzureLocal worker VMs) will never appear on this chart — the counter is not emitted for them. An empty chart is not necessarily a fault.\r\n- **Storage counters are per virtual disk (VHD), not per VM.** The `Hyper-V Virtual Storage Device` performance object uses the VHD path as its instance identifier; there is no reliable per-VM aggregation available in Log Analytics without cross-referencing ARG. Series names show the VHD filename (or, on AzureLocal 24H2, the hyphen-flattened InstanceName until the chart regex is updated for that format).\r\n- **Network counter VM-name resolution.** The `Hyper-V Virtual Network Adapter` performance object emits rows for *every* adapter plumbed into the virtual switch — guest VM virtual NICs, host management vNICs (`vManagement`, `vCompute`, `vSMB` …) and the underlying physical NICs (e.g. `Mellanox ConnectX-…`). The chart filters these out by cross-referencing each row's InstanceName against the authoritative VM list derived from the `Hyper-V Hypervisor Virtual Processor` counter; only InstanceNames that start with a known VM name are kept. As a result, a VM whose CPU counter isn't being collected won't appear in this chart either.\r\n- **Latency counter names vary by Windows Server version.** The chart matches `Latency`, `Average Latency`, `Read Latency` and `Write Latency`; if your nodes expose a different counter, the chart will be empty until the DCR is updated.\r\n- **All charts show the Top 5 VMs/VHDs by average value over the selected time range.** A noisy short-lived workload may not appear if its average is below the top 5.",
+              "style": "warning"
+            },
+            "name": "hyperv-limitations-note"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "CapacitySection",
+        "comparison": "isEqualTo",
+        "value": "hyperv"
+      },
+      "name": "cap-hyperv-section"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

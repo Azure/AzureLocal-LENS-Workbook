@@ -1,0 +1,178 @@
+{
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## 🖥️ Azure Local LENS (Lifecycle, Events & Notification Status) Workbook\r\n\r\nThis workbook is a community-driven / open-source project, it is not a Microsoft-supported service offering. If you encounter any issues, have feedback or a new feature request, please [raise an Issue on GitHub](https://aka.ms/AzureLocalLENS/issues)."
+      },
+      "name": "workbook-title-version"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### 📋 Workbook Version: v1.0.0\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
+        "style": "info"
+      },
+      "name": "version-update-banner"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### ⚡ Quick Actions and Knowledge Links"
+      },
+      "name": "quick-actions-header"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "nav",
+        "links": [
+          {
+            "id": "supportability-forum-link",
+            "cellValue": "https://github.com/Azure/AzureLocal-Supportability",
+            "linkTarget": "Url",
+            "linkLabel": "💬 Azure Local Supportability Forum",
+            "style": "link"
+          },
+          {
+            "id": "docs-link",
+            "cellValue": "https://learn.microsoft.com/azure/azure-local/whats-new",
+            "linkTarget": "Url",
+            "linkLabel": "📚 Azure Local Docs",
+            "style": "link"
+          },
+          {
+            "id": "sbe-updates-link",
+            "cellValue": "https://learn.microsoft.com/azure/azure-local/update/solution-builder-extension",
+            "linkTarget": "Url",
+            "linkLabel": "🧩 Solution Builder Extension (SBE) updates",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "quick-actions-links"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "nav",
+        "links": [
+          {
+            "id": "update-docs-link",
+            "cellValue": "https://learn.microsoft.com/azure/azure-local/update/update-via-powershell-23h2",
+            "linkTarget": "Url",
+            "linkLabel": "🔄 Update Guide",
+            "style": "link"
+          },
+          {
+            "id": "activity-log-link",
+            "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/activityLog",
+            "linkTarget": "Url",
+            "linkLabel": "📜 Activity Log",
+            "style": "link"
+          },
+          {
+            "id": "service-health-link",
+            "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Health/AzureHealthBrowseBlade/~/serviceIssues",
+            "linkTarget": "Url",
+            "linkLabel": "🏥 Azure Service Health",
+            "style": "link"
+          },
+          {
+            "id": "alert-rules-link",
+            "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/alertsV2",
+            "linkTarget": "Url",
+            "linkLabel": "🔔 Create Alert Rule",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "quick-actions-links-row2"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Filter Instructions\r\n- **Subscriptions**: Select one or more subscriptions to filter data (defaults to all accessible subscriptions)\r\n- **Resource Group Filter**: Optional wildcard filter for resource group names. Use `*` as wildcard (e.g., `*-prod-*` matches 'rg-hci-prod-01')\r\n- **Cluster Tag**: Optional tag filter. Enter both Tag Name and Tag Value to filter by Azure Local cluster tags. This filter also applies to AKS Arc clusters and VMs in the same resource group as matching clusters.\r\n- **💡 Tip**: Set **Auto refresh** to 30 minutes using the toolbar dropdown (⟳) for hands-free monitoring\r\n\r\n---"
+      },
+      "name": "filter-instructions"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    }
+  ]
+}

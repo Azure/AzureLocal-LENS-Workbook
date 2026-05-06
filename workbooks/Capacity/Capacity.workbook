@@ -1,0 +1,338 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "sub-param-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscriptions",
+            "type": 6,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "node-trends-time-range",
+            "version": "KqlParameterItem/1.0",
+            "name": "NodeTrendsTimeRange",
+            "label": "Historic Data Time Range",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                },
+                {
+                  "durationMs": 15552000000
+                },
+                {
+                  "durationMs": 31536000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 2592000000
+            }
+          },
+          {
+            "id": "rg-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroupFilter",
+            "type": 1,
+            "description": "Optional: Filter by resource group name using wildcards. Example: *-prod-* or *hci*",
+            "value": "",
+            "label": "Resource Group Filter"
+          },
+          {
+            "id": "tag-filter-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagName",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Name"
+          },
+          {
+            "id": "tag-value-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterTagValue",
+            "type": 2,
+            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": null,
+            "label": "Cluster Tag Value"
+          },
+          {
+            "id": "time-range-001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 3888000000
+                },
+                {
+                  "durationMs": 5184000000
+                }
+              ],
+              "allowCustom": true
+            },
+            "value": {
+              "durationMs": 3888000000
+            },
+            "label": "Time Range"
+          },
+          {
+            "id": "cluster-rg-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterRGMap",
+            "type": 1,
+            "description": "Hidden: maps resource group to cluster name for HCI clusters",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "global-subscription-param"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "tabStyle": "larger",
+        "links": [
+          {
+            "id": "summary-dashboard-tab",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📊 Azure Local Instances",
+            "subTarget": "0",
+            "preText": "",
+            "style": "link"
+          },
+          {
+            "id": "capacity-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🏗️ Capacity",
+            "subTarget": "7",
+            "style": "link"
+          },
+          {
+            "id": "a73ee4cb-fbb6-4d62-a290-18479bfe7958",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "📋 System Health",
+            "subTarget": "3",
+            "style": "link"
+          },
+          {
+            "id": "d9e5f4a2-0c3f-5678-9012-bcdef2345678",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔄 Update Progress",
+            "subTarget": "5",
+            "style": "link"
+          },
+          {
+            "id": "3f29b7be-5489-43f2-beb7-c90c618ad71c",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🔗 ARB Status",
+            "subTarget": "1",
+            "style": "link"
+          },
+          {
+            "id": "a285a540-ba34-4588-b467-b0b8b21d1494",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "🗄️ Azure Local Machines",
+            "subTarget": "2",
+            "style": "link"
+          },
+          {
+            "id": "vm-tab-001",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "💻 Azure Local VMs",
+            "subTarget": "6",
+            "style": "link"
+          },
+          {
+            "id": "c8d4f3a1-9b2e-4567-8901-abcdef123456",
+            "cellValue": "selectedTab",
+            "linkTarget": "parameter",
+            "linkLabel": "☸️ AKS Arc Clusters",
+            "subTarget": "4",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "main-tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "parameters": [
+                {
+                  "id": "cap-section-driver",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "CapacitySection",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "value": "overview"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "cap-shared-params"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+            },
+            "name": "cap-instructions-text"
+          },
+          {
+            "type": 11,
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "tabs",
+              "tabStyle": "larger",
+              "links": [
+                {
+                  "id": "tab-ov",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "📋 Overview",
+                  "subTarget": "overview",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-multi",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🌍 Multi-cluster",
+                  "subTarget": "multi",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-single",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🔍 Single cluster",
+                  "subTarget": "single",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-hyperv",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🖥️ Hyper-V VMs",
+                  "subTarget": "hyperv",
+                  "style": "link"
+                }
+              ]
+            },
+            "name": "cap-section-tabs"
+          }
+        ]
+      },
+      "name": "capacity-tab-group"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

@@ -357,7 +357,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.0)
 
-**v1.0.0 marks the workbook's graduation to a mature release** with a structural overhaul that prepares it for future submission to the Azure Monitor Workbooks gallery. No user-facing query, chart, or data behaviour has changed — every existing tab works exactly as before.
+**v1.0.0 marks the workbook's graduation to a mature release** with a structural overhaul that prepares it for future submission to the Azure Monitor Workbooks gallery. Aside from the Capacity Overview accuracy improvements called out below ([#77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77)), no other user-facing query, chart, or data behaviour has changed — every existing tab works exactly as before.
 
 ### Architectural split (source of truth → build artifact)
 
@@ -391,6 +391,18 @@ All inline-style HTML (`<div style="background-color: …">`, `<span style="colo
 ### Tests & CI
 
 Test count grew from **136 to 225** (5 new suites covering split-architecture invariants — see the [CI/CD Validation](#cicd-validation) table). Round-trip integrity (`build-monolithic` output equals the on-disk root file, with the v0.8.9 tab ordering preserved), shared-parameter parity across all 12 sub-templates (8 main + 4 Capacity sections), sub-template size limits (now all under 200 KB), and the accessibility lint are all CI-gated.
+
+### Capacity — Overview sub-tab — `Workload Memory % (N-1)` accuracy improvements (Resolves [#77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77))
+
+Reported by [Jake-ThomasTech](https://github.com/Jake-ThomasTech) — the column previously labelled `Memory Used % (N-1)` under-reported memory utilization on single-node clusters (observed ~9.5% when the host's actual committed memory was ~46%). The numerator was being silently deflated by two issues in the Azure Resource Graph query, and the denominator did not account for host OS / Storage Spaces Direct cache reservation. The column is intentionally kept ARG-only (not Perf-counter sourced) so it works for disconnected clusters and across the entire fleet. Five fixes:
+
+- **Column renamed `Memory Used % (N-1)` → `Workload Memory % (N-1)`.** The original label suggested *committed* memory, but the value is *provisioned* workload memory (sum of detected VM memory + AKS Arc node-pool memory derived from documented SKU sizes). The new name reflects what the value actually represents and aligns with the existing `Workload Memory` GB column to its right.
+- **`kind=inner` → `kind=leftouter` on the workload-aggregation joins.** The two ARG joins that link Arc machines/connected-clusters to their `extensibilityresources` (`virtualmachineinstances` / `provisionedclusterinstances`) and then to `microsoft.extendedlocation/customlocations` for the `arcBridgeRG` mapping were `kind=inner`, which silently dropped any VM or AKS cluster whose ARG metadata had not yet propagated. Both are now `kind=leftouter` so partial-metadata workloads survive the join and contribute what they can.
+- **10% host OS reservation in the denominator.** `effectiveMemoryGB` is now derived from `physicalMemoryGB × 0.9` before the N-1 deduction, reflecting the ~10% per-node memory reserved for host OS, Storage Spaces Direct cache, and platform overhead. A 4-node cluster with 256 GB total now treats 230 GB as usable (and 172.5 GB as N-1 effective), instead of 256 GB and 192 GB. The tip banner above the table has been rewritten to spell this out.
+- **AKS Arc SKU memory lookup table corrected and expanded.** Three existing entries were wrong (`Standard_NC4_A2`, `Standard_NC8_A2`, `Standard_NC16_A2` showed 28 / 56 / 112 GB — likely a confusion of GPU memory with host RAM — they should be 8 / 16 / 64 GB per the [AKS on Azure Local scale requirements](https://learn.microsoft.com/azure/aks/aksarc/scale-requirements)). 23 documented SKUs were missing entirely, including the default Windows worker node size `Standard_K8S3_v1` (6 GB) and every NC2 A16 / NK T4 / NC2 L4 / NC2 L40 / NC2 L40S / NC2 RTX Pro 6000 GPU SKU. The full ladder is now applied to both `cpMemPerVM` (control plane) and `poolMemPerVM` (worker) lookups. Unrecognised SKUs still contribute 0 GB rather than a heuristic so future SKU additions surface as visible gaps to fix, not silent inaccuracy.
+- **`noDataMessage` text corrected.** The Cluster Capacity Overview tile is an Azure Resource Graph query, not a Prometheus / Azure Monitor Workspace query, but its `noDataMessage` had been copy-pasted from a neighbouring Perf tile ("ensure Azure Managed Prometheus is enabled…"). Replaced with accurate ARG-specific guidance about subscription filter and Arc onboarding.
+
+The rewritten tip banner above the table notes that the column reflects *provisioned* workload memory (VM detected memory + AKS Arc node-pool sums), not actual committed memory — for real-time committed-memory utilization, the Memory Usage (%) chart further down the same tab and the Hyper-V VMs sub-tab provide the Perf / Prometheus signal.
 
 See [PR #76](https://github.com/Azure/AzureLocal-LENS-Workbook/pulls) for full implementation details. Older release notes are in the [Appendix](#appendix-previous-versions-change-log).
 

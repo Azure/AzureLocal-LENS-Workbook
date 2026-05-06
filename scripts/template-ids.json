@@ -1,11 +1,12 @@
 {
-  "$comment": "Maps the LENS workbook tabs to their split-file slugs and gallery template IDs. The order of the 'tabs' array is the canonical items[] order in the assembled monolithic workbook (preserved from v0.8.9: 0,7,1,2,6,4,3,5). selectedTab is the parameter value that triggers visibility in the monolithic build. groupName matches the original root-level item name. galleryTemplateId is empty until the upstream Application-Insights-Workbooks PR is approved by the Azure Monitor team. Capacity has subSections (one sub-template per Capacity section) so each gallery sub-template stays under 200 KB.",
+  "$comment": "Maps the LENS workbook tabs to their split-file slugs and gallery template IDs. The order of the 'tabs' array is the canonical items[] order in the assembled monolithic workbook (preserved from v0.8.9: 0,7,1,2,6,4,3,5). selectedTab is the parameter value that triggers visibility in the monolithic build. groupName matches the original root-level item name. galleryFolderName is the hyphenated upstream folder name under microsoft/Application-Insights-Workbooks/Workbooks/Azure Local/<galleryFolderName>/ (per John Gardner email 2026-05-05) and is used to emit the dist/gallery/<galleryFolderName>/ artifacts and the placeholder template id 'community-Azure Local/<galleryFolderName>'. galleryTemplateId stays empty until the upstream PR is approved and the Azure Monitor team assigns the final id. Capacity has subSections (one sub-template per Capacity section) so each gallery sub-template stays under 200 KB.",
   "tabs": [
     {
       "selectedTab": "0",
       "slug": "Overview",
       "groupName": "summary-tiles-group",
       "label": "📊 Azure Local Instances",
+      "galleryFolderName": "LENS-Overview",
       "galleryTemplateId": ""
     },
     {
@@ -13,6 +14,7 @@
       "slug": "Capacity",
       "groupName": "capacity-tab-group",
       "label": "🏗️ Capacity",
+      "galleryFolderName": "LENS-Capacity",
       "galleryTemplateId": "",
       "subSections": [
         {
@@ -20,6 +22,7 @@
           "slug": "Capacity-Overview",
           "groupName": "cap-overview-section",
           "label": "📋 Overview",
+          "galleryFolderName": "LENS-Capacity-Overview",
           "galleryTemplateId": ""
         },
         {
@@ -27,6 +30,7 @@
           "slug": "Capacity-MultiNode",
           "groupName": "cap-multi-section",
           "label": "🌍 Multi-cluster",
+          "galleryFolderName": "LENS-Capacity-Multi-cluster",
           "galleryTemplateId": ""
         },
         {
@@ -34,6 +38,7 @@
           "slug": "Capacity-SingleNode",
           "groupName": "cap-single-section",
           "label": "🔍 Single cluster",
+          "galleryFolderName": "LENS-Capacity-Single-Cluster",
           "galleryTemplateId": ""
         },
         {
@@ -41,6 +46,7 @@
           "slug": "Capacity-HyperV",
           "groupName": "cap-hyperv-section",
           "label": "🖥️ Hyper-V VMs",
+          "galleryFolderName": "LENS-Capacity-Hyper-V-VMs",
           "galleryTemplateId": ""
         }
       ]
@@ -50,6 +56,7 @@
       "slug": "ArbStatus",
       "groupName": "arcbridge-page",
       "label": "🔗 ARB Status",
+      "galleryFolderName": "LENS-ARB-Status",
       "galleryTemplateId": ""
     },
     {
@@ -57,6 +64,7 @@
       "slug": "Machines",
       "groupName": "azure-local-nodes",
       "label": "🗄️ Azure Local Machines",
+      "galleryFolderName": "LENS-Azure-Local-Machines",
       "galleryTemplateId": ""
     },
     {
@@ -64,6 +72,7 @@
       "slug": "VMs",
       "groupName": "azure-local-vms",
       "label": "💻 Azure Local VMs",
+      "galleryFolderName": "LENS-Azure-Local-VMs",
       "galleryTemplateId": ""
     },
     {
@@ -71,6 +80,7 @@
       "slug": "AksArc",
       "groupName": "aks-arc-clusters",
       "label": "☸️ AKS Arc Clusters",
+      "galleryFolderName": "LENS-AKS-Arc-Clusters",
       "galleryTemplateId": ""
     },
     {
@@ -78,6 +88,7 @@
       "slug": "SystemHealth",
       "groupName": "grp-update-readiness",
       "label": "📋 System Health",
+      "galleryFolderName": "LENS-System-Health",
       "galleryTemplateId": ""
     },
     {
@@ -85,6 +96,7 @@
       "slug": "UpdateProgress",
       "groupName": "grp-update-progress",
       "label": "🔄 Update Progress",
+      "galleryFolderName": "LENS-Update-Progress",
       "galleryTemplateId": ""
     }
   ]

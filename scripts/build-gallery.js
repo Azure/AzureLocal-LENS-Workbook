@@ -60,8 +60,9 @@ function buildCapacityOuter(capacityTab) {
   let placeholderCount = 0;
   const stubs = [];
   for (const sect of capacityTab.subSections) {
+    const folderName = sect.galleryFolderName || sect.slug;
     const templateId = sect.galleryTemplateId
-      || `Community-Workbooks/Azure Local/${sect.slug}`;
+      || `community-Azure Local/${folderName}`;
     if (!sect.galleryTemplateId) placeholderCount++;
     stubs.push({
       type: 12,
@@ -115,8 +116,9 @@ function buildOuter() {
   let placeholderCount = 0;
   for (const tab of TAB_MAP.tabs) {
     if (tab.slug === 'Overview') continue;
+    const folderName = tab.galleryFolderName || tab.slug;
     const templateId = tab.galleryTemplateId
-      || `Community-Workbooks/Azure Local/${tab.slug}`;
+      || `community-Azure Local/${folderName}`;
     if (!tab.galleryTemplateId) placeholderCount++;
     items.push({
       type: 12,
@@ -147,9 +149,12 @@ function buildOuter() {
 }
 
 function main() {
-  // Outer (inline Overview + 7 sub-template stubs)
+  // Outer (inline Overview + 7 sub-template stubs) — emitted under the Overview
+  // tab's gallery folder name (e.g. dist/gallery/LENS-Overview/LENS-Overview.workbook).
+  const overviewTab = TAB_MAP.tabs.find(t => t.slug === 'Overview');
+  const overviewFolder = (overviewTab && overviewTab.galleryFolderName) || 'Overview';
   const { workbook: outer, placeholderCount: outerPh } = buildOuter();
-  const outerFile = path.join(DIST, 'Overview', 'Overview.workbook');
+  const outerFile = path.join(DIST, overviewFolder, `${overviewFolder}.workbook`);
   writeJson(outerFile, outer);
   const outerKB = (fs.statSync(outerFile).size / 1024).toFixed(1);
   console.log(`✅ ${path.relative(ROOT, outerFile)} (${outerKB} KB outer with inline Overview tab)`);
@@ -159,20 +164,22 @@ function main() {
   // Sub-templates (one per non-Overview tab)
   for (const tab of TAB_MAP.tabs) {
     if (tab.slug === 'Overview') continue;
+    const tabFolder = tab.galleryFolderName || tab.slug;
 
     if (Array.isArray(tab.subSections)) {
       // Capacity gallery file = orchestrator + sub-section stubs
       const { workbook: capOuter, placeholderCount: capPh } = buildCapacityOuter(tab);
       totalPh += capPh;
-      const dst = path.join(DIST, tab.slug, `${tab.slug}.workbook`);
+      const dst = path.join(DIST, tabFolder, `${tabFolder}.workbook`);
       writeJson(dst, capOuter);
       const kb = (fs.statSync(dst).size / 1024).toFixed(1);
       console.log(`✅ ${path.relative(ROOT, dst)} (${kb} KB outer with ${tab.subSections.length} section stubs)`);
 
       // Emit each Capacity-* sub-section template
       for (const sect of tab.subSections) {
+        const sectFolder = sect.galleryFolderName || sect.slug;
         const src = path.join(WORKBOOKS_DIR, sect.slug, `${sect.slug}.workbook`);
-        const subDst = path.join(DIST, sect.slug, `${sect.slug}.workbook`);
+        const subDst = path.join(DIST, sectFolder, `${sectFolder}.workbook`);
         if (!fs.existsSync(src)) {
           console.error(`❌ Missing source: ${src}`);
           process.exit(1);
@@ -186,7 +193,7 @@ function main() {
     }
 
     const src = path.join(WORKBOOKS_DIR, tab.slug, `${tab.slug}.workbook`);
-    const dst = path.join(DIST, tab.slug, `${tab.slug}.workbook`);
+    const dst = path.join(DIST, tabFolder, `${tabFolder}.workbook`);
     if (!fs.existsSync(src)) {
       console.error(`❌ Missing source: ${src}`);
       process.exit(1);

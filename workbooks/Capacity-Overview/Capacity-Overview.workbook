@@ -160,20 +160,6 @@
             "isHiddenWhenLocked": true,
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources"
-          },
-          {
-            "id": "cluster-mem-map-param",
-            "version": "KqlParameterItem/1.0",
-            "name": "ClusterMemMap",
-            "type": 1,
-            "description": "Hidden: maps cluster name to total physical memory (GiB) for HCI clusters",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| project value = strcat(name, ':', tostring(physicalMemoryGB))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
-            "crossComponentResources": [
-              "{Subscriptions}"
-            ],
-            "isHiddenWhenLocked": true,
-            "queryType": 1,
-            "resourceType": "microsoft.resourcegraph/resources"
           }
         ],
         "style": "pills",
@@ -758,7 +744,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\Available Bytes` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
+                    "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\Committed Bytes`, `\\Memory\\Available Bytes` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n---"
                   },
                   "name": "dcr-setup-required-counters"
                 },
@@ -989,7 +975,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet clusterMem = materialize(\r\n    print mapping = dynamic({ClusterMemMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project clusterName = tostring(parts[0]), totalMemGB = todouble(tostring(parts[1]))\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perCluster = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName == \"Available Bytes\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvailBytesPerNode = avg(CounterValue) by bin(TimeGenerated, step), Computer, clusterName\r\n| summarize AvailBytesCluster = sum(AvailBytesPerNode) by TimeGenerated, clusterName\r\n| lookup kind=inner clusterMem on clusterName\r\n| extend TotalBytes = totalMemGB * 1024.0 * 1024.0 * 1024.0\r\n| extend [\"Avg Usage %\"] = iff(TotalBytes > 0, round(max_of((TotalBytes - AvailBytesCluster) / TotalBytes * 100.0, 0.0), 1), 0.0)\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"];\r\nlet top5 = perCluster\r\n| summarize avgUsage = avg([\"Avg Usage %\"]) by clusterName\r\n| top 5 by avgUsage desc\r\n| project clusterName;\r\nperCluster\r\n| lookup kind=inner top5 on clusterName\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"]\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1])\r\n);\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup)\r\n| lookup kind=inner clusterMap on nodeRG\r\n| project Computer, clusterName);\r\nlet perCluster = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName in (\"Committed Bytes\", \"Available Bytes\")\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize\r\n    Committed = avgif(todouble(CounterValue), CounterName == \"Committed Bytes\"),\r\n    Available = avgif(todouble(CounterValue), CounterName == \"Available Bytes\"),\r\n    HaveCommitted = countif(CounterName == \"Committed Bytes\"),\r\n    HaveAvailable = countif(CounterName == \"Available Bytes\")\r\n  by bin(TimeGenerated, step), clusterName\r\n| where HaveCommitted > 0 and HaveAvailable > 0\r\n| extend Denom = Committed + Available\r\n| where Denom > 0\r\n| extend [\"Avg Usage %\"] = round(Committed / Denom * 100.0, 1)\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"];\r\nlet top5 = perCluster\r\n| summarize avgUsage = avg([\"Avg Usage %\"]) by clusterName\r\n| top 5 by avgUsage desc\r\n| project clusterName;\r\nperCluster\r\n| lookup kind=inner top5 on clusterName\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"]\r\n| order by TimeGenerated asc",
               "size": 1,
               "aggregation": 3,
               "title": "Memory Usage (%) — Top 5 Clusters",
@@ -1019,7 +1005,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Memory\\Available Bytes` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",

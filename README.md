@@ -359,7 +359,16 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release that addresses customer feedback (paraphrased: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*) by reframing the Capacity → Overview → Cluster Capacity Overview table so it answers two distinct questions side-by-side instead of one ambiguous question. The underlying KQL math for the existing column is unchanged — only the column label, plus a new sibling column, a per-row deep-link, and a rewritten tip banner.
+This is a small targeted release driven by direct customer feedback. It contains two independent fixes:
+
+1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
+2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.
+
+### Lowercase-id casing fix — AVD VMs (and any other VMI with lowercase `id`) now counted correctly
+
+Reported feedback: a customer cluster hosting 3 AVD VMs (6 vCPU / 10 GiB each) plus 2 standard Azure Local VMs (~2 vCPU / ~6 GiB each) showed only `4 vCPUs` and `12.0 GiB` in the Capacity → Overview table — the AVD VMs were silently missing. Root cause: the KQL chain that joins `microsoft.hybridcompute/machines` to its `extensibilityresources` companion (`microsoft.azurestackhci/virtualmachineinstances` for VMs, `microsoft.hybridcontainerservice/provisionedclusterinstances` for AKS Arc) extracts the parent Arc-machine ID using a case-sensitive `indexof()` call against the string literal `/providers/Microsoft.AzureStackHCI`. Azure Resource Graph preserves whatever casing the resource provider used at registration: standard Azure Local VM blade templates emit mixed-case `Microsoft.AzureStackHCI`, but the AVD-on-Azure-Local provisioning path emits lowercase `microsoft.azurestackhci`. KQL's `indexof()` returns `-1` on the lowercase id, then `substring(id, 0, -1)` returns the empty string, and the silently-empty `parentId` causes the leftouter join to drop those rows entirely. The same anti-pattern existed for the AKS provider segment (`Microsoft.HybridContainerService`) and the load-balancer segment (`Microsoft.KubernetesRuntime`).
+
+**Fix:** lowercase both sides — `indexof(tolower(id), "/providers/microsoft.azurestackhci")` etc. The outer `tolower(...)` wrapper that canonicalized the substring result is unchanged, so semantics are preserved for already-working clusters; only the previously-dropped rows recover. **21 occurrences swept across 5 workbook source files** (Capacity-Overview, Capacity-SingleNode, ARB Status, Overview/Instances, AKS Arc Clusters). The Azure Local VMs tab is not affected by this bug — it sources its data from Azure Monitor Performance Counters via AMA, not from `extensibilityresources`. Verified by 225/225 tests passing post-sweep with no other content drift.
 
 ### Capacity — Overview sub-tab — column reframe + Cluster Insights deep-link
 

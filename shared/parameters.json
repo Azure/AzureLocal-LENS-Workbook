@@ -157,6 +157,20 @@
         "isHiddenWhenLocked": true,
         "queryType": 1,
         "resourceType": "microsoft.resourcegraph/resources"
+      },
+      {
+        "id": "cluster-mem-map-param",
+        "version": "KqlParameterItem/1.0",
+        "name": "ClusterMemMap",
+        "type": 1,
+        "description": "Hidden: maps cluster name to total physical memory (GiB) for HCI clusters",
+        "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| project value = strcat(name, ':', tostring(physicalMemoryGB))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+        "crossComponentResources": [
+          "{Subscriptions}"
+        ],
+        "isHiddenWhenLocked": true,
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
       }
     ],
     "style": "pills",

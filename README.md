@@ -359,10 +359,11 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release driven by direct customer feedback. It contains two independent fixes:
+This is a small targeted release driven by direct customer feedback. It contains three independent fixes:
 
 1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
 2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.
+3. **ARB control-plane VM memory deduction** so the Capacity Overview table denominator accounts for the ~8 GiB consumed by the Azure Resource Bridge appliance VM that runs on every Azure Local cluster.
 
 ### Lowercase-id casing fix — AVD VMs (and any other VMI with lowercase `id`) now counted correctly
 
@@ -380,6 +381,12 @@ Reported feedback: the column previously labelled `Workload Memory % (N-1)` was 
 - **Tip banner above the table rewritten.** It now opens with *"This table shows **provisioned** workload memory from **Azure Resource Graph** — *what's been allocated*, not *what's currently committed*"*, then explains both columns side-by-side and points users at the new 📊 Cluster Insights column for the committed view. The AKS-SKU and Hyper-V-VMs-sub-tab references from v1.0.0 are preserved.
 
 No other tab, query, parameter, or visualization changed — the build artifact is bit-identical to v1.0.0 outside the Capacity-Overview sub-template, the version banner, and this README.
+
+### Capacity — Overview sub-tab — ARB control-plane VM static deduction
+
+Reported feedback: the Cluster Capacity Overview table denominator (`usableMemoryGB`) reserves ~10% of physical memory for host OS / Storage Spaces Direct cache / platform overhead, but did **not** account for the **Azure Resource Bridge (ARB) control-plane VM** that runs on every Azure Local cluster. The ARB appliance VM (`<guid>-control-plane-0-<guid>`, visible from a node via `Get-VM -CimSession (Get-Cluster).Name`) is provisioned at a fixed 8192 MB and is not surfaced as a Hyper-V VM in Azure Resource Graph (it does not have `Microsoft.HybridCompute/machines` Arc-agent representation), so its memory consumption was previously invisible to the workbook's denominator. Worked example: a 1-node cluster with 128 GiB physical memory previously treated 115 GiB as usable (128 × 0.9, rounded); the same cluster now treats 107 GiB as usable, which raises both the **Workload Memory %** and **N-1 Memory Risk %** columns by a few percentage points to better reflect what is actually available to customer workloads.
+
+**Fix:** new `arbMemoryGB = 8.0` extend in the Capacity Overview KQL, deducted from `usableMemoryGB` after the 10% multiplication and floored at 0 with `max_of(…, 0.0)` to keep tiny-memory edge cases sane. The N-1 derivation (`effectiveMemoryGB = usableMemoryGB - usableMemoryGB / nodeCount` for multi-node clusters) is unchanged — it now operates on the post-ARB usable figure, so the deduction flows naturally into both percentage columns. The tip banner above the table has been updated to call out the deduction explicitly so users can reconcile what they see here against the per-node memory bars in Cluster Insights. No KQL field name or column header changed; existing column references and threshold colours remain intact.
 
 **v1.0.0 marks the workbook's graduation to a mature release** with a structural overhaul that prepares it for future submission to the Azure Monitor Workbooks gallery. Aside from the Capacity Overview accuracy improvements called out below ([#77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77)), no other user-facing query, chart, or data behaviour has changed — every existing tab works exactly as before.
 

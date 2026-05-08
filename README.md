@@ -1,6 +1,6 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
-## Latest Version: v1.0.0
+## Latest Version: v1.0.1
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -20,6 +20,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
+- [What's New (v1.0.1)](#whats-new-v101)
 - [What's New (v1.0.0)](#whats-new-v100)
 - [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
@@ -356,7 +357,20 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.0.0)
+## What's New (v1.0.1)
+
+This is a small targeted release that addresses customer feedback (paraphrased: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*) by reframing the Capacity → Overview → Cluster Capacity Overview table so it answers two distinct questions side-by-side instead of one ambiguous question. The underlying KQL math for the existing column is unchanged — only the column label, plus a new sibling column, a per-row deep-link, and a rewritten tip banner.
+
+### Capacity — Overview sub-tab — column reframe + Cluster Insights deep-link
+
+Reported feedback: the column previously labelled `Workload Memory % (N-1)` was being read by some users as a real-time committed-memory figure that *should* match the per-node memory bars in **Cluster Insights** (Azure Monitor → Insights blade on the cluster resource), and was confusing when it did not. Worked example: a 2-node cluster with 2× 256 GiB physical memory hosting ~296 GiB of provisioned VM + AKS Arc workload memory shows `128.4 %` in this column (296 ÷ 230.5 effective N-1 GiB), while Cluster Insights shows the same nodes at `~74 %` and `~59 %` *committed* memory. Both are correct — they answer different questions — but the original column name didn't make that distinction obvious. Four fixes:
+
+- **Column renamed `Workload Memory % (N-1)` → `N-1 Memory Risk %`.** The new label makes it explicit that this is a *risk* / *survivability* metric, not a current-utilization metric. Values **≥ 100 %** mean workloads would not fit if a single machine fails or drains for an update. The KQL field name is unchanged (`memoryUsagePct`), so the threshold colours, the row sort order (`order by memoryUsagePct desc`), and any downstream column reference remain intact.
+- **New sibling column `Workload Memory %` (no N-1 deduction).** Computed as `provisioned ÷ usable physical memory` (where usable = physical × 90% to allow ~10% per-node host OS / Storage Spaces Direct cache / platform overhead). This is the closest ARG-only equivalent to the per-node memory bars in Cluster Insights, so users can sanity-check that LENS and Cluster Insights are in the same ballpark on the *same* question (`provisioned-vs-usable`) before reading the N-1 risk column. The two will still differ — LENS shows *provisioned* memory derived from VM SKU sizes, Cluster Insights shows *committed* memory measured by Performance Counters via the Azure Monitor Agent — but they no longer compare apples to oranges. Same threshold colours as the N-1 column (≥95 red → ≥80 amber → default green).
+- **New per-row "Cluster Insights" deep-link column** (`📊 View`) opens the cluster's Insights blade directly (`/insights` route on the HCI cluster resource), so users who want the real-time *committed* memory view can navigate there in a single click instead of hunting through portal blades. The existing Cluster name link (cluster overview), VM count link (VMs blade), AKS count link (AKS clusters blade), Machines count link (machines blade), and Storage Used / Available links (storage paths blade) are unchanged.
+- **Tip banner above the table rewritten.** It now opens with *"This table shows **provisioned** workload memory from **Azure Resource Graph** — *what's been allocated*, not *what's currently committed*"*, then explains both columns side-by-side and points users at the new 📊 Cluster Insights column for the committed view. The AKS-SKU and Hyper-V-VMs-sub-tab references from v1.0.0 are preserved.
+
+No other tab, query, parameter, or visualization changed — the build artifact is bit-identical to v1.0.0 outside the Capacity-Overview sub-template, the version banner, and this README.
 
 **v1.0.0 marks the workbook's graduation to a mature release** with a structural overhaul that prepares it for future submission to the Azure Monitor Workbooks gallery. Aside from the Capacity Overview accuracy improvements called out below ([#77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77)), no other user-facing query, chart, or data behaviour has changed — every existing tab works exactly as before.
 
@@ -417,7 +431,7 @@ Not yet released. The following changes are queued for v1.1.0 and will ship once
 - **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
 - **`scripts/template-ids.json`** — the empty `galleryTemplateId` fields will be populated with the final IDs assigned by the Azure Monitor team during the upstream PR review, and `scripts/build-gallery.js` re-run so emitted artifacts use the real IDs in `loadFromTemplateId` references rather than the `community-Azure Local/<folder>` placeholders.
 
-**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.0` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.0 wording remains accurate while the gallery PR is in flight.
+**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.1` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.1 wording remains accurate while the gallery PR is in flight.
 
 ## Contributing
 

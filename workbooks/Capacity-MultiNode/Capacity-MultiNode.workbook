@@ -388,7 +388,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Processor, Memory, Storage or Network).",
+              "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Processor, Memory, Storage or Network). Review the **DCR Setup Guide** under the *🔔 Performance Counter DCR Configuration* section on the **Capacity — Overview** tab for the exact counter list and step-by-step DCR configuration instructions (Portal *Custom counter specifier* + ARM template). The Storage **volume-size forecasts** below additionally require the `Microsoft-Windows-SDDC-Management/Operational` event log (Event ID 3002) — also documented in that section.",
               "style": "upsell"
             },
             "name": "mc-perf-data-tip"

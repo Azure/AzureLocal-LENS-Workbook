@@ -989,6 +989,7 @@
               "size": 0,
               "showAnalytics": true,
               "showRefreshButton": true,
+              "showExportToExcel": true,
               "title": "Extension Status by Type",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",

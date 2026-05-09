@@ -285,6 +285,7 @@
                     "size": 0,
                     "showAnalytics": true,
                     "showRefreshButton": true,
+                    "showExportToExcel": true,
                     "queryType": 1,
                     "resourceType": "microsoft.resourcegraph/resources",
                     "crossComponentResources": [

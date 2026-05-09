@@ -461,6 +461,7 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
               "size": 3,
+              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },
@@ -497,6 +498,7 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
               "size": 3,
+              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },
@@ -533,6 +535,7 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
               "size": 3,
+              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },
@@ -788,6 +791,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Avg CPU %\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -830,6 +834,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend seriesKey = InstanceName\r\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\r\n| project TimeGenerated, seriesKey, Value = CounterValue;\r\nlet top5 = perfData\r\n| summarize AvgValue = avg(Value) by seriesKey\r\n| top 5 by AvgValue desc\r\n| project seriesKey;\r\nperfData\r\n| lookup kind=inner top5 on seriesKey\r\n| summarize [\"Memory Pressure\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -872,6 +877,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Bytes/sec\", \"Write Bytes/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vhdName\r\n| project TimeGenerated, vhdName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vhdName\r\n| top 5 by AvgMBps desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -914,6 +920,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Operations/Sec\", \"Write Operations/Sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize Iops = sum(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgIops = avg(Iops) by vhdName\r\n| top 5 by AvgIops desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"IOPS\"] = round(avg(Iops), 0) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -956,6 +963,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Latency\", \"Average Latency\", \"Read Latency\", \"Write Latency\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\r\n| where isnotempty(vhdName)\r\n| summarize LatencyMs = avg(CounterValue) by bin(TimeGenerated, step), vhdName;\r\nlet top5 = perfData\r\n| summarize AvgLatency = avg(LatencyMs) by vhdName\r\n| top 5 by AvgLatency desc\r\n| project vhdName;\r\nperfData\r\n| lookup kind=inner top5 on vhdName\r\n| summarize [\"Avg Latency\"] = round(avg(LatencyMs), 3) by TimeGenerated, vhdName\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -998,6 +1006,7 @@
               "version": "KqlItem/1.0",
               "query": "let trendStart = {HyperVTrendsTimeRange:start};\r\nlet trendEnd = {HyperVTrendsTimeRange:end};\r\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\r\n// Build the authoritative VM list from the Hyper-V Hypervisor Virtual Processor counter (which uses '<VMName>:<vCpuId>' as InstanceName).\r\n// The 'Hyper-V Virtual Network Adapter' object reports rows for *everything* attached to the virtual switch — guest VM vNICs, host management vNICs (vManagement, vCompute, vSMB …), and even the underlying physical adapters — so we must filter network rows to only those whose InstanceName starts with a known VM name.\r\nlet vmList = toscalar(\r\n    Perf\r\n    | where TimeGenerated between (trendStart .. trendEnd)\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | summarize make_set(VMName)\r\n);\r\nlet perfData = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Hyper-V Virtual Network Adapter\" and CounterName in (\"Bytes/sec\", \"Bytes Sent/sec\", \"Bytes Received/sec\")\r\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\r\n// Cheap pre-filter: instance must contain a known VM name somewhere\r\n| where InstanceName has_any (vmList)\r\n// Resolve the VM name by prefix-matching against the VM list, picking the longest match (handles VM names that contain underscores)\r\n| mv-apply vmCandidate = vmList to typeof(string) on (\r\n    where InstanceName startswith vmCandidate\r\n    | top 1 by string_size(vmCandidate) desc\r\n  )\r\n| extend vmName = vmCandidate\r\n| where isnotempty(vmName)\r\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vmName\r\n| project TimeGenerated, vmName, MBPerSec = BytesPerSec / 1048576.0;\r\nlet top5 = perfData\r\n| summarize AvgMBps = avg(MBPerSec) by vmName\r\n| top 5 by AvgMBps desc\r\n| project vmName;\r\nperfData\r\n| lookup kind=inner top5 on vmName\r\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vmName\r\n| order by TimeGenerated asc",
               "size": 1,
+              "showAnalytics": true,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [

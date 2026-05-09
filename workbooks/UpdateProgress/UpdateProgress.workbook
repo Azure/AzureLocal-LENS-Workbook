@@ -160,6 +160,20 @@
             "isHiddenWhenLocked": true,
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "cluster-node-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ClusterNodeMap",
+            "type": 1,
+            "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeName:clusterName:armId per entry). Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeName = tolower(tostring(node.name))\r\n| where isnotempty(nodeName)\r\n| project value = strcat(nodeName, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
           }
         ],
         "style": "pills",

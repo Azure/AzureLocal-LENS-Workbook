@@ -359,12 +359,20 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release driven by direct customer feedback. It contains four independent fixes:
+This is a small targeted release driven by direct customer feedback. It contains seven independent content fixes plus two cross-cutting UX polish changes:
 
 1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
 2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.
 3. **ARB control-plane VM memory deduction** so the Capacity Overview table denominator accounts for the ~8 GiB consumed by the Azure Resource Bridge appliance VM that runs on every Azure Local cluster.
 4. **Memory Usage (%) — Top 5 Clusters chart** rewritten to match Cluster Insights (`Committed / (Committed + Available)`) instead of the misleading `% Committed Bytes In Use` counter, which used Commit Limit (physical RAM + page file) as its denominator and consistently under-reported usage.
+5. **Memory tiles no longer require the SDDC-Management event log** — a new `ClusterNodeMap` shared parameter (built from Azure Resource Graph) replaces the `Microsoft-Windows-SDDC-Management/Operational` Event 3002 dependency on every memory tile across Capacity-Overview, Capacity-MultiNode, and Capacity-SingleNode. Reported feedback: a customer's `Bellevue` cluster showed 91 % peak memory in the Microsoft-supplied Single-Cluster AMA Insights workbook but only 35.1 % in the LENS Multi-Node forecast table.
+6. **Capacity-Overview “DCR Setup Guide” expanded** with a new **Required Windows Event Log** subsection that documents the Event 3002 requirement (storage volume-size forecasts only) plus the matching `windowsEventLogs` block in the embedded ARM template. The Required Performance Counters table is updated to list `Memory\Committed Bytes` + `Memory\Available Bytes` (Fix 4). The Capacity-Multi-Node header tip cross-references this section.
+7. **Single-node clusters now show “No HA resiliency”** instead of an N-1 percentage — because a single-machine cluster cannot tolerate any node loss and workloads always go offline during planned events such as Azure Local monthly updates.
+
+**UX polish (cross-cutting):**
+
+- **“Open in query mode” (`</>`) toolbar button** is now enabled on every visible KQL chart and ARG table tile so users can inspect, copy, or edit the underlying query in Logs / Resource Graph Explorer (134 tiles enabled, 22 already had it). Intentionally suppressed on single-number stat-tile (`visualization: "tiles"`) visualizations — 33 tiles cleaned — to avoid clutter.
+- **Excel / CSV download** is now enabled on every visible grid / table tile via the toolbar **Export** menu (14 tiles enabled, 32 already had it). Chart visualizations (line / bar / pie / area / scatter) correctly do not show the export menu.
 
 ### Lowercase-id casing fix — AVD VMs (and any other VMI with lowercase `id`) now counted correctly
 
@@ -379,9 +387,9 @@ Reported feedback: the column previously labelled `Workload Memory % (N-1)` was 
 - **Column renamed `Workload Memory % (N-1)` → `N-1 Memory Risk %`.** The new label makes it explicit that this is a *risk* / *survivability* metric, not a current-utilization metric. Values **≥ 100 %** mean workloads would not fit if a single machine fails or drains for an update. The KQL field name is unchanged (`memoryUsagePct`), so the threshold colours, the row sort order (`order by memoryUsagePct desc`), and any downstream column reference remain intact.
 - **New sibling column `Workload Memory %` (no N-1 deduction).** Computed as `provisioned ÷ usable physical memory` (where usable = physical × 90% to allow ~10% per-node host OS / Storage Spaces Direct cache / platform overhead). This is the closest ARG-only equivalent to the per-node memory bars in Cluster Insights, so users can sanity-check that LENS and Cluster Insights are in the same ballpark on the *same* question (`provisioned-vs-usable`) before reading the N-1 risk column. The two will still differ — LENS shows *provisioned* memory derived from VM SKU sizes, Cluster Insights shows *committed* memory measured by Performance Counters via the Azure Monitor Agent — but they no longer compare apples to oranges. Same threshold colours as the N-1 column (≥95 red → ≥80 amber → default green).
 - **New per-row "Cluster Insights" deep-link column** (`📊 View`) opens the cluster's Insights blade directly (`/insights` route on the HCI cluster resource), so users who want the real-time *committed* memory view can navigate there in a single click instead of hunting through portal blades. The existing Cluster name link (cluster overview), VM count link (VMs blade), AKS count link (AKS clusters blade), Machines count link (machines blade), and Storage Used / Available links (storage paths blade) are unchanged.
-- **Tip banner above the table rewritten.** It now opens with *"This table shows **provisioned** workload memory from **Azure Resource Graph** — *what's been allocated*, not *what's currently committed*"*, then explains both columns side-by-side and points users at the new 📊 Cluster Insights column for the committed view. The AKS-SKU and Hyper-V-VMs-sub-tab references from v1.0.0 are preserved.
+- **Tip banner above the table rewritten.** It now opens with *"This table shows provisioned workload memory and CPU ratios using data from **Azure Resource Graph** — *what's been allocated*, not *what's currently committed*"*, then explains both columns side-by-side and points users at the new 📊 Cluster Insights column for the committed view. The AKS-SKU and Hyper-V-VMs-sub-tab references from v1.0.0 are preserved.
 
-No other tab, query, parameter, or visualization changed — the build artifact is bit-identical to v1.0.0 outside the Capacity-Overview sub-template, the version banner, and this README.
+This Fix 1 scope is contained to the Capacity-Overview sub-template; subsequent fixes in this release (5\u20137 and the UX polish below) touch additional tabs and the shared parameters file.
 
 ### Capacity — Overview sub-tab — ARB control-plane VM static deduction
 
@@ -396,6 +404,59 @@ Reported feedback: the **Memory Usage (%) — Top 5 Clusters** chart on the Capa
 **Root cause:** LENS was averaging the raw `\Memory\% Committed Bytes In Use` performance counter, whose Windows-defined formula is `Committed Bytes / Commit Limit × 100`, where `Commit Limit = Physical RAM + Page File Size`. On Hyper-V hosts and Azure Local nodes the page file is large by default, so the denominator is much bigger than physical memory and the resulting percentage is always lower than what users (and Cluster Insights) consider "memory usage". Cluster Insights and most other Azure Local memory tooling instead use `Committed Bytes / (Committed Bytes + Available Bytes) × 100`, which excludes the page file from the denominator and matches what users intuitively read as "memory usage".
 
 **Fix:** The Memory Usage chart KQL now collects two stock Windows perfmon counters — `\Memory\Committed Bytes` and `\Memory\Available Bytes` — instead of `\Memory\% Committed Bytes In Use`. Per-cluster, per time bin, it averages each counter across nodes and then computes `Committed / (Committed + Available) × 100`. This is the same formula already used by the Cluster-wise Memory Forecast chart on the Capacity — Multi-Node sub-tab, so the two memory views on the Capacity tab are now internally consistent. The DCR setup guide row and chart noDataMessage have been updated to list both counters. Customers upgrading from v1.0.0 should add the two new counters to their existing DCR; `\Memory\% Committed Bytes In Use` is no longer required by any LENS chart and can be removed (or left in place; it is harmless). Because the formula uses self-paired counters from the same per-node Perf rows, missing-Heartbeat or partially-reporting nodes can no longer skew the cluster percentage — a problem that an earlier `(Total Physical − Available) / Total Physical` design (using ARG-derived total memory) was vulnerable to whenever any cluster node failed to send a Heartbeat in the selected time range.
+
+### Memory tiles — SDDC log dependency removed (new `ClusterNodeMap` shared parameter)
+
+Reported feedback: the **Cluster Resource Forecast Trends** table on the Capacity — Multi-Node tab and the **Memory Usage (%) — Top 5 Clusters** chart on the Capacity — Overview tab both consistently under-reported memory utilization compared to the Microsoft-supplied Single-Cluster AMA Insights workbook. Worked example from a 60-node test workspace: a customer's `Bellevue` cluster showed `91 %` peak memory in Single-Cluster AMA but only `35.1 %` in the LENS Multi-Node forecast table — a 56-point gap that made the LENS numbers look unusable.
+
+**Root cause:** every LENS memory tile was joining `Perf` rows to a `NodeToCluster` mapping derived from the `Microsoft-Windows-SDDC-Management/Operational` Event 3002 payload (`x.DataItem.UserData.EventData.ArmId` / `ClusterName`). Customers whose AMA DCR did not collect that event log — the default DCR templates do **not** include `windowsEventLogs` — had nodes silently dropped from the join, which under-counted the per-cluster memory aggregate. The `Heartbeat` table also reports nodes outside the cluster's Arc Resource Bridge resource group (e.g. guest VMs in the cluster RG that AMA picks up), so a naive Heartbeat-based mapping over-counted in the opposite direction.
+
+**Fix:** new **`ClusterNodeMap`** shared parameter (synced across all 12 sub-templates by [`scripts/sync-shared-params.js`](scripts/sync-shared-params.js)) builds the node→cluster mapping from Azure Resource Graph using the cluster resource's own self-reported node list:
+
+```kusto
+resources
+| where type =~ "microsoft.azurestackhci/clusters"
+| extend nodes = todynamic(properties.reportedProperties.nodes)
+| mv-expand node = nodes
+| project value = strcat(tolower(tostring(node.name)), ':', name, ':', tostring(id))
+| summarize result = make_list(value)
+```
+
+Format: `["nodeShortName:clusterName:armId", …]`. Memory tiles now intersect Heartbeat-derived nodes with this ARG-sourced map (matching on the short hostname — `tolower(tostring(split(Computer, '.')[0]))` — so FQDN vs short-name differences across workspaces don't cause join misses), so the data is **complete (no SDDC dependency)** *and* **scoped (no guest-VM over-inclusion)**. Five tiles are converted: Capacity-Overview Memory Usage chart, Capacity-MultiNode forecast table memory row, Capacity-MultiNode Memory Forecast linechart, Capacity-SingleNode Memory chart, and Capacity-SingleNode Memory Forecast.
+
+**Validated** on a 60-node test workspace (live before/after via `Invoke-RestMethod` to `https://api.loganalytics.io/v1/workspaces/$ws/query`). Bellevue moves from **35.1 % → 52.4 % (+17.3 points)**; the other 11 in-scope clusters all show smaller positive corrections (Zurich +11.9, Mobile +8.5, Portland +6.0, San Francisco +2.6, Toronto +2.3, Nashville +2.0, Tacoma +1.3, California +1.2, Arizona +1.0, Virginia +0.9, Denver +0.5). No cluster regresses.
+
+**Storage volume-size forecasts (Capacity-MultiNode and Capacity-SingleNode) still depend on Event 3002** because the volume size payload only exists in the event's `RenderedDescription.VolumeList.m_Size` / `m_SizeUsed` JSON — there is no Performance Counter equivalent. The **CPU forecast linechart, storage latency, storage IOPS, and network throughput** linecharts also still depend on Event 3002 (deferred to v1.1.0 — they need the same NodeMap migration but each on a different join shape, and the v1.0.1 scope was deliberately constrained to memory).
+
+### Capacity — Overview — “DCR Setup Guide” expanded for SDDC-Management event log
+
+Reported feedback (corollary to Fix 5): customers asked which event logs the storage forecasts need, since the default Azure Portal DCR builder does not list any. The collapsible **🔔 Performance Counter DCR Configuration** section on the Capacity — Overview tab has been expanded:
+
+- **New “Required Windows Event Log” subsection** explicitly notes that the default DCR has **no `windowsEventLogs`**, lists the single required entry (`Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]`), and scopes it to *Storage volume-size forecast tiles only*. A note records that v1.0.1 removed the SDDC dependency from CPU and Memory tiles via `ClusterNodeMap`.
+- **Required Performance Counters table** updated: the Memory row now lists both `\Memory\Committed Bytes` and `\Memory\Available Bytes` (the new pair from Fix 4).
+- **Embedded ARM template** updated: `dataSources.windowsEventLogs[]` adds an `azureLocalSddcEvents` entry with the `Microsoft-Event` stream and the matching xPath query, plus a paired `dataFlows[]` block. The existing performance-counter `dataSources` and `dataFlows` are unchanged so existing customers can re-deploy the template idempotently.
+- **Capacity-MultiNode header tip** (`mc-perf-data-tip`) now cross-references this DCR Setup Guide and explicitly calls out that the storage volume-size forecasts on that tab depend on Event 3002 while the memory tiles do not.
+- **Network Throughput chart `noDataMessage`** aligned with the DCR setup table on `Network Interface(*)\Bytes Total/sec` (was `Network Adapter(*)\Bytes Total/sec`; chart KQL accepts both, behavior unchanged — only the user-facing guidance was inconsistent).
+
+### Capacity — Overview — single-node clusters: “No HA resiliency” sentinel
+
+Reported feedback: showing a coloured percentage in the **N-1 Memory Risk %** column for single-machine clusters was misleading — single-node clusters cannot tolerate any node loss, and during planned events such as Azure Local monthly updates the workload **always** goes offline because there is no second machine to host it.
+
+**Fix:** Single-node clusters in the Cluster Capacity Overview table now render **`No HA resiliency`** in **yellow** in the N-1 Memory Risk % column. Implementation: the KQL emits a sentinel value of `-1` for `nodeCount == 1` (`memoryUsagePct = iff(nodeCount == 1, todouble(-1), …)`); a new `thresholdsGrid` entry on the column formatter maps `operator: "==", thresholdValue: "-1"` to `representation: "2"` (warning yellow icon) with `text: "No HA resiliency"`. The above-table tip explicitly calls this out (“**Single-machine clusters** cannot tolerate a node loss at all — the column shows '**No HA resiliency**' (yellow) instead of a percentage”). Multi-node clusters are unaffected — the existing ≥1 0 0 % red / ≥80 % amber / default green thresholds remain in place.
+
+### UX — “Open in query mode” (`</>`) and Excel / CSV export, applied uniformly across all tiles
+
+The Workbooks toolbar exposes two per-tile flags that were inconsistently set across the v1.0.0 sub-templates:
+
+- **`showAnalytics: true`** — enables the **Open last run query in Logs** (`</>`) button (or *Open in Resource Graph Explorer* for ARG queries) so users can inspect, copy, or edit the underlying KQL. Now enabled on every visible KQL/ARG tile (134 tiles enabled across 11 sub-templates; 22 already had it). It is intentionally **suppressed on `visualization: "tiles"` (single-number stat tiles)** — the button added clutter without value when the tile already shows just one number (33 stat tiles cleaned). Merge tiles (`queryType: 7`, e.g. *📊 All Azure Local Instances*) cannot show the button regardless because the portal does not render it for client-side merges of multiple base queries.
+- **`showExportToExcel: true`** — enables the **Export** toolbar menu (Excel `.xlsx` and CSV `.csv` download). Now enabled on every visible grid / table tile (14 tiles enabled across 7 sub-templates; 32 already had it). Chart visualizations (line / bar / pie / area / scatter) correctly do not show the export menu.
+
+Two idempotent helper scripts were added so the audit can be re-run as new tiles are introduced:
+
+- [`scripts/add-show-analytics.js`](scripts/add-show-analytics.js) — adds `showAnalytics: true` to eligible tiles and removes it from `visualization: "tiles"` stat tiles.
+- [`scripts/add-show-export-to-excel.js`](scripts/add-show-export-to-excel.js) — adds `showExportToExcel: true` to grid / table tiles only.
+
+Both share the same `SKIP_NAMES` list of hidden Merge / helper data-source tiles as [`scripts/add-no-data-messages.js`](scripts/add-no-data-messages.js) so the three audit scripts stay consistent.
 
 **v1.0.0 marks the workbook's graduation to a mature release** with a structural overhaul that prepares it for future submission to the Azure Monitor Workbooks gallery. Aside from the Capacity Overview accuracy improvements called out below ([#77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77)), no other user-facing query, chart, or data behaviour has changed — every existing tab works exactly as before.
 

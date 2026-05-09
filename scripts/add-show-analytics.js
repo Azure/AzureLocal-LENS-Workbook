@@ -48,7 +48,14 @@ function hasVisualization(c) {
   return false;
 }
 
-let added = 0, alreadySet = 0, skipped = 0;
+// "tiles" visualization = single-number stat tiles. The </> "Open in query
+// mode" button is noisy/distracting on these because they show one number,
+// not a query result a user would want to inspect. Skip them.
+function isStatTilesViz(c) {
+  return c && typeof c.visualization === 'string' && c.visualization.toLowerCase() === 'tiles';
+}
+
+let added = 0, alreadySet = 0, skipped = 0, removedFromTiles = 0;
 
 function walk(o) {
   if (Array.isArray(o)) { o.forEach(walk); return; }
@@ -60,6 +67,15 @@ function walk(o) {
     } else if (!hasVisualization(o.content)) {
       // No visualization metadata — treat as helper / merge source.
       skipped++;
+    } else if (isStatTilesViz(o.content)) {
+      // Strip showAnalytics from stat-tile visualizations so the toolbar
+      // doesn't show "Open in query mode" on single-number tiles.
+      if (o.content.showAnalytics === true) {
+        delete o.content.showAnalytics;
+        removedFromTiles++;
+      } else {
+        skipped++;
+      }
     } else if (o.content.showAnalytics === true) {
       alreadySet++;
     } else {
@@ -136,7 +152,7 @@ for (const f of files) {
   if (processFile(f)) changed++;
 }
 
-console.log(`Added showAnalytics to ${added} items; ${alreadySet} already set; skipped ${skipped} helper/invisible items.`);
+console.log(`Added showAnalytics to ${added} items; ${alreadySet} already set; removed from ${removedFromTiles} stat-tiles tiles; skipped ${skipped} helper/invisible items.`);
 console.log(`Updated ${changed} of ${files.length} source files.`);
 if (changed > 0) {
   console.log('Next: node scripts/build-monolithic.js');

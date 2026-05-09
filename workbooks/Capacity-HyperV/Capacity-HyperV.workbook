@@ -461,7 +461,6 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by VMName\r\n| summarize Count = count()\r\n| extend Label = 'Active VMs (Hypervisor)'",
               "size": 3,
-              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },
@@ -498,7 +497,6 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName)\r\n| summarize by Computer\r\n| summarize Count = count()\r\n| extend Label = 'Reporting Hosts'",
               "size": 3,
-              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },
@@ -535,7 +533,6 @@
               "version": "KqlItem/1.0",
               "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
               "size": 3,
-              "showAnalytics": true,
               "timeContext": {
                 "durationMs": 0
               },

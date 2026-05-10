@@ -359,7 +359,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release driven by direct customer feedback. It contains seven independent content fixes plus two cross-cutting UX polish changes:
+This is a small targeted release driven by direct customer feedback. It contains eight independent content fixes plus three cross-cutting UX polish changes:
 
 1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
 2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.
@@ -368,11 +368,13 @@ This is a small targeted release driven by direct customer feedback. It contains
 5. **Memory tiles no longer require the SDDC-Management event log** — a new `ClusterNodeMap` shared parameter (built from Azure Resource Graph) replaces the `Microsoft-Windows-SDDC-Management/Operational` Event 3002 dependency on every memory tile across Capacity-Overview, Capacity-MultiNode, and Capacity-SingleNode. Reported feedback: a customer's `Bellevue` cluster showed 91 % peak memory in the Microsoft-supplied Single-Cluster AMA Insights workbook but only 35.1 % in the LENS Multi-Node forecast table.
 6. **Capacity-Overview “DCR Setup Guide” expanded** with a new **Required Windows Event Log** subsection that documents the Event 3002 requirement (storage volume-size forecasts only) plus the matching `windowsEventLogs` block in the embedded ARM template. The Required Performance Counters table is updated to list `Memory\Committed Bytes` + `Memory\Available Bytes` (Fix 4). The Capacity-Multi-Node header tip cross-references this section.
 7. **Single-node clusters now show “No HA resiliency”** instead of an N-1 percentage — because a single-machine cluster cannot tolerate any node loss and workloads always go offline during planned events such as Azure Local monthly updates.
+8. **Storage Latency and Storage IOPS charts on Capacity-MultiNode + Capacity-SingleNode now include S2D CSV volumes.** Previously these four charts filtered to `ObjectName == "LogicalDisk"` with `InstanceName == "_Total"`, so they only reflected the **OS / boot disk** — not the Storage Spaces Direct (S2D) CSV volumes where customer workloads actually run. Queries now union the same three perfmon objects already used by the Capacity-Overview Storage Latency / IOPS charts (`LogicalDisk` + `Cluster CSV File System` + `Cluster Shared Volume`), exclude `_Total` and `HarddiskVolume1`, and remain inner-joined to the `NodeToCluster` map built from `Microsoft-Windows-SDDC-Management/Operational` Event 3002 so only physical Azure Local nodes contribute (no guest-VM contamination).
 
 **UX polish (cross-cutting):**
 
 - **“Open in query mode” (`</>`) toolbar button** is now enabled on every visible KQL chart and ARG table tile so users can inspect, copy, or edit the underlying query in Logs / Resource Graph Explorer (134 tiles enabled, 22 already had it). Intentionally suppressed on single-number stat-tile (`visualization: "tiles"`) visualizations — 33 tiles cleaned — to avoid clutter.
 - **Excel / CSV download** is now enabled on every visible grid / table tile via the toolbar **Export** menu (14 tiles enabled, 32 already had it). Chart visualizations (line / bar / pie / area / scatter) correctly do not show the export menu.
+- **DCR Setup Guide — nested “Show Alternative ARM / CLI Deployment” toggle.** The collapsible **🔔 Performance Counter DCR Configuration** section on the Capacity — Overview tab now keeps the **✅ Recommended — Portal Custom-counter-specifier** walkthrough visible by default and gates the **🛠️ Alternative — ARM / CLI Deployment** content (IMPORTANT-warning banner, sample ARM template, `az deployment group create` + DCRA association loop) behind a new `ShowDCRArmAlt` pills parameter (default `no`). Users who want the ARM / CLI path explicitly toggle it on; the default view stays focused on the safest method.
 
 ### Lowercase-id casing fix — AVD VMs (and any other VMI with lowercase `id`) now counted correctly
 

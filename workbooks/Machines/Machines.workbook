@@ -1156,7 +1156,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| project machineId = id, machineName = name, machineResourceGroup = resourceGroup, osSku = tostring(properties.osSku), osVersion = tostring(properties.osVersion), machineStatus = tostring(properties.status)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion = tostring(properties.currentVersion)\r\n    ) on $left.clusterId == $right.cId\r\n) on $left.machineResourceGroup == $right.clusterResourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend status = properties.provisioningState\r\n    | where status == \"Failed\"\r\n    | extend errorDetails = tostring(properties.instanceView.status.message)\r\n    | extend errorDetailsFull = errorDetails\r\n    | parse id with * \"/machines/\" mName \"/extensions/\" extensionName\r\n    | project extensionName, status, errorDetails, errorDetailsFull, mName, resourceGroup, subscriptionId\r\n) on $left.machineName == $right.mName and $left.machineResourceGroup == $right.resourceGroup\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', machineId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| project machineName, machineLink, extensionName, machineStatus, osSku, osVersion, clusterName, clusterLink, errorDetails, errorDetailsFull, currentVersion, resourceGroup = machineResourceGroup, subscriptionId\r\n| order by clusterName asc, machineName asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where properties.cloudMetadata.provider == \"AzSHCI\"\r\n| where kind != \"HCI\"\r\n| project machineId = id, machineName = name, machineResourceGroup = resourceGroup, osSku = tostring(properties.osSku), osVersion = tostring(properties.osVersion), machineStatus = tostring(properties.status)\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n    | join kind=leftouter (\r\n        ExtensibilityResources\r\n        | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n        | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n        | project cId, currentVersion = tostring(properties.currentVersion)\r\n    ) on $left.clusterId == $right.cId\r\n) on $left.machineResourceGroup == $right.clusterResourceGroup\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend status = properties.provisioningState\r\n    | where status == \"Failed\"\r\n    | extend errorDetails = tostring(properties.instanceView.status.message)\r\n    | extend errorDetailsFull = errorDetails\r\n    | parse id with * \"/machines/\" mName \"/extensions/\" extensionName\r\n    | project extensionName, status, errorDetails, errorDetailsFull, mName, resourceGroup, subscriptionId\r\n) on $left.machineName == $right.mName and $left.machineResourceGroup == $right.resourceGroup\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', machineId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend errorDetailsBlade = iff(strlen(errorDetailsFull) > 0, pack('Machine Name', machineName, 'Extension', extensionName, 'Status', tostring(status), 'Cluster Name', clusterName, 'Cluster Version', currentVersion, 'Resource Group', machineResourceGroup, 'Error Message', errorDetailsFull, 'Troubleshooting', 'https://learn.microsoft.com/azure/azure-arc/servers/troubleshoot-vm-extensions'), dynamic(null))\r\n| project machineName, machineLink, extensionName, machineStatus, osSku, osVersion, clusterName, clusterLink, errorDetails, errorDetailsFull, errorDetailsBlade, currentVersion, resourceGroup = machineResourceGroup, subscriptionId\r\n| order by clusterName asc, machineName asc",
               "size": 0,
               "showAnalytics": true,
               "title": "⚠️ Failed Node Extensions",
@@ -1223,10 +1223,11 @@
                   },
                   {
                     "columnMatch": "errorDetails",
-                    "formatter": 1,
+                    "formatter": 7,
                     "formatOptions": {
                       "linkTarget": "CellDetails",
                       "linkIsContextBlade": true,
+                      "linkColumn": "errorDetailsBlade",
                       "customColumnWidthSetting": "45ch"
                     },
                     "tooltipFormat": {
@@ -1235,6 +1236,10 @@
                   },
                   {
                     "columnMatch": "errorDetailsFull",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "errorDetailsBlade",
                     "formatter": 5
                   }
                 ],
@@ -1276,6 +1281,9 @@
                   },
                   {
                     "columnId": "errorDetailsFull"
+                  },
+                  {
+                    "columnId": "errorDetailsBlade"
                   },
                   {
                     "columnId": "currentVersion",

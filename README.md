@@ -359,7 +359,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release driven by direct customer feedback. It contains nine independent content fixes plus three cross-cutting UX polish changes:
+This is a small targeted release driven by direct customer feedback. It contains ten independent content fixes plus three cross-cutting UX polish changes:
 
 1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
 2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.
@@ -370,6 +370,7 @@ This is a small targeted release driven by direct customer feedback. It contains
 7. **Single-node clusters now show “No HA resiliency”** instead of an N-1 percentage — because a single-machine cluster cannot tolerate any node loss and workloads always go offline during planned events such as Azure Local monthly updates.
 8. **Storage Latency and Storage IOPS charts on Capacity-MultiNode + Capacity-SingleNode now include S2D CSV volumes.** Previously these four charts filtered to `ObjectName == "LogicalDisk"` with `InstanceName == "_Total"`, so they only reflected the **OS / boot disk** — not the Storage Spaces Direct (S2D) CSV volumes where customer workloads actually run. Queries now union the same three perfmon objects already used by the Capacity-Overview Storage Latency / IOPS charts (`LogicalDisk` + `Cluster CSV File System` + `Cluster Shared Volume`), exclude `_Total` and `HarddiskVolume1`, and remain inner-joined to the `NodeToCluster` map built from `Microsoft-Windows-SDDC-Management/Operational` Event 3002 so only physical Azure Local nodes contribute (no guest-VM contamination).
 9. **Azure Local VMs tab — RG-based cluster join replaced with the canonical Arc-Bridge extensibility chain** so **AVD session-host VMs** (deployed by the AVD host-pool wizard into a separate session-host resource group) and any other Azure Local VMs deployed into a workload RG that differs from the cluster RG are now correctly counted and displayed in all ten tiles on the **🖥️ Azure Local VMs** tab. The previous join `vmResourceGroup == clusterResourceGroup` only worked when VMs lived in the same RG as their host cluster; it silently dropped every AVD VM out of view (tile counts, status / OS pie charts, by-RG and by-cluster bar charts, deployment-trend chart + table, and the main inventory grid).
+10. **Error Details flyouts — `pack()` property-grid rendering** so the side flyouts on the **🔄 Update Progress** *Update Run History* table, the **🖥️ Azure Local VMs** *Failed Node Extensions* table, and the **☸️ AKS Arc Clusters** *Failed AKS Extensions* and *Non-Compliant Flux Configurations* tables now show clean labelled key/value rows (Cluster / Update / Current Step / Error Message / Troubleshooting URL / etc.) instead of a single narrow text box containing raw markdown source. Implementation: the column referenced by the `linkTarget: "CellDetails"` formatter is now a KQL `dynamic` built with `pack(label, value, …)`, which the Workbooks property-grid renderer surfaces natively as one labelled row per pack entry. Field text still wraps and word-breaks naturally, so multi-line stack traces are readable without horizontal scrolling.
 
 **UX polish (cross-cutting):**
 
@@ -463,6 +464,26 @@ Reported feedback (corollary to Fix 5): customers asked which event logs the sto
 Reported feedback: showing a coloured percentage in the **N-1 Memory Risk %** column for single-machine clusters was misleading — single-node clusters cannot tolerate any node loss, and during planned events such as Azure Local monthly updates the workload **always** goes offline because there is no second machine to host it.
 
 **Fix:** Single-node clusters in the Cluster Capacity Overview table now render **`No HA resiliency`** in **yellow** in the N-1 Memory Risk % column. Implementation: the KQL emits a sentinel value of `-1` for `nodeCount == 1` (`memoryUsagePct = iff(nodeCount == 1, todouble(-1), …)`); a new `thresholdsGrid` entry on the column formatter maps `operator: "==", thresholdValue: "-1"` to `representation: "2"` (warning yellow icon) with `text: "No HA resiliency"`. The above-table tip explicitly calls this out (“**Single-machine clusters** cannot tolerate a node loss at all — the column shows '**No HA resiliency**' (yellow) instead of a percentage”). Multi-node clusters are unaffected — the existing ≥1 0 0 % red / ≥80 % amber / default green thresholds remain in place.
+
+### Error Details flyouts — `pack()` property-grid rendering
+
+Reported feedback (item #3 from the customer review of v1.0.1): clicking a *Verbose Error Details* cell on the Update Progress *Update Run History* table opened a side flyout that was extremely narrow (the standard Workbooks `linkTarget: "CellDetails"` slider) **and** displayed the cell's value verbatim as a single block of raw markdown source (`## Error Details\n\n**Cluster:** …\n\n**Update:** …`). The same anti-pattern was present on the *Failed Node Extensions* table (Azure Local VMs tab), the *Failed AKS Extensions* table (AKS Arc tab), and the *Non-Compliant Flux Configurations* table (AKS Arc tab) — each one strcat-built a markdown blob into a single column and pointed the flyout at it.
+
+**Root cause:** the Workbooks `CellDetails` and `GenericDetails` flyout targets are **property-grid** renderers, not markdown renderers — they render a KQL `dynamic` value (one labelled row per key) but render any other type as a single literal-string row. There is no per-cell markdown formatter and no documented flyout-width override. Sending a markdown blob into `CellDetails` therefore both (a) wastes the property-grid's labelled-row layout and (b) forces the user to read raw `##` headings and `**bold**` markers as plain text inside the narrow slider.
+
+**Fix:** the column referenced by each `linkTarget: "CellDetails"` formatter is now a KQL `dynamic` built with `pack(label, value, label, value, …)`, projected alongside the original truncated single-line column that still drives the in-grid text and tooltip. The property-grid renderer surfaces each pack entry as its own labelled row — cluster name, update name, current step, error message, troubleshooting URL, etc. — which (i) eliminates the literal markdown markers, (ii) gives long error messages and stack traces full row width with natural word-wrap, and (iii) keeps the linked Troubleshooting URL clickable as a property value. The existing per-row markdown table inside the legacy `rowDetails` block (for tables that have one — the row-arrow expander) is left untouched so the existing accordion-style view remains available where it already worked.
+
+**Tiles updated:**
+
+| Tab | Tile | Column → flyout column | New `pack()` entries |
+|---|---|---|---|
+| 🔄 Update Progress | *Update Run History* | `ErrorMessage` → `ErrorMessageBlade` | Cluster, Update, Current Step, Error Message, Failed Health Checks, Troubleshooting |
+| 🖥️ Azure Local VMs | *Failed Node Extensions* | `errorDetails` → `errorDetailsBlade` | Machine Name, Extension, Status, Cluster Name, Cluster Version, Resource Group, Error Message, Troubleshooting |
+| ☸️ AKS Arc Clusters | *Failed AKS Extensions* | `errorDetails` → `errorDetailsBlade` | AKS Cluster, Extension, Status, Resource Group, Subscription, Error Message, Troubleshooting |
+| ☸️ AKS Arc Clusters | *Non-Compliant Flux Configurations* | `errorMessage` → `errorMessageBlade` | AKS Cluster, Configuration, Compliance State, Source Kind, Source URL, Last Synced, Resource Group, Error Message, Troubleshooting |
+
+**Note on the *Failed Health Checks* field** (Update Run History flyout only): that pack entry still contains a pre-built Markdown pipe table because the underlying `_hcMarkdown` projection is shared with other display contexts. The property grid renders it as plain text — the table headers and pipe characters are visible literally — but each row is on its own line and the full-width flyout means the rendered text is readable end-to-end. Customers wanting a fully rendered Markdown table for failed health checks should click through to the cluster's update summaries in Azure Portal via the deep-link in the *Update* column of the table.
+
 
 ### UX — “Open in query mode” (`</>`) and Excel / CSV export, applied uniformly across all tiles
 

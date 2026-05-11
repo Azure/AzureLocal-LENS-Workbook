@@ -79,13 +79,13 @@ DCR_ID=$(az deployment group show \
 
 az connectedmachine list -g <cluster-rg> --query "[].id" -o tsv | while read MACHINE_ID; do
   az monitor data-collection rule association create \
-    --name azlocal-capacity-dcra \
+    --name azlocal-lens-capacity-dcra \
     --resource "$MACHINE_ID" \
     --rule-id "$DCR_ID"
 done
 ```
 
-> The association name (`azlocal-capacity-dcra` above) is per-machine — re-running the loop with the **same name** against the **same DCR** is idempotent.
+> The association name (`azlocal-lens-capacity-dcra` above) is per-machine — each DCRA name must be unique *within that machine* but does not need to be unique across machines or globally. Re-running the loop with the **same name** against the **same DCR** is idempotent; re-running it against a *different* DCR with the same name on a machine that already has one is a conflict, so keep the `--name` aligned to one DCR per logical purpose.
 
 Data typically begins flowing within a few minutes. Open the LENS workbook's Capacity tab and confirm every sub-tab populates — including the **🖥️ Hyper-V VMs** sub-tab and the per-cluster **🪟 Hyper-V VMs on: {cluster}** section.
 

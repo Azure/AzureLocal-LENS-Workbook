@@ -358,7 +358,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.0.1)
 
-This is a small targeted release driven by direct customer feedback. It contains eighteen independent content fixes plus six cross-cutting UX polish changes:
+This is a targeted quality release driven by direct customer feedback. It contains eighteen independent content fixes plus six cross-cutting UX polish changes:
 
 1. **Capacity Overview column reframe** so the table answers two distinct questions side-by-side instead of one ambiguous question (paraphrased feedback: *"the numbers in the Capacity Overview don't match the per-node memory usage I see in Cluster Insights"*).
 2. **Lowercase-id casing fix** to a join chain used by 5 workbook tabs that silently drops Arc-managed VMs and AKS Arc clusters whose `extensibilityresources` ID was registered in lowercase casing — most commonly seen with **Azure Virtual Desktop (AVD) on Azure Local** VMs.

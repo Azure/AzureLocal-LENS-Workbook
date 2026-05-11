@@ -603,7 +603,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node CPU metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node CPU metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -648,7 +648,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node memory metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node memory metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -693,7 +693,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node storage metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node storage metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -736,7 +736,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No per-node storage latency metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node storage latency metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -781,7 +781,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node storage IOPS metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node storage IOPS metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -826,7 +826,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node network throughput metrics for this cluster in the selected time range.",
+              "noDataMessage": "No per-node network throughput metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",

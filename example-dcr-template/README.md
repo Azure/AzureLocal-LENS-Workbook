@@ -1,4 +1,4 @@
-# Example DCR — `dcr-azurelocal-capacity-perf`
+# Example DCR — `dcr-azurelocal-lens-capacity-perf`
 
 A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collects every performance counter and Windows event the **Azure Local LENS Workbook** Capacity tab needs to render — host-level **and** per-VM Hyper-V — in a single resource.
 
@@ -45,7 +45,7 @@ Optional overrides:
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `dcrName` | `dcr-azurelocal-capacity-perf` | Must be unique in the resource group. |
+| `dcrName` | `dcr-azurelocal-lens-capacity-perf` | Must be unique in the resource group. |
 | `location` | `[resourceGroup().location]` | **Must match the Log Analytics workspace region.** |
 | `workspaceResourceId` | *(required)* | Full ARM resource ID of the LAW. |
 
@@ -76,7 +76,7 @@ A single Arc-enabled machine can have **multiple DCR associations**, and the Azu
 
 That means you can safely:
 
-- Deploy this template as a **dedicated `dcr-azurelocal-capacity-perf`** DCR alongside whatever DCRs you already have (Defender for Cloud, custom application telemetry, `Microsoft-Process`, etc.) — both sets of counters will be collected.
+- Deploy this template as a **dedicated `dcr-azurelocal-lens-capacity-perf`** DCR alongside whatever DCRs you already have (Defender for Cloud, custom application telemetry, `Microsoft-Process`, etc.) — both sets of counters will be collected.
 - Keep operational and capacity telemetry in **separate DCRs** with different retention/destination choices.
 - Roll out new counter sets incrementally without disturbing existing collection.
 

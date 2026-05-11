@@ -101,6 +101,53 @@ Recommended quick checks on the target workspace:
 
 > **TL;DR:** the LENS workbook only **reads** from your LAW; it does not influence retention, sampling, or cost. Choose retention and tier on the workspace itself, not on the DCR.
 
+## 🔁 Heads-up: overlap with the Arc *Cluster Insights* auto-managed DCR
+
+If the cluster you're deploying this DCR onto **also has Arc *Cluster Insights* enabled**, the Microsoft auto-managed DCR that comes with it is already collecting a curated set of host performance counters plus the following Windows event streams:
+
+```text
+Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3000 or EventID=3001 or EventID=3002 or EventID=3003 or EventID=3004)]]
+microsoft-windows-health/operational!*
+```
+
+The **Azure Monitor Agent does NOT deduplicate across DCRs** — it evaluates each associated DCR independently. So when two DCRs collect the **same** counter or event into the **same** workspace, each matching row is ingested **twice** (same `TimeGenerated`, same `Computer`, same value), which means **2× ingestion cost** for the overlap and KQL aggregates like `avg(CounterValue)` double-count unless you pre-summarize per minute / per source.
+
+**Overlap with this template by default (`EventID=3002` only):**
+
+| Item | In this template | In Cluster Insights' DCR | Same workspace → duplicate? |
+|---|:---:|:---:|:---:|
+| `Microsoft-Windows-SDDC-Management/Operational` Event 3002 | ✅ | ✅ | ⚠️ Yes |
+| `Microsoft-Windows-SDDC-Management/Operational` Events 3000 / 3001 / 3003 / 3004 | ❌ | ✅ | — |
+| `microsoft-windows-health/operational!*` | ❌ | ✅ | — |
+| `Cluster CSV File System(*)` perf counters | ✅ | ❌ (the gap LENS exists to close) | — |
+| `Hyper-V *` perf counters | ✅ | ❌ (typically) | — |
+| Generic host counters (`Processor`, `Memory`, `LogicalDisk`, `Network Interface`) | ✅ | Partial overlap | ⚠️ Possible duplication on overlapping paths |
+
+**Recommendations to keep cost in check:**
+
+1. **Pick *one* workspace per data domain.** The simplest answer is: if Cluster Insights is enabled on the cluster, point Cluster Insights and this DCR at the **same** workspace and accept the small Event 3002 duplication (~one event per node per cluster-membership change — typically a handful per day, negligible cost) **OR** point this DCR at a **different** workspace and keep them fully separated.
+2. **Don't broaden this template's `windowsEventLogs` block by default.** LENS today only consumes `EventID=3002` (used to build the cluster-node map for storage forecasts). The other four SDDC IDs and the `microsoft-windows-health` channel are not read by any LENS query — so adding them to *this* DCR while Cluster Insights is also enabled would simply double-ingest data the workbook doesn't display.
+3. **Use DCR transformations / filters** ([Cost optimization guide](https://learn.microsoft.com/azure/azure-monitor/fundamentals/best-practices-cost)) if you do need overlap for other reasons but want to drop a subset before ingestion.
+
+### ✏️ Optional — extend this template's event scope for Cluster-Insights parity
+
+If Cluster Insights is **not** enabled on this cluster (or it points to a different workspace), and you'd like *this* DCR to also collect the broader SDDC event set + the Windows health channel — so the same LAW has the full Azure Local event stream available for ad-hoc KQL and future LENS features — replace the existing `windowsEventLogs` block in `dcr-azurelocal-capacity-perf.json`:
+
+```json
+"windowsEventLogs": [
+  {
+    "name": "azureLocalSddcEvents",
+    "streams": [ "Microsoft-Event" ],
+    "xPathQueries": [
+      "Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3000 or EventID=3001 or EventID=3002 or EventID=3003 or EventID=3004)]]",
+      "microsoft-windows-health/operational!*"
+    ]
+  }
+]
+```
+
+> ⚠️ **Only do this if you've confirmed Cluster Insights is NOT also ingesting these events into the same workspace** — otherwise you'll pay twice for every matching event. The LENS workbook itself does not require this expansion today.
+
 ## Verifying it works
 
 After ~5–10 minutes you should see rows when you run these against your LAW:

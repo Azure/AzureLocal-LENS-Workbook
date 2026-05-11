@@ -4,7 +4,7 @@
   "parameters": {
     "dcrName": {
       "type": "string",
-      "defaultValue": "dcr-azurelocal-capacity-perf",
+      "defaultValue": "dcr-azurelocal-lens-capacity-perf",
       "metadata": {
         "description": "Name of the Data Collection Rule."
       }

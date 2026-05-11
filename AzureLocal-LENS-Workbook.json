@@ -2320,7 +2320,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🌍 Multi-cluster** to compare trends and forecasts across your fleet, **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -2340,19 +2340,19 @@
                   "style": "link"
                 },
                 {
-                  "id": "tab-multi",
-                  "cellValue": "CapacitySection",
-                  "linkTarget": "parameter",
-                  "linkLabel": "🌍 Multi-cluster",
-                  "subTarget": "multi",
-                  "style": "link"
-                },
-                {
                   "id": "tab-single",
                   "cellValue": "CapacitySection",
                   "linkTarget": "parameter",
                   "linkLabel": "🔍 Single cluster",
                   "subTarget": "single",
+                  "style": "link"
+                },
+                {
+                  "id": "tab-multi",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🌍 Multi-cluster",
+                  "subTarget": "multi",
                   "style": "link"
                 },
                 {

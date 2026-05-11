@@ -104,7 +104,7 @@ A high-level overview of your entire Azure Local estate, including:
 ![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
 
 ### 🏗️ Capacity
-Centralized view of cluster resource utilization, capacity forecasting, and workload allocation. The tab is split into four sub-tabs (selectable via the **CapacitySection** picker): **📋 Overview**, **🌍 Multi-cluster**, **🔍 Single cluster**, and **🖥️ Hyper-V VMs**.
+Centralized view of cluster resource utilization, capacity forecasting, and workload allocation. The tab is split into four sub-tabs (selectable via the **CapacitySection** picker): **📋 Overview**, **🔍 Single cluster**, **🌍 Multi-cluster**, and **🖥️ Hyper-V VMs**.
 
 #### 📋 Overview sub-tab
 - **Cluster Capacity Overview** table — one row per cluster:
@@ -122,15 +122,6 @@ Centralized view of cluster resource utilization, capacity forecasting, and work
   - CPU Usage (%) · Memory Usage (%) · Storage Usage (%) · Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s)
 - **AKS Node usage** — Prometheus-sourced timecharts of Top AKS Nodes by CPU, Memory, Disk I/O (bytes/sec), and Network Throughput (bytes/sec)
 
-#### 🌍 Multi-cluster sub-tab
-Fleet-wide capacity trending and forecasting:
-- **Predictive Resource Exhaustion Forecast by Cluster** — projected days until each cluster crosses warning / critical utilisation thresholds (computed with `series_fit_line` linear trend analysis); shows current average %, trend direction, and 🟢/🟡/🔴 status
-- **Cluster-wise CPU Forecast** and **Cluster-wise Memory Forecast** — Actual-vs-forecast lines per cluster
-- **Storage Remaining (%) — Cluster Forecast** and **Storage Available (TB) — Cluster Forecast**
-- **💾 Storage & Network Performance — For Selected Clusters**:
-  - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected cluster set
-- Forecast disclaimer banners are shown alongside each forecast chart
-
 #### 🔍 Single cluster sub-tab
 Drill into a single cluster (selected via the `SingleCluster` picker):
 - **🏗️ Cluster Capacity** tiles — Clusters, Nodes, Node Hardware Summary
@@ -141,7 +132,16 @@ Drill into a single cluster (selected via the `SingleCluster` picker):
 - **📦 Workloads on Cluster** section:
   - 🖥️ Azure Local VMs running on the cluster
   - ☸️ AKS Arc Clusters running on the cluster
-  - **📊 AKS Arc Node Resource Usage** — Top 10 AKS Nodes by CPU and Memory via Azure Managed Prometheus (configurable Prometheus time range)
+  - **📊 AKS Arc Node Resource Usage** — Top AKS Nodes by CPU and Memory via Azure Managed Prometheus (configurable Prometheus time range)
+
+#### 🌍 Multi-cluster sub-tab
+Fleet-wide capacity trending and forecasting:
+- **Predictive Resource Exhaustion Forecast by Cluster** — projected days until each cluster crosses warning / critical utilisation thresholds (computed with `series_fit_line` linear trend analysis); shows current average %, trend direction, and 🟢/🟡/🔴 status
+- **Cluster-wise CPU Forecast** and **Cluster-wise Memory Forecast** — Actual-vs-forecast lines per cluster
+- **Storage Remaining (%) — Cluster Forecast** and **Storage Available (TB) — Cluster Forecast**
+- **💾 Storage & Network Performance — For Selected Clusters**:
+  - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected cluster set
+- Forecast disclaimer banners are shown alongside each forecast chart
 
 #### 🖥️ Hyper-V VMs sub-tab
 Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):

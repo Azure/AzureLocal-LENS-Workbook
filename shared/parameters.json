@@ -163,8 +163,22 @@
         "version": "KqlParameterItem/1.0",
         "name": "ClusterNodeMap",
         "type": 1,
-        "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeName:clusterName:armId per entry). Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
-        "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeName = tolower(tostring(node.name))\r\n| where isnotempty(nodeName)\r\n| project value = strcat(nodeName, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+        "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeShort:clusterName:armId per entry). nodeShort is the lowercased NetBIOS hostname (FQDN suffix stripped) so it matches tolower(split(Computer, '.')[0]) emitted by Heartbeat / Perf. Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
+        "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+        "crossComponentResources": [
+          "{Subscriptions}"
+        ],
+        "isHiddenWhenLocked": true,
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      {
+        "id": "arc-machine-map-param",
+        "version": "KqlParameterItem/1.0",
+        "name": "ArcMachineMap",
+        "type": 1,
+        "description": "Hidden: maps Hyper-V guest VM short names to their Arc-enabled-server resource (microsoft.hybridcompute/machines). Format: vmShort:armId per entry. Used by the Hyper-V VM Inventory table to make the VM Name cell link to its Azure Local VM / AVD / Arc-onboarded VM control-plane resource when one exists. Filtered to detectedProperties.model =~ 'Virtual Machine' to bound parameter size to actual guest VMs (excludes physical hosts).",
+        "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
         "crossComponentResources": [
           "{Subscriptions}"
         ],

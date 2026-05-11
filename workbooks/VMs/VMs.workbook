@@ -550,10 +550,105 @@
             "name": "text-vm-all"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "vm-name-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMNameFilter",
+                  "label": "Filter by VM Name",
+                  "type": 1,
+                  "description": "Optional: Filter by VM name using wildcards. Example: *vm01* or *web*",
+                  "isRequired": false,
+                  "value": "",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                },
+                {
+                  "id": "vm-cluster-name-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMClusterNameFilter",
+                  "label": "Cluster Name",
+                  "type": 2,
+                  "description": "Filter by Azure Local cluster name",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = name\r\n| order by value asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
+                  "id": "vm-status-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMStatusFilter",
+                  "label": "VM Status",
+                  "type": 2,
+                  "description": "Filter by VM connection status",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\"Connected\", \"Disconnected\", \"Expired\", \"Error\"]",
+                  "defaultValue": "value::all"
+                },
+                {
+                  "id": "vm-ossku-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VMOsSkuFilter",
+                  "label": "OS SKU",
+                  "type": 2,
+                  "description": "Filter by OS SKU",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend osSku = tostring(properties.osSku)\r\n| where isnotempty(osSku)\r\n| distinct osSku\r\n| order by osSku asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "vm-all-filters"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup), clusterId = id\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend processor = tostring(properties.detectedProperties.processorNames)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| extend domainName = tostring(properties.domainName)\r\n| extend osInstallDate = todatetime(properties.osInstallDate)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend statusSort = case(status == 'Connected', 0, 1)\r\n| project VMName = name, vmLink, resourceGroup, clusterName, clusterLink, status, osSku, osVersion, vCPUs, memoryGB, ipAddress, domainName, agentVersion, osInstallDate, lastStatusChange, location, statusSort\r\n| order by statusSort asc, VMName asc\r\n| project-away statusSort",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup), clusterId = id\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend processor = tostring(properties.detectedProperties.processorNames)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| extend domainName = tostring(properties.domainName)\r\n| extend osInstallDate = todatetime(properties.osInstallDate)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{VMNameFilter}' == '' or name matches regex strcat('(?i)', replace_string(replace_string('{VMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterNameFilter}) or clusterName in ({VMClusterNameFilter})\r\n| where '*' in ({VMStatusFilter}) or status in ({VMStatusFilter})\r\n| where '*' in ({VMOsSkuFilter}) or osSku in ({VMOsSkuFilter})\r\n| extend statusSort = case(status == 'Connected', 0, 1)\r\n| project VMName = name, vmLink, resourceGroup, clusterName, clusterLink, status, osSku, osVersion, vCPUs, memoryGB, ipAddress, domainName, agentVersion, osInstallDate, lastStatusChange, location, statusSort\r\n| order by statusSort asc, VMName asc\r\n| project-away statusSort",
               "size": 0,
               "showAnalytics": true,
               "showRefreshButton": true,
@@ -727,224 +822,33 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📊 VMs by Azure Local Cluster"
+              "json": "## 🥧 Top Clusters by VM Count"
             },
-            "name": "text-vm-by-cluster"
-          },
-          {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "vm-cluster-name-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "VMClusterVMNameFilter",
-                  "label": "Filter by VM Name",
-                  "type": 1,
-                  "description": "Optional: Filter by VM name using wildcards. Example: *vm01* or *web*",
-                  "isRequired": false,
-                  "value": "",
-                  "timeContext": {
-                    "durationMs": 86400000
-                  }
-                },
-                {
-                  "id": "vm-cluster-status-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "VMClusterStatusFilter",
-                  "label": "VM Status",
-                  "type": 2,
-                  "description": "Filter by VM connection status",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "jsonData": "[\"Connected\", \"Disconnected\", \"Expired\", \"Error\"]",
-                  "defaultValue": "value::all"
-                },
-                {
-                  "id": "vm-cluster-ossku-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "VMClusterOsSkuFilter",
-                  "label": "OS SKU",
-                  "type": 2,
-                  "description": "Filter by OS SKU",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend osSku = tostring(properties.osSku)\r\n| where isnotempty(osSku)\r\n| distinct osSku\r\n| order by osSku asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                }
-              ],
-              "style": "pills",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources"
-            },
-            "name": "vm-by-cluster-filters"
+            "name": "text-vm-top-clusters"
           },
           {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| extend vCPUs = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend ipAddress = tostring(properties.networkProfile.networkInterfaces[0].ipAddresses[0].address)\r\n| project vmResourceId, vmName = name, vmResourceGroup = resourceGroup, vmId = id, vmStatus = tostring(properties.status), osSku = tostring(properties.osSku), vCPUs, memoryGB, ipAddress\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = tolower(resourceGroup), clusterId = id\r\n) on $left.arcBridgeRG == $right.clusterResourceGroup\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', vmId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{VMClusterVMNameFilter}' == '' or vmName matches regex strcat('(?i)', replace_string(replace_string('{VMClusterVMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterStatusFilter}) or vmStatus in ({VMClusterStatusFilter})\r\n| where '*' in ({VMClusterOsSkuFilter}) or osSku in ({VMClusterOsSkuFilter})\r\n| project vmName, vmLink, vmStatus, osSku, vCPUs, memoryGB, ipAddress, ClusterName = coalesce(clusterName, 'Unknown'), clusterLink\r\n| order by ClusterName asc, vmName asc",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| extend vmName = name, vmStatus = tostring(properties.status), osSku = tostring(properties.osSku)\r\n| project vmResourceId, vmName, vmStatus, osSku\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| where '{VMNameFilter}' == '' or vmName matches regex strcat('(?i)', replace_string(replace_string('{VMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterNameFilter}) or clusterName in ({VMClusterNameFilter})\r\n| where '*' in ({VMStatusFilter}) or vmStatus in ({VMStatusFilter})\r\n| where '*' in ({VMOsSkuFilter}) or osSku in ({VMOsSkuFilter})\r\n| summarize VMCount = count() by ClusterName = coalesce(clusterName, 'Unknown')\r\n| order by VMCount desc\r\n| extend rn = row_number()\r\n| extend bucket = iff(rn <= 5, ClusterName, 'Other')\r\n| summarize VMCount = sum(VMCount), ClusterCount = count() by bucket\r\n| extend ClusterName = iff(bucket == 'Other', strcat('Other (', tostring(ClusterCount), ' clusters)'), bucket)\r\n| order by VMCount desc\r\n| project ClusterName, VMCount",
               "size": 0,
               "showAnalytics": true,
-              "showRefreshButton": true,
-              "showExportToExcel": true,
+              "title": "Top 5 Clusters by VM Count (remainder grouped as Other)",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscriptions}"
               ],
-              "gridSettings": {
-                "rowLimit": 2000,
-                "formatters": [
-                  {
-                    "columnMatch": "vmName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "vmLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "vmLink",
-                    "formatter": 5
-                  },
-                  {
-                    "columnMatch": "vmStatus",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Connected",
-                          "representation": "success",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "==",
-                          "thresholdValue": "Disconnected",
-                          "representation": "4",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "Default",
-                          "thresholdValue": null,
-                          "representation": "unknown",
-                          "text": "{0}{1}"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "columnMatch": "ClusterName",
-                    "formatter": 7,
-                    "formatOptions": {
-                      "linkTarget": "Url",
-                      "linkColumn": "clusterLink"
-                    }
-                  },
-                  {
-                    "columnMatch": "clusterLink",
-                    "formatter": 5
-                  }
-                ],
-                "filter": true,
-                "labelSettings": [
-                  {
-                    "columnId": "vmName",
-                    "label": "VM Name"
-                  },
-                  {
-                    "columnId": "vmLink"
-                  },
-                  {
-                    "columnId": "vmStatus",
-                    "label": "VM Status"
-                  },
-                  {
-                    "columnId": "osSku",
-                    "label": "OS SKU"
-                  },
-                  {
-                    "columnId": "vCPUs",
-                    "label": "vCPUs"
-                  },
-                  {
-                    "columnId": "memoryGB",
-                    "label": "Memory (GB)"
-                  },
-                  {
-                    "columnId": "ipAddress",
-                    "label": "IP Address"
-                  },
-                  {
-                    "columnId": "ClusterName",
-                    "label": "Cluster Name"
-                  },
-                  {
-                    "columnId": "clusterLink"
-                  }
-                ]
-              },
-              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
-              "noDataMessageStyle": 4
-            },
-            "name": "vm-by-cluster"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "## #️⃣ VM Count by Cluster"
-            },
-            "name": "text-vm-count-cluster"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| project vmResourceId, vmName = name, vmResourceGroup = resourceGroup\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, clusterResourceGroup = tolower(resourceGroup), clusterId = id\r\n) on $left.arcBridgeRG == $right.clusterResourceGroup\r\n| summarize VMCount = count() by ClusterName = coalesce(clusterName, 'Unknown')\r\n| order by VMCount desc",
-              "size": 0,
-              "showAnalytics": true,
-              "title": "VM Distribution by Cluster",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscriptions}"
-              ],
-              "visualization": "barchart",
+              "visualization": "piechart",
               "chartSettings": {
-                "xAxis": "ClusterName",
-                "yAxis": [
-                  "VMCount"
-                ],
+                "showLegend": true,
+                "legendPosition": "bottom",
                 "seriesLabelSettings": []
               },
               "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
               "noDataMessageStyle": 4
             },
-            "name": "vm-count-by-cluster-bar"
+            "name": "vm-top-clusters-pie"
           }
         ]
       },

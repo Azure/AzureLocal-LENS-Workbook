@@ -1,5 +1,10 @@
 # Azure Local LENS (Lifecycle, Events & Notification Status) Workbook
 
+[![Unit Tests](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/test.yml)
+[![CodeQL](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/codeql.yml)
+[![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
+
 ## Latest Version: v1.0.1
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**

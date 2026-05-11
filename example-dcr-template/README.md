@@ -84,6 +84,23 @@ That means you can safely:
 > 1. **(Recommended)** deploy as a **new** DCR with a unique `dcrName` and associate it alongside your existing DCRs, **or**
 > 2. **Merge** — export the existing DCR (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing.json`), copy the additional `counterSpecifiers` and the `windowsEventLogs` block from this template into the existing definition, and redeploy that merged file.
 
+## 💰 Review your Log Analytics workspace data retention & cost settings
+
+This DCR ships **27 performance counter paths sampled every 60 seconds** plus the SDDC `Event 3002` stream, ingested into your Log Analytics workspace (LAW). Ingestion volume and retention policy on that LAW are what drive Azure Monitor cost — **not** the DCR itself — so before associating this DCR to a production fleet, take a few minutes to align the workspace settings with your business monitoring and cost-optimization requirements.
+
+Recommended quick checks on the target workspace:
+
+- **Workspace retention period** — default is **30 days (free)**; can be extended up to 730 days (billed). Review under *Log Analytics workspace → Usage and estimated costs → Data Retention*.
+- **Per-table retention overrides** — `Perf` and `Event` can be set independently of the workspace default. If you only need long-term forecast history from a subset of tables, consider lowering retention on the chatty ones.
+- **Interactive vs. long-term retention** — for compliance archives, consider moving older data to **long-term (archive) retention**, which is significantly cheaper per GB than interactive retention.
+- **Commitment tiers / Capacity Reservations** — at sustained ingestion above ~100 GB/day, a commitment tier (or a dedicated cluster) can materially reduce $/GB versus pay-as-you-go.
+- **Daily cap** — set a daily ingestion cap as a safety net against unexpected runaway ingestion, but be aware it stops *all* ingestion to the workspace once hit (including security tables) until the cap resets.
+- **Estimate impact first** — use *Log Analytics workspace → Usage and estimated costs → Data Ingestion* to see your current 30-day baseline and project the delta this DCR will add (a typical 4-node Azure Local cluster running this DCR adds on the order of low single-digit GB/day at 60 s sampling, but YMMV).
+
+📚 **Reference**: [Azure Monitor — Cost optimization and Azure Monitor (best practices)](https://learn.microsoft.com/azure/azure-monitor/fundamentals/best-practices-cost) — covers all of the above plus DCR-side filtering / transformations you can use to drop unwanted rows *before* they hit the workspace (the cheapest GB is the one you never ingest).
+
+> **TL;DR:** the LENS workbook only **reads** from your LAW; it does not influence retention, sampling, or cost. Choose retention and tier on the workspace itself, not on the DCR.
+
 ## Verifying it works
 
 After ~5–10 minutes you should see rows when you run these against your LAW:

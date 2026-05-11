@@ -17,10 +17,24 @@
  * After running this script, scripts/build-monolithic.js is the inverse and
  * regenerates AzureLocal-LENS-Workbook.json from the split files.
  *
- * Usage: node scripts/split.js
+ * ⚠️  DESTRUCTIVE — RE-RUN GUARD
+ * The split layout is the source of truth in this repo today. Re-running
+ * split.js by accident (e.g., from muscle memory after editing a split
+ * source file) would overwrite every workbooks/*\/*.workbook and
+ * shared/*.json from the root JSON — which may be stale if you forgot to
+ * run build-monolithic.js first. To protect against that, this script
+ * refuses to run unless one of the following is true:
+ *
+ *   1. node scripts/build-monolithic.js --check passes (root JSON is in
+ *      sync with the split sources — safe to re-extract).
+ *   2. --force is passed on the command line (explicit override).
+ *
+ * Usage: node scripts/split.js          (safe; runs only if --check passes)
+ *        node scripts/split.js --force  (override; overwrites split files)
  */
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const SOURCE = path.join(ROOT, 'AzureLocal-LENS-Workbook.json');
@@ -54,6 +68,36 @@ function writeJson(file, obj) {
 }
 
 function main() {
+  // Re-run guard: refuse to overwrite split sources from a potentially stale
+  // root JSON unless --force is passed or --check confirms the root is in
+  // sync with the existing split files.
+  const force = process.argv.includes('--force');
+  if (!force) {
+    if (!fs.existsSync(path.join(SHARED_DIR, 'parameters.json'))) {
+      // First-time run — nothing to lose, proceed.
+    } else {
+      try {
+        execFileSync(process.execPath, [path.join(__dirname, 'build-monolithic.js'), '--check'], {
+          stdio: 'pipe'
+        });
+      } catch (err) {
+        console.error('❌ Refusing to run: AzureLocal-LENS-Workbook.json is OUT OF SYNC with the split sources.');
+        console.error('   The split layout (workbooks/*\\*.workbook + shared/*.json) is the source of truth.');
+        console.error('   Re-running split.js now would overwrite your split sources from a stale root file.');
+        console.error('');
+        console.error('   To resolve:');
+        console.error('     1. If your latest edits are in the split sources:');
+        console.error('          node scripts/build-monolithic.js');
+        console.error('        (this regenerates the root JSON; you do NOT need to re-run split.js)');
+        console.error('     2. If you genuinely want to re-extract from the root JSON, override the guard:');
+        console.error('          node scripts/split.js --force');
+        process.exit(1);
+      }
+    }
+  } else {
+    console.warn('⚠️  --force passed; re-run guard bypassed. Overwriting split sources from root JSON.\n');
+  }
+
   const raw = fs.readFileSync(SOURCE, 'utf8');
   const root = JSON.parse(raw);
 
@@ -148,6 +192,14 @@ function main() {
   } else {
     console.log('  ✅ All tabs under 200 KB.');
   }
+
+  // --- Chain: extract Capacity-* sub-sections from the freshly-emitted
+  // workbooks/Capacity/Capacity.workbook so the split layout matches what
+  // build-monolithic.js expects (trimmed orchestrator + 5 Capacity-* files).
+  // Without this, split.js alone produces an un-trimmed orchestrator and a
+  // subsequent build-monolithic --check would fail.
+  console.log('\nExtracting Capacity sub-sections…');
+  execFileSync(process.execPath, [path.join(__dirname, 'split-capacity.js')], { stdio: 'inherit' });
 }
 
 main();

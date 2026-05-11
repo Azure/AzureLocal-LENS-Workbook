@@ -25,6 +25,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Validate shared parameters
+        run: node scripts/validate-shared-params.js
+
+      - name: Verify monolithic artifact is up-to-date
+        run: node scripts/build-monolithic.js --check
+
+      - name: Lint accessibility (inline-style HTML)
+        run: node scripts/lint-accessibility.js
+
       - name: Run unit tests
         run: node scripts/run-tests.js
 

@@ -68,9 +68,13 @@ Optional overrides:
 >
 > The DCR will land in `$LAW_REGION` while still belonging to whatever RG you chose. **DCR associations (DCRAs) are region-agnostic** — they follow the *Arc machine's* region, not the DCR's — so the step-3 association loop works regardless of whether your Arc-enabled nodes, the DCR, the LAW, and the RG are all in the same region or spread across regions.
 
-### 3. Associate the DCR to every Azure Local node
+### 3. Associate the DCR to every Azure Local host
 
-A DCR doesn't collect anything until it's *associated* with the machines it should pull from. Loop over the Arc-enabled machines in your cluster's resource group:
+A DCR doesn't collect anything until it's *associated* with the machines it should pull from. There are two common shapes for this loop — pick whichever matches your environment.
+
+#### Option A — Single resource group (one cluster)
+
+If every node lives in one resource group, `az connectedmachine list -g <rg>` is the simplest filter:
 
 ```bash
 DCR_ID=$(az deployment group show \
@@ -85,7 +89,68 @@ az connectedmachine list -g <cluster-rg> --query "[].id" -o tsv | while read MAC
 done
 ```
 
+#### Option B — Fleet-wide via Azure Resource Graph (every cluster in a subscription)
+
+If you're managing many Azure Local clusters spread across resource groups (or even regions), use **Azure Resource Graph** to enumerate all Arc-enabled **physical host** machines in one query. The key filter clauses:
+
+- `type =~ 'microsoft.hybridcompute/machines'` — Arc machines only.
+- `properties.cloudMetadata.provider =~ 'AzSHCI'` — machines that registered themselves as Azure Local participants (excludes generic Arc-enabled Windows servers).
+- `tostring(properties.detectedProperties.model) !~ 'Virtual Machine'` — **excludes guest VMs**. Hyper-V reports the model as the literal string `Virtual Machine` for Generation 1/2 VMs, so this is the most reliable way to keep only physical cluster nodes. Filtering on `kind` or `properties.parentClusterResourceId` is not sufficient — Arc-onboarded guest VMs on an Azure Local cluster inherit `provider = AzSHCI` and have `kind = ""`, just like the physical hosts; and some physical hosts (Azure Stack Edge Pro, certain Lenovo ThinkSystem SKUs) report `parentClusterResourceId = null` even when they are real cluster members.
+
+PowerShell:
+
+```powershell
+$SubId    = '<subId>'
+$DcrId    = '<full ARM ID of the DCR you deployed in step 2>'
+$DcraName = 'azlocal-lens-capacity-dcra'
+
+$json = az graph query -q "
+  resources
+  | where type =~ 'microsoft.hybridcompute/machines'
+  | where subscriptionId =~ '$SubId'
+  | where properties.cloudMetadata.provider =~ 'AzSHCI'
+  | where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'
+  | project id, name, resourceGroup, location
+" --first 500 --query "data" -o json
+$Machines = $json | ConvertFrom-Json
+"Found $($Machines.Count) Arc-enabled Azure Local host(s). Associating $DcraName..."
+
+foreach ($m in $Machines) {
+  az monitor data-collection rule association create `
+    --name $DcraName `
+    --resource $m.id `
+    --rule-id $DcrId `
+    --query "provisioningState" -o tsv
+}
+```
+
+Bash equivalent:
+
+```bash
+SUB_ID=<subId>
+DCR_ID=<full ARM ID of the DCR you deployed in step 2>
+DCRA_NAME=azlocal-lens-capacity-dcra
+
+az graph query -q "
+  resources
+  | where type =~ 'microsoft.hybridcompute/machines'
+  | where subscriptionId =~ '$SUB_ID'
+  | where properties.cloudMetadata.provider =~ 'AzSHCI'
+  | where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'
+  | project id
+" --first 500 --query "data[].id" -o tsv | while read MACHINE_ID; do
+  az monitor data-collection rule association create \
+    --name "$DCRA_NAME" \
+    --resource "$MACHINE_ID" \
+    --rule-id "$DCR_ID"
+done
+```
+
+> 💡 **Sanity check before you run it.** Inspect the host list (no associations created) by running just the `az graph query` portion first and reviewing `name`, `resourceGroup`, and `properties.detectedProperties.model` — every row should be a physical model (`ASEPRO2`, `ThinkSystem …`, `PowerEdge …`, etc.), never `Virtual Machine`. If a guest VM does slip into the list, either tighten the filter for your environment (e.g., add `and resourceGroup !startswith 'lab-'`) or skip that ID inside the foreach.
+
 > The association name (`azlocal-lens-capacity-dcra` above) is per-machine — each DCRA name must be unique *within that machine* but does not need to be unique across machines or globally. Re-running the loop with the **same name** against the **same DCR** is idempotent; re-running it against a *different* DCR with the same name on a machine that already has one is a conflict, so keep the `--name` aligned to one DCR per logical purpose.
+
+> **Note:** `az monitor data-collection rule association` is shipped via the `monitor-control-service` Azure CLI extension. The first invocation will prompt to install it; to suppress the prompt across a long loop, run `az config set extension.use_dynamic_install=yes_without_prompt` once beforehand.
 
 Data typically begins flowing within a few minutes. Open the LENS workbook's Capacity tab and confirm every sub-tab populates — including the **🖥️ Hyper-V VMs** sub-tab and the per-cluster **🪟 Hyper-V VMs on: {cluster}** section.
 

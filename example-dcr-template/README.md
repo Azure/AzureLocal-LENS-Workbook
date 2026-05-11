@@ -1,0 +1,127 @@
+# Example DCR — `dcr-azurelocal-capacity-perf`
+
+A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collects every performance counter and Windows event the **Azure Local LENS Workbook** Capacity tab needs to render — host-level **and** per-VM Hyper-V — in a single resource.
+
+This is the same template that ships embedded inside the workbook's **Capacity → Overview → Show DCR Setup Guide → 🛠️ Alternative — ARM / CLI Deployment** section. It's reproduced here as a standalone, source-controllable file so you can deploy it with `az deployment group create --template-file …` (or pipe it into your IaC repo) without having to copy-paste JSON out of the workbook UI.
+
+## What it collects
+
+| Stream | Source | Count | Purpose |
+|---|---|---:|---|
+| `Microsoft-Perf` | 13 **host** performance counter paths (Processor, Memory, LogicalDisk, Network Interface, Cluster CSV File System) | 13 | Cluster-aggregate CPU / memory / storage / latency / IOPS / network throughput tiles on every Capacity sub-tab |
+| `Microsoft-Perf` | 14 **Hyper-V VM** counter paths (Hypervisor Virtual Processor, Dynamic Memory VM, Virtual Storage Device, Virtual Network Adapter) | 14 | The 🖥️ **Hyper-V VMs** sub-tab and the 🪟 **Hyper-V VMs on: {cluster}** section on the 🔍 **Single cluster** sub-tab |
+| `Microsoft-Event` | `Microsoft-Windows-SDDC-Management/Operational` — `EventID=3002` | 1 XPath | Storage Pool / Volume health, capacity, and forecast tiles |
+
+**27 counter paths + 1 event XPath**, sampled at 60 s, all routed to a single Log Analytics workspace.
+
+## Prerequisites
+
+- An **Azure Log Analytics workspace** in the same region as the DCR. Note its **resource ID**.
+- A **resource group** to hold the DCR (often the same RG as your Azure Local cluster, but any RG in the same subscription/region works).
+- Every Azure Local node should already be **Arc-enabled** (`microsoft.hybridcompute/machines`) with the **Azure Monitor Agent (AMA)** extension installed. If you can already see your nodes in the portal under *Machines — Azure Arc*, you're set.
+
+## Deploy
+
+### 1. Save the template locally
+
+Either clone this repo or download just the JSON:
+
+```bash
+curl -L -o dcr-azurelocal-capacity-perf.json \
+  https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/main/example-dcr-template/dcr-azurelocal-capacity-perf.json
+```
+
+### 2. Deploy the DCR
+
+```bash
+az deployment group create \
+  --resource-group <rg> \
+  --template-file dcr-azurelocal-capacity-perf.json \
+  --parameters \
+      workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>
+```
+
+Optional overrides:
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `dcrName` | `dcr-azurelocal-capacity-perf` | Must be unique in the resource group. |
+| `location` | `[resourceGroup().location]` | **Must match the Log Analytics workspace region.** |
+| `workspaceResourceId` | *(required)* | Full ARM resource ID of the LAW. |
+
+### 3. Associate the DCR to every Azure Local node
+
+A DCR doesn't collect anything until it's *associated* with the machines it should pull from. Loop over the Arc-enabled machines in your cluster's resource group:
+
+```bash
+DCR_ID=$(az deployment group show \
+            -g <rg> -n dcr-azurelocal-capacity-perf \
+            --query properties.outputs.dcrResourceId.value -o tsv)
+
+az connectedmachine list -g <cluster-rg> --query "[].id" -o tsv | while read MACHINE_ID; do
+  az monitor data-collection rule association create \
+    --name azlocal-capacity-dcra \
+    --resource "$MACHINE_ID" \
+    --rule-id "$DCR_ID"
+done
+```
+
+> The association name (`azlocal-capacity-dcra` above) is per-machine — re-running the loop with the **same name** against the **same DCR** is idempotent.
+
+Data typically begins flowing within a few minutes. Open the LENS workbook's Capacity tab and confirm every sub-tab populates — including the **🖥️ Hyper-V VMs** sub-tab and the per-cluster **🪟 Hyper-V VMs on: {cluster}** section.
+
+## 💡 Multiple DCRs per machine — additive, not exclusive
+
+A single Arc-enabled machine can have **multiple DCR associations**, and the Azure Monitor Agent collects the **union** of counters, events, and other data sources defined by **every** associated DCR. You do **not** have to choose between this DCR and any existing one.
+
+That means you can safely:
+
+- Deploy this template as a **dedicated `dcr-azurelocal-capacity-perf`** DCR alongside whatever DCRs you already have (Defender for Cloud, custom application telemetry, `Microsoft-Process`, etc.) — both sets of counters will be collected.
+- Keep operational and capacity telemetry in **separate DCRs** with different retention/destination choices.
+- Roll out new counter sets incrementally without disturbing existing collection.
+
+> ⚠️ **What you should NOT do:** redeploy this template *into the name of an existing DCR you didn't create from this file*. ARM is declarative and **replaces the entire `properties` block** of the target DCR, wiping out any counters or streams it had that aren't in this template. Either:
+> 1. **(Recommended)** deploy as a **new** DCR with a unique `dcrName` and associate it alongside your existing DCRs, **or**
+> 2. **Merge** — export the existing DCR (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing.json`), copy the additional `counterSpecifiers` and the `windowsEventLogs` block from this template into the existing definition, and redeploy that merged file.
+
+## Verifying it works
+
+After ~5–10 minutes you should see rows when you run these against your LAW:
+
+```kusto
+Perf
+| where TimeGenerated > ago(15m)
+| where ObjectName == "Cluster CSV File System"
+| summarize count() by Computer, CounterName
+| order by Computer asc
+```
+
+```kusto
+Perf
+| where TimeGenerated > ago(15m)
+| where ObjectName startswith "Hyper-V"
+| summarize count() by Computer, ObjectName
+| order by Computer asc
+```
+
+```kusto
+Event
+| where TimeGenerated > ago(1h)
+| where Source == "Microsoft-Windows-SDDC-Management" and EventID == 3002
+| project TimeGenerated, Computer, RenderedDescription
+| take 10
+```
+
+If `Cluster CSV File System` or `Hyper-V *` returns no rows after 10+ minutes:
+
+1. Confirm the **DCR association exists** for the machine:
+   `az monitor data-collection rule association list --resource <machine-id>`
+2. Confirm the **AMA extension is installed** and healthy on the node:
+   `az connectedmachine extension list -g <cluster-rg> -m <node> -o table`
+3. Confirm the **DCR and the LAW are in the same region** (a common gotcha).
+
+## Related
+
+- **Workbook**: the same template is embedded under Capacity → Overview → *Show DCR Setup Guide* → 🛠️ *Alternative — ARM / CLI Deployment*.
+- **Hyper-V-only scope**: if you want to collect *only* the 14 Hyper-V counters (e.g. one DCR per data domain), the 🖥️ **Hyper-V VMs** sub-tab inside the workbook ships its own dedicated, scoped ARM template.
+- **Portal alternative**: the *Custom counter specifier* flow described in the workbook lets you add the 5 missing `Cluster CSV File System(*)` paths to an **existing** DCR without ARM — useful for ad-hoc additions, but not source-controlled.

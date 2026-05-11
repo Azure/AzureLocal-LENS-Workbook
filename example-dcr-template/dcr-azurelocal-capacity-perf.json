@@ -1,0 +1,120 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dcrName": {
+      "type": "string",
+      "defaultValue": "dcr-azurelocal-capacity-perf",
+      "metadata": {
+        "description": "Name of the Data Collection Rule."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Region for the DCR. Must match the Log Analytics workspace region."
+      }
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Log Analytics workspace used by the LENS workbook."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/dataCollectionRules",
+      "apiVersion": "2022-06-01",
+      "name": "[parameters('dcrName')]",
+      "location": "[parameters('location')]",
+      "kind": "Windows",
+      "properties": {
+        "dataSources": {
+          "performanceCounters": [
+            {
+              "name": "azureLocalCapacityCounters",
+              "streams": [
+                "Microsoft-Perf"
+              ],
+              "samplingFrequencyInSeconds": 60,
+              "counterSpecifiers": [
+                "\\Processor(_Total)\\% Processor Time",
+                "\\Memory\\Committed Bytes",
+                "\\Memory\\Available Bytes",
+                "\\LogicalDisk(*)\\% Free Space",
+                "\\LogicalDisk(*)\\Avg. Disk sec/Read",
+                "\\LogicalDisk(*)\\Avg. Disk sec/Write",
+                "\\LogicalDisk(*)\\Disk Transfers/sec",
+                "\\Network Interface(*)\\Bytes Total/sec",
+                "\\Cluster CSV File System(*)\\% Used Space",
+                "\\Cluster CSV File System(*)\\% Free Space",
+                "\\Cluster CSV File System(*)\\Avg. Disk sec/Read",
+                "\\Cluster CSV File System(*)\\Avg. Disk sec/Write",
+                "\\Cluster CSV File System(*)\\Disk Transfers/sec",
+                "\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time",
+                "\\Hyper-V Hypervisor Virtual Processor(*)\\% Hypervisor Run Time",
+                "\\Hyper-V Hypervisor Virtual Processor(*)\\% Total Run Time",
+                "\\Hyper-V Dynamic Memory VM(*)\\Current Pressure",
+                "\\Hyper-V Dynamic Memory VM(*)\\Physical Memory",
+                "\\Hyper-V Dynamic Memory VM(*)\\Guest Visible Physical Memory",
+                "\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec",
+                "\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec",
+                "\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec",
+                "\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec",
+                "\\Hyper-V Virtual Storage Device(*)\\Latency",
+                "\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec",
+                "\\Hyper-V Virtual Network Adapter(*)\\Bytes Sent/sec",
+                "\\Hyper-V Virtual Network Adapter(*)\\Bytes Received/sec"
+              ]
+            }
+          ],
+          "windowsEventLogs": [
+            {
+              "name": "azureLocalSddcEvents",
+              "streams": [
+                "Microsoft-Event"
+              ],
+              "xPathQueries": [
+                "Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]"
+              ]
+            }
+          ]
+        },
+        "destinations": {
+          "logAnalytics": [
+            {
+              "name": "laDestination",
+              "workspaceResourceId": "[parameters('workspaceResourceId')]"
+            }
+          ]
+        },
+        "dataFlows": [
+          {
+            "streams": [
+              "Microsoft-Perf"
+            ],
+            "destinations": [
+              "laDestination"
+            ]
+          },
+          {
+            "streams": [
+              "Microsoft-Event"
+            ],
+            "destinations": [
+              "laDestination"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "dcrResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]"
+    }
+  }
+}

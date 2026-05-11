@@ -1,0 +1,116 @@
+name: Auto-tag and Release
+
+# When a push lands on main, extract the latest `## What's New (vX.Y.Z)`
+# heading from README.md. If the corresponding tag does not yet exist, create
+# it and a matching GitHub Release with AzureLocal-LENS-Workbook.json attached.
+#
+# - Manual tags / releases still work; this workflow only acts when the
+#   README version is unreleased.
+# - Pre-release detection: any tag matching v*-rc.* / v*-beta.* / v*-alpha.*
+#   is published as a pre-release.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # required to create tags + releases
+
+jobs:
+  release:
+    name: Tag and release if README version is new
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for tag lookup)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version + release notes from README
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # First "## What's New (vX.Y.Z)" wins (README places newest at top).
+          version=$(grep -oP "^## What's New \(v\K[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?(?=\))" README.md | head -n1 || true)
+          if [ -z "$version" ]; then
+            echo "::error::No '## What's New (vX.Y.Z)' heading found in README.md"
+            exit 1
+          fi
+          tag="v${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}"         >> "$GITHUB_OUTPUT"
+
+          # Pre-release if the version has a hyphen suffix (e.g. v1.0.2-rc.1).
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Extract the section body: everything from the matched heading up to
+          # (but not including) the next `## ` heading at the same level.
+          awk -v v="${version}" '
+            BEGIN { capture = 0 }
+            /^## What'\''s New \(v/ {
+              if (capture) { exit }
+              if ($0 ~ "\\(v" v "\\)") { capture = 1; next }
+            }
+            /^## / { if (capture) { exit } }
+            capture { print }
+          ' README.md > release-notes.md
+
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::Release notes body is empty; falling back to a stub."
+            printf '%s\n' "See README.md for the full v${version} change log." > release-notes.md
+          fi
+
+          # Prepend an install hint pointing at the attached artifact.
+          {
+            echo "## Install"
+            echo ""
+            echo "Download \`AzureLocal-LENS-Workbook.json\` from the assets below and import it into the Azure portal (Monitor → Workbooks → New → Advanced Editor → paste the JSON)."
+            echo ""
+            echo "---"
+            echo ""
+            cat release-notes.md
+          } > release-notes.final.md
+          mv release-notes.final.md release-notes.md
+
+          echo "----- release-notes.md (first 30 lines) -----"
+          head -n 30 release-notes.md
+          echo "---------------------------------------------"
+
+      - name: Check whether tag already exists
+        id: tag_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.extract.outputs.tag }}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists locally; skipping release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists on origin; skipping release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag ${tag} does not exist; will create release."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify monolithic artifact is in sync
+        if: steps.tag_check.outputs.exists == 'false'
+        run: node scripts/build-monolithic.js --check
+
+      - name: Create release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.extract.outputs.tag }}
+          name: ${{ steps.extract.outputs.tag }} — Azure Local LENS Workbook
+          body_path: release-notes.md
+          prerelease: ${{ steps.extract.outputs.prerelease == 'true' }}
+          files: AzureLocal-LENS-Workbook.json
+          fail_on_unmatched_files: true

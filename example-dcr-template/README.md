@@ -46,8 +46,27 @@ Optional overrides:
 | Parameter | Default | Notes |
 |---|---|---|
 | `dcrName` | `dcr-azurelocal-lens-capacity-perf` | Must be unique in the resource group. |
-| `location` | `[resourceGroup().location]` | **Must match the Log Analytics workspace region.** |
+| `location` | `[resourceGroup().location]` | **Must match the Log Analytics workspace region** — see callout below. |
 | `workspaceResourceId` | *(required)* | Full ARM resource ID of the LAW. |
+
+> 🌍 **Region note — RG location vs. DCR/LAW region.** A resource group's `location` is metadata only; the resources *inside* it can live in any region. What matters here is that the **DCR and the Log Analytics workspace must be in the same region** (it's a hard Azure Monitor requirement). The template's `location` parameter defaults to `[resourceGroup().location]`, which is convenient when the RG you're deploying into is already in the LAW's region — but if you're deploying the DCR into an RG whose default location is **different** from the LAW's region, you **must** override the parameter explicitly, otherwise the deployment will fail with a region-mismatch error:
+>
+> ```bash
+> # Look up the LAW's region
+> LAW_REGION=$(az monitor log-analytics workspace show \
+>                --ids /subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace> \
+>                --query location -o tsv)
+>
+> # Pass it through at deployment time
+> az deployment group create \
+>   --resource-group <rg> \
+>   --template-file dcr-azurelocal-capacity-perf.json \
+>   --parameters \
+>       workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace> \
+>       location=$LAW_REGION
+> ```
+>
+> The DCR will land in `$LAW_REGION` while still belonging to whatever RG you chose. **DCR associations (DCRAs) are region-agnostic** — they follow the *Arc machine's* region, not the DCR's — so the step-3 association loop works regardless of whether your Arc-enabled nodes, the DCR, the LAW, and the RG are all in the same region or spread across regions.
 
 ### 3. Associate the DCR to every Azure Local node
 

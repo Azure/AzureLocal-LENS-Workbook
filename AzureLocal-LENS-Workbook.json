@@ -5981,6 +5981,459 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "### 🪟 Hyper-V VMs on: {SingleCluster:label}"
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** The charts below use the same **Hyper-V** Perf counters as the **🪟 Hyper-V VMs** sub-tab (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`) — but **scoped to only the physical hosts of {SingleCluster:label}**. They read from the **Log Analytics Workspace** picker driving the per-machine charts above (the `Log Analytics Workspace` parameter at the top of this sub-tab), and use the same **Historic Time Range** picker.\r\n\r\nIf you see *No data*, expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of the **🪟 Hyper-V VMs** sub-tab for a ready-to-deploy ARM template. **Memory Pressure** only emits for VMs with **Dynamic Memory** enabled — VMs with static memory (including most AKS-on-AzureLocal worker VMs) will never appear on that chart.",
+                    "style": "upsell"
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-tip"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfRaw = Perf\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where set_has_element(clusterHosts, tolower(Computer))\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\n    | where isnotempty(VMName) and VMName != \"_Total\";\nlet cpuStats = perfRaw\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\nlet memStats = Perf\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where set_has_element(clusterHosts, tolower(Computer))\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\nperfRaw\n| summarize\n    ['First Seen (UTC)'] = min(TimeGenerated),\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\n    arg_max(TimeGenerated, Computer)\n  by VMName\n| project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\n| join kind=leftouter cpuStats on VMName\n| project-away VMName1\n| join kind=leftouter memStats on VMName\n| project-away VMName1\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\n| extend Activity = case(\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\n      \"\\ud83d\\udd34 Stale (>24h)\")\n| project ['VM Name'] = VMName, Activity, ['Physical Host'], ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\n| order by ['Avg CPU %'] desc nulls last",
+                    "size": 0,
+                    "showAnalytics": true,
+                    "showExportToExcel": true,
+                    "timeContextFromParameter": "NodeTrendsTimeRange",
+                    "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
+                    "noDataMessage": "No Hyper-V VMs found running on the selected cluster's hosts in this time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the cluster nodes — see the **Show DCR Setup Guide** at the top of this sub-tab and the **🔔 Hyper-V Performance Counter DCR Configuration** section on the **🪟 Hyper-V VMs** sub-tab for ready-to-deploy ARM templates.",
+                    "noDataMessageStyle": 4,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "visualization": "table",
+                    "gridSettings": {
+                      "formatters": [
+                        {
+                          "columnMatch": "VM Name",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Activity",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "Physical Host",
+                          "formatter": 1
+                        },
+                        {
+                          "columnMatch": "vCPUs (observed)",
+                          "formatter": 8,
+                          "formatOptions": {
+                            "palette": "purple"
+                          }
+                        },
+                        {
+                          "columnMatch": "Avg CPU %",
+                          "formatter": 8,
+                          "formatOptions": {
+                            "palette": "blue"
+                          },
+                          "numberFormat": {
+                            "unit": 1,
+                            "options": {
+                              "style": "decimal",
+                              "maximumFractionDigits": 1
+                            }
+                          }
+                        },
+                        {
+                          "columnMatch": "Avg Memory %",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "thresholdsOptions": "colors",
+                            "thresholdsGrid": [
+                              {
+                                "operator": ">=",
+                                "thresholdValue": "100",
+                                "representation": "redBright",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": ">=",
+                                "thresholdValue": "80",
+                                "representation": "yellow",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": "green",
+                                "text": "{0}{1}"
+                              }
+                            ]
+                          },
+                          "numberFormat": {
+                            "unit": 1,
+                            "options": {
+                              "style": "decimal",
+                              "maximumFractionDigits": 1
+                            }
+                          }
+                        },
+                        {
+                          "columnMatch": "First Seen (UTC)",
+                          "formatter": 6,
+                          "dateFormat": {
+                            "showUtcTime": true,
+                            "formatName": "shortDateTimePattern"
+                          }
+                        },
+                        {
+                          "columnMatch": "Last Seen (UTC)",
+                          "formatter": 6,
+                          "dateFormat": {
+                            "showUtcTime": true,
+                            "formatName": "shortDateTimePattern"
+                          }
+                        }
+                      ],
+                      "rowLimit": 5000,
+                      "filter": true,
+                      "sortBy": [
+                        {
+                          "itemKey": "Avg CPU %",
+                          "sortOrder": 2
+                        }
+                      ]
+                    },
+                    "sortBy": [
+                      {
+                        "itemKey": "Avg CPU %",
+                        "sortOrder": 2
+                      }
+                    ]
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-inventory"
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| extend seriesKey = tostring(split(InstanceName, \":\")[0])\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\n| project TimeGenerated, seriesKey, Value = CounterValue;\nlet top5 = perfData\n| summarize AvgValue = avg(Value) by seriesKey\n| top 5 by AvgValue desc\n| project seriesKey;\nperfData\n| lookup kind=inner top5 on seriesKey\n| summarize [\"Avg CPU %\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by CPU Usage — % Guest Run Time (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V CPU data for this cluster's hosts. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every node.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg CPU %"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-cpu",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| extend seriesKey = InstanceName\n| where isnotempty(seriesKey) and seriesKey != \"_Total\"\n| project TimeGenerated, seriesKey, Value = CounterValue;\nlet top5 = perfData\n| summarize AvgValue = avg(Value) by seriesKey\n| top 5 by AvgValue desc\n| project seriesKey;\nperfData\n| lookup kind=inner top5 on seriesKey\n| summarize [\"Memory Pressure\"] = round(avg(Value), 2) by bin(TimeGenerated, step), seriesKey\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Memory Pressure — ≤80 healthy · 100 = at limit · >100 under pressure (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V memory pressure data. Memory Pressure is a Dynamic Memory metric — only VMs with Dynamic Memory enabled report it. Static-memory VMs (including AKS Arc workloads) will never appear here.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Memory Pressure"
+                      ],
+                      "group": "seriesKey",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 1
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-mempressure",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Bytes/sec\", \"Write Bytes/sec\")\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\n| where isnotempty(vhdName)\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vhdName\n| project TimeGenerated, vhdName, MBPerSec = BytesPerSec / 1048576.0;\nlet top5 = perfData\n| summarize AvgMBps = avg(MBPerSec) by vhdName\n| top 5 by AvgMBps desc\n| project vhdName;\nperfData\n| lookup kind=inner top5 on vhdName\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vhdName\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s per VHD/VHDX (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device throughput data. Ensure '\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec' and 'Write Bytes/sec' are in the DCR's counterSpecifiers.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-storage-throughput",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Read Operations/Sec\", \"Write Operations/Sec\")\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\n| where isnotempty(vhdName)\n| summarize Iops = sum(CounterValue) by bin(TimeGenerated, step), vhdName;\nlet top5 = perfData\n| summarize AvgIops = avg(Iops) by vhdName\n| top 5 by AvgIops desc\n| project vhdName;\nperfData\n| lookup kind=inner top5 on vhdName\n| summarize [\"IOPS\"] = round(avg(Iops), 0) by TimeGenerated, vhdName\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec per VHD/VHDX (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device IOPS data. Ensure '\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec' and 'Write Operations/Sec' are in the DCR's counterSpecifiers.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "IOPS"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 0
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-storage-iops",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Virtual Storage Device\" and CounterName in (\"Latency\", \"Average Latency\", \"Read Latency\", \"Write Latency\")\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| extend vhdName = coalesce(extract(@'([^\\\\/]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-([^-]+\\.(?:vhdx?|avhdx?|vmgs|vmrs|iso))', 1, InstanceName), extract(@'-Virtual Machines-([^-]+)', 1, InstanceName), extract(@'([^\\\\/-]+)$', 1, InstanceName), InstanceName)\n| where isnotempty(vhdName)\n| summarize LatencyMs = avg(CounterValue) by bin(TimeGenerated, step), vhdName;\nlet top5 = perfData\n| summarize AvgLatency = avg(LatencyMs) by vhdName\n| top 5 by AvgLatency desc\n| project vhdName;\nperfData\n| lookup kind=inner top5 on vhdName\n| summarize [\"Avg Latency\"] = round(avg(LatencyMs), 3) by TimeGenerated, vhdName\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top Virtual Disks by Storage Latency — ms · <10 healthy · 10-20 watch · >20 stressed (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V Virtual Storage Device latency data. Latency counter names vary by Windows Server version — the chart matches Latency / Average Latency / Read Latency / Write Latency. Ensure at least one is in the DCR's counterSpecifiers.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Avg Latency"
+                      ],
+                      "group": "vhdName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 3
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-storage-latency",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 3,
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = iif(datetime_diff('hour', trendEnd, trendStart) <= 6, 5m, iif(datetime_diff('day', trendEnd, trendStart) <= 3, 30m, iif(datetime_diff('day', trendEnd, trendStart) <= 14, 2h, 1d)));\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet clusterHosts = toscalar(\n    Heartbeat\n    | where TimeGenerated > ago(1d)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | summarize make_set(nodeName));\n// Build the authoritative VM list from the Hyper-V Hypervisor Virtual Processor counter (which uses VMName:vCpuId as InstanceName), pre-filtered to the selected cluster hosts.\n// The Hyper-V Virtual Network Adapter object reports rows for everything attached to the virtual switch — guest VM vNICs, host management vNICs and physical adapters — so we must filter network rows to only those whose InstanceName starts with a known VM name.\nlet vmList = toscalar(\n    Perf\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where set_has_element(clusterHosts, tolower(Computer))\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\n    | where isnotempty(VMName) and VMName != \"_Total\"\n    | summarize make_set(VMName)\n);\nlet perfData = Perf\n| where TimeGenerated between (trendStart .. trendEnd)\n| where set_has_element(clusterHosts, tolower(Computer))\n| where ObjectName == \"Hyper-V Virtual Network Adapter\" and CounterName in (\"Bytes/sec\", \"Bytes Sent/sec\", \"Bytes Received/sec\")\n| where InstanceName !contains \"_Total\" and isnotempty(InstanceName)\n| where InstanceName has_any (vmList)\n| mv-apply vmCandidate = vmList to typeof(string) on (\n    where InstanceName startswith vmCandidate\n    | top 1 by string_size(vmCandidate) desc\n  )\n| extend vmName = vmCandidate\n| where isnotempty(vmName)\n| summarize BytesPerSec = sum(CounterValue) by bin(TimeGenerated, step), vmName\n| project TimeGenerated, vmName, MBPerSec = BytesPerSec / 1048576.0;\nlet top5 = perfData\n| summarize AvgMBps = avg(MBPerSec) by vmName\n| top 5 by AvgMBps desc\n| project vmName;\nperfData\n| lookup kind=inner top5 on vmName\n| summarize [\"Throughput (MB/s)\"] = round(avg(MBPerSec), 2) by TimeGenerated, vmName\n| order by TimeGenerated asc",
+                    "size": 1,
+                    "showAnalytics": true,
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "aggregation": 3,
+                    "title": "📈 Top VMs by Network Throughput — Send+Receive MB/s · guest vNICs only (on {SingleCluster:label})",
+                    "noDataMessage": "No Hyper-V Virtual Network Adapter data for guest VMs on this cluster. The chart cross-references against the Hyper-V Hypervisor Virtual Processor counter to filter out host vNICs (vManagement, vCompute, etc.) and physical NICs — if no VMs are visible in the CPU chart, none can be matched here either. Confirm '\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec' (or 'Bytes Sent/sec' + 'Bytes Received/sec') is in the DCR's counterSpecifiers.",
+                    "visualization": "linechart",
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Throughput (MB/s)"
+                      ],
+                      "group": "vmName",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  },
+                  "customWidth": "50",
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-chart-network",
+                  "styleSettings": {
+                    "margin": "5px",
+                    "padding": "5px"
+                  }
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "ℹ️ **Notes:** All six charts show the **Top 5 VMs/VHDs by average value** over the selected **Historic Time Range** (picker at the top of this sub-tab), restricted to the physical hosts of **{SingleCluster:label}**. **Memory Pressure** is a unitless ratio (≤80 healthy · 100 = at limit · >100 under pressure); only Dynamic-Memory VMs report it. **Storage** charts are reported **per virtual disk (VHD)**, not per VM (the `Hyper-V Virtual Storage Device` object uses the VHD path as its instance identifier). **Network** counter values are cross-referenced against the Hyper-V Hypervisor Virtual Processor counter so only guest VM vNICs (not host vNICs or physical NICs) are shown. See the **🪟 Hyper-V VMs** sub-tab for the equivalent fleet-wide view, the full **🔔 DCR Configuration** ARM template, and the complete chart-units interpretation guide.",
+                    "style": "info"
+                  },
+                  "conditionalVisibility": {
+                    "parameterName": "ClusterFilter",
+                    "comparison": "isNotEqualTo",
+                    "value": "value::all"
+                  },
+                  "name": "sc-hyperv-notes"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "### ☸️ AKS Arc Clusters on: {SingleCluster:label}"
                   },
                   "name": "sc-aks-header"

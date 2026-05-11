@@ -131,6 +131,7 @@ Drill into a single cluster (selected via the `SingleCluster` picker):
 - **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected cluster
 - **📦 Workloads on Cluster** section:
   - 🖥️ Azure Local VMs running on the cluster
+  - 🪟 **Hyper-V VMs on the cluster** — Perf-derived view scoped to the selected cluster's physical hosts (reuses the same **Log Analytics Workspace** and **Historic Time Range** pickers as the per-machine charts above). Includes the inventory table plus six Top-5 trend charts: VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — same counters and queries as the **🪟 Hyper-V VMs** sub-tab, but filtered to this cluster only
   - ☸️ AKS Arc Clusters running on the cluster (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local cluster label, so a single AKS performance view applies fleet-wide)
 
 #### 🌍 Multi-cluster sub-tab

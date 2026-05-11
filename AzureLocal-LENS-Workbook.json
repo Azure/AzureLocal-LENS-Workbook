@@ -6154,7 +6154,7 @@
                     "size": 0,
                     "showAnalytics": true,
                     "aggregation": 3,
-                    "title": "Top 10 AKS Nodes — CPU Usage (Prometheus)",
+                    "title": "Top AKS Nodes — CPU Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContext": {
                       "durationMs": 3600000
@@ -6200,7 +6200,7 @@
                     "size": 0,
                     "showAnalytics": true,
                     "aggregation": 3,
-                    "title": "Top 10 AKS Nodes — Memory Usage (Prometheus)",
+                    "title": "Top AKS Nodes — Memory Usage (Prometheus)",
                     "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
                     "timeContext": {
                       "durationMs": 3600000

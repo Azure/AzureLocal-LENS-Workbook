@@ -411,7 +411,7 @@
               "showExportToExcel": true,
               "aggregation": 3,
               "title": "Predictive Resource Exhaustion Forecast by Cluster",
-              "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace.",
+              "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -712,7 +712,7 @@
                   "max": 100
                 }
               },
-              "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+              "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -759,7 +759,7 @@
                   }
                 }
               },
-              "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+              "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
               "noDataMessageStyle": 4
             },
             "customWidth": "48",
@@ -863,7 +863,7 @@
                   }
                 }
               },
-              "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range.",
+              "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Avg. Disk sec/Read|Write` and `Cluster CSV File System(*)\\Avg. Disk sec/Read|Write` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -908,7 +908,7 @@
                   }
                 }
               },
-              "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range.",
+              "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Disk Transfers/sec` and `Cluster CSV File System(*)\\Disk Transfers/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -953,7 +953,7 @@
                   }
                 }
               },
-              "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range.",
+              "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range. Confirm AMA + a DCR collecting `Network Interface(*)\\Bytes Total/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",

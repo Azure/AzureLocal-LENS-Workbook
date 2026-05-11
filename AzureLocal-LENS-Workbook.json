@@ -4160,7 +4160,7 @@
                     "showExportToExcel": true,
                     "aggregation": 3,
                     "title": "Predictive Resource Exhaustion Forecast by Cluster",
-                    "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace.",
+                    "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
@@ -4461,7 +4461,7 @@
                         "max": 100
                       }
                     },
-                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -4508,7 +4508,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. Try widening the time range.",
+                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "48",
@@ -4612,7 +4612,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range.",
+                    "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Avg. Disk sec/Read|Write` and `Cluster CSV File System(*)\\Avg. Disk sec/Read|Write` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -4657,7 +4657,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range.",
+                    "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Disk Transfers/sec` and `Cluster CSV File System(*)\\Disk Transfers/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -4702,7 +4702,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range.",
+                    "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range. Confirm AMA + a DCR collecting `Network Interface(*)\\Bytes Total/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5082,6 +5082,13 @@
                   "name": "sc-perf-charts-header"
                 },
                 {
+                  "type": 1,
+                  "content": {
+                    "json": "💡 **Tip:** The six per-machine charts below read from the `Perf` table in your selected **Log Analytics workspace**. They require AMA + a DCR collecting `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes` / `Available Bytes`, `LogicalDisk(*)` and `Cluster CSV File System(*)` capacity/latency/IOPS counters, and `Network Interface(*)\\Bytes Total/sec`. They use the **same counter set** as the Capacity Overview tab's Top-5 cluster charts — if a chart there shows data for this cluster but the equivalent here is empty, the DCR is collecting from only some of the nodes. Expand the **🔔 Performance Counter DCR Configuration** section on the Capacity Overview tab for setup guidance."
+                  },
+                  "name": "sc-perf-charts-source-tip"
+                },
+                {
                   "type": 3,
                   "content": {
                     "version": "KqlItem/1.0",
@@ -5459,6 +5466,13 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "💡 **Tip:** The charts below read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` **Event ID 3002** in your selected Log Analytics workspace — not from the `Perf` table. This event log is **not collected by the default Azure Local DCR**; expand the **🔔 Performance Counter DCR Configuration → 🪵 Required Windows Event Log** section on the Capacity Overview tab for instructions on adding it."
+                  },
+                  "name": "sc-stor-forecast-source-tip"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
                     "style": "warning"
                   },
@@ -5504,7 +5518,7 @@
                       "locInfo": "AzureResource",
                       "locInfoColumn": "ArmId"
                     },
-                    "noDataMessage": "No storage pool capacity data for this cluster in the selected time range.",
+                    "noDataMessage": "No storage pool capacity data for this cluster in the selected time range. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the cluster nodes (expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance).",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -5567,6 +5581,13 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "💡 **Tip:** The CPU and Memory forecast charts below read from the `Perf` table (`Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes` and `Memory\\Available Bytes`) in your selected Log Analytics workspace and apply linear-regression forecasting. They require AMA + a DCR collecting those counters — expand the **🔔 Performance Counter DCR Configuration** section on the Capacity Overview tab for setup guidance."
+                  },
+                  "name": "sc-compute-forecast-source-tip"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
                     "style": "warning"
                   },
@@ -5600,7 +5621,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No CPU trend data for this cluster in the selected time range.",
+                    "noDataMessage": "No CPU trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting `Processor(_Total)\\% Processor Time` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -5638,7 +5659,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No memory trend data for this cluster in the selected time range.",
+                    "noDataMessage": "No memory trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",

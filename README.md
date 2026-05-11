@@ -131,8 +131,7 @@ Drill into a single cluster (selected via the `SingleCluster` picker):
 - **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected cluster
 - **📦 Workloads on Cluster** section:
   - 🖥️ Azure Local VMs running on the cluster
-  - ☸️ AKS Arc Clusters running on the cluster
-  - **📊 AKS Arc Node Resource Usage** — Top AKS Nodes by CPU and Memory via Azure Managed Prometheus (configurable Prometheus time range)
+  - ☸️ AKS Arc Clusters running on the cluster (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local cluster label, so a single AKS performance view applies fleet-wide)
 
 #### 🌍 Multi-cluster sub-tab
 Fleet-wide capacity trending and forecasting:

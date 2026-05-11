@@ -6088,155 +6088,15 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 📊 AKS Arc Node Resource Usage\nShowing current CPU and memory usage per AKS node from Azure Managed Prometheus. Requires [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters."
+                    "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local cluster metadata, so the same Prometheus charts cannot be filtered to a single Azure Local cluster. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
+                    "style": "info"
                   },
                   "conditionalVisibility": {
                     "parameterName": "ClusterFilter",
                     "comparison": "isNotEqualTo",
                     "value": "value::all"
                   },
-                  "name": "sc-aks-perf-header"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "💡 **Tip:** Select an **Azure Monitor Workspace** below to view AKS node resource usage. This requires [Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/prometheus-metrics-overview) to be enabled on your AKS Arc clusters.\n\n⚠️ **Note:** These charts show data from **all AKS Arc clusters** reporting to the selected Azure Monitor Workspace, not just those on the selected Azure Local cluster. Prometheus metrics do not contain Azure Local cluster metadata, so cross-cluster filtering is not possible.",
-                    "style": "upsell"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "sc-aks-amw-tip"
-                },
-                {
-                  "type": 9,
-                  "content": {
-                    "version": "KqlParameterItem/1.0",
-                    "parameters": [
-                      {
-                        "id": "azure-monitor-workspace-sc",
-                        "version": "KqlParameterItem/1.0",
-                        "name": "AzureMonitorWorkspace",
-                        "label": "Azure Monitor Workspace",
-                        "type": 2,
-                        "description": "Select the Azure Monitor Workspace collecting Prometheus metrics from your AKS Arc clusters.",
-                        "isRequired": true,
-                        "query": "resources\r\n| where type == \"microsoft.monitor/accounts\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                        "crossComponentResources": [
-                          "{Subscriptions}"
-                        ],
-                        "typeSettings": {
-                          "additionalResourceOptions": [],
-                          "showDefault": false
-                        },
-                        "queryType": 1,
-                        "resourceType": "microsoft.resourcegraph/resources"
-                      }
-                    ],
-                    "style": "pills",
-                    "queryType": 1,
-                    "resourceType": "microsoft.resourcegraph/resources"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "sc-aks-amw-param"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(10, avg by (cluster, instance) (1 - rate(node_cpu_seconds_total{mode=\\\"idle\\\"}[5m])) * 100)\",\"type\":\"query_range\"}",
-                    "size": 0,
-                    "showAnalytics": true,
-                    "aggregation": 3,
-                    "title": "Top AKS Nodes — CPU Usage (Prometheus)",
-                    "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
-                    "timeContext": {
-                      "durationMs": 3600000
-                    },
-                    "queryType": 16,
-                    "resourceType": "microsoft.monitor/accounts",
-                    "crossComponentResources": [
-                      "{AzureMonitorWorkspace}"
-                    ],
-                    "visualization": "timechart",
-                    "chartSettings": {
-                      "group": "*",
-                      "createOtherGroup": 50,
-                      "ySettings": {
-                        "min": 0,
-                        "max": 100,
-                        "numberFormatSettings": {
-                          "unit": 1,
-                          "options": {
-                            "style": "decimal",
-                            "useGrouping": true,
-                            "minimumFractionDigits": 0,
-                            "maximumFractionDigits": 1
-                          }
-                        }
-                      },
-                      "showLegend": true
-                    }
-                  },
-                  "customWidth": "50",
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "sc-aks-cpu-table"
-                },
-                {
-                  "type": 3,
-                  "content": {
-                    "version": "KqlItem/1.0",
-                    "query": "{\"version\":\"PrometheusQueryProvider/1.0\",\"customEndpoint\":false,\"queryText\":\"topk(10, (1 - avg by (cluster, instance) (node_memory_MemAvailable_bytes) / avg by (cluster, instance) (node_memory_MemTotal_bytes)) * 100)\",\"type\":\"query_range\"}",
-                    "size": 0,
-                    "showAnalytics": true,
-                    "aggregation": 3,
-                    "title": "Top AKS Nodes — Memory Usage (Prometheus)",
-                    "noDataMessage": "No Prometheus data found. Ensure Azure Managed Prometheus is enabled and the selected Azure Monitor Workspace receives metrics.",
-                    "timeContext": {
-                      "durationMs": 3600000
-                    },
-                    "queryType": 16,
-                    "resourceType": "microsoft.monitor/accounts",
-                    "crossComponentResources": [
-                      "{AzureMonitorWorkspace}"
-                    ],
-                    "visualization": "timechart",
-                    "chartSettings": {
-                      "group": "*",
-                      "createOtherGroup": 50,
-                      "ySettings": {
-                        "min": 0,
-                        "max": 100,
-                        "numberFormatSettings": {
-                          "unit": 1,
-                          "options": {
-                            "style": "decimal",
-                            "useGrouping": true,
-                            "minimumFractionDigits": 0,
-                            "maximumFractionDigits": 1
-                          }
-                        }
-                      },
-                      "showLegend": true
-                    }
-                  },
-                  "customWidth": "50",
-                  "conditionalVisibility": {
-                    "parameterName": "ClusterFilter",
-                    "comparison": "isNotEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "sc-aks-memory-table"
+                  "name": "sc-aks-perf-breadcrumb"
                 }
               ]
             },

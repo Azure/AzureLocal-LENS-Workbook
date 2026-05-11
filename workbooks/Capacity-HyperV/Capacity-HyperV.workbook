@@ -166,8 +166,22 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterNodeMap",
             "type": 1,
-            "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeName:clusterName:armId per entry). Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeName = tolower(tostring(node.name))\r\n| where isnotempty(nodeName)\r\n| project value = strcat(nodeName, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeShort:clusterName:armId per entry). nodeShort is the lowercased NetBIOS hostname (FQDN suffix stripped) so it matches tolower(split(Computer, '.')[0]) emitted by Heartbeat / Perf. Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "isHiddenWhenLocked": true,
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "arc-machine-map-param",
+            "version": "KqlParameterItem/1.0",
+            "name": "ArcMachineMap",
+            "type": 1,
+            "description": "Hidden: maps Hyper-V guest VM short names to their Arc-enabled-server resource (microsoft.hybridcompute/machines). Format: vmShort:armId per entry. Used by the Hyper-V VM Inventory table to make the VM Name cell link to its Azure Local VM / AVD / Arc-onboarded VM control-plane resource when one exists. Filtered to detectedProperties.model =~ 'Virtual Machine' to bound parameter size to actual guest VMs (excludes physical hosts).",
+            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -531,7 +545,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
+              "query": "Perf\r\n| where ObjectName == \"Hyper-V Hypervisor Virtual Processor\"\r\n| where CounterName == \"% Guest Run Time\"\r\n| extend VMName = tostring(split(InstanceName, \":\")[0])\r\n| where isnotempty(VMName) and VMName != \"_Total\"\r\n| summarize HostCount = dcount(Computer) by VMName\r\n| summarize Count = countif(HostCount > 1)\r\n| extend Label = 'Live Migrated VMs', Subtitle = 'VMs seen on more than one host in window'",
               "size": 3,
               "timeContext": {
                 "durationMs": 0
@@ -561,7 +575,7 @@
                 },
                 "showBorder": false
               },
-              "noDataMessage": "No migrated VMs detected in the window — every observed VM ran on a single host. (Confirm AMA + a DCR with Hyper-V performance counters is configured if all three tiles are 0.)",
+              "noDataMessage": "No live-migrated VMs detected in the window — every observed VM ran on a single host. (Confirm AMA + a DCR with Hyper-V performance counters is configured if all three tiles are 0.)",
               "noDataMessageStyle": 4
             },
             "name": "hyperv-tile-vm-host-pairs",
@@ -638,7 +652,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nlet memStats = Perf\r\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\r\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen (UTC)'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| join kind=leftouter memStats on VMName\r\n| project-away VMName1\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, Activity, ['Physical Host'], ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\r\n| order by ['Avg CPU %'] desc nulls last",
+              "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\n// Two-tier cluster lookup:\r\n//  1. nodeMap   — authoritative per-host map from microsoft.azurestackhci/clusters reportedProperties.nodes (best, includes armId).\r\n//  2. clusterMap — RG-based fallback when a host is in a cluster RG but not yet listed in reportedProperties.nodes (e.g. recently re-imaged node, or the reported list lagging behind ARG).\r\n// armId is sourced from nodeMap.distinct(clusterName) so the portal link still works for tier-2 matches as long as ANY node of that cluster appears in reportedProperties.nodes.\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterNameNode = tostring(parts[1]), armId = tostring(parts[2]));\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterNameRG = tostring(parts[1]));\r\nlet armIdByCluster = nodeMap | distinct clusterNameNode, armId | project clusterName = clusterNameNode, armId;\r\nlet hostRG = materialize(Heartbeat\r\n    | where OSType == \"Windows\"\r\n    | summarize arg_max(TimeGenerated, *) by Computer\r\n    | project hbComputer = Computer, nodeRG = tolower(ResourceGroup));\r\n// Arc-machine map (Hyper-V guest VMs) so the VM Name cell can link to its Azure Local VM / AVD / Arc-onboarded control-plane resource when one exists. Match is on the lowercased VM short name (parameter is pre-filtered to detectedProperties.model =~ 'Virtual Machine' to bound size).\r\nlet arcMap = materialize(\r\n    print mapping = dynamic({ArcMachineMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project vmShort = tolower(tostring(parts[0])), vmArmId = tostring(parts[1]));\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nlet memStats = Perf\r\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\r\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen (UTC)'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| join kind=leftouter memStats on VMName\r\n| project-away VMName1\r\n| extend nodeShort = tolower(tostring(split(['Physical Host'], '.')[0]))\r\n| join kind=leftouter nodeMap on nodeShort\r\n| join kind=leftouter hostRG on $left.['Physical Host'] == $right.hbComputer\r\n| join kind=leftouter clusterMap on nodeRG\r\n| extend ['Cluster Name'] = coalesce(clusterNameNode, clusterNameRG, '')\r\n| join kind=leftouter armIdByCluster on $left.['Cluster Name'] == $right.clusterName\r\n| extend clusterLink = iff(isempty(armId), '', strcat('https://portal.azure.com/#@/resource', armId))\r\n| extend vmShort = tolower(tostring(VMName))\r\n| join kind=leftouter arcMap on vmShort\r\n| extend vmLink = iff(isempty(vmArmId), '', strcat('https://portal.azure.com/#@/resource', vmArmId))\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, vmLink, Activity, ['Physical Host'], ['Cluster Name'], clusterLink, ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\r\n| order by ['Avg CPU %'] desc nulls last",
               "size": 0,
               "showAnalytics": true,
               "showExportToExcel": true,
@@ -659,7 +673,15 @@
                 "formatters": [
                   {
                     "columnMatch": "VM Name",
-                    "formatter": 1
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "vmLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "vmLink",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "Activity",
@@ -668,6 +690,18 @@
                   {
                     "columnMatch": "Physical Host",
                     "formatter": 1
+                  },
+                  {
+                    "columnMatch": "Cluster Name",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "vCPUs (observed)",
@@ -762,7 +796,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure** (guest paging to disk); cells are coloured **green &lt;80**, **yellow 80–99**, **red ≥100**. This counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen (UTC)` / `Last Seen (UTC)` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen (UTC))` which is also UTC).",
+              "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`VM Name`** is clickable when the VM is **Arc-enabled** (control-plane resource `microsoft.hybridcompute/machines` — i.e. an Azure Local VM, AVD session-host on Azure Local, or any Hyper-V guest you've onboarded to Azure Arc); the link opens the Arc machine's portal blade where you can browse `microsoft.azurestackhci/virtualmachineinstances`, extensions, policy compliance, etc. **AKS-on-Azure-Local agent VMs** (`moc-…` MOC-managed nodes) are intentionally **not** Arc-enrolled and will remain un-linked here — use the **☸️ AKS Arc Clusters** tab to navigate the cluster control plane instead. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`Cluster Name`** is resolved by a two-tier lookup: first against the authoritative `reportedProperties.nodes[]` array on `microsoft.azurestackhci/clusters` (same source of truth Azure Local uses internally), and if that misses, by joining `Heartbeat.ResourceGroup` for the host through the cluster RG map (`ClusterRGMap`). The cell links straight to the cluster's portal blade. A blank `Cluster Name` means **both** lookups failed — i.e. the Hyper-V host isn't a member of any in-scope Azure Local cluster (genuinely standalone Hyper-V, or a cluster outside the current `ResourceGroupFilter` / `ClusterTagName` / `ClusterTagValue` scope). **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure** (guest paging to disk); cells are coloured **green &lt;80**, **yellow 80–99**, **red ≥100**. This counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen (UTC)` / `Last Seen (UTC)` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen (UTC))` which is also UTC).",
               "style": "info"
             },
             "name": "hyperv-inv-help"

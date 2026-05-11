@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.0.1
+## Latest Version: v1.0.2
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -25,6 +25,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
+- [What's New (v1.0.2)](#whats-new-v102)
 - [What's New (v1.0.1)](#whats-new-v101)
 - [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
@@ -360,6 +361,14 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 - **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location (joined by extracting `arcBridgeRG` from `hostResourceId`) → HCI cluster (joined by `resourceGroup`)
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
+
+## What's New (v1.0.2)
+
+A small post-v1.0.1 patch driven by customer end-to-end testing of the Capacity → Overview DCR Setup ARM template.
+
+1. **Capacity → Overview → Show DCR Setup Guide → Alternative — ARM / CLI Deployment: ARM template expanded from 13 to 27 performance counters** so a single deployment now produces a **complete LENS Capacity DCR** — enough telemetry for every Capacity sub-tab to populate, including **🖥️ Hyper-V VMs** and the **🪟 Hyper-V VMs on: {cluster}** section on the **🔍 Single cluster** sub-tab. The 14 added counter paths are: `\Hyper-V Hypervisor Virtual Processor(*)\% Guest Run Time`, `\% Hypervisor Run Time`, `\% Total Run Time`; `\Hyper-V Dynamic Memory VM(*)\Current Pressure`, `\Physical Memory`, `\Guest Visible Physical Memory`; `\Hyper-V Virtual Storage Device(*)\Read Bytes/sec`, `\Write Bytes/sec`, `\Read Operations/Sec`, `\Write Operations/Sec`, `\Latency`; `\Hyper-V Virtual Network Adapter(*)\Bytes/sec`, `\Bytes Sent/sec`, `\Bytes Received/sec`. The `windowsEventLogs` block carrying the SDDC `Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]` XPath (required by the Storage capacity / volume forecast tiles) was already included in v1.0.1 and is unchanged. Net effect: customers can now deploy the embedded ARM template once, associate the resulting DCR to every Azure Local node, and have **every** Capacity tab — cluster-aggregate **and** per-VM Hyper-V — light up without a second DCR. The companion **Required Performance Counters** table breadcrumb note (Fix 19 in v1.0.1) and the **Steps** walkthrough underneath the table were both updated to call out that the ARM template path is now a one-shot for full coverage, while the **Custom counter specifier** portal flow above still only requires the 5 `Cluster CSV File System(*)` paths (host counters are in the portal's preset dropdown, and the Hyper-V counters can be added via the same Custom flow or via the dedicated Hyper-V sub-tab's own DCR Setup Guide).
+
+No other files changed in this patch. The standalone **🖥️ Hyper-V VMs** sub-tab continues to ship its own dedicated, scoped ARM template for customers who want Hyper-V telemetry **only** (i.e. without the host counters). The workbook header banner bumps from `v1.0.1` to `v1.0.2`.
 
 ## What's New (v1.0.1)
 

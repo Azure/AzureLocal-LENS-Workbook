@@ -14672,7 +14672,7 @@
                     ],
                     "showDefault": false
                   },
-                  "jsonData": "[\r\n  { \"value\": \"Success\", \"label\": \"Success\" },\r\n  { \"value\": \"Error\", \"label\": \"Error\" },\r\n  { \"value\": \"Extracted\", \"label\": \"Extracted (Health Check Blocked)\" },\r\n  { \"value\": \"InProgress\", \"label\": \"In Progress\" }\r\n]",
+                  "jsonData": "[\r\n  { \"value\": \"Success\", \"label\": \"Success\" },\r\n  { \"value\": \"Error\", \"label\": \"Error\" },\r\n  { \"value\": \"Extracted\", \"label\": \"Extracted (Health Check Blocked)\" },\r\n  { \"value\": \"HealthCheckSucceeded\", \"label\": \"Health Check Succeeded (run blocked / not started)\" },\r\n  { \"value\": \"NotStarted\", \"label\": \"Not Started\" },\r\n  { \"value\": \"Downloaded\", \"label\": \"Downloaded\" },\r\n  { \"value\": \"InProgress\", \"label\": \"In Progress\" }\r\n]",
                   "defaultValue": "value::all",
                   "timeContext": {
                     "durationMs": 86400000

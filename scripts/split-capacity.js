@@ -5,7 +5,7 @@
  * gallery recommendation:
  *
  *   workbooks/Capacity-Overview/Capacity-Overview.workbook
- *   workbooks/Capacity-MultiNode/Capacity-MultiNode.workbook
+ *   workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook
  *   workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook
  *   workbooks/Capacity-HyperV/Capacity-HyperV.workbook
  *
@@ -32,7 +32,7 @@ const SCHEMA = 'https://github.com/Microsoft/Application-Insights-Workbooks/blob
 
 const SECTIONS = [
   { slug: 'Capacity-Overview',      groupName: 'cap-overview-section', value: 'overview' },
-  { slug: 'Capacity-MultiNode',     groupName: 'cap-multi-section',    value: 'multi'    },
+  { slug: 'Capacity-MultiCluster',  groupName: 'cap-multi-section',    value: 'multi'    },
   { slug: 'Capacity-SingleCluster', groupName: 'cap-single-section',   value: 'single'   },
   { slug: 'Capacity-HyperV',        groupName: 'cap-hyperv-section',   value: 'hyperv'   }
 ];

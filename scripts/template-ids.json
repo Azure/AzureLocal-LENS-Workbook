@@ -27,7 +27,7 @@
         },
         {
           "value": "multi",
-          "slug": "Capacity-MultiNode",
+          "slug": "Capacity-MultiCluster",
           "groupName": "cap-multi-section",
           "label": "🌍 Multi-cluster",
           "galleryFolderName": "LENS-Capacity-Multi-cluster",

@@ -51,7 +51,7 @@ function writeJson(file, obj) {
 function buildCapacityOuter(capacityTab) {
   // Capacity for the gallery: include the orchestrator base items
   // (cap-shared-params, cap-instructions-text, cap-section-tabs) and add a
-  // sub-template stub for each section (Capacity-Overview/MultiNode/SingleNode/HyperV).
+  // sub-template stub for each section (Capacity-Overview/MultiNode/SingleCluster/HyperV).
   const sub = readJson(path.join(WORKBOOKS_DIR, 'Capacity', 'Capacity.workbook'));
   const orch = JSON.parse(JSON.stringify(sub));
   const capGroup = orch.items[2];

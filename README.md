@@ -390,7 +390,7 @@ Not yet released. The following changes are queued for v1.1.0 and will ship once
 - **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
 - **`scripts/template-ids.json`** — the empty `galleryTemplateId` fields will be populated with the final IDs assigned by the Azure Monitor team during the upstream PR review, and `scripts/build-gallery.js` re-run so emitted artifacts use the real IDs in `loadFromTemplateId` references rather than the `community-Azure Local/<folder>` placeholders.
 
-**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.1` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.1 wording remains accurate while the gallery PR is in flight.
+**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.4` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.4 wording remains accurate while the gallery PR is in flight.
 
 ## Contributing
 

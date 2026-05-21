@@ -376,6 +376,20 @@
                   },
                   "jsonData": "[{\"value\":\"15\",\"label\":\"15 Days\"},{\"value\":\"30\",\"label\":\"30 Days (Default)\"},{\"value\":\"60\",\"label\":\"60 days\"},{\"value\":\"90\",\"label\":\"90 Days\"},{\"value\":\"180\",\"label\":\"180 Days\"},{\"value\":\"360\",\"label\":\"360 Days\"}]",
                   "value": "30"
+                },
+                {
+                  "id": "multi-cluster-rg-siblings",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MultiClusterRGSiblings",
+                  "type": 1,
+                  "description": "Hidden: comma-separated names of OTHER HCI clusters sharing the selected cluster's resource group (empty when none). Drives the multi-cluster-in-RG warning banner (v1.0.4).",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where id =~ '{SingleCluster}'\r\n| project selectedRG = tolower(resourceGroup), selectedId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | project siblingName = name, siblingRG = tolower(resourceGroup), siblingId = id\r\n) on $left.selectedRG == $right.siblingRG\r\n| where selectedId != siblingId\r\n| summarize value = strcat_array(make_set(siblingName), ', ')",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "isHiddenWhenLocked": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
                 }
               ],
               "style": "pills",
@@ -905,6 +919,19 @@
             "name": "text-storage-paths-tip"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute storage containers back to a single HCI cluster when multiple clusters share a resource group, the chart below is **RG-wide** and may include volumes owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-storage"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -1197,6 +1224,19 @@
               "margin": "5px",
               "padding": "5px"
             }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute Hyper-V VMs (Arc-enabled machines) back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include VMs owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-hyperv"
           },
           {
             "type": 3,
@@ -1966,6 +2006,19 @@
               "json": "### ☸️ AKS Arc Clusters on: {SingleCluster:label}"
             },
             "name": "sc-aks-header"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute AKS Arc clusters back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include AKS clusters owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-aks"
           },
           {
             "type": 3,

@@ -281,13 +281,41 @@
                   "resourceType": "microsoft.resourcegraph/resources"
                 },
                 {
+                  "id": "single-cluster-rg",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "SingleClusterResourceGroup",
+                  "label": "Resource Group",
+                  "type": 2,
+                  "description": "Optional: narrow the Select Cluster dropdown to specific resource groups. Defaults to All. Helpful when multiple Azure Local clusters share the same name across different resource groups or subscriptions (use the workspace-level Subscriptions pill to scope subscriptions first).",
+                  "multiSelect": true,
+                  "quote": "",
+                  "delimiter": ",",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| distinct resourceGroup\r\n| project value = resourceGroup, label = resourceGroup\r\n| order by label asc",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "includeAll": true,
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "value": [
+                    "value::all"
+                  ],
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
+                },
+                {
                   "id": "single-cluster-armid",
                   "version": "KqlParameterItem/1.0",
                   "name": "SingleCluster",
                   "label": "Select Cluster",
                   "type": 2,
                   "isRequired": true,
-                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = tostring(id), label = name\r\n| order by label asc",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where '{SingleClusterResourceGroup}' == 'value::all' or resourceGroup in~ (split('{SingleClusterResourceGroup}', ','))\r\n| project value = tostring(id), label = strcat(name, ' (', resourceGroup, ')')\r\n| order by label asc",
                   "crossComponentResources": [
                     "{Subscriptions}"
                   ],
@@ -348,6 +376,20 @@
                   },
                   "jsonData": "[{\"value\":\"15\",\"label\":\"15 Days\"},{\"value\":\"30\",\"label\":\"30 Days (Default)\"},{\"value\":\"60\",\"label\":\"60 days\"},{\"value\":\"90\",\"label\":\"90 Days\"},{\"value\":\"180\",\"label\":\"180 Days\"},{\"value\":\"360\",\"label\":\"360 Days\"}]",
                   "value": "30"
+                },
+                {
+                  "id": "multi-cluster-rg-siblings",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "MultiClusterRGSiblings",
+                  "type": 1,
+                  "description": "Hidden: comma-separated names of OTHER HCI clusters sharing the selected cluster's resource group (empty when none). Drives the multi-cluster-in-RG warning banner (v1.0.4).",
+                  "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where id =~ '{SingleCluster}'\r\n| project selectedRG = tolower(resourceGroup), selectedId = id\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | project siblingName = name, siblingRG = tolower(resourceGroup), siblingId = id\r\n) on $left.selectedRG == $right.siblingRG\r\n| where selectedId != siblingId\r\n| summarize value = strcat_array(make_set(siblingName), ', ')",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ],
+                  "isHiddenWhenLocked": true,
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources"
                 }
               ],
               "style": "pills",
@@ -367,7 +409,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n| summarize Clusters = dcount(name)\r\n| extend Label = 'Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| summarize Clusters = dcount(name)\r\n| extend Label = 'Clusters'",
               "size": 0,
               "aggregation": 3,
               "title": "Clusters",
@@ -409,7 +451,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| where isnotempty(tostring(node.name))\r\n| summarize Nodes = count()\r\n| extend Label = 'Nodes'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| where isnotempty(tostring(node.name))\r\n| summarize Nodes = count()\r\n| extend Label = 'Nodes'",
               "size": 0,
               "aggregation": 3,
               "title": "Nodes",
@@ -451,7 +493,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n| extend clusterName = name, clusterResourceGroup = resourceGroup, physicalCoresPerNode = toint(properties.reportedProperties.nodes[0].coreCount), osDisplayVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion), nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| project clusterName, clusterResourceGroup, physicalCoresPerNode, osDisplayVersion, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend nodeNameLower = tolower(name)\r\n) on $left.reportedNodeName == $right.nodeNameLower\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend logicalCores = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osVersion = replace_string(tostring(properties.osVersion), '10.0.', '')\r\n| extend osEdition = coalesce(osDisplayVersion, iff(osVersion startswith '26100', '24H2', iff(osVersion startswith '25398', '23H2', iff(osVersion startswith '20349', '21H2', ''))))\r\n| extend physicalCores = iff(isnotempty(physicalCoresPerNode), physicalCoresPerNode, toint(logicalCores / 2))\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project nodeName, machineLink, clusterName, status, osEdition, osVersion, physicalCores, logicalCores, memoryGiB\r\n| order by clusterName asc, nodeName asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| extend clusterName = name, clusterResourceGroup = resourceGroup, physicalCoresPerNode = toint(properties.reportedProperties.nodes[0].coreCount), osDisplayVersion = tostring(properties.reportedProperties.nodes[0].osDisplayVersion), nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| project clusterName, clusterResourceGroup, physicalCoresPerNode, osDisplayVersion, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend nodeNameLower = tolower(name)\r\n) on $left.reportedNodeName == $right.nodeNameLower\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend logicalCores = toint(properties.detectedProperties.logicalCoreCount)\r\n| extend memoryGiB = toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| extend osVersion = replace_string(tostring(properties.osVersion), '10.0.', '')\r\n| extend osEdition = coalesce(osDisplayVersion, iff(osVersion startswith '26100', '24H2', iff(osVersion startswith '25398', '23H2', iff(osVersion startswith '20349', '21H2', ''))))\r\n| extend physicalCores = iff(isnotempty(physicalCoresPerNode), physicalCoresPerNode, toint(logicalCores / 2))\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project nodeName, machineLink, clusterName, status, osEdition, osVersion, physicalCores, logicalCores, memoryGiB\r\n| order by clusterName asc, nodeName asc",
               "size": 0,
               "showAnalytics": true,
               "showExportToExcel": true,
@@ -877,10 +919,23 @@
             "name": "text-storage-paths-tip"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute storage containers back to a single HCI cluster when multiple clusters share a resource group, the chart below is **RG-wide** and may include volumes owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-storage"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/storagecontainers\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend pathName = name\r\n| extend totalGB = round(toreal(properties.status.containerSizeMB) / 1024, 0)\r\n| extend availableGB = round(toreal(properties.status.availableSizeMB) / 1024, 0)\r\n| extend usedGB = totalGB - availableGB\r\n| project pathName, UsedGB = usedGB, AvailableGB = availableGB\r\n| order by pathName asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/storagecontainers\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where id =~ '{SingleCluster}'\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project clusterName = name, clusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.clusterRG\r\n| extend pathName = name\r\n| extend totalGB = round(toreal(properties.status.containerSizeMB) / 1024, 0)\r\n| extend availableGB = round(toreal(properties.status.availableSizeMB) / 1024, 0)\r\n| extend usedGB = totalGB - availableGB\r\n| project pathName, UsedGB = usedGB, AvailableGB = availableGB\r\n| order by pathName asc",
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
@@ -1171,10 +1226,23 @@
             }
           },
           {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute Hyper-V VMs (Arc-enabled machines) back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include VMs owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-hyperv"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "// VM drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend machineId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend machineId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | project machineId, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
+              "query": "// VM drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend machineId = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend machineId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | project machineId, customLocKey\r\n) on machineId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where id =~ '{SingleCluster}'\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend vmName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project vmName, vmLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), status, osSku, osVersion, resourceGroup, subscriptionId\r\n| order by clusterName asc, vmName asc",
               "size": 0,
               "showAnalytics": true,
               "showExportToExcel": true,
@@ -1940,10 +2008,23 @@
             "name": "sc-aks-header"
           },
           {
+            "type": 1,
+            "content": {
+              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute AKS Arc clusters back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include AKS clusters owned by the sibling cluster(s).",
+              "style": "warning"
+            },
+            "conditionalVisibility": {
+              "parameterName": "MultiClusterRGSiblings",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "name": "sc-multi-cluster-rg-warning-aks"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "// AKS drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| extend aksIdLower = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksIdLower = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.hybridcontainerservice\")))\r\n    | project aksIdLower, customLocKey\r\n) on aksIdLower\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where name =~ tostring(split('{SingleCluster}', '/')[8])\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend aksName = name\r\n| extend connectivity = tostring(properties.connectivityStatus)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend totalNodeCount = toint(properties.totalNodeCount)\r\n| extend aksLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project aksName, aksLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), connectivity, kubernetesVersion, agentVersion, provisioningState, totalNodeCount, resourceGroup\r\n| order by clusterName asc, aksName asc",
+              "query": "// AKS drilldown - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.kubernetes/connectedclusters\"\r\n| extend aksIdLower = tolower(id)\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\"\r\n    | extend customLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | extend aksIdLower = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.hybridcontainerservice\")))\r\n    | project aksIdLower, customLocKey\r\n) on aksIdLower\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | where tostring(properties.hostResourceId) contains \"Microsoft.ResourceConnector/appliances\"\r\n    | extend arcBridgeRG = tolower(tostring(split(tostring(properties.hostResourceId), '/')[4]))\r\n    | project customLocKey = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n) on customLocKey\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where id =~ '{SingleCluster}'\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | project hciClusterRG = tolower(resourceGroup)\r\n) on $left.arcBridgeRG == $right.hciClusterRG\r\n| extend aksName = name\r\n| extend connectivity = tostring(properties.connectivityStatus)\r\n| extend kubernetesVersion = tostring(properties.kubernetesVersion)\r\n| extend agentVersion = tostring(properties.agentVersion)\r\n| extend provisioningState = tostring(properties.provisioningState)\r\n| extend totalNodeCount = toint(properties.totalNodeCount)\r\n| extend aksLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| project aksName, aksLink, clusterName = tostring(split('{SingleCluster}', '/')[8]), connectivity, kubernetesVersion, agentVersion, provisioningState, totalNodeCount, resourceGroup\r\n| order by clusterName asc, aksName asc",
               "size": 0,
               "showAnalytics": true,
               "showExportToExcel": true,

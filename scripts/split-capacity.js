@@ -5,8 +5,8 @@
  * gallery recommendation:
  *
  *   workbooks/Capacity-Overview/Capacity-Overview.workbook
- *   workbooks/Capacity-MultiNode/Capacity-MultiNode.workbook
- *   workbooks/Capacity-SingleNode/Capacity-SingleNode.workbook
+ *   workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook
+ *   workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook
  *   workbooks/Capacity-HyperV/Capacity-HyperV.workbook
  *
  * The Capacity orchestrator (workbooks/Capacity/Capacity.workbook) is rewritten
@@ -31,10 +31,10 @@ const SHARED_DIR = path.join(ROOT, 'shared');
 const SCHEMA = 'https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json';
 
 const SECTIONS = [
-  { slug: 'Capacity-Overview',   groupName: 'cap-overview-section', value: 'overview' },
-  { slug: 'Capacity-MultiNode',  groupName: 'cap-multi-section',    value: 'multi'    },
-  { slug: 'Capacity-SingleNode', groupName: 'cap-single-section',   value: 'single'   },
-  { slug: 'Capacity-HyperV',     groupName: 'cap-hyperv-section',   value: 'hyperv'   }
+  { slug: 'Capacity-Overview',      groupName: 'cap-overview-section', value: 'overview' },
+  { slug: 'Capacity-MultiCluster',  groupName: 'cap-multi-section',    value: 'multi'    },
+  { slug: 'Capacity-SingleCluster', groupName: 'cap-single-section',   value: 'single'   },
+  { slug: 'Capacity-HyperV',        groupName: 'cap-hyperv-section',   value: 'hyperv'   }
 ];
 
 function readJson(file) {

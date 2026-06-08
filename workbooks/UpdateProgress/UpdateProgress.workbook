@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔄 Update Progress & History\n\nTrack ongoing updates and review historical update runs across your Azure Local clusters."
+              "json": "## 🔄 Update Progress & History\n\n**Actionable data:** Track in-flight updates and review historical update runs across your Azure Local clusters."
             },
             "name": "text-update-progress-header"
           },

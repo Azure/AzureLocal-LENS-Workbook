@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local System Health\r\nTriage surface for non-succeeded health checks and update readiness across the fleet — find and act on what needs attention now."
+              "json": "## 📋 Azure Local System Health\r\n**Actionable data:** Surfaces non-succeeded health checks and update readiness across the fleet, so you can find and act on what needs attention now."
             },
             "name": "text - 0"
           },

@@ -380,7 +380,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary."
+              "json": "**Reporting data:** Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary."
             },
             "name": "last-refreshed-text"
           },
@@ -2334,7 +2334,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+              "json": "**Reporting data:** Capacity-planning views of compute, memory, and storage headroom and growth trends across your fleet.\r\n\r\nℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -7573,7 +7573,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔗 ARB Status per Azure Local instance\r\nConnectivity and health of the Azure Resource Bridge (ARB) appliance backing each Azure Local instance — spot offline or degraded bridges."
+                    "json": "## 🔗 ARB Status per Azure Local instance\r\n**Actionable data:** Connectivity and health of the Azure Resource Bridge (ARB) appliance backing each Azure Local instance — spot offline or degraded bridges."
                   },
                   "name": "text - 2"
                 },
@@ -8436,7 +8436,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\nPhysical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc."
+              "json": "## 🖥️ Azure Local Physical Machines\r\n**Reporting data:** Physical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc."
             },
             "name": "text-nodes-header"
           },
@@ -9907,7 +9907,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 💻 Azure Local Virtual Machines\r\nVirtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
+              "json": "## 💻 Azure Local Virtual Machines\r\n**Reporting data:** Virtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
             },
             "name": "text-vm-header"
           },
@@ -10508,7 +10508,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\nInventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail.\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
+              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\n**Reporting data:** Inventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail.\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
             },
             "name": "text-aks-header"
           },
@@ -12232,7 +12232,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local System Health\r\nTriage surface for non-succeeded health checks and update readiness across the fleet — find and act on what needs attention now."
+              "json": "## 📋 Azure Local System Health\r\n**Actionable data:** Surfaces non-succeeded health checks and update readiness across the fleet, so you can find and act on what needs attention now."
             },
             "name": "text - 0"
           },
@@ -13337,7 +13337,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔄 Update Progress & History\n\nTrack ongoing updates and review historical update runs across your Azure Local clusters."
+              "json": "## 🔄 Update Progress & History\n\n**Actionable data:** Track in-flight updates and review historical update runs across your Azure Local clusters."
             },
             "name": "text-update-progress-header"
           },

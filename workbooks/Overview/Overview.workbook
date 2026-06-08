@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary."
+              "json": "**Reporting data:** Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary."
             },
             "name": "last-refreshed-text"
           },

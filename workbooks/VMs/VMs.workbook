@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 💻 Azure Local Virtual Machines\r\nVirtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
+              "json": "## 💻 Azure Local Virtual Machines\r\n**Reporting data:** Virtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
             },
             "name": "text-vm-header"
           },

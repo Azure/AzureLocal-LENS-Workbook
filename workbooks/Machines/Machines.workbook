@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\nPhysical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc."
+              "json": "## 🖥️ Azure Local Physical Machines\r\n**Reporting data:** Physical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc."
             },
             "name": "text-nodes-header"
           },

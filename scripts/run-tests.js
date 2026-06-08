@@ -377,7 +377,52 @@ testSuite('Version Consistency', () => {
             'JSON version matches README Recent Changes version',
             jsonVersion, recentChangesVersion);
     }
+
+    // --- Changelog placement: exactly one "## What's New (vX.Y.Z)" and all older
+    //     versions demoted to "### vX.Y.Z" under the Appendix ---
+    const whatsNewVersions = [...readme.matchAll(/^## What's New \(v([\d.]+)\)/gm)].map(m => m[1]);
+    assert(whatsNewVersions.length === 1,
+        'Exactly one "## What\'s New" section exists (older versions belong in the Appendix)',
+        '1', String(whatsNewVersions.length));
+
+    if (whatsNewVersions.length === 1 && readmeVersion) {
+        assert(whatsNewVersions[0] === readmeVersion,
+            '"## What\'s New" version matches the Latest Version header',
+            readmeVersion, whatsNewVersions[0]);
+    }
+
+    const appendixIdx = readme.indexOf('## Appendix: Previous Versions Change Log');
+    assert(appendixIdx !== -1,
+        'README has an "Appendix: Previous Versions Change Log" section',
+        'present', appendixIdx === -1 ? 'missing' : 'present');
+
+    if (appendixIdx !== -1) {
+        const beforeAppendix = readme.slice(0, appendixIdx);
+        const appendixBody = readme.slice(appendixIdx);
+
+        // No "### vX.Y.Z" version heading may appear BEFORE the Appendix — older
+        // changelogs must be moved into the Appendix, not left in the What's New area.
+        const strayVersionHeadings = [...beforeAppendix.matchAll(/^### v([\d.]+)/gm)].map(m => m[1]);
+        assert(strayVersionHeadings.length === 0,
+            'No "### vX.Y.Z" changelog heading appears before the Appendix (move old versions into it)',
+            'none', strayVersionHeadings.join(', ') || 'none');
+
+        // The Appendix must actually contain at least one prior version.
+        const appendixVersions = [...appendixBody.matchAll(/^### v([\d.]+)/gm)].map(m => m[1]);
+        assert(appendixVersions.length >= 1,
+            'Appendix contains at least one previous version entry',
+            '>=1', String(appendixVersions.length));
+
+        // The current/latest version must NOT be duplicated as a "### " entry in the Appendix.
+        if (readmeVersion) {
+            assert(!appendixVersions.includes(readmeVersion),
+                'Latest version is not duplicated as a "### " entry in the Appendix',
+                `not present (${readmeVersion})`,
+                appendixVersions.includes(readmeVersion) ? 'duplicated' : 'ok');
+        }
+    }
 });
+
 
 // --- 5. KQL Query Validation ---
 testSuite('KQL Query Validation', () => {

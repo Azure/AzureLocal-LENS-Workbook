@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "Fleet-wide inventory, connectivity, health, and workload rollup across every registered Azure Local instance — your at-a-glance estate summary.\r\n\r\n**Time period:** {TimeRange:label} *(set with the **Time Range** filter at the top of the workbook; applies to time-based tiles)* | To reload data, use the ↻ **Refresh** button in the workbook toolbar (or hover a tile and click its refresh icon)."
             },
             "name": "last-refreshed-text"
           },

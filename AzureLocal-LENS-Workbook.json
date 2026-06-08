@@ -14665,6 +14665,10 @@
                   {
                     "columnId": "oneTimeUpdateLink",
                     "label": "One Time Update"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
                   }
                 ]
               },

@@ -35,6 +35,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { toCrlfJson } = require('./json-format');
 
 const ROOT = path.resolve(__dirname, '..');
 const SOURCE = path.join(ROOT, 'AzureLocal-LENS-Workbook.json');
@@ -63,8 +64,7 @@ function ensureDir(dir) {
 
 function writeJson(file, obj) {
   // Match the format of the existing root file: 2-space indent, CRLF, trailing newline.
-  const out = JSON.stringify(obj, null, 2).replace(/\n/g, '\r\n') + '\r\n';
-  fs.writeFileSync(file, out, 'utf8');
+  fs.writeFileSync(file, toCrlfJson(obj), 'utf8');
 }
 
 function main() {

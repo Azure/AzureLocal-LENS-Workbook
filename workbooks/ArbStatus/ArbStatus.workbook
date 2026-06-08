@@ -287,7 +287,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔗 ARB Status per Azure Local instance\r\n**Actionable data:** Connectivity and health of the Azure Resource Bridge (ARB) appliance backing each Azure Local instance — spot offline or degraded bridges."
+                    "json": "## 🔗 ARB Status per Azure Local instance\r\n**Actionable data:** Connectivity and health of the Azure Resource Bridge (ARB) appliances that connect each Azure Local instance to Azure — spot offline or degraded ARB appliances."
                   },
                   "name": "text - 2"
                 },
@@ -375,10 +375,7 @@
               "comparison": "isEqualTo",
               "value": "1"
             },
-            "name": "arcbridge summary",
-            "styleSettings": {
-              "showBorder": true
-            }
+            "name": "arcbridge summary"
           },
           {
             "type": 1,

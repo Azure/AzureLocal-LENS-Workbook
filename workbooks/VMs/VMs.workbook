@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 💻 Azure Local Virtual Machines\r\nVirtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc.\r\n\r\n**Time period:** {TimeRange:label} *(set with the **Time Range** filter at the top of the workbook; applies to time-based tiles)* | To reload data, use the ↻ **Refresh** button in the workbook toolbar (or hover a tile and click its refresh icon)."
+              "json": "## 💻 Azure Local Virtual Machines\r\nVirtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
             },
             "name": "text-vm-header"
           },

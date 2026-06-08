@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local System Health\r\nTriage surface for non-succeeded health checks and update readiness across the fleet — find and act on what needs attention now.\r\n\r\n**Time period:** {TimeRange:label} *(set with the **Time Range** filter at the top of the workbook; applies to time-based tiles)* | To reload data, use the ↻ **Refresh** button in the workbook toolbar (or hover a tile and click its refresh icon)."
+              "json": "## 📋 Azure Local System Health\r\nTriage surface for non-succeeded health checks and update readiness across the fleet — find and act on what needs attention now."
             },
             "name": "text - 0"
           },

@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\nInventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail.\r\n\r\n**Time period:** {TimeRange:label} *(set with the **Time Range** filter at the top of the workbook; applies to time-based tiles)* | To reload data, use the ↻ **Refresh** button in the workbook toolbar (or hover a tile and click its refresh icon).\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
+              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\nInventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail.\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
             },
             "name": "text-aks-header"
           },

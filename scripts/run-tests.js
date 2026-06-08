@@ -35,9 +35,16 @@ function getParamRefPattern() {
 }
 
 // Azure Workbook visualization types currently allowed by this test suite.
-// NOTE: Update this list when Azure Workbooks adds/removes supported visualization types.
+// Source/reference:
+// - Azure Workbooks overview: https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview
+// - Workbook visualizations docs: https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-visualizations
+// Keep this allowlist explicit for deterministic validation; when Azure adds/removes
+// visualization types, update this list to match the current docs.
 const VALID_WORKBOOK_VISUALIZATION_TYPES = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar', 'timechart'];
 
+// Some duplicate item names are acceptable because workbook templates can intentionally
+// reuse labels across repeated sections/groups. Keep this threshold low to catch accidental
+// copy/paste regressions while allowing known benign duplication patterns.
 const MAX_ALLOWED_DUPLICATE_NAMES = 5;
 const MIN_EXPECTED_ITEMS = 200;
 const MIN_EXPECTED_QUERIES = 120;
@@ -734,16 +741,20 @@ testSuite('Portal Link Integrity', () => {
         'Portal links use URL-encoded resource IDs',
         queriesWithResourceIdLink.length, queriesWithEncodedResourceId.length);
 
-    // Clusters Currently Updating: View Progress link should use updateName~/null
-    // `updateName~/null` is the expected generic portal-link form for "View Progress":
-    // it intentionally avoids embedding a specific update name and represents a null/non-specific update context.
+    // Clusters Currently Updating: View Progress link must deep-link to the specific
+    // in-progress update run. The generic `updateName~/null/updateRunName~/null` form
+    // makes the portal default to a stale/failed run, so the link must instead embed the
+    // captured updateName and updateRunName values.
     const clusterUpdatingQuery = allQueries.find(q =>
         q.query && q.query.includes('runState == "InProgress"') && q.query.includes('updateRunLink')
     );
     if (clusterUpdatingQuery) {
-        assert(clusterUpdatingQuery.query.includes("updateName~/null"),
-            'Clusters Currently Updating link uses updateName~/null (not specific update name)',
-            'contains updateName~/null', clusterUpdatingQuery.query.includes("updateName~/null") ? 'yes' : 'no');
+        const usesSpecificRun =
+            clusterUpdatingQuery.query.includes("'/updateName/', updateName, '/updateRunName/', updateRunName") &&
+            !clusterUpdatingQuery.query.includes("updateName~/null");
+        assert(usesSpecificRun,
+            'Clusters Currently Updating link deep-links to the specific update run (not updateName~/null)',
+            'embeds updateName and updateRunName', usesSpecificRun ? 'yes' : 'no');
     }
 
     // No hardcoded subscription GUIDs in portal links

@@ -1,0 +1,16 @@
+[
+  "all-clusters-base",
+  "all-clusters-aksarc-count",
+  "all-clusters-vm-count",
+  "arb-vm-aks-counts",
+  "arb-offline-base",
+  "arb-all-base",
+  "aks-all-clusters-base",
+  "aks-azurelocal-mapping",
+  "aks-network-base",
+  "aks-loadbalancers-lookup",
+  "sc-vms-perf-data",
+  "updates-available-base",
+  "updates-available-sbe",
+  "single-cluster-storage-pool-trend - Copy"
+]

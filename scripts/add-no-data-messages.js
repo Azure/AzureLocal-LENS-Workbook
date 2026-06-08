@@ -13,22 +13,8 @@ const WORKBOOKS_DIR = path.join(ROOT, 'workbooks');
 const SHARED_HEADER = path.join(ROOT, 'shared', 'header.json');
 
 // Items used solely as Merge data sources / non-rendered helpers — skip.
-const SKIP_NAMES = new Set([
-  'all-clusters-base',
-  'all-clusters-aksarc-count',
-  'all-clusters-vm-count',
-  'arb-vm-aks-counts',
-  'arb-offline-base',
-  'arb-all-base',
-  'aks-all-clusters-base',
-  'aks-azurelocal-mapping',
-  'aks-network-base',
-  'aks-loadbalancers-lookup',
-  'sc-vms-perf-data',
-  'updates-available-base',
-  'updates-available-sbe',
-  'single-cluster-storage-pool-trend - Copy',
-]);
+// Shared with add-show-analytics.js and add-show-export-to-excel.js.
+const SKIP_NAMES = new Set(require('./skip-names.json'));
 
 // Per-item messages. Keys are the workbook item `name`. Anything not listed
 // falls back to a generic message based on the visualization type.

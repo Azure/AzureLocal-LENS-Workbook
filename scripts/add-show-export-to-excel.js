@@ -22,27 +22,15 @@
 // Run from repo root:  node scripts/add-show-export-to-excel.js
 const fs = require('fs');
 const path = require('path');
+const { toCrlfJson } = require('./json-format');
 
 const ROOT = path.resolve(__dirname, '..');
 const WORKBOOKS_DIR = path.join(ROOT, 'workbooks');
 const SHARED_HEADER = path.join(ROOT, 'shared', 'header.json');
 
-const SKIP_NAMES = new Set([
-  'all-clusters-base',
-  'all-clusters-aksarc-count',
-  'all-clusters-vm-count',
-  'arb-vm-aks-counts',
-  'arb-offline-base',
-  'arb-all-base',
-  'aks-all-clusters-base',
-  'aks-azurelocal-mapping',
-  'aks-network-base',
-  'aks-loadbalancers-lookup',
-  'sc-vms-perf-data',
-  'updates-available-base',
-  'updates-available-sbe',
-  'single-cluster-storage-pool-trend - Copy',
-]);
+// Items used solely as Merge data sources / non-rendered helpers — skip.
+// Shared with add-no-data-messages.js and add-show-analytics.js.
+const SKIP_NAMES = new Set(require('./skip-names.json'));
 
 const CHART_VIZ = new Set([
   'timechart', 'linechart', 'barchart', 'piechart', 'areachart',
@@ -122,9 +110,7 @@ function processFile(file) {
   const original = fs.readFileSync(file, 'utf8');
   const doc = JSON.parse(original);
   walk(doc);
-  let out = JSON.stringify(doc, null, 2);
-  out = out.replace(/\r?\n/g, '\r\n');
-  if (original.endsWith('\r\n') && !out.endsWith('\r\n')) out += '\r\n';
+  const out = toCrlfJson(doc);
   if (out !== original) {
     fs.writeFileSync(file, out, 'utf8');
     return true;

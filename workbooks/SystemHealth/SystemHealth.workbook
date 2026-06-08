@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local System Health\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "## 📋 Azure Local System Health\r\nTriage surface for non-succeeded health checks and update readiness across the fleet — find and act on what needs attention now.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
             },
             "name": "text - 0"
           },

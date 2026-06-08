@@ -231,7 +231,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔍 Single Cluster View\r\n**Actionable data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster — spot a host pinned at high CPU, memory, or storage utilisation."
+              "json": "## 🔍 Single Cluster View\r\n**Actionable data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster — spot a host pinned at high CPU, memory, or storage utilisation, or a workload consuming more than its share."
             },
             "name": "single-header-text"
           },

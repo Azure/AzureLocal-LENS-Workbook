@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\nPhysical server machines that make up Azure Local (Azure Stack HCI) clusters, connected through Azure Arc.\r\n\r\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Node Extensions sections to spot any Arc connection issues or failed agent extensions (with full error detail)."
             },
             "name": "text-nodes-header"
           },

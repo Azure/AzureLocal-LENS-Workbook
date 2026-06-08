@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔄 Update Progress & History\n\nTrack ongoing updates and review historical update runs across your Azure Local clusters.\n\n**Last Refreshed:** {TimeRange:label} | Click refresh on any tile to update data"
+              "json": "## 🔄 Update Progress & History\n\n**Actionable data:** Review update-run statistics across your Azure Local fleet, or track any in-flight updates that need attention, with verbose error details for all clusters."
             },
             "name": "text-update-progress-header"
           },
@@ -1610,6 +1610,10 @@
                   {
                     "columnId": "oneTimeUpdateLink",
                     "label": "One Time Update"
+                  },
+                  {
+                    "columnId": "resourceGroup",
+                    "label": "Resource Group"
                   }
                 ]
               },

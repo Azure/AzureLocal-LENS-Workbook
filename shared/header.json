@@ -10,7 +10,7 @@
     {
       "type": 1,
       "content": {
-        "json": "### 📋 Workbook Version: v1.0.4\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
+        "json": "### 📋 Workbook Version: v1.0.5\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -94,7 +94,7 @@
     {
       "type": 1,
       "content": {
-        "json": "### Filter Instructions\r\n- **Subscriptions**: Select one or more subscriptions to filter data (defaults to all accessible subscriptions)\r\n- **Resource Group Filter**: Optional wildcard filter for resource group names. Use `*` as wildcard (e.g., `*-prod-*` matches 'rg-hci-prod-01')\r\n- **Cluster Tag**: Optional tag filter. Enter both Tag Name and Tag Value to filter by Azure Local cluster tags. This filter also applies to AKS Arc clusters and VMs in the same resource group as matching clusters.\r\n- **💡 Tip**: Set **Auto refresh** to 30 minutes using the toolbar dropdown (⟳) for hands-free monitoring\r\n\r\n---"
+        "json": "### Filter Instructions\r\n- **Subscriptions**: Select one or more subscriptions to filter data (defaults to all accessible subscriptions)\r\n- **Resource Group Filter**: Optional wildcard filter for resource group names. Use `*` as wildcard (e.g., `*-prod-*` matches 'rg-hci-prod-01')\r\n- **Cluster Tag**: Optional tag filter. Enter both Tag Name and Tag Value to filter by Azure Local cluster tags. This filter also applies to AKS Arc clusters and VMs in the same resource group as matching clusters.\r\n- **Time Range**: Sets the time window applied to time-based tiles (trends and history charts). Point-in-time inventory tiles always show current state and are not affected.\r\n- **🔄 Refresh data**: Click the ↻ **Refresh** button in the workbook toolbar to re-run all queries (or hover over a single tile and click its refresh icon to reload just that tile).\r\n- **💡 Tip**: Set **Auto refresh** to 30 minutes using the toolbar dropdown (⟳) for hands-free monitoring\r\n\r\n---"
       },
       "name": "filter-instructions"
     },

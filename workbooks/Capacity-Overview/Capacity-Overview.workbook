@@ -246,7 +246,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🏗️ Cluster Capacity Overview\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
+              "json": "## 🏗️ Cluster Capacity Overview\r\n**Actionable data:** The Top 5 charts below (sourced from Log Analytics) surface the clusters with the highest CPU, memory, storage, latency, IOPS, and network utilisation so you can spot capacity hot-spots.\r\n\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
             },
             "name": "text-capacity-overview-header"
           },

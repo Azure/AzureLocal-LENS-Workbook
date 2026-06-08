@@ -231,7 +231,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🌍 Multi-Cluster View\r\nMonitor resource exhaustion trends and capacity forecasts across your Azure Local fleet."
+              "json": "## 🌍 Multi-Cluster View\r\n**Actionable data:** Monitor resource exhaustion trends and capacity forecasts across your Azure Local fleet — surfaces the clusters approaching CPU, memory, or storage limits that need attention."
             },
             "name": "multi-header-text"
           },

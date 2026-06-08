@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\n**Reporting data:** Physical server machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent."
+              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical server machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Node Extensions sections to spot hosts that have lost their Arc connection or have a failed agent extension (with full error detail)."
             },
             "name": "text-nodes-header"
           },

@@ -35,9 +35,16 @@ function getParamRefPattern() {
 }
 
 // Azure Workbook visualization types currently allowed by this test suite.
-// NOTE: Update this list when Azure Workbooks adds/removes supported visualization types.
+// Source/reference:
+// - Azure Workbooks overview: https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview
+// - Workbook visualizations docs: https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-visualizations
+// Keep this allowlist explicit for deterministic validation; when Azure adds/removes
+// visualization types, update this list to match the current docs.
 const VALID_WORKBOOK_VISUALIZATION_TYPES = ['barchart', 'piechart', 'table', 'tiles', 'graph', 'map', 'linechart', 'areachart', 'scatter', 'categoricalbar', 'timechart'];
 
+// Some duplicate item names are acceptable because workbook templates can intentionally
+// reuse labels across repeated sections/groups. Keep this threshold low to catch accidental
+// copy/paste regressions while allowing known benign duplication patterns.
 const MAX_ALLOWED_DUPLICATE_NAMES = 5;
 const MIN_EXPECTED_ITEMS = 200;
 const MIN_EXPECTED_QUERIES = 120;

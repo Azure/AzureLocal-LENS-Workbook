@@ -741,16 +741,20 @@ testSuite('Portal Link Integrity', () => {
         'Portal links use URL-encoded resource IDs',
         queriesWithResourceIdLink.length, queriesWithEncodedResourceId.length);
 
-    // Clusters Currently Updating: View Progress link should use updateName~/null
-    // `updateName~/null` is the expected generic portal-link form for "View Progress":
-    // it intentionally avoids embedding a specific update name and represents a null/non-specific update context.
+    // Clusters Currently Updating: View Progress link must deep-link to the specific
+    // in-progress update run. The generic `updateName~/null/updateRunName~/null` form
+    // makes the portal default to a stale/failed run, so the link must instead embed the
+    // captured updateName and updateRunName values.
     const clusterUpdatingQuery = allQueries.find(q =>
         q.query && q.query.includes('runState == "InProgress"') && q.query.includes('updateRunLink')
     );
     if (clusterUpdatingQuery) {
-        assert(clusterUpdatingQuery.query.includes("updateName~/null"),
-            'Clusters Currently Updating link uses updateName~/null (not specific update name)',
-            'contains updateName~/null', clusterUpdatingQuery.query.includes("updateName~/null") ? 'yes' : 'no');
+        const usesSpecificRun =
+            clusterUpdatingQuery.query.includes("'/updateName/', updateName, '/updateRunName/', updateRunName") &&
+            !clusterUpdatingQuery.query.includes("updateName~/null");
+        assert(usesSpecificRun,
+            'Clusters Currently Updating link deep-links to the specific update run (not updateName~/null)',
+            'embeds updateName and updateRunName', usesSpecificRun ? 'yes' : 'no');
     }
 
     // No hardcoded subscription GUIDs in portal links

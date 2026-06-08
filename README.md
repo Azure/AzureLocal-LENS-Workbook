@@ -19,6 +19,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
+- [Cost and Pricing](#cost-and-pricing)
 - [How to Import the Workbook](#how-to-import-the-workbook)
 - [Features (per-tab walkthrough)](#features)
 - [Parameters](#parameters)
@@ -51,6 +52,43 @@ The workbook is organized into eight tabs:
   - **Azure Lighthouse**: If you have Azure Lighthouse delegations configured, Azure Resource Graph will also query across delegated subscriptions in customer tenants, allowing cross-tenant visibility from your managing tenant
   - **Note**: Data is scoped to your Microsoft Entra tenant (plus any Lighthouse-delegated subscriptions) — you cannot query resources in other tenants without Lighthouse delegation
 - Access to Azure Monitor Workbooks in the Azure portal
+
+## Cost and Pricing
+
+**TL;DR — The LENS workbook itself is free, and using it incurs zero additional cost — with one exception: the Log Analytics–sourced charts on the Capacity tab.**
+
+The workbook is just a JSON template you import into Azure Monitor Workbooks. It is not a billable resource, and the vast majority of its views run on data sources that cost nothing to query.
+
+### What's free
+
+| Component | Cost | Why |
+|---|---|---|
+| **Azure Monitor Workbooks** (the workbook itself) | **Free** | [Azure Workbooks](https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview) carry no charge. You only pay for the underlying data the workbook queries. |
+| **Azure Resource Graph (ARG) queries** | **Free** | Nearly every tab — 📊 Instances, 📋 System Health, 🔄 Update Progress, 🔗 ARB Status, 🗄️ Machines, 💻 VMs, ☸️ AKS Arc — is powered entirely by [Azure Resource Graph](https://learn.microsoft.com/azure/governance/resource-graph/overview), which is included with Azure Resource Manager at no additional charge. |
+| **🏗️ Capacity → 📋 Overview** (the *Cluster Capacity Overview* table at the top) | **Free** | The per-cluster capacity table (Physical Cores/Memory, vCPUs, V:P ratio, etc.) is computed live via ARG sub-joins — no Log Analytics required. |
+
+### What can incur cost (_optional_)
+
+The **Log Analytics–sourced charts on the 🏗️ Capacity tab** are the only part of the workbook that requires you to ingest and store data, which is billable:
+
+- **Capacity → 📋 Overview** — the *Top 5 Azure Local Instances by Resource Capacity Usage* charts (CPU/Memory/Storage/Latency/IOPS/Network)
+- **Capacity → 🔍 Single cluster** — all per-node performance and storage/compute forecast charts
+- **Capacity → 🌍 Multi-cluster** — all fleet trending and forecast charts
+- **Capacity → 🖥️ Hyper-V VMs** — the entire sub-tab
+
+These views read performance counters and events that you collect into a **[Log Analytics workspace](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs)** via a Data Collection Rule (see [`example-dcr-template/`](example-dcr-template/README.md)). Billing applies to:
+
+- **Log Analytics data ingestion and retention** — you pay per GB ingested and for retention beyond the free period. See [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/) and [Analyze and optimize Log Analytics costs](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
+- **Azure Managed Prometheus** (optional) — the *AKS Node usage* charts on the Capacity → Overview sub-tab read from [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview), which is billed per metric sample ingested.
+- **Azure Monitor Agent (AMA)** — the agent extension itself is free; you only pay for the data it sends to your workspace.
+
+> 💡 **Bottom line:** If you skip the Capacity tab's Log Analytics charts (or only use the free ARG-based *Cluster Capacity Overview* table), the LENS workbook costs you nothing beyond what you already pay for Azure Local and Arc. Cost is fully under your control — you decide which counters to collect, how long to retain them, and whether to enable Managed Prometheus for AKS metrics.
+
+**Official pricing references:**
+- [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/)
+- [Azure Workbooks overview](https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview)
+- [Azure Monitor Logs cost calculations and options](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs)
+- [Azure Resource Graph overview](https://learn.microsoft.com/azure/governance/resource-graph/overview) (no additional charge)
 
 ## How to Import the Workbook
 

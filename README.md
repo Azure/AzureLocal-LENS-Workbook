@@ -67,7 +67,7 @@ The workbook is just a JSON template you import into Azure Monitor Workbooks. It
 | **Azure Resource Graph (ARG) queries** | **Free** | Nearly every tab — 📊 Instances, 📋 System Health, 🔄 Update Progress, 🔗 ARB Status, 🗄️ Machines, 💻 VMs, ☸️ AKS Arc — is powered entirely by [Azure Resource Graph](https://learn.microsoft.com/azure/governance/resource-graph/overview), which is included with Azure Resource Manager at no additional charge. |
 | **🏗️ Capacity → 📋 Overview** (the *Cluster Capacity Overview* table at the top) | **Free** | The per-cluster capacity table (Physical Cores/Memory, vCPUs, V:P ratio, etc.) is computed live via ARG sub-joins — no Log Analytics required. |
 
-### What can incur cost
+### What can incur cost (_optional_)
 
 The **Log Analytics–sourced charts on the 🏗️ Capacity tab** are the only part of the workbook that requires you to ingest and store data, which is billable:
 

@@ -2334,7 +2334,7 @@
           {
             "type": 1,
             "content": {
-              "json": "**Reporting data:** Capacity-planning views of compute, memory, and storage headroom and growth trends across your fleet.\r\n\r\nℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+              "json": "**Actionable data:** Compute, memory, and storage capacity across your fleet — including the highest-utilisation clusters, resource-exhaustion forecasts, and busiest VMs that need attention — alongside capacity-planning trends.\r\n\r\nℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -2391,7 +2391,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🏗️ Cluster Capacity Overview\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
+                    "json": "## 🏗️ Cluster Capacity Overview\r\n**Actionable data:** The Top 5 charts below (sourced from Log Analytics) surface the clusters with the highest CPU, memory, storage, latency, IOPS, and network utilisation so you can spot capacity hot-spots.\r\n\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
                   },
                   "name": "text-capacity-overview-header"
                 },
@@ -4005,7 +4005,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🌍 Multi-Cluster View\r\nMonitor resource exhaustion trends and capacity forecasts across your Azure Local fleet."
+                    "json": "## 🌍 Multi-Cluster View\r\n**Actionable data:** Monitor resource exhaustion trends and capacity forecasts across your Azure Local fleet — surfaces the clusters approaching CPU, memory, or storage limits that need attention."
                   },
                   "name": "multi-header-text"
                 },
@@ -4769,7 +4769,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔍 Single Cluster View\r\nDrill into capacity, storage, forecasts and workloads for a specific Azure Local cluster."
+                    "json": "## 🔍 Single Cluster View\r\n**Reporting data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster."
                   },
                   "name": "single-header-text"
                 },
@@ -6689,7 +6689,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🖥️ Hyper-V VMs\r\nPerformance data for Hyper-V virtual machines running on your Azure Local clusters, sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the top of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
+                    "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** The Top VMs / Top virtual disks charts below surface the busiest VMs and disks by CPU, memory pressure, storage throughput, IOPS, latency, and network — sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the top of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
                   },
                   "name": "text-hyperv-header"
                 },

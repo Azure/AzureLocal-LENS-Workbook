@@ -231,7 +231,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔍 Single Cluster View\r\nDrill into capacity, storage, forecasts and workloads for a specific Azure Local cluster."
+              "json": "## 🔍 Single Cluster View\r\n**Reporting data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster."
             },
             "name": "single-header-text"
           },

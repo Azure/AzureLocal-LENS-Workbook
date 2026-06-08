@@ -4769,7 +4769,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔍 Single Cluster View\r\n**Reporting data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster."
+                    "json": "## 🔍 Single Cluster View\r\n**Actionable data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster — spot a host pinned at high CPU, memory, or storage utilisation."
                   },
                   "name": "single-header-text"
                 },

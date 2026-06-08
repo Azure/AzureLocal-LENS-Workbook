@@ -10505,7 +10505,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\n**Reporting data:** Inventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail.\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
+              "json": "## ☸️ AKS Arc Clusters on Azure Local\r\n**Actionable data:** Inventory and health of Azure Kubernetes Service (AKS) clusters running on Azure Local, with node pool and version detail — watch the ⚠️ Failed AKS Extensions, ⚠️ Non-Compliant Flux Configurations and 🔐 Certificate Expiration Warning sections to spot extensions or GitOps configs that need attention and certificates expiring within 30 days.\r\n\r\n> 💡 **Tip:** Tag filters do not work on this tab, if the Tag is only present on the parent Azure Local instance (and not the AKS Arc cluster itself)."
             },
             "name": "text-aks-header"
           },

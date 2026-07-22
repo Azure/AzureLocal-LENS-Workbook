@@ -1313,22 +1313,22 @@ testSuite('DCR Deployment Guidance', () => {
     const dcrReadme = fs.readFileSync(dcrReadmePath, 'utf8');
 
     const recommendedIndex = overviewRaw.indexOf('Recommended — Dedicated All-in-One DCR with ARM / Azure CLI');
-    const portalFallbackIndex = overviewRaw.indexOf('### 🧭 Manual Fallback — Merge Counters into an Existing DCR via the Portal');
+    const portalFallbackIndex = overviewRaw.indexOf('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR');
     assert(recommendedIndex >= 0 && portalFallbackIndex > recommendedIndex,
         'Capacity DCR guidance presents CLI before the portal fallback',
         'CLI recommendation before portal fallback', `${recommendedIndex} / ${portalFallbackIndex}`);
 
     const templateJsonLink = '[`example-dcr-template/dcr-azurelocal-capacity-perf.json`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)';
-    const capacityGuideLink = '➡️ **[Open the LENS Capacity DCR example and detailed instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**';
-    const capacityGuideHasNormalLink = overviewRaw.includes(capacityGuideLink) && !overviewRaw.includes('[`example-dcr-template/README.md`](');
+    const capacityGuideLink = '➡️ **[Open the dedicated template and detailed deployment instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**';
+    const capacityGuideHasNormalLink = overviewRaw.split(capacityGuideLink).length === 2 && !overviewRaw.includes('[`example-dcr-template/README.md`](');
     assert(overviewRaw.includes(templateJsonLink) && capacityGuideHasNormalLink && hyperVRaw.includes('example-dcr-template/README.md'),
         'DCR guidance uses the JSON target and normal-size detailed-guide links',
         'JSON target and normal-size README links',
         `${overviewRaw.includes(templateJsonLink)} / ${capacityGuideHasNormalLink} / ${hyperVRaw.includes('example-dcr-template/README.md')}`);
 
     assert(overviewRaw.includes('Ongoing Fleet Enforcement with Azure Policy') && overviewRaw.includes('remediation task') &&
-        overviewRaw.includes('**Manual portal fallback:**') &&
-        overviewRaw.includes('### 🧭 Manual Fallback — Merge Counters into an Existing DCR via the Portal'),
+        overviewRaw.includes('all 27 exact paths') && overviewRaw.includes('EventID=3002') &&
+        overviewRaw.includes('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR'),
         'Capacity DCR guidance covers Azure Policy and existing-resource remediation',
         'Policy, remediation, and portal fallback guidance', 'present');
 

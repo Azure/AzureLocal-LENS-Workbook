@@ -2,7 +2,21 @@
 
 A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collects every performance counter and Windows event the **Azure Local LENS Workbook** Capacity tab needs to render — host-level **and** per-VM Hyper-V — in a single resource.
 
-This is the same template that ships embedded inside the workbook's **Capacity → Overview → Show DCR Setup Guide → 🛠️ Alternative — ARM / CLI Deployment** section. It's reproduced here as a standalone, source-controllable file so you can deploy it with `az deployment group create --template-file …` (or pipe it into your IaC repo) without having to copy-paste JSON out of the workbook UI.
+This is the same template referenced by the workbook's **Capacity → Overview → Show DCR Setup Guide** section. This standalone, source-controllable file is the **recommended deployment path**: deploy it with `az deployment group create --template-file …` (or integrate it into your IaC repository) without copying JSON out of the workbook UI.
+
+## Contents
+
+- [What it collects](#what-it-collects)
+- [Prerequisites](#prerequisites)
+- [Deploy](#deploy)
+- [Keep current and future hosts associated with Azure Policy](#keep-current-and-future-hosts-associated-with-azure-policy)
+- [Multiple DCRs per machine](#multiple-dcrs-per-machine)
+- [Review retention and costs](#review-retention-and-costs)
+- [Cluster Insights overlap](#cluster-insights-overlap)
+- [Optional broader event scope](#optional-broader-event-scope)
+- [Manual portal fallback](#manual-portal-fallback)
+- [Verify collection](#verify-collection)
+- [Related](#related)
 
 ## What it collects
 
@@ -19,8 +33,13 @@ This is the same template that ships embedded inside the workbook's **Capacity �
 - An **Azure Log Analytics workspace** in the same region as the DCR. Note its **resource ID**.
 - A **resource group** to hold the DCR (often the same RG as your Azure Local cluster, but any RG in the same subscription/region works).
 - Every Azure Local node should already be **Arc-enabled** (`microsoft.hybridcompute/machines`) with the **Azure Monitor Agent (AMA)** extension installed. If you can already see your nodes in the portal under *Machines — Azure Arc*, you're set.
+- **Permissions** to deploy the DCR and create Data Collection Rule Associations on each target Arc machine, such as `Monitoring Contributor` (or `Contributor`) at the applicable scopes.
 
 ## Deploy
+
+> ⚠️ **Use a unique DCR name.** Do not deploy this template over an unrelated existing DCR. ARM deployments replace the target DCR's complete `properties` block and would remove data sources not present in this template. To preserve an organization-managed DCR, use the [manual portal fallback](#manual-portal-fallback) or intentionally merge the exported definitions.
+>
+> If Arc Cluster Insights is enabled, review [Cluster Insights overlap](#cluster-insights-overlap) before deployment. AMA does not deduplicate data sources collected by multiple DCRs into the same workspace.
 
 ### 1. Save the template locally
 
@@ -154,7 +173,19 @@ done
 
 Data typically begins flowing within a few minutes. Open the LENS workbook's Capacity tab and confirm every sub-tab populates — including the **🖥️ Hyper-V VMs** sub-tab and the per-cluster **🪟 Hyper-V VMs on: {cluster}** section.
 
-## 💡 Multiple DCRs per machine — additive, not exclusive
+## Keep current and future hosts associated with Azure Policy
+
+The CLI loops above are the clearest path for an initial rollout, an explicit repair, or a small fleet. For ongoing enforcement, assign an **Azure Policy** that associates Azure Arc-enabled Windows servers with this DCR whenever matching machines are created.
+
+- Scope the assignment to the subscription or resource groups that contain your Azure Local physical hosts.
+- Supply this DCR's full resource ID as the policy's **Data Collection Rule Resource Id** parameter.
+- Review the assignment scope and exclusions carefully so Arc-enabled guest VMs do not receive the association unintentionally.
+- Create a **remediation task** after assigning the policy. Policy handles new matching resources automatically, but existing nodes are not updated until remediation runs.
+- Keep the CLI association workflow available for targeted verification and repair.
+
+See [Use Azure Policy to install Azure Monitor Agent and associate a DCR](https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-policy) and [Remediate noncompliant resources](https://learn.microsoft.com/azure/governance/policy/how-to/remediate-resources). For Arc-enabled servers, the Azure Monitor policy flow uses the machine's system-assigned managed identity.
+
+## Multiple DCRs per machine
 
 A single Arc-enabled machine can have **multiple DCR associations**, and the Azure Monitor Agent collects the **union** of counters, events, and other data sources defined by **every** associated DCR. You do **not** have to choose between this DCR and any existing one.
 
@@ -164,11 +195,13 @@ That means you can safely:
 - Keep operational and capacity telemetry in **separate DCRs** with different retention/destination choices.
 - Roll out new counter sets incrementally without disturbing existing collection.
 
+> ⚠️ **Additive does not mean deduplicated.** AMA evaluates each associated DCR independently. If two DCRs collect the same performance counter or event from a machine into the same workspace, duplicate rows can be ingested and billed. Review existing DCRs before rollout and avoid overlapping data sources where practical. In particular, do **not** also deploy a separate Hyper-V DCR from the workbook: this all-in-one template already contains all 14 Hyper-V counter paths.
+
 > ⚠️ **What you should NOT do:** redeploy this template *into the name of an existing DCR you didn't create from this file*. ARM is declarative and **replaces the entire `properties` block** of the target DCR, wiping out any counters or streams it had that aren't in this template. Either:
 > 1. **(Recommended)** deploy as a **new** DCR with a unique `dcrName` and associate it alongside your existing DCRs, **or**
 > 2. **Merge** — export the existing DCR (`az monitor data-collection rule show -n <name> -g <rg> -o json > existing.json`), copy the additional `counterSpecifiers` and the `windowsEventLogs` block from this template into the existing definition, and redeploy that merged file.
 
-## 💰 Review your Log Analytics workspace data retention & cost settings
+## Review retention and costs
 
 This DCR ships **27 performance counter paths sampled every 60 seconds** plus the SDDC `Event 3002` stream, ingested into your Log Analytics workspace (LAW). Ingestion volume and retention policy on that LAW are what drive Azure Monitor cost — **not** the DCR itself — so before associating this DCR to a production fleet, take a few minutes to align the workspace settings with your business monitoring and cost-optimization requirements.
 
@@ -185,7 +218,7 @@ Recommended quick checks on the target workspace:
 
 > **TL;DR:** the LENS workbook only **reads** from your LAW; it does not influence retention, sampling, or cost. Choose retention and tier on the workspace itself, not on the DCR.
 
-## 🔁 Heads-up: overlap with the Arc *Cluster Insights* auto-managed DCR
+## Cluster Insights overlap
 
 If the cluster you're deploying this DCR onto **also has Arc *Cluster Insights* enabled**, the Microsoft auto-managed DCR that comes with it is already collecting a curated set of host performance counters plus the following Windows event streams:
 
@@ -194,7 +227,7 @@ Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3000 or EventID=
 microsoft-windows-health/operational!*
 ```
 
-The **Azure Monitor Agent does NOT deduplicate across DCRs** — it evaluates each associated DCR independently. So when two DCRs collect the **same** counter or event into the **same** workspace, each matching row is ingested **twice** (same `TimeGenerated`, same `Computer`, same value), which means **2× ingestion cost** for the overlap and KQL aggregates like `avg(CounterValue)` double-count unless you pre-summarize per minute / per source.
+The **Azure Monitor Agent does NOT deduplicate across DCRs** — it evaluates each associated DCR independently. So when two DCRs collect the **same** counter or event into the **same** workspace, each matching row is ingested **twice** (same `TimeGenerated`, same `Computer`, same value). That means **2× ingestion cost** for the overlap; it can also inflate `count()` and `sum()` results and alter percentile weighting unless queries reduce duplicate samples before aggregation.
 
 **Overlap with this template by default (`EventID=3002` only):**
 
@@ -213,7 +246,7 @@ The **Azure Monitor Agent does NOT deduplicate across DCRs** — it evaluates ea
 2. **Don't broaden this template's `windowsEventLogs` block by default.** LENS today only consumes `EventID=3002` (used to build the cluster-node map for storage forecasts). The other four SDDC IDs and the `microsoft-windows-health` channel are not read by any LENS query — so adding them to *this* DCR while Cluster Insights is also enabled would simply double-ingest data the workbook doesn't display.
 3. **Use DCR transformations / filters** ([Cost optimization guide](https://learn.microsoft.com/azure/azure-monitor/fundamentals/best-practices-cost)) if you do need overlap for other reasons but want to drop a subset before ingestion.
 
-### ✏️ Optional — extend this template's event scope for Cluster-Insights parity
+### Optional broader event scope
 
 If Cluster Insights is **not** enabled on this cluster (or it points to a different workspace), and you'd like *this* DCR to also collect the broader SDDC event set + the Windows health channel — so the same LAW has the full Azure Local event stream available for ad-hoc KQL and future LENS features — replace the existing `windowsEventLogs` block in `dcr-azurelocal-capacity-perf.json`:
 
@@ -232,7 +265,20 @@ If Cluster Insights is **not** enabled on this cluster (or it points to a differ
 
 > ⚠️ **Only do this if you've confirmed Cluster Insights is NOT also ingesting these events into the same workspace** — otherwise you'll pay twice for every matching event. The LENS workbook itself does not require this expansion today.
 
-## Verifying it works
+## Manual portal fallback
+
+Use the portal only for a small environment, a one-off correction, or when your organization requires these sources to be merged into an existing managed DCR. Complete LENS Capacity coverage requires **all 27 performance counter paths plus Event 3002**, not only the five CSV paths missing from the portal's preset dropdown.
+
+1. Open **Azure Monitor → Data Collection Rules** and select the existing DCR associated with the Azure Local physical hosts.
+2. Inspect its current data sources and destination workspace. Do not add paths or events that another associated DCR already sends to the same workspace.
+3. Under **Data sources → Performance Counters**, add or edit a source and select **Custom** mode.
+4. Copy all 27 exact paths from [`performanceCounters.counterSpecifiers`](dcr-azurelocal-capacity-perf.json), keep the sample rate at **60 seconds**, and save.
+5. Under **Data sources → Windows Event Logs**, add a **Custom** source with `Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]`.
+6. Confirm the DCR is associated with every Azure Local physical host, then run the verification queries below after AMA has refreshed.
+
+For a new dedicated DCR or a fleet-wide rollout, use the ARM / Azure CLI deployment above instead.
+
+## Verify collection
 
 After ~5–10 minutes you should see rows when you run these against your LAW:
 
@@ -270,6 +316,6 @@ If `Cluster CSV File System` or `Hyper-V *` returns no rows after 10+ minutes:
 
 ## Related
 
-- **Workbook**: the same template is embedded under Capacity → Overview → *Show DCR Setup Guide* → 🛠️ *Alternative — ARM / CLI Deployment*.
-- **Hyper-V-only scope**: if you want to collect *only* the 14 Hyper-V counters (e.g. one DCR per data domain), the 🖥️ **Hyper-V VMs** sub-tab inside the workbook ships its own dedicated, scoped ARM template.
-- **Portal alternative**: the *Custom counter specifier* flow described in the workbook lets you add the 5 missing `Cluster CSV File System(*)` paths to an **existing** DCR without ARM — useful for ad-hoc additions, but not source-controlled.
+- **Workbook**: Capacity → Overview → *Show DCR Setup Guide* links here as its recommended ARM / Azure CLI deployment path.
+- **Hyper-V coverage**: this all-in-one DCR already contains all 14 Hyper-V counter paths required by the Capacity Hyper-V views. Do not associate another DCR that collects the same paths into the same workspace.
+- **Portal alternative**: use the [manual portal fallback](#manual-portal-fallback) to merge all 27 counter paths plus Event 3002 into an existing organization-managed DCR.

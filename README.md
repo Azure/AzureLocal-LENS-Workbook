@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.0.5
+## Latest Version: v1.0.6
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.0.5)](#whats-new-v105)
+- [What's New (v1.0.6)](#whats-new-v106)
 - [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -158,8 +158,10 @@ Centralized view of cluster resource utilization, capacity forecasting, and work
 - **Capacity DCR Setup Guide** (collapsible) — everything required to make the Top 5 Log-Analytics charts work:
   - Prerequisites (Azure Monitor Agent, Log Analytics workspace, RBAC, regions)
   - Required Performance Counters table (Processor / Memory / LogicalDisk / Cluster CSV File System / Network Interface)
-  - Recommended **Custom counter specifier** workflow for portal users (covers `Cluster CSV File System` counters that are missing from the portal dropdown)
-  - Sample ARM template (`dcr-azurelocal-capacity.json`) and `az deployment group create` deployment steps
+  - **Recommended:** deploy the dedicated all-in-one [`dcr-azurelocal-capacity-perf.json`](example-dcr-template/dcr-azurelocal-capacity-perf.json) template with ARM / Azure CLI and associate it with every Azure Local physical host. The [detailed deployment guide](example-dcr-template/README.md) covers single-cluster and fleet-wide rollout, physical-host filtering, verification, overlap warnings, and cost considerations
+  - **Ongoing enforcement:** use Azure Policy to associate current and future matching Arc-enabled hosts; existing nodes require a remediation task
+  - **Manual fallback:** merge all 27 exact counter paths plus Event 3002 into an existing organization-managed DCR through the portal
+  - Multiple DCR associations are supported, but overlapping data sources are not deduplicated and can increase ingestion cost
 - **Top 5 Azure Local Instances by Resource Capacity Usage** — Top-5 line/area charts (size: large) sourced from Log Analytics:
   - CPU Usage (%) · Memory Usage (%) · Storage Usage (%) · Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s)
 - **AKS Node usage** — Prometheus-sourced timecharts of Top AKS Nodes by CPU, Memory, Disk I/O (bytes/sec), and Network Throughput (bytes/sec)
@@ -187,7 +189,7 @@ Fleet-wide capacity trending and forecasting:
 
 #### 🖥️ Hyper-V VMs sub-tab
 Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):
-- **Hyper-V DCR Setup Guide** (collapsible) — prerequisites, required Hyper-V counters table (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`), Custom counter specifier walkthrough, sample ARM template (`dcr-azurelocal-hyperv.json`), deployment steps, and a Kusto helper to verify counters are flowing
+- **Hyper-V DCR Setup Guide** (collapsible) — prerequisites, required Hyper-V counters table (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`), a link to the recommended all-in-one Capacity DCR, a portal merge fallback, duplicate-ingestion warning, and a Kusto helper to verify counters are flowing. No second Hyper-V DCR is required when the all-in-one template is deployed
 - **📊 Active VMs (from Log Analytics)** summary
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
 - **Top VMs / Top Virtual Disks** charts:
@@ -399,7 +401,103 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.0.5)
+## What's New (v1.0.6)
+
+A correctness release for the **🏗️ Capacity** tab's Log Analytics **storage, IOPS, latency and network** charts, addressing [#86](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/86). Reported feedback highlighted that a cluster's **Storage Usage (%)** on the *Top 5 Clusters* chart did not reconcile with the actual disk usage seen on that cluster's nodes. Investigation found a shared design flaw across every Perf-counter storage / IO / network chart on the Capacity **Overview**, **Multi-cluster** and **Single cluster** sub-tabs: each query **`union`-ed overlapping counter families** (`LogicalDisk` + `Cluster CSV File System` + `Cluster Shared Volume`) and **`union`-ed `Perf` with `InsightsMetrics`** with no de-duplication, then took a **flat average**. This over-weighted volumes that appear in more than one counter family (and nodes onboarded to both Perf and VM Insights), and — for the storage-usage percentage specifically — averaged tiny OS / **recovery** partitions at **equal weight** with the large data volumes, producing a cluster figure that could not be reconciled against real data-volume utilisation. **All fixes stay within the counters you already collect — no Data Collection Rule (DCR) changes are required.** Changes touch [`workbooks/Capacity-Overview/Capacity-Overview.workbook`](workbooks/Capacity-Overview/Capacity-Overview.workbook), [`workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook`](workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook) and [`workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook`](workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook), and were validated against live Log Analytics.
+
+1. **Storage Usage (%) — rebuilt on a de-duplicated, capacity-aware precedence model.** The *Storage Usage (%) — Top 5 Clusters* chart (Capacity **Overview**), the *Storage Usage (%) — By Machine* chart (**Single cluster**) and the **Storage** row of the *Predictive Resource Exhaustion Forecast* table (**Multi-cluster**) previously matched all three disk counter families plus `InsightsMetrics FreeSpaceMB` and averaged every matching row. Because the same Cluster Shared Volume is reported under more than one family — and because only `_Total` / `HarddiskVolume1` were excluded, leaving the OS `C:` volume and small system / **recovery** partitions in the average — the figure blended unlike volumes at equal weight. Each chart now resolves **one value per node per time-bin** using a five-tier precedence: **(1)** `Cluster CSV File System` `% Used Space`; **(2)** `Cluster Shared Volume` `% Used Space`; **(3)** `InsightsMetrics` **capacity-weighted** bytes, reducing repeated samples to one `avg(FreeSpaceMB)` and one `max(diskSizeMB)` per disk before summing across disks, and excluding the OS `C:` mount; **(4)** `LogicalDisk` `% Used` for Cluster Shared Volume mount points (`InstanceName has "ClusterStorage"`); and **(5)** as a last resort, `LogicalDisk` `% Used` across mounted volumes **excluding the bare `HarddiskVolume*` system / recovery partitions**. The best available tier per node and time-bin wins (`arg_min` on the tier rank), so no counter family is counted twice, repeated metadata cannot inflate capacity weighting, and recovery / system partitions no longer inflate the fallback result. Clusters that collect the reference-DCR `Cluster CSV File System` counters report the authoritative data-volume utilisation; other environments fall through the ordered alternatives without losing the chart entirely.
+
+2. **Storage IOPS & Storage Latency — counter-family + source precedence (OS disks retained).** The *Storage IOPS* and *Storage Latency (ms)* charts on all three sub-tabs unioned the same three counter families (and, for IOPS, `InsightsMetrics`), which over-weighted any volume reported under more than one family. Each now selects a **single counter family per node and minute** in precedence order `Cluster CSV File System → Cluster Shared Volume → LogicalDisk`, with `InsightsMetrics` as the final fallback where available. Selecting at minute granularity lets fallback data fill genuine gaps without allowing one preferred sample to suppress the fallback for the entire chart range. Per-volume samples are reduced to one value per physical host per minute (IOPS summed; latency averaged), then to one daily value per host before cluster averages are calculated, so hosts with more volumes no longer receive extra weight. The Overview VM Insights fallback also sums `ReadsPerSecond` + `WritesPerSecond` into total host IOPS. These charts intentionally **retain the OS / system disks** — they measure storage-subsystem *performance*, not data capacity — so only the double-counting and unequal host weighting are removed.
+
+3. **Network Throughput — stop summing two overlapping perf objects.** The *Network Throughput (MB/s)* charts summed `Bytes Total/sec` across **both** the `Network Interface` **and** `Network Adapter` perf objects, which report the same physical NICs — doubling throughput on any node where both objects are collected. Each chart now selects a **single Perf object per node** (`Network Interface` preferred, `Network Adapter` as fallback), then selects `Perf` over `InsightsMetrics` per node and minute. This keeps object choice stable while allowing the fallback source to fill minute-level gaps, so throughput is counted once without blanking otherwise available intervals.
+
+4. **Capacity → Overview — clarified counter-coverage tiles.** Because the volume-selection precedence above is deliberately non-obvious, a short one-line caption is added **above** each of the six *Machines sending … counters* coverage tiles (CPU, Memory, Storage Usage, Storage Latency, Storage IOPS, Network) explaining what its chart measures. Each caption makes explicit that the *Top 5 Clusters* charts show a **per-cluster average across the cluster's physical hosts** (the per-node breakdown lives on the **Single cluster** tab), and — for storage — that OS recovery / system partitions are excluded from the usage figure while OS / system disks *are* included in the latency / IOPS figures (which measure subsystem performance). The six tile titles, which previously spelled out the full counter paths and wrapped illegibly in the narrow tiles, are shortened to concise labels (*Machines sending storage-usage counters*, etc.). The tip above the **Log Analytics Workspace** picker also gains a caveat noting that leaving the picker on **All** fails with an access error if the account cannot read one of the workspaces in scope (narrow the selection to resolve). Text-only changes in [`workbooks/Capacity-Overview/Capacity-Overview.workbook`](workbooks/Capacity-Overview/Capacity-Overview.workbook); no query or data semantics affected.
+
+5. **Workspace “All” failure guidance across Capacity views.** Capacity workspace picker guidance explains that **All** queries the workspaces in the selected scope and can succeed when they are accessible and resolvable. If Azure rejects the cross-resource scope before KQL begins because a workspace is unreadable, deleted, or cannot be resolved, operators should narrow the picker to workspaces they can read. Non-rendering `value::all` conditional warning items were removed.
+
+6. **DCR deployment guidance — CLI-first, Policy for continuity, portal fallback.** The hidden-by-default Capacity setup guide has been simplified around one recommended path: deploy the dedicated all-in-one [LENS DCR template using the detailed instructions](example-dcr-template/README.md). The template collects all 27 host and Hyper-V counter paths plus Event 3002. Azure CLI covers explicit initial rollout and repair; Azure Policy covers future or rebuilt hosts, with remediation required for existing nodes; portal editing remains the complete manual merge path and now explicitly requires all 27 exact counter paths plus Event 3002. Repeated recommendation text has been removed. The redundant standalone Hyper-V DCR template has also been removed because associating it alongside the all-in-one DCR would overlap all 14 Hyper-V paths. The guidance makes clear that multiple DCR associations are additive but AMA does not deduplicate overlapping sources.
+
+7. **Permanent query and live-integration guards.** CI now rejects Azure Resource Graph queries with more than six `join` operators and rejects unsupported ARG `mv-apply`. The opt-in [`scripts/run-live-tests.ps1`](scripts/run-live-tests.ps1) harness executes the exact 11 Capacity storage usage, storage performance, and network queries from [`scripts/live-test-queries.json`](scripts/live-test-queries.json) against a user-confirmed subscription and Log Analytics workspace. Runtime identifiers remain outside tracked output; the generated NUnit report contains only query names and row counts.
+
+The workbook header banner bumps from `v1.0.5` to `v1.0.6`.
+
+## v1.1.0 — Planned (post-gallery merge)
+
+Not yet released. The following changes are queued for v1.1.0 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
+
+- **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
+- **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
+- **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
+- **`scripts/template-ids.json`** — the empty `galleryTemplateId` fields will be populated with the final IDs assigned by the Azure Monitor team during the upstream PR review, and `scripts/build-gallery.js` re-run so emitted artifacts use the real IDs in `loadFromTemplateId` references rather than the `community-Azure Local/<folder>` placeholders.
+
+**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from the current release to `v1.1.0` once the upstream gallery PR has merged. No code changes are required ahead of that point — the current wording remains accurate while the gallery PR is in flight.
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
+
+## CI/CD Validation
+
+All pull requests are automatically validated by a GitHub Actions workflow that runs **248 unit tests across 29 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+
+| Test Suite | What It Validates |
+|---|---|
+| JSON Structure | Valid JSON, required top-level properties, Notebook/1.0 schema |
+| Item Structure | All items have valid types and content |
+| Tab Structure | Tab groups exist and reference valid items |
+| Version Consistency | Workbook JSON version matches README version and changelog |
+| KQL Query Validation | Non-empty queries, balanced quotes, known resource types, pipe operators |
+| Chart Configuration | Axis configuration, pivot patterns, series settings |
+| Parameter Validation | Required parameters exist (Subscriptions, ResourceGroupFilter, tags) |
+| Markdown Content | Version banner and required documentation strings |
+| Visualization Types | Valid visualization types per tile |
+| Grid and Table Settings | Row limits, formatters, hidden columns, label settings |
+| Cross-Component Resources | All queries reference `{Subscriptions}` |
+| Resource Type References | Known Azure resource types in queries |
+| File Size and Performance | Workbook file size limits and performance checks |
+| README Structure | Required README sections present and ordered |
+| Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
+| Conditional Visibility | Tab groups have unique visibility parameters |
+| KQL Query Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters, ARG maximum-six-join guard, no unsupported ARG `mv-apply` |
+| Grid Formatter Consistency | Consistent formatter patterns across grids |
+| Azure Licensing & Verification — Columns | Columns / formatters / labels for AHB / WSS / AVVM |
+| Azure Licensing & Verification — Pie Charts | Pie chart configuration for AHB / WSS / AVVM |
+| Item Count Regression Guard | Item, query, and chart count minimums |
+| Prometheus AKS Node Resource Usage | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
+| DCR Deployment Guidance | CLI-first all-in-one deployment, direct detailed-guide links, Azure Policy remediation, no overlapping standalone Hyper-V DCR |
+| Documentation File Validation | CONTRIBUTING.md, SECURITY.md, LICENSE present |
+| **Split Architecture - Sub-Template Existence** | Each per-tab file under `workbooks/` exists, parses, and has the expected structure |
+| **Split Architecture - Shared Parameters Parity** | All sub-templates carry `items[0]` byte-identical to `shared/parameters.json` (no parameter drift) |
+| **Split Architecture - Round-Trip Integrity** | `AzureLocal-LENS-Workbook.json` is in sync with split sources (run `scripts/build-monolithic.js` if this fails) |
+| **Split Architecture - Sub-Template Size Recommendations** | Each sub-template is under the 350 KB hard limit (warns at the 200 KB gallery recommendation) |
+| **Accessibility - No Inline-Style HTML** | No `<div style=...>`, `<span style=...>`, `<font color=...>` etc. in markdown items |
+
+Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
+
+Run tests locally:
+```bash
+node scripts/run-tests.js
+```
+
+Maintainers can also run the opt-in 11-query live Capacity suite against an approved Azure environment. It uses the exact KQL stored in the split workbooks and requires explicit subscription/workspace confirmation:
+
+```powershell
+./scripts/run-live-tests.ps1 `
+  -SubscriptionId '<confirmed-subscription-id>' `
+  -WorkspaceResourceId '<log-analytics-workspace-resource-id>'
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#optional-live-azure-integration-tests) for prerequisites, privacy safeguards, and expected output.
+
+## License
+
+Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file for the full text.
+
+---
+
+## Appendix: Previous Versions Change Log
+
+### v1.0.5
 
 An incremental release that bundles several improvements across the workbook — we ship small, focused changes rather than waiting for a single large drop. This cycle: an Azure Resource Graph (ARG) correctness fix plus usability work on the **📋 System Health** tab, a column-label fix and a *View Progress* deep-link fix on **🔄 Update Progress**, a one-sentence purpose summary on every tab (each prefixed **Reporting data** or **Actionable data** so you know at a glance what a tab is for), and clearer, de-duplicated filter/refresh guidance in the shared header. Changes touch [`workbooks/SystemHealth/SystemHealth.workbook`](workbooks/SystemHealth/SystemHealth.workbook), [`workbooks/UpdateProgress/UpdateProgress.workbook`](workbooks/UpdateProgress/UpdateProgress.workbook), the Overview / Machines / VMs / AKS Arc / ARB Status / Capacity tab files, and [`shared/header.json`](shared/header.json) (filter/refresh guidance plus the version-banner bump). The new *Show Succeeded Checks* control is opt-in and defaults to off, so the Detailed Results table behaves identically out of the box; the summary-count fix in item 5 changes results only for very large fleets that were previously under-counted.
 
@@ -429,71 +527,6 @@ An incremental release that bundles several improvements across the workbook —
 10. **Update Progress — *Clusters Currently Updating* table: *View Progress* link now deep-links to the in-flight update run.** The **View Progress** link in the *⏳ Clusters Currently Updating* table was built with the generic `/updateName~/null/updateRunName~/null/` portal form, which made the Azure portal default to a *stale or failed* update run rather than the update actually in progress. **Fix:** the update-run name is now captured from the update-run resource `id` *before* the query's `summarize … by clusterId` (which drops the `id` column) and carried through `arg_max`, so the link can embed the specific `updateName` and `updateRunName` — mirroring the working deep-link already used by the *Update Run History* table on the same tab. Link-target-only change in [`workbooks/UpdateProgress/UpdateProgress.workbook`](workbooks/UpdateProgress/UpdateProgress.workbook); no data, filter, or layout semantics affected.
 
 The workbook header banner bumps from `v1.0.4` to `v1.0.5`.
-
-## v1.1.0 — Planned (post-gallery merge)
-
-Not yet released. The following changes are queued for v1.1.0 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
-
-- **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
-- **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
-- **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
-- **`scripts/template-ids.json`** — the empty `galleryTemplateId` fields will be populated with the final IDs assigned by the Azure Monitor team during the upstream PR review, and `scripts/build-gallery.js` re-run so emitted artifacts use the real IDs in `loadFromTemplateId` references rather than the `community-Azure Local/<folder>` placeholders.
-
-**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from `v1.0.4` → `v1.1.0` once the upstream gallery PR has merged. No code changes required ahead of that point — the v1.0.4 wording remains accurate while the gallery PR is in flight.
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting issues, submitting pull requests, development practices, and running tests.
-
-## CI/CD Validation
-
-All pull requests are automatically validated by a GitHub Actions workflow that runs **231 unit tests across 28 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
-
-| Test Suite | What It Validates |
-|---|---|
-| JSON Structure | Valid JSON, required top-level properties, Notebook/1.0 schema |
-| Item Structure | All items have valid types and content |
-| Tab Structure | Tab groups exist and reference valid items |
-| Version Consistency | Workbook JSON version matches README version and changelog |
-| KQL Query Validation | Non-empty queries, balanced quotes, known resource types, pipe operators |
-| Chart Configuration | Axis configuration, pivot patterns, series settings |
-| Parameter Validation | Required parameters exist (Subscriptions, ResourceGroupFilter, tags) |
-| Markdown Content | Version banner and required documentation strings |
-| Visualization Types | Valid visualization types per tile |
-| Grid and Table Settings | Row limits, formatters, hidden columns, label settings |
-| Cross-Component Resources | All queries reference `{Subscriptions}` |
-| Resource Type References | Known Azure resource types in queries |
-| File Size and Performance | Workbook file size limits and performance checks |
-| README Structure | Required README sections present and ordered |
-| Portal Link Integrity | URL-encoded resource IDs, no hardcoded GUIDs |
-| Conditional Visibility | Tab groups have unique visibility parameters |
-| KQL Query Robustness | ResourceGroupFilter regex, updateName parsing, no orphaned parameters |
-| Grid Formatter Consistency | Consistent formatter patterns across grids |
-| Azure Licensing & Verification — Columns | Columns / formatters / labels for AHB / WSS / AVVM |
-| Azure Licensing & Verification — Pie Charts | Pie chart configuration for AHB / WSS / AVVM |
-| Item Count Regression Guard | Item, query, and chart count minimums |
-| Prometheus AKS Node Resource Usage | PrometheusQueryProvider format, queryType 16, topk queries, timechart config |
-| Documentation File Validation | CONTRIBUTING.md, SECURITY.md, LICENSE present |
-| **Split Architecture - Sub-Template Existence** | Each per-tab file under `workbooks/` exists, parses, and has the expected structure |
-| **Split Architecture - Shared Parameters Parity** | All sub-templates carry `items[0]` byte-identical to `shared/parameters.json` (no parameter drift) |
-| **Split Architecture - Round-Trip Integrity** | `AzureLocal-LENS-Workbook.json` is in sync with split sources (run `scripts/build-monolithic.js` if this fails) |
-| **Split Architecture - Sub-Template Size Recommendations** | Each sub-template is under the 350 KB hard limit (warns at the 200 KB gallery recommendation) |
-| **Accessibility - No Inline-Style HTML** | No `<div style=...>`, `<span style=...>`, `<font color=...>` etc. in markdown items |
-
-Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
-
-Run tests locally:
-```bash
-node scripts/run-tests.js
-```
-
-## License
-
-Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file for the full text.
-
----
-
-## Appendix: Previous Versions Change Log
 
 ### v1.0.4
 

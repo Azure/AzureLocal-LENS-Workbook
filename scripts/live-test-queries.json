@@ -1,0 +1,49 @@
+{
+  "$comment": "Opt-in live Log Analytics cohort for the Capacity host storage and network charts. Environment values are supplied only at runtime.",
+  "queries": [
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-latency-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-iops-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-network-throughput-trend"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-usage-machine"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-latency-node"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-iops-node"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-network-throughput-node"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-storage-latency"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-storage-iops"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-network-throughput"
+    }
+  ]
+}

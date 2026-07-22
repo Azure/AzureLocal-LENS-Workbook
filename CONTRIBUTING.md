@@ -56,7 +56,9 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (197 tests across 28 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (248 tests across 29 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, DCR deployment guidance, and accessibility. |
+| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for all 11 Capacity storage usage, storage performance, and network throughput charts. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
+| `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
 
@@ -125,7 +127,32 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 225 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
+All 248 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
+
+#### Optional live Azure integration tests
+
+The structural test suite cannot prove that Log Analytics accepts a query or that
+the configured counters produce rows. Maintainers can run the opt-in 11-query
+Capacity integration suite against an approved test environment:
+
+```powershell
+# Discover available subscriptions first.
+az account list --query "[?state=='Enabled'].{Name:name,Id:id}" -o table
+
+# Confirm the intended subscription with the user/environment owner, then run:
+./scripts/run-live-tests.ps1 `
+   -SubscriptionId '<confirmed-subscription-id>' `
+   -WorkspaceResourceId '<log-analytics-workspace-resource-id>'
+```
+
+The script displays the resolved subscription and workspace and requires `YES`
+before querying. Automation or coding agents may pass `-ConfirmEnvironment` only
+after the user has explicitly confirmed the subscription. Environment IDs must
+remain runtime inputs and must not be committed, copied into PR text/comments,
+or added to documentation. A successful run writes a sanitized query-name and
+row-count report to `test-results/live-integration-nunit.xml`. These tests are
+deliberately excluded from CI because they require Azure authentication, RBAC,
+a DCR, and current telemetry.
 
 ## Code of Conduct
 

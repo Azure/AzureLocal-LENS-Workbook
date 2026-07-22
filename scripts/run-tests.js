@@ -183,7 +183,9 @@ function extractQueries(items) {
                 name: item.name || item.content.title || 'unnamed',
                 query: item.content.query,
                 type: item.type,
-                visualization: item.content.visualization
+                visualization: item.content.visualization,
+                queryType: item.content.queryType,
+                resourceType: item.content.resourceType
             });
         }
         // Also check parameter items
@@ -193,7 +195,9 @@ function extractQueries(items) {
                     queries.push({
                         name: param.name || param.label || 'unnamed-param',
                         query: param.query,
-                        type: 'parameter'
+                        type: 'parameter',
+                        queryType: param.queryType,
+                        resourceType: param.resourceType
                     });
                 }
             });
@@ -794,6 +798,21 @@ testSuite('Conditional Visibility Consistency', () => {
 
 // --- 17. KQL Query Robustness ---
 testSuite('KQL Query Robustness', () => {
+    const argQueries = allQueries.filter(q =>
+        q.queryType === 1 || q.resourceType === 'microsoft.resourcegraph/resources'
+    );
+    const argQueriesOverJoinLimit = argQueries
+        .map(q => ({ name: q.name, joins: (q.query.match(/\|\s*join\b/gi) || []).length }))
+        .filter(q => q.joins > 6);
+    assert(argQueriesOverJoinLimit.length === 0,
+        `ARG queries use at most six joins (${argQueriesOverJoinLimit.map(q => `${q.name}: ${q.joins}`).join(', ') || 'no offenders'})`,
+        '0 offenders', argQueriesOverJoinLimit.length);
+
+    const argQueriesUsingMvApply = argQueries.filter(q => /\|\s*mv-apply\b/i.test(q.query));
+    assert(argQueriesUsingMvApply.length === 0,
+        `ARG queries do not use unsupported mv-apply (${argQueriesUsingMvApply.map(q => q.name).join(', ') || 'no offenders'})`,
+        '0 offenders', argQueriesUsingMvApply.length);
+
     // Queries filtering by ResourceGroupFilter should use the correct regex pattern
     const queriesWithRGFilter = allQueries.filter(q =>
         q.query && q.query.includes('ResourceGroupFilter')
@@ -817,6 +836,146 @@ testSuite('KQL Query Robustness', () => {
             'All update run queries parse updateName from resource ID',
             updateRunQueries.length, queriesParsingUpdateName.length);
     }
+
+    const capacityPerformanceQueryNames = [
+        'node-storage-latency-trend',
+        'node-storage-iops-trend',
+        'sc-storage-latency-node',
+        'sc-storage-iops-node',
+        'mc-storage-latency',
+        'mc-storage-iops'
+    ];
+    const capacityPerformanceQueries = new Map(
+        allQueries
+            .filter(q => capacityPerformanceQueryNames.includes(q.name))
+            .map(q => [q.name, q.query])
+    );
+    assert(capacityPerformanceQueries.size === capacityPerformanceQueryNames.length,
+        'All storage performance queries are present for host-aggregation validation',
+        capacityPerformanceQueryNames.length, capacityPerformanceQueries.size);
+
+    const latencyQueriesUseHostSamples = [
+        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('sc-storage-latency-node')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
+    ].every(Boolean);
+    const iopsQueriesUseHostSamples = [
+        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('sc-storage-iops-node')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
+    ].every(Boolean);
+    assert(latencyQueriesUseHostSamples && iopsQueriesUseHostSamples,
+        'Storage performance queries reduce volume rows to one host sample',
+        'all six queries use HostLatencyMs/HostIOPS',
+        latencyQueriesUseHostSamples && iopsQueriesUseHostSamples ? 'all six' : 'missing host reduction');
+
+    const clusterQueriesUseEqualHostWeight = [
+        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = avg(HostIOPS) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(HostLatencyMs) by nodeName, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = avg(HostIOPS) by nodeName, clusterName, TimeGenerated = bin(TimeGenerated, step)')
+    ].every(Boolean);
+    assert(clusterQueriesUseEqualHostWeight,
+        'Cluster storage performance charts average one daily value per host',
+        'all four cluster queries use equal host weighting',
+        clusterQueriesUseEqualHostWeight ? 'all four' : 'missing daily host reduction');
+
+    const overviewIOPS = capacityPerformanceQueries.get('node-storage-iops-trend') || '';
+    const overviewSumsReadWriteIOPS = overviewIOPS.includes('Name in ("ReadsPerSecond", "WritesPerSecond")') &&
+        overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method');
+    assert(overviewSumsReadWriteIOPS,
+        'Capacity Overview sums VM Insights read and write IOPS per host sample',
+        'ReadsPerSecond + WritesPerSecond summed into HostIOPS',
+        overviewSumsReadWriteIOPS ? 'summed' : 'not summed');
+
+    const performanceFallbackIsPerMinute = [...capacityPerformanceQueries.values()].every(query =>
+        query.includes('summarize arg_min(method, Host') &&
+        !query.includes('let bestLat =') &&
+        !query.includes('let bestIOPS =')
+    );
+    assert(performanceFallbackIsPerMinute,
+        'Storage latency and IOPS select the best available counter family per host-minute',
+        'all six queries use per-minute arg_min(method)',
+        performanceFallbackIsPerMinute ? 'all six' : 'whole-range selector remains');
+
+    const storageUsageQueryNames = [
+        'node-storage-trend',
+        'sc-storage-usage-machine',
+        'node-exhaustion-forecast-table'
+    ];
+    const storageUsageQueries = allQueries.filter(query => storageUsageQueryNames.includes(query.name));
+    const storageUsagePrecedenceIsCorrect = storageUsageQueries.length === storageUsageQueryNames.length &&
+        storageUsageQueries.every(({ query }) =>
+            query.includes('method = iff(ObjectName == "Cluster CSV File System", 1, 2)') &&
+            query.includes('TotalMB = max(sizeMB)') &&
+            query.includes('mountId, TimeGenerated = bin(TimeGenerated, step)') &&
+            !query.includes('FreeMB = sum(Val), TotalMB = sum(sizeMB)')
+        );
+    assert(storageUsagePrecedenceIsCorrect,
+        'Storage usage queries deduplicate disk capacity and rank CSV counter families separately',
+        'all three queries reduce per mount and preserve family precedence',
+        storageUsagePrecedenceIsCorrect ? 'all three' : 'missing storage reduction');
+
+    const networkQueryNames = [
+        'node-network-throughput-trend',
+        'sc-network-throughput-node',
+        'mc-network-throughput'
+    ];
+    const networkQueries = allQueries.filter(query => networkQueryNames.includes(query.name));
+    const networkPrecedenceIsCorrect = networkQueries.length === networkQueryNames.length &&
+        networkQueries.every(({ query }) =>
+            query.includes('let bestNetObject =') &&
+            query.includes('where netRank == bestNetRank') &&
+            query.includes('summarize arg_min(method, BytesPerSec)') &&
+            !query.includes('let bestNet =') &&
+            !query.includes('arg_min(netRank, BytesPerSec)')
+        );
+    assert(networkPrecedenceIsCorrect,
+        'Network queries choose one Perf object per host and one source per host-minute',
+        'all three queries use host-wide object and per-minute source precedence',
+        networkPrecedenceIsCorrect ? 'all three' : 'missing network precedence');
+
+    const liveManifestPath = path.resolve(__dirname, 'live-test-queries.json');
+    const liveManifest = JSON.parse(fs.readFileSync(liveManifestPath, 'utf8'));
+    const liveQuerySpecs = liveManifest.queries || [];
+    assert(liveQuerySpecs.length === 11,
+        'Live integration manifest covers all 11 Capacity storage and network charts',
+        '11 queries', `${liveQuerySpecs.length} queries`);
+
+    const unresolvedLiveQuerySpecs = [];
+    liveQuerySpecs.forEach(spec => {
+        const splitPath = path.resolve(__dirname, '..', spec.file || '');
+        if (!fs.existsSync(splitPath)) {
+            unresolvedLiveQuerySpecs.push(`${spec.name}: missing ${spec.file}`);
+            return;
+        }
+        const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
+        const splitItems = collectAllItems(splitWorkbook.items || []);
+        const matchingItem = splitItems.find(item =>
+            item.name === spec.name && item.content?.query && item.content.queryType === 0
+        );
+        if (!matchingItem) unresolvedLiveQuerySpecs.push(`${spec.name}: query not found`);
+    });
+    assert(unresolvedLiveQuerySpecs.length === 0,
+        `Every live integration manifest entry resolves to a Log Analytics query (${unresolvedLiveQuerySpecs.join(', ') || 'all resolved'})`,
+        '0 unresolved', unresolvedLiveQuerySpecs.length);
+
+    const deadWorkspaceWarningItems = [
+        { file: 'Capacity-Overview', name: 'overview-workspace-all-warning' },
+        { file: 'Capacity-SingleCluster', name: 'single-workspace-all-warning' },
+        { file: 'Capacity-MultiCluster', name: 'multi-workspace-all-warning' },
+        { file: 'Capacity-HyperV', name: 'hyperv-workspace-tip' }
+    ];
+    const retainedDeadWorkspaceWarnings = [];
+    deadWorkspaceWarningItems.forEach(spec => {
+        const splitPath = path.resolve(__dirname, '..', 'workbooks', spec.file, `${spec.file}.workbook`);
+        const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
+        const warning = collectAllItems(splitWorkbook.items || []).find(item => item.name === spec.name);
+        if (warning) retainedDeadWorkspaceWarnings.push(spec.name);
+    });
+    assert(retainedDeadWorkspaceWarnings.length === 0,
+        `Capacity views omit non-rendering value::all conditional warnings (${retainedDeadWorkspaceWarnings.join(', ') || 'none retained'})`,
+        '0 dead warnings', retainedDeadWorkspaceWarnings.length);
 
     // Check for orphaned parameter references - parameters used in queries should be defined
     const definedParamNames = new Set(allParams.filter(p => p.name).map(p => p.name));
@@ -1185,7 +1344,46 @@ testSuite('Prometheus AKS Node Resource Usage', () => {
         promItems.length, promWith50Width.length);
 });
 
-// --- 23. Documentation File Validation ---
+// --- 23. DCR Deployment Guidance ---
+testSuite('DCR Deployment Guidance', () => {
+    const overviewPath = path.resolve(__dirname, '..', 'workbooks', 'Capacity-Overview', 'Capacity-Overview.workbook');
+    const hyperVPath = path.resolve(__dirname, '..', 'workbooks', 'Capacity-HyperV', 'Capacity-HyperV.workbook');
+    const dcrReadmePath = path.resolve(__dirname, '..', 'example-dcr-template', 'README.md');
+    const overviewRaw = fs.readFileSync(overviewPath, 'utf8');
+    const hyperVRaw = fs.readFileSync(hyperVPath, 'utf8');
+    const dcrReadme = fs.readFileSync(dcrReadmePath, 'utf8');
+
+    const recommendedIndex = overviewRaw.indexOf('Recommended — Dedicated All-in-One DCR with ARM / Azure CLI');
+    const portalFallbackIndex = overviewRaw.indexOf('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR');
+    assert(recommendedIndex >= 0 && portalFallbackIndex > recommendedIndex,
+        'Capacity DCR guidance presents CLI before the portal fallback',
+        'CLI recommendation before portal fallback', `${recommendedIndex} / ${portalFallbackIndex}`);
+
+    const templateJsonLink = '[`example-dcr-template/dcr-azurelocal-capacity-perf.json`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)';
+    const capacityGuideLink = '➡️ **[Open the dedicated template and detailed deployment instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**';
+    const capacityGuideHasNormalLink = overviewRaw.split(capacityGuideLink).length === 2 && !overviewRaw.includes('[`example-dcr-template/README.md`](');
+    assert(overviewRaw.includes(templateJsonLink) && capacityGuideHasNormalLink && hyperVRaw.includes('example-dcr-template/README.md'),
+        'DCR guidance uses the JSON target and normal-size detailed-guide links',
+        'JSON target and normal-size README links',
+        `${overviewRaw.includes(templateJsonLink)} / ${capacityGuideHasNormalLink} / ${hyperVRaw.includes('example-dcr-template/README.md')}`);
+
+    assert(overviewRaw.includes('Ongoing Fleet Enforcement with Azure Policy') && overviewRaw.includes('remediation task') &&
+        overviewRaw.includes('all 27 exact paths') && overviewRaw.includes('EventID=3002') &&
+        overviewRaw.includes('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR'),
+        'Capacity DCR guidance covers Azure Policy and existing-resource remediation',
+        'Policy, remediation, and portal fallback guidance', 'present');
+
+    assert(!hyperVRaw.includes('dcr-azurelocal-hyperv.json') && hyperVRaw.includes('Do not associate another DCR'),
+        'Hyper-V guidance does not offer an overlapping standalone DCR',
+        'no standalone template and explicit overlap warning',
+        `${hyperVRaw.includes('dcr-azurelocal-hyperv.json')} / ${hyperVRaw.includes('Do not associate another DCR')}`);
+
+    assert(dcrReadme.includes('Additive does not mean deduplicated') && dcrReadme.includes('Keep current and future hosts associated with Azure Policy'),
+        'Detailed DCR README documents duplicate ingestion and Policy enforcement',
+        'both safeguards documented', 'present');
+});
+
+// --- 24. Documentation File Validation ---
 testSuite('Documentation File Validation', () => {
     const contributingPath = path.resolve(__dirname, '..', 'CONTRIBUTING.md');
     const securityPath = path.resolve(__dirname, '..', 'SECURITY.md');
@@ -1213,7 +1411,7 @@ testSuite('Documentation File Validation', () => {
         'LICENSE file exists', 'true', String(licenseExists));
 });
 
-// --- 24. Split Architecture: Sub-Template Existence ---
+// --- 25. Split Architecture: Sub-Template Existence ---
 testSuite('Split Architecture - Sub-Template Existence', () => {
     const tabMap = require('./template-ids.json');
     const workbooksDir = path.resolve(__dirname, '..', 'workbooks');

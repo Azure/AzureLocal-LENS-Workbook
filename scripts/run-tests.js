@@ -855,14 +855,14 @@ testSuite('KQL Query Robustness', () => {
         capacityPerformanceQueryNames.length, capacityPerformanceQueries.size);
 
     const latencyQueriesUseHostSamples = [
-        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m)'),
-        capacityPerformanceQueries.get('sc-storage-latency-node')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m)'),
-        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m)')
+        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('sc-storage-latency-node')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
     ].every(Boolean);
     const iopsQueriesUseHostSamples = [
-        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m)'),
-        capacityPerformanceQueries.get('sc-storage-iops-node')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m)'),
-        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m)')
+        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('sc-storage-iops-node')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
+        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
     ].every(Boolean);
     assert(latencyQueriesUseHostSamples && iopsQueriesUseHostSamples,
         'Storage performance queries reduce volume rows to one host sample',
@@ -882,11 +882,58 @@ testSuite('KQL Query Robustness', () => {
 
     const overviewIOPS = capacityPerformanceQueries.get('node-storage-iops-trend') || '';
     const overviewSumsReadWriteIOPS = overviewIOPS.includes('Name in ("ReadsPerSecond", "WritesPerSecond")') &&
-        overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m)');
+        overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method');
     assert(overviewSumsReadWriteIOPS,
         'Capacity Overview sums VM Insights read and write IOPS per host sample',
         'ReadsPerSecond + WritesPerSecond summed into HostIOPS',
         overviewSumsReadWriteIOPS ? 'summed' : 'not summed');
+
+    const performanceFallbackIsPerMinute = [...capacityPerformanceQueries.values()].every(query =>
+        query.includes('summarize arg_min(method, Host') &&
+        !query.includes('let bestLat =') &&
+        !query.includes('let bestIOPS =')
+    );
+    assert(performanceFallbackIsPerMinute,
+        'Storage latency and IOPS select the best available counter family per host-minute',
+        'all six queries use per-minute arg_min(method)',
+        performanceFallbackIsPerMinute ? 'all six' : 'whole-range selector remains');
+
+    const storageUsageQueryNames = [
+        'node-storage-trend',
+        'sc-storage-usage-machine',
+        'node-exhaustion-forecast-table'
+    ];
+    const storageUsageQueries = allQueries.filter(query => storageUsageQueryNames.includes(query.name));
+    const storageUsagePrecedenceIsCorrect = storageUsageQueries.length === storageUsageQueryNames.length &&
+        storageUsageQueries.every(({ query }) =>
+            query.includes('method = iff(ObjectName == "Cluster CSV File System", 1, 2)') &&
+            query.includes('TotalMB = max(sizeMB)') &&
+            query.includes('mountId, TimeGenerated = bin(TimeGenerated, step)') &&
+            !query.includes('FreeMB = sum(Val), TotalMB = sum(sizeMB)')
+        );
+    assert(storageUsagePrecedenceIsCorrect,
+        'Storage usage queries deduplicate disk capacity and rank CSV counter families separately',
+        'all three queries reduce per mount and preserve family precedence',
+        storageUsagePrecedenceIsCorrect ? 'all three' : 'missing storage reduction');
+
+    const networkQueryNames = [
+        'node-network-throughput-trend',
+        'sc-network-throughput-node',
+        'mc-network-throughput'
+    ];
+    const networkQueries = allQueries.filter(query => networkQueryNames.includes(query.name));
+    const networkPrecedenceIsCorrect = networkQueries.length === networkQueryNames.length &&
+        networkQueries.every(({ query }) =>
+            query.includes('let bestNetObject =') &&
+            query.includes('where netRank == bestNetRank') &&
+            query.includes('summarize arg_min(method, BytesPerSec)') &&
+            !query.includes('let bestNet =') &&
+            !query.includes('arg_min(netRank, BytesPerSec)')
+        );
+    assert(networkPrecedenceIsCorrect,
+        'Network queries choose one Perf object per host and one source per host-minute',
+        'all three queries use host-wide object and per-minute source precedence',
+        networkPrecedenceIsCorrect ? 'all three' : 'missing network precedence');
 
     const liveManifestPath = path.resolve(__dirname, 'live-test-queries.json');
     const liveManifest = JSON.parse(fs.readFileSync(liveManifestPath, 'utf8'));

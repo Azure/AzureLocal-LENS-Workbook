@@ -1318,9 +1318,10 @@ testSuite('DCR Deployment Guidance', () => {
         'Capacity DCR guidance presents CLI before the portal fallback',
         'CLI recommendation before portal fallback', `${recommendedIndex} / ${portalFallbackIndex}`);
 
-    assert(overviewRaw.includes('example-dcr-template') && hyperVRaw.includes('example-dcr-template'),
-        'Capacity and Hyper-V DCR guidance link to the detailed template README',
-        'link in both workbooks', `${overviewRaw.includes('example-dcr-template')} / ${hyperVRaw.includes('example-dcr-template')}`);
+    const templateJsonLink = '[`example-dcr-template/dcr-azurelocal-capacity-perf.json`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)';
+    assert(overviewRaw.includes(templateJsonLink) && hyperVRaw.includes('example-dcr-template/README.md'),
+        'DCR guidance links to the JSON template and detailed README targets',
+        'JSON and README links', `${overviewRaw.includes(templateJsonLink)} / ${hyperVRaw.includes('example-dcr-template/README.md')}`);
 
     assert(overviewRaw.includes('Ongoing Fleet Enforcement with Azure Policy') && overviewRaw.includes('remediation task'),
         'Capacity DCR guidance covers Azure Policy and existing-resource remediation',

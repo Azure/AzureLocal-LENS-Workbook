@@ -8,8 +8,8 @@
  * gallery contributions (per microsoft/Application-Insights-Workbooks
  * CONTRIBUTING.md). It produces a much smaller initial-load payload than
  * the monolithic AzureLocal-LENS-Workbook.json:
- *   - Monolithic: ~862 KB (everything loads up front)
- *   - Gallery outer: ~30 KB (params + 7 sub-template stubs); each tab loads
+ *   - Monolithic: roughly 1 MB (everything loads up front)
+ *   - Gallery outer: a small parameter/stub shell; each tab loads
  *     its content on first click.
  *
  * Output: dist/gallery/Overview/Overview.workbook  (the outer)

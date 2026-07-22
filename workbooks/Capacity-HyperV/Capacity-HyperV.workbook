@@ -364,7 +364,7 @@
                   "name": "HyperVLogAnalyticsWorkspace",
                   "label": "Log Analytics Workspace",
                   "type": 2,
-                  "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions (see tip below if charts are empty).",
+                  "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions; if queries fail, narrow the selection to accessible workspaces that receive Hyper-V counters.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -431,19 +431,6 @@
               "resourceType": "microsoft.resourcegraph/resources"
             },
             "name": "hyperv-perf-params"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every tile and chart fails before its normal no-data message can be shown. Choose the workspace that receives Hyper-V performance counters from your Azure Local nodes.",
-              "style": "warning"
-            },
-            "conditionalVisibility": {
-              "parameterName": "HyperVLogAnalyticsWorkspace",
-              "comparison": "isEqualTo",
-              "value": "value::all"
-            },
-            "name": "hyperv-workspace-tip"
           },
           {
             "type": 1,

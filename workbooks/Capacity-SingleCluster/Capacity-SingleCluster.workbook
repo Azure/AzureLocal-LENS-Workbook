@@ -401,19 +401,6 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Choose the workspace that receives the selected cluster's Azure Local AMA/DCR telemetry.",
-              "style": "warning"
-            },
-            "conditionalVisibility": {
-              "parameterName": "MachinesLogAnalyticsWorkspace",
-              "comparison": "isEqualTo",
-              "value": "value::all"
-            },
-            "name": "single-workspace-all-warning"
-          },
-          {
-            "type": 1,
-            "content": {
               "json": "### 🏗️ Cluster Capacity\r\nPhysical hardware resources for: **{SingleCluster:label}**"
             },
             "name": "sc-fleet-header"

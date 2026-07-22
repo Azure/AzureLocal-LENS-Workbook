@@ -1010,19 +1010,6 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Choose the workspace that receives the Azure Local AMA/DCR telemetry; select multiple workspaces only when required and accessible.",
-              "style": "warning"
-            },
-            "conditionalVisibility": {
-              "parameterName": "MachinesLogAnalyticsWorkspace",
-              "comparison": "isEqualTo",
-              "value": "value::all"
-            },
-            "name": "overview-workspace-all-warning"
-          },
-          {
-            "type": 1,
-            "content": {
               "json": "💡 **Tip:** Each chart below has a small '**Azure Local Machines:**' coverage tile directly beneath it, showing the **number of physical machines** that sent the chart's required Performance Counter(s) to your selected **Log Analytics workspace(s)** over the selected **Node Trends Time Range**. If a chart's coverage tile reports fewer machines than you expect, that DCR is collecting counters from only part of your fleet — expand the **🔔 Performance Counter DCR Configuration** section further up the tab for setup guidance.",
               "style": "upsell"
             },

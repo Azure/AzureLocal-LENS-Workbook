@@ -395,19 +395,6 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Select the required Log Analytics workspace(s).** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Select only the accessible workspaces that receive Azure Local AMA/DCR telemetry for the clusters being compared.",
-              "style": "warning"
-            },
-            "conditionalVisibility": {
-              "parameterName": "MachinesLogAnalyticsWorkspace",
-              "comparison": "isEqualTo",
-              "value": "value::all"
-            },
-            "name": "multi-workspace-all-warning"
-          },
-          {
-            "type": 1,
-            "content": {
               "json": "---\r\n## 📉 Predictive Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster."
             },
             "name": "text-exhaustion-forecast-header"

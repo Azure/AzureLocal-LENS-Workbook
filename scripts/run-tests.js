@@ -913,28 +913,22 @@ testSuite('KQL Query Robustness', () => {
         `Every live integration manifest entry resolves to a Log Analytics query (${unresolvedLiveQuerySpecs.join(', ') || 'all resolved'})`,
         '0 unresolved', unresolvedLiveQuerySpecs.length);
 
-    const workspaceAllWarnings = [
-        { file: 'Capacity-Overview', name: 'overview-workspace-all-warning', parameter: 'MachinesLogAnalyticsWorkspace' },
-        { file: 'Capacity-SingleCluster', name: 'single-workspace-all-warning', parameter: 'MachinesLogAnalyticsWorkspace' },
-        { file: 'Capacity-MultiCluster', name: 'multi-workspace-all-warning', parameter: 'MachinesLogAnalyticsWorkspace' },
-        { file: 'Capacity-HyperV', name: 'hyperv-workspace-tip', parameter: 'HyperVLogAnalyticsWorkspace' }
+    const deadWorkspaceWarningItems = [
+        { file: 'Capacity-Overview', name: 'overview-workspace-all-warning' },
+        { file: 'Capacity-SingleCluster', name: 'single-workspace-all-warning' },
+        { file: 'Capacity-MultiCluster', name: 'multi-workspace-all-warning' },
+        { file: 'Capacity-HyperV', name: 'hyperv-workspace-tip' }
     ];
-    const invalidWorkspaceWarnings = [];
-    workspaceAllWarnings.forEach(spec => {
+    const retainedDeadWorkspaceWarnings = [];
+    deadWorkspaceWarningItems.forEach(spec => {
         const splitPath = path.resolve(__dirname, '..', 'workbooks', spec.file, `${spec.file}.workbook`);
         const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
         const warning = collectAllItems(splitWorkbook.items || []).find(item => item.name === spec.name);
-        const visibility = warning?.conditionalVisibility;
-        if (warning?.content?.style !== 'warning' ||
-            visibility?.parameterName !== spec.parameter ||
-            visibility?.comparison !== 'isEqualTo' ||
-            visibility?.value !== 'value::all') {
-            invalidWorkspaceWarnings.push(spec.name);
-        }
+        if (warning) retainedDeadWorkspaceWarnings.push(spec.name);
     });
-    assert(invalidWorkspaceWarnings.length === 0,
-        `Capacity views show a warning when Log Analytics workspace is All (${invalidWorkspaceWarnings.join(', ') || 'all configured'})`,
-        '0 invalid warnings', invalidWorkspaceWarnings.length);
+    assert(retainedDeadWorkspaceWarnings.length === 0,
+        `Capacity views omit non-rendering value::all conditional warnings (${retainedDeadWorkspaceWarnings.join(', ') || 'none retained'})`,
+        '0 dead warnings', retainedDeadWorkspaceWarnings.length);
 
     // Check for orphaned parameter references - parameters used in queries should be defined
     const definedParamNames = new Set(allParams.filter(p => p.name).map(p => p.name));

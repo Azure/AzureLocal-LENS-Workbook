@@ -3155,19 +3155,6 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Choose the workspace that receives the Azure Local AMA/DCR telemetry; select multiple workspaces only when required and accessible.",
-                    "style": "warning"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "MachinesLogAnalyticsWorkspace",
-                    "comparison": "isEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "overview-workspace-all-warning"
-                },
-                {
-                  "type": 1,
-                  "content": {
                     "json": "💡 **Tip:** Each chart below has a small '**Azure Local Machines:**' coverage tile directly beneath it, showing the **number of physical machines** that sent the chart's required Performance Counter(s) to your selected **Log Analytics workspace(s)** over the selected **Node Trends Time Range**. If a chart's coverage tile reports fewer machines than you expect, that DCR is collecting counters from only part of your fleet — expand the **🔔 Performance Counter DCR Configuration** section further up the tab for setup guidance.",
                     "style": "upsell"
                   },
@@ -4221,19 +4208,6 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Select the required Log Analytics workspace(s).** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Select only the accessible workspaces that receive Azure Local AMA/DCR telemetry for the clusters being compared.",
-                    "style": "warning"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "MachinesLogAnalyticsWorkspace",
-                    "comparison": "isEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "multi-workspace-all-warning"
-                },
-                {
-                  "type": 1,
-                  "content": {
                     "json": "---\r\n## 📉 Predictive Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster."
                   },
                   "name": "text-exhaustion-forecast-header"
@@ -5000,19 +4974,6 @@
                     "resourceType": "microsoft.resourcegraph/resources"
                   },
                   "name": "single-cluster-params"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every chart fails before its normal no-data message can be shown. Choose the workspace that receives the selected cluster's Azure Local AMA/DCR telemetry.",
-                    "style": "warning"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "MachinesLogAnalyticsWorkspace",
-                    "comparison": "isEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "single-workspace-all-warning"
                 },
                 {
                   "type": 1,
@@ -6900,7 +6861,7 @@
                         "name": "HyperVLogAnalyticsWorkspace",
                         "label": "Log Analytics Workspace",
                         "type": 2,
-                        "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions (see tip below if charts are empty).",
+                        "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions; if queries fail, narrow the selection to accessible workspaces that receive Hyper-V counters.",
                         "isRequired": true,
                         "multiSelect": true,
                         "quote": "'",
@@ -6967,19 +6928,6 @@
                     "resourceType": "microsoft.resourcegraph/resources"
                   },
                   "name": "hyperv-perf-params"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "⚠️ **Select a specific Log Analytics workspace.** **All** can include more workspaces than Azure cross-resource queries support, or a workspace your account cannot read or Azure can no longer resolve. In those cases every tile and chart fails before its normal no-data message can be shown. Choose the workspace that receives Hyper-V performance counters from your Azure Local nodes.",
-                    "style": "warning"
-                  },
-                  "conditionalVisibility": {
-                    "parameterName": "HyperVLogAnalyticsWorkspace",
-                    "comparison": "isEqualTo",
-                    "value": "value::all"
-                  },
-                  "name": "hyperv-workspace-tip"
                 },
                 {
                   "type": 1,

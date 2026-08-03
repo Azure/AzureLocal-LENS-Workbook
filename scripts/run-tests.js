@@ -1328,6 +1328,13 @@ testSuite('Workload Attribution Subscription Scope', () => {
         arbCounts.query.includes('by resourceGroupKey'),
     'ARB workload counts retain child-ID dedup within subscription-scoped RGs',
     'deduplicated resourceGroupKey counts', arbCounts ? arbCounts.query : 'query missing');
+
+    const arbStatus = allQueries.find(query => query.name === 'arcbridge-status');
+    assert(arbStatus && arbStatus.query.includes('by arcbridgeId, arcbridgename, resourceGroup, resourceGroupKey, status') &&
+        arbStatus.query.includes("hciname = strcat_array(make_set(hciname), ', ')") &&
+        arbStatus.query.includes('ArcBridgeCount = dcount(arcbridgename)'),
+    'ARB summary counts appliances once and discloses ambiguous sibling clusters',
+    'appliance-ID collapse with sibling disclosure', arbStatus ? arbStatus.query : 'query missing');
 });
 
 testSuite('Capacity Subscription-Scoped Shared-RG Semantics', () => {
@@ -1439,7 +1446,7 @@ testSuite('Fleet Identity Regression Backstops', () => {
     });
 });
 
-// --- 20. Azure Licensing & Verification Pie Charts (v0.8.1) ---
+// --- 21. Azure Licensing & Verification Pie Charts (v0.8.1) ---
 testSuite('Azure Licensing & Verification Pie Charts', () => {
     // Verify the section header exists
     const sectionHeader = allItems.find(i =>

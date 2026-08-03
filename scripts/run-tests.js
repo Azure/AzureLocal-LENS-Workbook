@@ -1141,6 +1141,74 @@ testSuite('Azure Licensing & Verification Columns', () => {
     }
 });
 
+// --- 20. All Clusters Subscription-Scoped Identity ---
+testSuite('All Clusters Subscription-Scoped Identity', () => {
+    const clusterBaseQuery = allQueries.find(q => q.name === 'all-clusters-base');
+    const aksArcCountQuery = allQueries.find(q => q.name === 'all-clusters-aksarc-count');
+    const vmCountQuery = allQueries.find(q => q.name === 'all-clusters-vm-count');
+    const mergedTable = allQueries.find(q => q.name === 'table-all-clusters');
+
+    assert(clusterBaseQuery && clusterBaseQuery.query.includes('on subscriptionId, clusterName, clusterRG'),
+        'Update summary join includes subscriptionId in cluster identity',
+        'subscription-scoped join', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
+    assert(clusterBaseQuery && clusterBaseQuery.query.includes("hciClusterRG = strcat(subscriptionId, ':', clusterRG)"),
+        'Base query projects a subscription and resource-group scope key',
+        'subscription-scoped hciClusterRG', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
+    assert(aksArcCountQuery && aksArcCountQuery.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
+        'AKS Arc counts use a subscription and resource-group scope key',
+        'subscription-scoped arcBridgeRG', aksArcCountQuery ? aksArcCountQuery.query : 'query missing');
+    assert(vmCountQuery && vmCountQuery.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
+        'VM counts use a subscription and resource-group scope key',
+        'subscription-scoped arcBridgeRG', vmCountQuery ? vmCountQuery.query : 'query missing');
+    assert(mergedTable && mergedTable.query.includes('"leftColumn":"hciClusterRG"') &&
+        mergedTable.query.includes('"rightColumn":"arcBridgeRG"'),
+        'Workbook merges use subscription-scoped resource-group keys',
+        'subscription-scoped merge keys', mergedTable ? mergedTable.query : 'query missing');
+});
+
+testSuite('Machines Subscription-Scoped Identity', () => {
+    const nodeJoinQueryNames = [
+        'tile-total-machines',
+        'tile-connected-machines',
+        'tile-disconnected-machines',
+        'node-connection-pie',
+        'node-vendor-pie',
+        'node-version-pie',
+        'node-agent-version-pie',
+        'node-license-type-pie',
+        'all-nodes-table',
+        'disconnected-nodes-table',
+        'extension-status-table',
+        'failed-extensions-table'
+    ];
+
+    nodeJoinQueryNames.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('on $left.nodeScope == $right.nodeScope'),
+            `${queryName} joins cluster nodes to Arc machines with subscription scope`,
+            'subscription-scoped node join', item ? item.query : 'query missing');
+    });
+
+    ['nic-status-pie-chart', 'nic-status-table'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('on $left.edgeMachineScope == $right.nodeScope'),
+            `${queryName} joins edge devices to Arc machines with subscription scope`,
+            'subscription-scoped edge-machine join', item ? item.query : 'query missing');
+    });
+
+    const allNodesQuery = allQueries.find(query => query.name === 'all-nodes-table');
+    assert(allNodesQuery && allNodesQuery.query.includes('on $left.clusterId == $right.cId'),
+        'All machines table joins update summaries by cluster ARM ID',
+        'cluster ARM ID join', allNodesQuery ? allNodesQuery.query : 'query missing');
+
+    ['extension-status-table', 'failed-extensions-table'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('on $left.machineId == $right.parentMachineId'),
+            `${queryName} joins extensions by parent machine ARM ID`,
+            'machine ARM ID join', item ? item.query : 'query missing');
+    });
+});
+
 // --- 20. Azure Licensing & Verification Pie Charts (v0.8.1) ---
 testSuite('Azure Licensing & Verification Pie Charts', () => {
     // Verify the section header exists

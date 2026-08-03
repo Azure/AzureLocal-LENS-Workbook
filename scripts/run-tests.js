@@ -1148,9 +1148,15 @@ testSuite('All Clusters Subscription-Scoped Identity', () => {
     const vmCountQuery = allQueries.find(q => q.name === 'all-clusters-vm-count');
     const mergedTable = allQueries.find(q => q.name === 'table-all-clusters');
 
-    assert(clusterBaseQuery && clusterBaseQuery.query.includes('on subscriptionId, clusterName, clusterRG'),
-        'Update summary join includes subscriptionId in cluster identity',
-        'subscription-scoped join', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
+    assert(clusterBaseQuery && clusterBaseQuery.query.includes("cId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))"),
+        'Update summaries derive the full parent cluster ARM ID',
+        'full parent cluster ARM ID', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
+    assert(clusterBaseQuery && clusterBaseQuery.query.includes('summarize solutionVersion = take_any(solutionVersion) by cId'),
+        'Update summaries collapse to one row per parent cluster',
+        'one summary row per cluster', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
+    assert(clusterBaseQuery && clusterBaseQuery.query.includes('on $left.hciClusterId == $right.cId'),
+        'Base table joins update summaries by full cluster ARM ID',
+        'full ARM ID join', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
     assert(clusterBaseQuery && clusterBaseQuery.query.includes("hciClusterRG = strcat(subscriptionId, ':', clusterRG)"),
         'Base query projects a subscription and resource-group scope key',
         'subscription-scoped hciClusterRG', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
@@ -1206,6 +1212,230 @@ testSuite('Machines Subscription-Scoped Identity', () => {
         assert(item && item.query.includes('on $left.machineId == $right.parentMachineId'),
             `${queryName} joins extensions by parent machine ARM ID`,
             'machine ARM ID join', item ? item.query : 'query missing');
+    });
+});
+
+testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
+    const overviewSummaryQueries = [
+        'pie-cluster-health', 'tile-healthy-clusters', 'tile-warnings',
+        'tile-failed-prechecks', 'tile-inprogress-health', 'tile-percent-healthy',
+        'tile-supported-version', 'tile-unsupported-version', 'tile-unknown-version',
+        'tile-update-available', 'tile-update-in-progress', 'tile-update-failed',
+        'chart-solution-version-distribution'
+    ];
+    overviewSummaryQueries.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('summarize properties = take_any(properties) by clusterId') &&
+            item.query.includes(') on clusterId') && !item.query.includes('on clusterName, clusterRG'),
+        `${queryName} collapses and joins update summaries by cluster ARM ID`,
+        'one summary per full cluster ID', item ? item.query : 'query missing');
+    });
+
+    ['pie-arb-status', 'tile-arb-offline', 'tile-total-vms', 'tile-total-aks-arc'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('clusterScope') && !item.query.includes('arcBridgeRG'),
+            `${queryName} uses a subscription-scoped resource-group key`,
+            'subscription-scoped RG identity', item ? item.query : 'query missing');
+    });
+
+    const failedExtensions = allQueries.find(query => query.name === 'tile-failed-extensions');
+    assert(failedExtensions && failedExtensions.query.includes('on $left.machineId == $right.parentMachineId'),
+        'Overview failed extensions join by parent machine ARM ID',
+        'full machine ARM ID join', failedExtensions ? failedExtensions.query : 'query missing');
+
+    const healthSummaryQueries = [
+        'query - 2', 'version-distribution-chart', 'update-status-by-health-state-matrix',
+        'health-check-failures-by-reason', 'top5-health-check-issues-pie'
+    ];
+    healthSummaryQueries.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('summarize properties = take_any(properties) by clusterId') &&
+            !item.query.includes('on clusterName, clusterRG'),
+        `${queryName} uses one update summary per cluster ARM ID`,
+        'full cluster ARM ID', item ? item.query : 'query missing');
+    });
+
+    ['clustername', 'detailClustername'].forEach(parameterName => {
+        const parameter = allParams.find(item => item.name === parameterName);
+        assert(parameter && parameter.query.includes('value = tolower(id)') && parameter.query.includes('subscriptionId'),
+            `${parameterName} emits full cluster IDs with subscription-qualified labels`,
+            'full-ID picker values', parameter ? parameter.query : 'parameter missing');
+    });
+
+    ['system-health-checks-overview', 'query - 4'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('| project clusterId, hciClusterName') && item.query.includes(') on clusterId'),
+            `${queryName} preserves clusterId through the inner projection`,
+            'projected clusterId join key', item ? item.query : 'query missing');
+    });
+
+    const failureReasons = allQueries.find(query => query.name === 'health-check-failures-by-reason');
+    assert(failureReasons && failureReasons.query.includes('AffectedClusterIds = make_set(clusterId)') &&
+        failureReasons.query.includes('ClusterCount = array_length(AffectedClusterIds)'),
+    'Health failure counts distinguish same-named clusters by ARM ID',
+    'AffectedClusterIds cardinality', failureReasons ? failureReasons.query : 'query missing');
+
+    const updateIdentityQueries = [
+        'update-state-tiles', 'update-state-pie', 'update-duration-statistics',
+        'update-duration-statistics-by-solution', 'update-success-analysis', 'update-outcomes-pie',
+        'updates-available-base', 'updates-available-sbe', 'update-run-history'
+    ];
+    updateIdentityQueries.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('clusterId'),
+            `${queryName} carries full cluster identity`,
+            'clusterId', item ? item.query : 'query missing');
+    });
+    const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
+    assert(updatesMerge && updatesMerge.query.includes('"leftColumn":"clusterId","rightColumn":"clusterId"'),
+        'Updates available merge uses full cluster IDs',
+        'clusterId merge', updatesMerge ? updatesMerge.query : 'query missing');
+});
+
+testSuite('Workload Attribution Subscription Scope', () => {
+    const vmQueries = [
+        'vm-total-tile', 'vm-connected-tile', 'vm-status-pie', 'vm-os-distribution',
+        'vm-by-rg', 'vm-deployments-bar', 'vm-deployments-table', 'vm-all-list',
+        'vm-top-clusters-pie'
+    ];
+    vmQueries.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('resourceGroupKey') && !item.query.includes('arcBridgeRG'),
+            `${queryName} scopes VM attribution by subscription and resource group`,
+            'resourceGroupKey', item ? item.query : 'query missing');
+    });
+
+    const aksQueries = [
+        'aks-summary-tile', 'aks-connectivity-chart', 'aks-version-distribution',
+        'aks-provisioning-state', 'aks-deployments-bar', 'aks-deployments-table',
+        'aks-azurelocal-mapping', 'aks-cert-expiration'
+    ];
+    aksQueries.forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('resourceGroupKey') && !item.query.includes('arcBridgeRG'),
+            `${queryName} scopes AKS attribution by subscription and resource group`,
+            'resourceGroupKey', item ? item.query : 'query missing');
+    });
+
+    ['arb-offline-table', 'arb-all-table'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('"leftColumn": "resourceGroupKey", "rightColumn": "resourceGroupKey"'),
+            `${queryName} merges workload counts by subscription-scoped RG`,
+            'resourceGroupKey merge', item ? item.query : 'query missing');
+    });
+    const arbCounts = allQueries.find(query => query.name === 'arb-vm-aks-counts');
+    assert(arbCounts && arbCounts.query.includes('dcountif(resourceId, isVM)') &&
+        arbCounts.query.includes('by resourceGroupKey'),
+    'ARB workload counts retain child-ID dedup within subscription-scoped RGs',
+    'deduplicated resourceGroupKey counts', arbCounts ? arbCounts.query : 'query missing');
+});
+
+testSuite('Capacity Subscription-Scoped Shared-RG Semantics', () => {
+    const capacityOverviewSource = JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, '..', 'workbooks', 'Capacity-Overview', 'Capacity-Overview.workbook'),
+        'utf8'));
+    const capacityParams = capacityOverviewSource.items.find(item => item.name === 'cap-shared-params');
+    const sharedRg = capacityParams.content.parameters.find(parameter => parameter.name === 'MultiClusterRGShared');
+    assert(sharedRg && sharedRg.query.includes("strcat(tolower(subscriptionId), ':', tolower(resourceGroup))"),
+        'Capacity shared-RG detection is subscription scoped',
+        'subscriptionId:resourceGroup', sharedRg ? sharedRg.query : 'parameter missing');
+
+    const siblings = allParams.find(parameter => parameter.name === 'MultiClusterRGSiblings');
+    assert(siblings && siblings.query.includes('selectedScope') && siblings.query.includes('siblingScope'),
+        'Single Cluster sibling disclosure is subscription scoped',
+        'selectedScope and siblingScope', siblings ? siblings.query : 'parameter missing');
+
+    const capacityOverview = allQueries.find(query => query.name === 'capacity-overview-table');
+    assert(capacityOverview && capacityOverview.query.includes('resourceGroupKey') &&
+        capacityOverview.query.includes('storageHostResourceId') &&
+        (capacityOverview.query.match(/\|\s*join\b/g) || []).length === 6,
+    'Capacity Overview scopes ARG attribution without exceeding six joins',
+    'subscription-scoped keys and six joins', capacityOverview ? capacityOverview.query : 'query missing');
+
+    ['sc-storage-paths-chart', 'sc-vms-arg-data', 'sc-aks-table'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('resourceGroupKey') && !item.query.includes('arcBridgeRG'),
+            `${queryName} uses subscription-scoped shared-RG attribution`,
+            'resourceGroupKey', item ? item.query : 'query missing');
+    });
+
+    ['sc-multi-cluster-rg-warning-storage', 'sc-multi-cluster-rg-warning-hyperv', 'sc-multi-cluster-rg-warning-aks'].forEach(itemName => {
+        const item = allItems.find(candidate => candidate.name === itemName);
+        assert(item && item.conditionalVisibility && item.conditionalVisibility.parameterName === 'MultiClusterRGSiblings',
+            `${itemName} preserves shared-RG ambiguity disclosure`,
+            'MultiClusterRGSiblings visibility', item ? item.conditionalVisibility : 'item missing');
+    });
+});
+
+testSuite('Fleet Identity Regression Backstops', () => {
+    const allQueryText = allQueries.map(item => item.query || '').join('\n');
+    const forbiddenPatterns = [
+        ['on clusterName, clusterRG', 'name and RG update-summary join'],
+        ['$left.resourceGroup == $right.clusterRG', 'unscoped appliance RG join'],
+        ['$left.arcBridgeRG == $right.clusterRG', 'unscoped workload RG join'],
+        ['$left.arcBridgeRG == $right.hciClusterRG', 'unscoped Capacity RG join'],
+        ['$left.clusterName == $right.hciClusterName', 'name-only health join'],
+        ['$left.hciClusterName == $right._rCluster', 'name-only update-run join'],
+        ['$left.hciClusterName == $right._hcCluster', 'name-only health-summary enrichment']
+    ];
+    forbiddenPatterns.forEach(([pattern, description]) => {
+        assert(!allQueryText.includes(pattern),
+            `No query reintroduces ${description}`,
+            `absent: ${pattern}`, allQueryText.includes(pattern) ? `found: ${pattern}` : `absent: ${pattern}`);
+    });
+
+    const availableBase = allQueries.find(query => query.name === 'updates-available-base');
+    assert(availableBase && availableBase.query.includes('summarize properties = take_any(properties), resourceGroup = take_any(resourceGroup) by clusterId') &&
+        availableBase.query.includes('on $left.clusterId == $right.updateClusterId'),
+    'Updates available base collapses summaries and joins updates by parent cluster ID',
+    'one summary and update set per clusterId', availableBase ? availableBase.query : 'query missing');
+
+    const availableSbe = allQueries.find(query => query.name === 'updates-available-sbe');
+    assert(availableSbe && availableSbe.query.includes("clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updates/')))"),
+        'SBE enrichment derives the full parent cluster ID',
+        'parent clusterId', availableSbe ? availableSbe.query : 'query missing');
+
+    const runHistory = allQueries.find(query => query.name === 'update-run-history');
+    assert(runHistory && runHistory.query.includes('on $left.clusterId == $right._rClusterId') &&
+        runHistory.query.includes('on $left.clusterId == $right._hcClusterId') &&
+        runHistory.query.includes("_dedup = iff(state == 'Failed', clusterId, id)"),
+    'Update run history correlates and deduplicates by full cluster ID',
+    'full-ID run history correlation', runHistory ? runHistory.query : 'query missing');
+
+    const vmList = allQueries.find(query => query.name === 'vm-all-list');
+    assert(vmList && vmList.query.includes("clusterName = strcat_array(make_set(clusterName), ', ')") &&
+        vmList.query.includes("clusterLink = strcat_array(make_set(clusterLink), ', ')"),
+    'VM inventory preserves shared-RG sibling disclosure',
+    'comma-joined cluster names and links', vmList ? vmList.query : 'query missing');
+
+    const aksMapping = allQueries.find(query => query.name === 'aks-azurelocal-mapping');
+    assert(aksMapping && aksMapping.query.includes('make_set(coalesce(azureLocalClusterName') &&
+        aksMapping.query.includes('make_set(coalesce(azureLocalClusterLink'),
+    'AKS mapping preserves shared-RG sibling disclosure',
+    'comma-joined cluster names and links', aksMapping ? aksMapping.query : 'query missing');
+
+    ['VMClusterNameFilter', 'ArbClusterFilter'].forEach(parameterName => {
+        const parameter = allParams.find(item => item.name === parameterName);
+        assert(parameter && parameter.query.includes('subscriptionId') && parameter.query.includes("value = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))"),
+            `${parameterName} keeps unique values and subscription-qualified labels`,
+            'subscription-qualified picker', parameter ? parameter.query : 'parameter missing');
+    });
+
+    const allClustersMerge = allQueries.find(query => query.name === 'table-all-clusters');
+    assert(allClustersMerge && (allClustersMerge.query.match(/"mergeType":"leftouter"/g) || []).length === 2,
+        'All Clusters keeps both optional enrichments leftouter',
+        'two leftouter merges', allClustersMerge ? allClustersMerge.query : 'query missing');
+
+    const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
+    assert(updatesMerge && updatesMerge.query.includes('"mergeType":"leftouter"'),
+        'Updates available keeps SBE enrichment optional',
+        'leftouter merge', updatesMerge ? updatesMerge.query : 'query missing');
+
+    ['arb-offline-table', 'arb-all-table'].forEach(queryName => {
+        const item = allQueries.find(query => query.name === queryName);
+        assert(item && item.query.includes('"mergeType": "leftouter"'),
+            `${queryName} keeps workload-count enrichment optional`,
+            'leftouter merge', item ? item.query : 'query missing');
     });
 });
 

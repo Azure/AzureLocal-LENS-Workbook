@@ -405,11 +405,15 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 A correctness release for fleet-wide Azure Resource Graph joins on the **Azure Local Instances** and **Azure Local Machines** tabs. Customer feedback identified duplicate table rows in estates where cluster, node, or resource-group names are reused across subscriptions. The global tag filters correctly selected clusters, but several enrichment joins used names or resource groups without `subscriptionId`, allowing matching resources from other selected subscriptions to multiply the result set.
 
-1. **Azure Local Instances — duplicate cluster rows removed.** The *All Azure Local Instances* table now joins update summaries with a subscription-scoped cluster identity (`subscriptionId` + cluster name + resource group). Its VM and AKS Arc count merges now use a composite `subscriptionId:resourceGroup` key derived from the authoritative ARM resource IDs. Environments can continue using the same names and resource groups in separate subscriptions without cross-subscription row fan-out.
+1. **Azure Local Instances — duplicate cluster rows removed.** The *All Azure Local Instances* table now collapses update-summary child resources to one row per full parent cluster ARM ID before its `leftouter` enrichment join. Its VM and AKS Arc count merges use a composite `subscriptionId:resourceGroup` key derived from authoritative ARM resource IDs. Clusters without an update summary remain visible, while environments can reuse names and resource groups in separate subscriptions without row fan-out.
 
 2. **Azure Local Machines — node, NIC, and extension joins hardened.** Twelve physical-machine inventory, status, chart, and extension queries now join cluster nodes to Arc machines with `subscriptionId:hostname` rather than hostname alone. Two NIC queries use the same subscription-scoped machine identity. The main machine table joins update summaries by full cluster ARM ID, and extension queries join by full parent machine ARM ID instead of machine name plus resource group.
 
-3. **Permanent regression coverage.** New tests enforce subscription-aware identities throughout both tabs, including the hidden workbook merge keys. The complete local suite now runs 270 tests across 31 suites.
+3. **Fleet-wide identity hardening.** Remaining Overview health, ARB, node, extension and workload queries now use full parent ARM IDs or subscription-qualified keys. The same correction is applied to System Health, Update Progress, Azure Local VMs, AKS Arc, ARB Status and deterministic Capacity ARG joins and filters.
+
+4. **Shared-resource-group behavior preserved.** VM and AKS child-resource deduplication, comma-joined sibling disclosure and Capacity RG-level warning banners remain intact for multiple clusters legitimately sharing one RG. Their RG boundary is now subscription-qualified so an identically named RG in another subscription cannot trigger false attribution or warnings.
+
+5. **Permanent regression coverage.** Named-query and forbidden-pattern tests enforce full-ID cardinality, join-key survival, subscription-scoped workload attribution, optional-enrichment visibility, workbook merge keys, Capacity's six-join limit and all three shared-RG warning surfaces. The complete local suite now runs 357 tests across 35 suites.
 
 The workbook header banner bumps from `v1.0.6` to `v1.0.7`.
 

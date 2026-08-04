@@ -1314,6 +1314,16 @@ testSuite('Workload Attribution Subscription Scope', () => {
             'resourceGroupKey', item ? item.query : 'query missing');
     });
 
+    const aksMapping = allQueries.find(query => query.name === 'aks-azurelocal-mapping');
+    assert(aksMapping && aksMapping.query.includes("| where '{ClusterTagName}' == '' or isnotempty(azureLocalClusterName)"),
+        'AKS mapping retains orphaned rows without a tag and removes nonmatching parents with a tag',
+        'conditional parent-tag filter', aksMapping ? aksMapping.query : 'query missing');
+    const aksTable = allQueries.find(query => query.name === 'aks-all-clusters');
+    assert(aksTable && aksTable.query.includes('"mergeType":"inner"') &&
+        !aksTable.query.includes('"mergeType":"leftouter"'),
+        'AKS inventory requires a parent mapping after cluster tag filtering',
+        'inner parent mapping', aksTable ? aksTable.query : 'query missing');
+
     ['arb-offline-table', 'arb-all-table'].forEach(queryName => {
         const item = allQueries.find(query => query.name === queryName);
         assert(item && item.query.includes('"leftColumn": "resourceGroupKey", "rightColumn": "resourceGroupKey"'),

@@ -1145,7 +1145,6 @@ testSuite('Azure Licensing & Verification Columns', () => {
 testSuite('All Clusters Subscription-Scoped Identity', () => {
     const clusterBaseQuery = allQueries.find(q => q.name === 'all-clusters-base');
     const aksArcCountQuery = allQueries.find(q => q.name === 'all-clusters-aksarc-count');
-    const vmCountQuery = allQueries.find(q => q.name === 'all-clusters-vm-count');
     const mergedTable = allQueries.find(q => q.name === 'table-all-clusters');
 
     assert(clusterBaseQuery && clusterBaseQuery.query.includes("cId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))"),
@@ -1161,11 +1160,12 @@ testSuite('All Clusters Subscription-Scoped Identity', () => {
         'Base query projects a subscription and resource-group scope key',
         'subscription-scoped hciClusterRG', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
     assert(aksArcCountQuery && aksArcCountQuery.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
-        'AKS Arc counts use a subscription and resource-group scope key',
+        'Combined workload counts use a subscription and resource-group scope key',
         'subscription-scoped arcBridgeRG', aksArcCountQuery ? aksArcCountQuery.query : 'query missing');
-    assert(vmCountQuery && vmCountQuery.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
-        'VM counts use a subscription and resource-group scope key',
-        'subscription-scoped arcBridgeRG', vmCountQuery ? vmCountQuery.query : 'query missing');
+    assert(aksArcCountQuery && aksArcCountQuery.query.includes('VMCount = countif(isVM)') &&
+        aksArcCountQuery.query.includes('AKSArcCount = countif(not(isVM))'),
+        'VM and AKS Arc counts share one cardinality-safe enrichment query',
+        'combined VM and AKS Arc counts', aksArcCountQuery ? aksArcCountQuery.query : 'query missing');
     assert(mergedTable && mergedTable.query.includes('"leftColumn":"hciClusterRG"') &&
         mergedTable.query.includes('"rightColumn":"arcBridgeRG"'),
         'Workbook merges use subscription-scoped resource-group keys',
@@ -1429,9 +1429,10 @@ testSuite('Fleet Identity Regression Backstops', () => {
     });
 
     const allClustersMerge = allQueries.find(query => query.name === 'table-all-clusters');
-    assert(allClustersMerge && (allClustersMerge.query.match(/"mergeType":"leftouter"/g) || []).length === 2,
-        'All Clusters keeps both optional enrichments leftouter',
-        'two leftouter merges', allClustersMerge ? allClustersMerge.query : 'query missing');
+    assert(allClustersMerge && (allClustersMerge.query.match(/"mergeType":"leftouter"/g) || []).length === 1 &&
+        allClustersMerge.query.includes('"id":"with-workloads"'),
+        'All Clusters uses one deterministic optional workload enrichment',
+        'one leftouter workload merge', allClustersMerge ? allClustersMerge.query : 'query missing');
 
     const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
     assert(updatesMerge && updatesMerge.query.includes('"mergeType":"leftouter"'),

@@ -1,7 +1,6 @@
 [
   "all-clusters-base",
   "all-clusters-aksarc-count",
-  "all-clusters-vm-count",
   "arb-vm-aks-counts",
   "arb-offline-base",
   "arb-all-base",

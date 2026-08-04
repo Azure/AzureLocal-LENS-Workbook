@@ -1034,10 +1034,10 @@ testSuite('Grid Formatter Consistency', () => {
 
 // --- 19. Azure Licensing & Verification Columns (v0.8.1) ---
 testSuite('Azure Licensing & Verification Columns', () => {
-    // Find the all-clusters-base query
-    const clusterBaseQuery = allQueries.find(q => q.name === 'all-clusters-base');
+    // Find the direct All Clusters table query
+    const clusterBaseQuery = allQueries.find(q => q.name === 'table-all-clusters');
     assert(clusterBaseQuery !== undefined,
-        'all-clusters-base query exists', 'found', clusterBaseQuery ? 'found' : 'not found');
+        'table-all-clusters query exists', 'found', clusterBaseQuery ? 'found' : 'not found');
 
     if (clusterBaseQuery) {
         const query = clusterBaseQuery.query;
@@ -1143,33 +1143,30 @@ testSuite('Azure Licensing & Verification Columns', () => {
 
 // --- 20. All Clusters Subscription-Scoped Identity ---
 testSuite('All Clusters Subscription-Scoped Identity', () => {
-    const clusterBaseQuery = allQueries.find(q => q.name === 'all-clusters-base');
-    const aksArcCountQuery = allQueries.find(q => q.name === 'all-clusters-aksarc-count');
-    const mergedTable = allQueries.find(q => q.name === 'table-all-clusters');
+    const clusterTable = allQueries.find(q => q.name === 'table-all-clusters');
 
-    assert(clusterBaseQuery && clusterBaseQuery.query.includes("cId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))"),
+    assert(clusterTable && clusterTable.queryType === 1,
+        'All Clusters table runs as one direct ARG query',
+        'queryType 1', clusterTable ? clusterTable.queryType : 'query missing');
+    assert(clusterTable && clusterTable.query.includes("tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}'"),
+        'All Clusters direct query applies the cluster tag filter',
+        'tag filter in direct query', clusterTable ? clusterTable.query : 'query missing');
+    assert(clusterTable && clusterTable.query.includes("clusterId = iff(normalizedType == \"microsoft.azurestackhci/clusters/updatesummaries\", tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))"),
         'Update summaries derive the full parent cluster ARM ID',
-        'full parent cluster ARM ID', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
-    assert(clusterBaseQuery && clusterBaseQuery.query.includes('summarize solutionVersion = take_any(solutionVersion) by cId'),
-        'Update summaries collapse to one row per parent cluster',
-        'one summary row per cluster', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
-    assert(clusterBaseQuery && clusterBaseQuery.query.includes('on $left.hciClusterId == $right.cId'),
-        'Base table joins update summaries by full cluster ARM ID',
-        'full ARM ID join', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
-    assert(clusterBaseQuery && clusterBaseQuery.query.includes("hciClusterRG = strcat(subscriptionId, ':', clusterRG)"),
-        'Base query projects a subscription and resource-group scope key',
-        'subscription-scoped hciClusterRG', clusterBaseQuery ? clusterBaseQuery.query : 'query missing');
-    assert(aksArcCountQuery && aksArcCountQuery.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
-        'Combined workload counts use a subscription and resource-group scope key',
-        'subscription-scoped arcBridgeRG', aksArcCountQuery ? aksArcCountQuery.query : 'query missing');
-    assert(aksArcCountQuery && aksArcCountQuery.query.includes('VMCount = countif(isVM)') &&
-        aksArcCountQuery.query.includes('AKSArcCount = countif(not(isVM))'),
-        'VM and AKS Arc counts share one cardinality-safe enrichment query',
-        'combined VM and AKS Arc counts', aksArcCountQuery ? aksArcCountQuery.query : 'query missing');
-    assert(mergedTable && mergedTable.query.includes('"leftColumn":"hciClusterRG"') &&
-        mergedTable.query.includes('"rightColumn":"arcBridgeRG"'),
-        'Workbook merges use subscription-scoped resource-group keys',
-        'subscription-scoped merge keys', mergedTable ? mergedTable.query : 'query missing');
+        'full parent cluster ARM ID', clusterTable ? clusterTable.query : 'query missing');
+    assert(clusterTable && clusterTable.query.includes("hciClusterRG = strcat(subscriptionId, ':', tolower(resourceGroup))"),
+        'Cluster workload attribution uses a subscription-scoped resource-group key',
+        'subscription-scoped hciClusterRG', clusterTable ? clusterTable.query : 'query missing');
+    assert(clusterTable && clusterTable.query.includes("arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))"),
+        'Workload enrichment derives the same subscription-scoped resource-group key',
+        'subscription-scoped arcBridgeRG', clusterTable ? clusterTable.query : 'query missing');
+    assert(clusterTable && clusterTable.query.includes("enrichmentKey = pack_array(strcat('cluster:', hciClusterId), strcat('rg:', hciClusterRG))"),
+        'Each cluster receives full-ID and subscription-scoped enrichment keys in one ARG query',
+        'two authoritative enrichment keys', clusterTable ? clusterTable.query : 'query missing');
+    assert(clusterTable && clusterTable.query.includes('by enrichmentKey') &&
+        clusterTable.query.includes('by hciClusterId'),
+        'Enrichment and final output each collapse to one row per authoritative key',
+        'cardinality-safe summaries', clusterTable ? clusterTable.query : 'query missing');
 });
 
 testSuite('Machines Subscription-Scoped Identity', () => {
@@ -1428,11 +1425,11 @@ testSuite('Fleet Identity Regression Backstops', () => {
             'subscription-qualified picker', parameter ? parameter.query : 'parameter missing');
     });
 
-    const allClustersMerge = allQueries.find(query => query.name === 'table-all-clusters');
-    assert(allClustersMerge && (allClustersMerge.query.match(/"mergeType":"leftouter"/g) || []).length === 1 &&
-        allClustersMerge.query.includes('"id":"with-workloads"'),
-        'All Clusters uses one deterministic optional workload enrichment',
-        'one leftouter workload merge', allClustersMerge ? allClustersMerge.query : 'query missing');
+    const allClustersTable = allQueries.find(query => query.name === 'table-all-clusters');
+    assert(allClustersTable && allClustersTable.queryType === 1 &&
+        !allClustersTable.query.includes('Merge/1.0'),
+        'All Clusters avoids parameter-refresh races by using no client merge',
+        'one direct ARG query', allClustersTable ? allClustersTable.query : 'query missing');
 
     const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
     assert(updatesMerge && updatesMerge.query.includes('"mergeType":"leftouter"'),

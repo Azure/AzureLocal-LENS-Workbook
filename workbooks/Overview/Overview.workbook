@@ -1464,6 +1464,14 @@
               "gridSettings": {
                 "formatters": [
                   {
+                    "columnMatch": "hciClusterId",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "hciClusterRG",
+                    "formatter": 5
+                  },
+                  {
                     "columnMatch": "ClusterName",
                     "formatter": 7,
                     "formatOptions": {

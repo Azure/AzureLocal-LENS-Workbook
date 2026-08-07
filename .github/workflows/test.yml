@@ -28,6 +28,11 @@ jobs:
       - name: Validate shared parameters
         run: node scripts/validate-shared-params.js
 
+      - name: Build and validate gallery package
+        run: |
+          node scripts/build-gallery.js
+          node scripts/validate-gallery.js
+
       - name: Verify monolithic artifact is up-to-date
         run: node scripts/build-monolithic.js --check
 

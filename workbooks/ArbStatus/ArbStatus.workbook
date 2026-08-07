@@ -733,12 +733,16 @@
                 "rowLimit": 2000,
                 "formatters": [
                   {
-                    "columnMatch": "arbLink",
+                    "columnMatch": "ARBResourceName",
                     "formatter": 7,
                     "formatOptions": {
                       "linkTarget": "Url",
-                      "linkLabel": "Open ARB"
+                      "linkColumn": "arbLink"
                     }
+                  },
+                  {
+                    "columnMatch": "arbLink",
+                    "formatter": 5
                   },
                   {
                     "columnMatch": "ARBStatus",
@@ -836,11 +840,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ARBResourceName",
-                    "label": "ARB Resource Name"
-                  },
-                  {
-                    "columnId": "arbLink",
-                    "label": "ARB Link"
+                    "label": "Azure Resource Bridge"
                   },
                   {
                     "columnId": "resourceGroup",

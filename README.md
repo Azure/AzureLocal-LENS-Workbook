@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.0.7
+## Latest Version: v1.0.8
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.0.7)](#whats-new-v107)
+- [What's New (v1.0.8)](#whats-new-v108)
 - [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -401,21 +401,27 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.0.7)
+## What's New (v1.0.8)
 
-A correctness release for fleet-wide Azure Resource Graph joins on the **Azure Local Instances** and **Azure Local Machines** tabs. Customer feedback identified two duplicate-row failure patterns. Name and resource-group joins without `subscriptionId` could multiply rows across subscriptions. Separately, the *All Azure Local Instances* export remained unique with no tag filter but showed a different, apparently random subset of duplicate clusters after selecting or changing a cluster tag filter. That tag-filter-only symptom exposed a parameter-refresh race in the client-side merge, even though each filtered ARG input was independently unique.
+A quality and UX refinement release that corrects regressions from the fleet-wide identity hardening in `v1.0.7`, restores customer-defined resource casing, and makes table labels and links more consistent across the workbook.
 
-1. **Azure Local Instances — tag-filter duplication removed.** The *All Azure Local Instances* table is now one direct ARG query rather than a `Merge/1.0` control over asynchronously refreshed inputs. The query applies the cluster tag filter before enrichment, uses full cluster ARM IDs for update summaries, uses `subscriptionId:resourceGroup` for VM and AKS Arc attribution, collapses enrichment by authoritative key, and emits one final row per full cluster ARM ID. This removes the execution-order dependency that produced random duplicate subsets only after a tag filter was applied or changed.
+1. **Update Progress — First Time Success Analysis query restored.** The inner total-count branch constructed its subscription-safe `updateKey` from `clusterId` without first defining `clusterId`, causing Azure Resource Graph to reject the entire query. Both branches now derive the full parent cluster ARM ID before constructing `updateKey`, restoring the **Updates - First Time Success Analysis** table while retaining cross-subscription correctness.
 
-2. **Azure Local Machines — node, NIC, and extension joins hardened.** Twelve physical-machine inventory, status, chart, and extension queries now join cluster nodes to Arc machines with `subscriptionId:hostname` rather than hostname alone. Two NIC queries use the same subscription-scoped machine identity. The main machine table joins update summaries by full cluster ARM ID, and extension queries join by full parent machine ARM ID instead of machine name plus resource group.
+2. **Azure Local Instances — internal identity columns hidden.** The *All Azure Local Instances* table exposed `hciClusterId` and `hciClusterRG`, including the subscription-prefixed resource-group join key, as its first two columns. Both fields remain in the query for authoritative joins and row cardinality but are hidden from the grid. The table again begins with the readable cluster name and resource group columns.
 
-3. **Fleet-wide identity and parent-tag hardening.** Remaining Overview health, ARB, node, extension and workload queries now use full parent ARM IDs or subscription-qualified keys. The same correction is applied to System Health, Update Progress, Azure Local VMs, AKS Arc, ARB Status and deterministic Capacity ARG joins and filters. The AKS Arc inventory now keeps unresolved parent mappings when no cluster tag is selected, but requires an inner parent-cluster mapping when a tag is active so only AKS clusters associated with tag-matched Azure Local clusters remain visible. This reuses the existing two one-join ARG inputs and adds no ARG joins.
+3. **System Health — failure summary readability and ordering improved.** The **Health Check Failures By Reason Summary** table now lists concise cluster names, preserves their authoritative Azure Resource Manager casing, and sorts **Cluster Count** from highest to lowest. Full cluster ARM IDs remain in a separate internal set for identity-safe distinct-cluster counting, and subscription-qualified labels remain in the cluster filter where disambiguation is needed.
 
-4. **Shared-resource-group behavior preserved.** VM and AKS child-resource deduplication, comma-joined sibling disclosure and Capacity RG-level warning banners remain intact for multiple clusters legitimately sharing one RG. Their RG boundary is now subscription-qualified so an identically named RG in another subscription cannot trigger false attribution or warnings.
+4. **Customer-defined object casing preserved.** Normalized lowercase ARM IDs remain internal join keys, but visible cluster names now come from authoritative resource `name` fields. This corrects lowercase display names in **Clusters with Updates Available**, **Update Run History and Error Details**, and the System Health affected-cluster list. Resource Group columns continue to use the native ARG `resourceGroup` value rather than normalized keys.
 
-5. **Permanent regression coverage and failure-pattern rule.** Tag-filtered inventory tables must not combine a parameter-dependent base result with independently refreshed enrichment through parallel or reused client-side merges. Prefer one direct ARG result; collapse every one-to-many child-resource input before joining and collapse the final output by its authoritative ARM ID. Where ARG table-family limits require a client merge, a tag-filtered parent mapping must be an inner merge so unmatched child rows cannot bypass the filter. Named-query and forbidden-pattern tests enforce the direct-query contract, full-ID cardinality, join-key survival, subscription-scoped workload attribution, parent-tag enforcement, optional-enrichment visibility, Capacity's six-join limit and all three shared-RG warning surfaces. The complete local suite now runs 360 tests across 35 suites.
+5. **Azure Resource Bridge table refined.** In **All Azure Resource Bridges (ARB) appliances**, the visible **Azure Resource Bridge** name is now the portal link. The raw **ARB Link** helper column is hidden, removing the redundant link-only column while retaining direct navigation.
 
-The workbook header banner bumps from `v1.0.6` to `v1.0.7`.
+6. **Azure Local Machines terminology aligned.** The tab now consistently uses **Azure Local Physical Machines**, **Machine Name**, **Machine Extensions**, and **Failed Machine Extensions**. The extension description now reads *“Arc agent extensions installed on physical machines of the Azure Local instances.”* Existing heading levels and font sizes are unchanged.
+
+7. **Physical-machine guidance standardized.** Current Capacity navigation, embedded DCR deployment guidance, and the checked-in DCR guide now use **physical machines** or **Azure Local physical machines** instead of **physical nodes**. Historical changelog wording remains unchanged where it describes earlier behavior.
+
+8. **Regression coverage expanded.** Tests now enforce hidden identity helpers, identity-safe health counts, descending failure-summary sorting, authoritative display casing, linked ARB names, Machines labels and headings, physical-machine terminology, and both First Time Success query branches. The complete local suite now runs 373 tests across 35 suites.
+
+The workbook header banner bumps from `v1.0.7` to `v1.0.8`.
 
 ## v1.1.0 — Planned (post-gallery merge)
 
@@ -434,7 +440,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **358 unit tests across 35 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **373 unit tests across 35 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -492,6 +498,22 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.0.7
+
+A correctness release for fleet-wide Azure Resource Graph joins on the **Azure Local Instances** and **Azure Local Machines** tabs. Customer feedback identified two duplicate-row failure patterns. Name and resource-group joins without `subscriptionId` could multiply rows across subscriptions. Separately, the *All Azure Local Instances* export remained unique with no tag filter but showed a different, apparently random subset of duplicate clusters after selecting or changing a cluster tag filter. That tag-filter-only symptom exposed a parameter-refresh race in the client-side merge, even though each filtered ARG input was independently unique.
+
+1. **Azure Local Instances — tag-filter duplication removed.** The *All Azure Local Instances* table is now one direct ARG query rather than a `Merge/1.0` control over asynchronously refreshed inputs. The query applies the cluster tag filter before enrichment, uses full cluster ARM IDs for update summaries, uses `subscriptionId:resourceGroup` for VM and AKS Arc attribution, collapses enrichment by authoritative key, and emits one final row per full cluster ARM ID. This removes the execution-order dependency that produced random duplicate subsets only after a tag filter was applied or changed.
+
+2. **Azure Local Machines — node, NIC, and extension joins hardened.** Twelve physical-machine inventory, status, chart, and extension queries now join cluster nodes to Arc machines with `subscriptionId:hostname` rather than hostname alone. Two NIC queries use the same subscription-scoped machine identity. The main machine table joins update summaries by full cluster ARM ID, and extension queries join by full parent machine ARM ID instead of machine name plus resource group.
+
+3. **Fleet-wide identity and parent-tag hardening.** Remaining Overview health, ARB, node, extension and workload queries now use full parent ARM IDs or subscription-qualified keys. The same correction is applied to System Health, Update Progress, Azure Local VMs, AKS Arc, ARB Status and deterministic Capacity ARG joins and filters. The AKS Arc inventory now keeps unresolved parent mappings when no cluster tag is selected, but requires an inner parent-cluster mapping when a tag is active so only AKS clusters associated with tag-matched Azure Local clusters remain visible. This reuses the existing two one-join ARG inputs and adds no ARG joins.
+
+4. **Shared-resource-group behavior preserved.** VM and AKS child-resource deduplication, comma-joined sibling disclosure and Capacity RG-level warning banners remain intact for multiple clusters legitimately sharing one RG. Their RG boundary is now subscription-qualified so an identically named RG in another subscription cannot trigger false attribution or warnings.
+
+5. **Permanent regression coverage and failure-pattern rule.** Tag-filtered inventory tables must not combine a parameter-dependent base result with independently refreshed enrichment through parallel or reused client-side merges. Prefer one direct ARG result; collapse every one-to-many child-resource input before joining and collapse the final output by its authoritative ARM ID. Where ARG table-family limits require a client merge, a tag-filtered parent mapping must be an inner merge so unmatched child rows cannot bypass the filter. Named-query and forbidden-pattern tests enforce the direct-query contract, full-ID cardinality, join-key survival, subscription-scoped workload attribution, parent-tag enforcement, optional-enrichment visibility, Capacity's six-join limit and all three shared-RG warning surfaces. The complete local suite runs 360 tests across 35 suites.
+
+The workbook header banner bumps from `v1.0.6` to `v1.0.7`.
 
 ### v1.0.6
 

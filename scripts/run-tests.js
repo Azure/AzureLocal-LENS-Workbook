@@ -185,7 +185,8 @@ function extractQueries(items) {
                 type: item.type,
                 visualization: item.content.visualization,
                 queryType: item.content.queryType,
-                resourceType: item.content.resourceType
+                resourceType: item.content.resourceType,
+                sortBy: item.content.sortBy || null
             });
         }
         // Also check parameter items
@@ -718,6 +719,20 @@ testSuite('README Structure Validation', () => {
 
     assert(readme.includes('## License'),
         'README has license section', 'found', readme.includes('## License') ? 'found' : 'not found');
+
+    const dcrGuide = fs.readFileSync(
+        path.resolve(__dirname, '..', 'example-dcr-template', 'README.md'),
+        'utf8');
+    const physicalNodePattern = /physical(?: cluster)? nodes?|physical-node/i;
+    assert(!physicalNodePattern.test(workbookRaw) && !physicalNodePattern.test(dcrGuide) &&
+        workbookRaw.includes('physical machines for detailed capacity') &&
+        workbookRaw.includes('Arc-enabled physical machine') &&
+        dcrGuide.includes('Azure Local physical machines'),
+    'Current customer guidance consistently uses physical machines terminology',
+    'physical machines in workbook and DCR guide', JSON.stringify({
+        workbookHasLegacyTerm: physicalNodePattern.test(workbookRaw),
+        dcrGuideHasLegacyTerm: physicalNodePattern.test(dcrGuide)
+    }));
 });
 
 // --- 15. Portal Link Integrity ---
@@ -1144,6 +1159,7 @@ testSuite('Azure Licensing & Verification Columns', () => {
 // --- 20. All Clusters Subscription-Scoped Identity ---
 testSuite('All Clusters Subscription-Scoped Identity', () => {
     const clusterTable = allQueries.find(q => q.name === 'table-all-clusters');
+    const clusterTableItem = allItems.find(item => item.name === 'table-all-clusters');
 
     assert(clusterTable && clusterTable.queryType === 1,
         'All Clusters table runs as one direct ARG query',
@@ -1167,6 +1183,16 @@ testSuite('All Clusters Subscription-Scoped Identity', () => {
         clusterTable.query.includes('by hciClusterId'),
         'Enrichment and final output each collapse to one row per authoritative key',
         'cardinality-safe summaries', clusterTable ? clusterTable.query : 'query missing');
+
+    const formatters = clusterTableItem && clusterTableItem.content.gridSettings
+        ? clusterTableItem.content.gridSettings.formatters
+        : [];
+    ['hciClusterId', 'hciClusterRG'].forEach(columnName => {
+        const formatter = formatters.find(item => item.columnMatch === columnName);
+        assert(formatter && formatter.formatter === 5,
+            `${columnName} internal enrichment key is hidden from the grid`,
+            'hidden formatter 5', formatter ? formatter.formatter : 'missing');
+    });
 });
 
 testSuite('Machines Subscription-Scoped Identity', () => {
@@ -1203,6 +1229,32 @@ testSuite('Machines Subscription-Scoped Identity', () => {
     assert(allNodesQuery && allNodesQuery.query.includes('on $left.clusterId == $right.cId'),
         'All machines table joins update summaries by cluster ARM ID',
         'cluster ARM ID join', allNodesQuery ? allNodesQuery.query : 'query missing');
+    const allNodesTable = allItems.find(item => item.name === 'all-nodes-table');
+    const machineNameLabel = allNodesTable?.content?.gridSettings?.labelSettings
+        ?.find(label => label.columnId === 'nodeName');
+    assert(machineNameLabel?.label === 'Machine Name',
+        'All machines table labels its first column Machine Name',
+        'Machine Name', machineNameLabel?.label || 'missing');
+    const machinesGroup = allItems.find(item =>
+        item.content?.title === 'Azure Local Physical Machines' &&
+        item.content?.items?.some(child => child.name === 'text-nodes-header'));
+    const machinesHeader = allItems.find(item => item.name === 'text-nodes-header');
+    assert(machinesGroup && machinesHeader?.content?.json.startsWith('## 🖥️ Azure Local Physical Machines\r\n'),
+        'Machines tab uses Azure Local Physical Machines at both heading levels',
+        'group title and Markdown heading', JSON.stringify({
+            groupTitle: machinesGroup?.content?.title,
+            header: machinesHeader?.content?.json
+        }));
+    const extensionsHeader = allItems.find(item => item.name === 'text-extensions-divider');
+    const failedExtensionsTable = allItems.find(item => item.name === 'failed-extensions-table');
+    assert(extensionsHeader?.content?.json === '---\r\n## 🧩 Machine Extensions\r\nArc agent extensions installed on physical machines of the Azure Local instances.' &&
+        failedExtensionsTable?.content?.title === '⚠️ Failed Machine Extensions' &&
+        !JSON.stringify(allItems).includes('Node Extensions'),
+    'Machines tab consistently uses Machine Extensions terminology',
+    'Machine Extensions headings and description', JSON.stringify({
+        header: extensionsHeader?.content?.json,
+        failedTitle: failedExtensionsTable?.content?.title
+    }));
 
     ['extension-status-table', 'failed-extensions-table'].forEach(queryName => {
         const item = allQueries.find(query => query.name === queryName);
@@ -1271,6 +1323,19 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
         failureReasons.query.includes('ClusterCount = array_length(AffectedClusterIds)'),
     'Health failure counts distinguish same-named clusters by ARM ID',
     'AffectedClusterIds cardinality', failureReasons ? failureReasons.query : 'query missing');
+    assert(failureReasons && failureReasons.sortBy?.some(sort =>
+        sort.itemKey === 'ClusterCount' && sort.sortOrder === 2),
+    'Health failure summary sorts Cluster Count from highest to smallest',
+    'ClusterCount descending grid sort', failureReasons ? JSON.stringify(failureReasons.sortBy) : 'query missing');
+    assert(failureReasons && failureReasons.query.includes('AffectedClustersList = make_set(hciClusterName)') &&
+        !failureReasons.query.includes("AffectedClustersList = make_set(strcat(hciClusterName"),
+    'Health failure display lists readable cluster names without subscription GUIDs',
+    'name-only Affected Clusters list', failureReasons ? failureReasons.query : 'query missing');
+    assert(failureReasons &&
+        failureReasons.query.includes('| project clusterId = tolower(id), hciClusterName = name') &&
+        !failureReasons.query.includes("hciClusterName = tostring(split(clusterId"),
+    'Health failure display preserves authoritative Cluster Name casing',
+    'cluster resource name display field', failureReasons ? failureReasons.query : 'query missing');
 
     const updateIdentityQueries = [
         'update-state-tiles', 'update-state-pie', 'update-duration-statistics',
@@ -1283,10 +1348,30 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
             `${queryName} carries full cluster identity`,
             'clusterId', item ? item.query : 'query missing');
     });
+
+    const successAnalysis = allQueries.find(query => query.name === 'update-success-analysis');
+    const clusterIdDefinitions = successAnalysis
+        ? successAnalysis.query.match(/extend clusterId = tolower\(substring\(id, 0, indexof\(tolower\(id\), '\/updates\/'\)\)\)/g) || []
+        : [];
+    assert(successAnalysis && clusterIdDefinitions.length === 2,
+        'First Time Success Analysis defines clusterId in both updateKey branches',
+        '2 clusterId definitions', clusterIdDefinitions.length);
     const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
     assert(updatesMerge && updatesMerge.query.includes('"leftColumn":"clusterId","rightColumn":"clusterId"'),
         'Updates available merge uses full cluster IDs',
         'clusterId merge', updatesMerge ? updatesMerge.query : 'query missing');
+    const updatesAvailableBase = allQueries.find(query => query.name === 'updates-available-base');
+    assert(updatesAvailableBase &&
+        updatesAvailableBase.query.includes('| project clusterId = tolower(id), clusterName = name') &&
+        !updatesAvailableBase.query.includes("clusterName = tostring(split(clusterId"),
+    'Updates available table preserves authoritative Cluster Name casing',
+    'cluster resource name display field', updatesAvailableBase ? updatesAvailableBase.query : 'query missing');
+    const updateRunHistory = allQueries.find(query => query.name === 'update-run-history');
+    assert(updateRunHistory &&
+        updateRunHistory.query.includes('| project clusterId = tolower(id), hciClusterName = name') &&
+        !updateRunHistory.query.includes("hciClusterName = tostring(split(clusterId"),
+    'Update run history preserves authoritative Cluster Name casing',
+    'cluster resource name display field', updateRunHistory ? updateRunHistory.query : 'query missing');
 });
 
 testSuite('Workload Attribution Subscription Scope', () => {
@@ -1330,6 +1415,15 @@ testSuite('Workload Attribution Subscription Scope', () => {
             `${queryName} merges workload counts by subscription-scoped RG`,
             'resourceGroupKey merge', item ? item.query : 'query missing');
     });
+    const arbAllTable = allItems.find(item => item.name === 'arb-all-table');
+    const arbAllFormatters = arbAllTable?.content?.gridSettings?.formatters || [];
+    const arbNameFormatter = arbAllFormatters.find(formatter => formatter.columnMatch === 'ARBResourceName');
+    const arbLinkFormatter = arbAllFormatters.find(formatter => formatter.columnMatch === 'arbLink');
+    assert(arbNameFormatter?.formatter === 7 &&
+        arbNameFormatter.formatOptions?.linkColumn === 'arbLink' &&
+        arbLinkFormatter?.formatter === 5,
+    'All ARB table links the appliance name and hides the raw URL helper',
+    'linked ARBResourceName and hidden arbLink', JSON.stringify({ arbNameFormatter, arbLinkFormatter }));
     const arbCounts = allQueries.find(query => query.name === 'arb-vm-aks-counts');
     assert(arbCounts && arbCounts.query.includes('dcountif(resourceId, isVM)') &&
         arbCounts.query.includes('by resourceGroupKey'),

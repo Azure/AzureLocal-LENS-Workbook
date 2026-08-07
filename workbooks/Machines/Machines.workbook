@@ -277,12 +277,12 @@
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
-        "title": "Azure Local Machines",
+        "title": "Azure Local Physical Machines",
         "items": [
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Node Extensions sections to spot any Arc connection issues or failed agent extensions (with full error detail)."
+              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Machine Extensions sections to spot any Arc connection issues or failed agent extensions (with full error detail)."
             },
             "name": "text-nodes-header"
           },
@@ -731,7 +731,7 @@
                 "labelSettings": [
                   {
                     "columnId": "nodeName",
-                    "label": "Node Name"
+                    "label": "Machine Name"
                   },
                   {
                     "columnId": "nodeLink",
@@ -933,7 +933,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🧩 Node Extensions\r\nArc agent extensions installed on physical cluster nodes."
+              "json": "---\r\n## 🧩 Machine Extensions\r\nArc agent extensions installed on physical machines of the Azure Local instances."
             },
             "name": "text-extensions-divider"
           },
@@ -1173,7 +1173,7 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    ExtensibilityResources\r\n    | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n    | project machineId = tolower(id), machineName = name, machineResourceGroup = resourceGroup, osSku = tostring(properties.osSku), osVersion = tostring(properties.osVersion), machineStatus = tostring(properties.status), nodeNameLower, nodeScope\r\n) on $left.nodeScope == $right.nodeScope\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend status = properties.provisioningState\r\n    | where status == \"Failed\"\r\n    | extend errorDetails = tostring(properties.instanceView.status.message)\r\n    | extend errorDetailsFull = errorDetails\r\n    | parse id with * '/extensions/' extensionName\r\n    | extend parentMachineId = tolower(substring(id, 0, indexof(id, '/extensions/')))\r\n    | project extensionName, status, errorDetails, errorDetailsFull, parentMachineId, subscriptionId\r\n) on $left.machineId == $right.parentMachineId\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', machineId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend errorDetailsBlade = iff(strlen(errorDetailsFull) > 0, pack('Machine Name', machineName, 'Extension', extensionName, 'Status', tostring(status), 'Cluster Name', clusterName, 'Cluster Version', currentVersion, 'Resource Group', machineResourceGroup, 'Error Message', errorDetailsFull, 'Troubleshooting', 'https://learn.microsoft.com/azure/azure-arc/servers/troubleshoot-vm-extensions'), dynamic(null))\r\n| project machineName, machineLink, extensionName, machineStatus, osSku, osVersion, clusterName, clusterLink, errorDetails, errorDetailsFull, errorDetailsBlade, currentVersion, resourceGroup = machineResourceGroup, subscriptionId\r\n| order by clusterName asc, machineName asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "⚠️ Failed Node Extensions",
+              "title": "⚠️ Failed Machine Extensions",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,

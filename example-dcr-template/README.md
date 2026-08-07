@@ -114,7 +114,7 @@ If you're managing many Azure Local clusters spread across resource groups (or e
 
 - `type =~ 'microsoft.hybridcompute/machines'` — Arc machines only.
 - `properties.cloudMetadata.provider =~ 'AzSHCI'` — machines that registered themselves as Azure Local participants (excludes generic Arc-enabled Windows servers).
-- `tostring(properties.detectedProperties.model) !~ 'Virtual Machine'` — **excludes guest VMs**. Hyper-V reports the model as the literal string `Virtual Machine` for Generation 1/2 VMs, so this is the most reliable way to keep only physical cluster nodes. Filtering on `kind` or `properties.parentClusterResourceId` is not sufficient — Arc-onboarded guest VMs on an Azure Local cluster inherit `provider = AzSHCI` and have `kind = ""`, just like the physical hosts; and some physical hosts (Azure Stack Edge Pro, certain Lenovo ThinkSystem SKUs) report `parentClusterResourceId = null` even when they are real cluster members.
+- `tostring(properties.detectedProperties.model) !~ 'Virtual Machine'` — **excludes guest VMs**. Hyper-V reports the model as the literal string `Virtual Machine` for Generation 1/2 VMs, so this is the most reliable way to keep only Azure Local physical machines. Filtering on `kind` or `properties.parentClusterResourceId` is not sufficient — Arc-onboarded guest VMs on an Azure Local cluster inherit `provider = AzSHCI` and have `kind = ""`, just like the physical hosts; and some physical hosts (Azure Stack Edge Pro, certain Lenovo ThinkSystem SKUs) report `parentClusterResourceId = null` even when they are real cluster members.
 
 PowerShell:
 

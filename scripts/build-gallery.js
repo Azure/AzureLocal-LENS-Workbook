@@ -12,14 +12,11 @@
  *   - Gallery outer: a small parameter/stub shell; each tab loads
  *     its content on first click.
  *
- * Output: dist/gallery/Overview/Overview.workbook  (the outer)
- *         dist/gallery/<Tab>/<Tab>.workbook        (one per sub-template)
+ * Output: dist/gallery/LENS-Overview/LENS-Overview.workbook  (the outer)
+ *         dist/gallery/<Tab>/<Tab>.workbook                  (sub-templates)
  *
- * Until the upstream gallery review approves the template IDs, set the
- * "galleryTemplateId" fields in scripts/template-ids.json. While they
- * remain empty this script emits the outer with placeholder loadFromTemplateId
- * values that will not resolve at runtime — useful for review of the shape
- * but not deployable.
+ * Community template IDs are derived from the final upstream folder paths:
+ * community-Workbooks/Azure Local/<galleryFolderName>.
  *
  * Usage: node scripts/build-gallery.js
  */
@@ -48,6 +45,10 @@ function writeJson(file, obj) {
   fs.writeFileSync(file, out, 'utf8');
 }
 
+function galleryTemplateId(entry) {
+  return `community-Workbooks/Azure Local/${entry.galleryFolderName}`;
+}
+
 function buildCapacityOuter(capacityTab) {
   // Capacity for the gallery: include the orchestrator base items
   // (cap-shared-params, cap-instructions-text, cap-section-tabs) and add a
@@ -57,19 +58,14 @@ function buildCapacityOuter(capacityTab) {
   const capGroup = orch.items[2];
   const baseItems = capGroup.content.items.slice();
 
-  let placeholderCount = 0;
   const stubs = [];
   for (const sect of capacityTab.subSections) {
-    const folderName = sect.galleryFolderName || sect.slug;
-    const templateId = sect.galleryTemplateId
-      || `community-Azure Local/${folderName}`;
-    if (!sect.galleryTemplateId) placeholderCount++;
     stubs.push({
       type: 12,
       content: {
         version: 'NotebookGroup/1.0',
         groupType: 'template',
-        loadFromTemplateId: templateId,
+        loadFromTemplateId: galleryTemplateId(sect),
         items: []
       },
       conditionalVisibility: {
@@ -82,7 +78,7 @@ function buildCapacityOuter(capacityTab) {
   }
 
   capGroup.content.items = [...baseItems, ...stubs];
-  return { workbook: orch, placeholderCount };
+  return orch;
 }
 
 function buildOuter() {
@@ -113,19 +109,14 @@ function buildOuter() {
   const items = [params, ...header.items, overviewOrdered];
 
   // Stub group for each non-Overview tab.
-  let placeholderCount = 0;
   for (const tab of TAB_MAP.tabs) {
     if (tab.slug === 'Overview') continue;
-    const folderName = tab.galleryFolderName || tab.slug;
-    const templateId = tab.galleryTemplateId
-      || `community-Azure Local/${folderName}`;
-    if (!tab.galleryTemplateId) placeholderCount++;
     items.push({
       type: 12,
       content: {
         version: 'NotebookGroup/1.0',
         groupType: 'template',
-        loadFromTemplateId: templateId,
+        loadFromTemplateId: galleryTemplateId(tab),
         items: []
       },
       conditionalVisibility: {
@@ -138,28 +129,26 @@ function buildOuter() {
   }
 
   return {
-    workbook: {
-      version: 'Notebook/1.0',
-      items,
-      fallbackResourceIds: ['azure monitor'],
-      $schema: SCHEMA
-    },
-    placeholderCount
+    version: 'Notebook/1.0',
+    items,
+    fallbackResourceIds: ['azure monitor'],
+    $schema: SCHEMA
   };
 }
 
 function main() {
+  fs.rmSync(DIST, { recursive: true, force: true });
+  ensureDir(DIST);
+
   // Outer (inline Overview + 7 sub-template stubs) — emitted under the Overview
   // tab's gallery folder name (e.g. dist/gallery/LENS-Overview/LENS-Overview.workbook).
   const overviewTab = TAB_MAP.tabs.find(t => t.slug === 'Overview');
   const overviewFolder = (overviewTab && overviewTab.galleryFolderName) || 'Overview';
-  const { workbook: outer, placeholderCount: outerPh } = buildOuter();
+  const outer = buildOuter();
   const outerFile = path.join(DIST, overviewFolder, `${overviewFolder}.workbook`);
   writeJson(outerFile, outer);
   const outerKB = (fs.statSync(outerFile).size / 1024).toFixed(1);
   console.log(`✅ ${path.relative(ROOT, outerFile)} (${outerKB} KB outer with inline Overview tab)`);
-
-  let totalPh = outerPh;
 
   // Sub-templates (one per non-Overview tab)
   for (const tab of TAB_MAP.tabs) {
@@ -168,8 +157,7 @@ function main() {
 
     if (Array.isArray(tab.subSections)) {
       // Capacity gallery file = orchestrator + sub-section stubs
-      const { workbook: capOuter, placeholderCount: capPh } = buildCapacityOuter(tab);
-      totalPh += capPh;
+      const capOuter = buildCapacityOuter(tab);
       const dst = path.join(DIST, tabFolder, `${tabFolder}.workbook`);
       writeJson(dst, capOuter);
       const kb = (fs.statSync(dst).size / 1024).toFixed(1);
@@ -205,12 +193,6 @@ function main() {
   }
 
   console.log(`\nGallery artifacts written to ${path.relative(ROOT, DIST)}/`);
-
-  if (totalPh > 0) {
-    console.log(`\n⚠️  ${totalPh} sub-template stub(s) use placeholder galleryTemplateId.`);
-    console.log('   Once the Azure Monitor team approves the upstream PR and assigns');
-    console.log('   real template IDs, populate them in scripts/template-ids.json and re-run.');
-  }
 }
 
 main();

@@ -1,13 +1,12 @@
 {
-  "$comment": "Maps the LENS workbook tabs to their split-file slugs and gallery template IDs. The order of the 'tabs' array is the canonical items[] order in the assembled monolithic workbook (preserved from v0.8.9: 0,7,1,2,6,4,3,5). selectedTab is the parameter value that triggers visibility in the monolithic build. groupName matches the original root-level item name. galleryFolderName is the hyphenated upstream folder name under microsoft/Application-Insights-Workbooks/Workbooks/Azure Local/<galleryFolderName>/ (per John Gardner email 2026-05-05) and is used to emit the dist/gallery/<galleryFolderName>/ artifacts and the placeholder template id 'community-Azure Local/<galleryFolderName>'. galleryTemplateId stays empty until the upstream PR is approved and the Azure Monitor team assigns the final id. Capacity has subSections (one sub-template per Capacity section) so each gallery sub-template stays under 200 KB.",
+  "$comment": "Maps the LENS workbook tabs to their split-file slugs and final upstream gallery folders. The order of the 'tabs' array is the canonical items[] order in the assembled monolithic workbook (preserved from v0.8.9: 0,7,1,2,6,4,3,5). selectedTab is the parameter value that triggers visibility in the monolithic build. groupName matches the original root-level item name. galleryFolderName is the hyphenated folder under microsoft/Application-Insights-Workbooks/Workbooks/Azure Local/<galleryFolderName>/ (per John Gardner email 2026-05-05). The folder path deterministically produces the runtime template ID community-Workbooks/Azure Local/<galleryFolderName>. Capacity has subSections so each gallery sub-template stays under 200 KB.",
   "tabs": [
     {
       "selectedTab": "0",
       "slug": "Overview",
       "groupName": "summary-tiles-group",
       "label": "📊 Azure Local Instances",
-      "galleryFolderName": "LENS-Overview",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-Overview"
     },
     {
       "selectedTab": "7",
@@ -15,39 +14,34 @@
       "groupName": "capacity-tab-group",
       "label": "🏗️ Capacity",
       "galleryFolderName": "LENS-Capacity",
-      "galleryTemplateId": "",
       "subSections": [
         {
           "value": "overview",
           "slug": "Capacity-Overview",
           "groupName": "cap-overview-section",
           "label": "📋 Overview",
-          "galleryFolderName": "LENS-Capacity-Overview",
-          "galleryTemplateId": ""
+          "galleryFolderName": "LENS-Capacity-Overview"
         },
         {
           "value": "multi",
           "slug": "Capacity-MultiCluster",
           "groupName": "cap-multi-section",
           "label": "🌍 Multi-cluster",
-          "galleryFolderName": "LENS-Capacity-Multi-cluster",
-          "galleryTemplateId": ""
+          "galleryFolderName": "LENS-Capacity-Multi-cluster"
         },
         {
           "value": "single",
           "slug": "Capacity-SingleCluster",
           "groupName": "cap-single-section",
           "label": "🔍 Single cluster",
-          "galleryFolderName": "LENS-Capacity-Single-Cluster",
-          "galleryTemplateId": ""
+          "galleryFolderName": "LENS-Capacity-Single-Cluster"
         },
         {
           "value": "hyperv",
           "slug": "Capacity-HyperV",
           "groupName": "cap-hyperv-section",
           "label": "🖥️ Hyper-V VMs",
-          "galleryFolderName": "LENS-Capacity-Hyper-V-VMs",
-          "galleryTemplateId": ""
+          "galleryFolderName": "LENS-Capacity-Hyper-V-VMs"
         }
       ]
     },
@@ -56,48 +50,42 @@
       "slug": "ArbStatus",
       "groupName": "arcbridge-page",
       "label": "🔗 ARB Status",
-      "galleryFolderName": "LENS-ARB-Status",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-ARB-Status"
     },
     {
       "selectedTab": "2",
       "slug": "Machines",
       "groupName": "azure-local-nodes",
       "label": "🗄️ Azure Local Machines",
-      "galleryFolderName": "LENS-Azure-Local-Machines",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-Azure-Local-Machines"
     },
     {
       "selectedTab": "6",
       "slug": "VMs",
       "groupName": "azure-local-vms",
       "label": "💻 Azure Local VMs",
-      "galleryFolderName": "LENS-Azure-Local-VMs",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-Azure-Local-VMs"
     },
     {
       "selectedTab": "4",
       "slug": "AksArc",
       "groupName": "aks-arc-clusters",
       "label": "☸️ AKS Arc Clusters",
-      "galleryFolderName": "LENS-AKS-Arc-Clusters",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-AKS-Arc-Clusters"
     },
     {
       "selectedTab": "3",
       "slug": "SystemHealth",
       "groupName": "grp-update-readiness",
       "label": "📋 System Health",
-      "galleryFolderName": "LENS-System-Health",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-System-Health"
     },
     {
       "selectedTab": "5",
       "slug": "UpdateProgress",
       "groupName": "grp-update-progress",
       "label": "🔄 Update Progress",
-      "galleryFolderName": "LENS-Update-Progress",
-      "galleryTemplateId": ""
+      "galleryFolderName": "LENS-Update-Progress"
     }
   ]
 }

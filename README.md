@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.0.8
+## Latest Version: v1.0.9
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.0.8)](#whats-new-v108)
+- [What's New (v1.0.9)](#whats-new-v109)
 - [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -128,7 +128,7 @@ A high-level overview of your entire Azure Local estate, including:
 - **Health and Patching Status**: Healthy clusters, health warnings, failed prechecks, failed extensions, and health percentage
 - **Update Compliance**: 
   - Tiles showing clusters on supported release (green), unsupported release (red), updates available, updates in progress, and update failures
-  - Version compliance calculated based on the YYMM component of the cluster version (e.g., `xx.2512.x.x` = December 2025 release) with 6-month rolling support window
+  - Version compliance estimated from the YYMM release month (e.g., `xx.2512.x.x` = December 2025), independently of which updates are currently offered to the cluster. The official release date governs the six-month support window; because ARG does not expose the release day, LENS marks the current and previous five months as Supported, the six-month boundary as Unknown, and only older months as Unsupported
   - Links to Lifecycle cadence and Latest releases documentation
   - Solution Version Distribution bar chart showing cluster counts by version
 - **Workload Summary**: Total Azure Local VMs and AKS Arc clusters
@@ -401,27 +401,19 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.0.8)
+## What's New (v1.0.9)
 
-A quality and UX refinement release that corrects regressions from the fleet-wide identity hardening in `v1.0.7`, restores customer-defined resource casing, and makes table labels and links more consistent across the workbook.
+A correctness release for the **Azure Local Instances → Update Compliance** tiles, addressing [Issue #94](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/94).
 
-1. **Update Progress — First Time Success Analysis query restored.** The inner total-count branch constructed its subscription-safe `updateKey` from `clusterId` without first defining `clusterId`, causing Azure Resource Graph to reject the entire query. Both branches now derive the full parent cluster ARM ID before constructing `updateKey`, restoring the **Updates - First Time Success Analysis** table while retaining cross-subscription correctness.
+1. **Six-month support now uses a conservative release-month estimate.** Azure Local support begins on each update's actual release date, not the first day of its calendar month. Azure Resource Graph exposes the reported solution version and its `YYMM` release month but not the official release day. LENS therefore marks the current and previous five months as Supported, the date-sensitive six-month boundary as Unknown, and only older months as Unsupported. Boundary cases link to the official Latest Releases table for confirmation.
 
-2. **Azure Local Instances — internal identity columns hidden.** The *All Azure Local Instances* table exposed `hciClusterId` and `hciClusterRG`, including the subscription-prefixed resource-group join key, as its first two columns. Both fields remain in the query for authoritative joins and row cardinality but are hidden from the grid. The table again begins with the readable cluster name and resource group columns.
+2. **Tenant update-catalog dependency removed.** The previous implementation treated only the six highest distinct `YYMM` values found in non-obsolete `microsoft.azurestackhci/clusters/updates` resources as supported. Superseded or unavailable update resources could therefore make a recent release disappear from that set and be incorrectly labelled Unsupported. Compliance no longer depends on which update resources happen to be offered in the selected subscriptions.
 
-3. **System Health — failure summary readability and ordering improved.** The **Health Check Failures By Reason Summary** table now lists concise cluster names, preserves their authoritative Azure Resource Manager casing, and sorts **Cluster Count** from highest to lowest. Full cluster ARM IDs remain in a separate internal set for identity-safe distinct-cluster counting, and subscription-qualified labels remain in the cluster filter where disambiguation is needed.
+3. **Hotfix versions remain within their release train.** Versions such as `12.2607.1003.69`, `12.2607.1003.71`, and `12.2607.1003.73` all resolve to release month `2607`; additional hotfix builds do not consume support-window slots. This fixes the reported case where `12.2606.1003.205` was shown as Unsupported alongside a supported `12.2607` cluster even though both releases were within six months.
 
-4. **Customer-defined object casing preserved.** Normalized lowercase ARM IDs remain internal join keys, but visible cluster names now come from authoritative resource `name` fields. This corrects lowercase display names in **Clusters with Updates Available**, **Update Run History and Error Details**, and the System Health affected-cluster list. Resource Group columns continue to use the native ARG `resourceGroup` value rather than normalized keys.
+4. **Unknown classification and regression coverage hardened.** Missing, malformed, impossible, future-dated, or six-month-boundary `YYMM` values are classified as Unknown. Tests enforce the conservative boundaries and reject the former tenant-dependent `take 6` implementation.
 
-5. **Azure Resource Bridge table refined.** In **All Azure Resource Bridges (ARB) appliances**, the visible **Azure Resource Bridge** name is now the portal link. The raw **ARB Link** helper column is hidden, removing the redundant link-only column while retaining direct navigation.
-
-6. **Azure Local Machines terminology aligned.** The tab now consistently uses **Azure Local Physical Machines**, **Machine Name**, **Machine Extensions**, and **Failed Machine Extensions**. The extension description now reads *“Arc agent extensions installed on physical machines of the Azure Local instances.”* Existing heading levels and font sizes are unchanged.
-
-7. **Physical-machine guidance standardized.** Current Capacity navigation, embedded DCR deployment guidance, and the checked-in DCR guide now use **physical machines** or **Azure Local physical machines** instead of **physical nodes**. Historical changelog wording remains unchanged where it describes earlier behavior.
-
-8. **Regression coverage expanded.** Tests now enforce hidden identity helpers, identity-safe health counts, descending failure-summary sorting, authoritative display casing, linked ARB names, Machines labels and headings, physical-machine terminology, and both First Time Success query branches. The complete local suite now runs 373 tests across 35 suites.
-
-The workbook header banner bumps from `v1.0.7` to `v1.0.8`.
+The workbook header banner bumps from `v1.0.8` to `v1.0.9`.
 
 ## v1.1.0 — Planned (post-gallery merge)
 
@@ -440,7 +432,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **373 unit tests across 35 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **379 unit tests across 35 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -498,6 +490,28 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.0.8
+
+A quality and UX refinement release that corrects regressions from the fleet-wide identity hardening in `v1.0.7`, restores customer-defined resource casing, and makes table labels and links more consistent across the workbook.
+
+1. **Update Progress — First Time Success Analysis query restored.** The inner total-count branch constructed its subscription-safe `updateKey` from `clusterId` without first defining `clusterId`, causing Azure Resource Graph to reject the entire query. Both branches now derive the full parent cluster ARM ID before constructing `updateKey`, restoring the **Updates - First Time Success Analysis** table while retaining cross-subscription correctness.
+
+2. **Azure Local Instances — internal identity columns hidden.** The *All Azure Local Instances* table exposed `hciClusterId` and `hciClusterRG`, including the subscription-prefixed resource-group join key, as its first two columns. Both fields remain in the query for authoritative joins and row cardinality but are hidden from the grid. The table again begins with the readable cluster name and resource group columns.
+
+3. **System Health — failure summary readability and ordering improved.** The **Health Check Failures By Reason Summary** table now lists concise cluster names, preserves their authoritative Azure Resource Manager casing, and sorts **Cluster Count** from highest to lowest. Full cluster ARM IDs remain in a separate internal set for identity-safe distinct-cluster counting, and subscription-qualified labels remain in the cluster filter where disambiguation is needed.
+
+4. **Customer-defined object casing preserved.** Normalized lowercase ARM IDs remain internal join keys, but visible cluster names now come from authoritative resource `name` fields. This corrects lowercase display names in **Clusters with Updates Available**, **Update Run History and Error Details**, and the System Health affected-cluster list. Resource Group columns continue to use the native ARG `resourceGroup` value rather than normalized keys.
+
+5. **Azure Resource Bridge table refined.** In **All Azure Resource Bridges (ARB) appliances**, the visible **Azure Resource Bridge** name is now the portal link. The raw **ARB Link** helper column is hidden, removing the redundant link-only column while retaining direct navigation.
+
+6. **Azure Local Machines terminology aligned.** The tab now consistently uses **Azure Local Physical Machines**, **Machine Name**, **Machine Extensions**, and **Failed Machine Extensions**. The extension description now reads *“Arc agent extensions installed on physical machines of the Azure Local instances.”* Existing heading levels and font sizes are unchanged.
+
+7. **Physical-machine guidance standardized.** Current Capacity navigation, embedded DCR deployment guidance, and the checked-in DCR guide now use **physical machines** or **Azure Local physical machines** instead of **physical nodes**. Historical changelog wording remains unchanged where it describes earlier behavior.
+
+8. **Regression coverage expanded.** Tests now enforce hidden identity helpers, identity-safe health counts, descending failure-summary sorting, authoritative display casing, linked ARB names, Machines labels and headings, physical-machine terminology, and both First Time Success query branches. The complete local suite now runs 373 tests across 35 suites.
+
+The workbook header banner bumps from `v1.0.7` to `v1.0.8`.
 
 ### v1.0.7
 

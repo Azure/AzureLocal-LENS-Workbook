@@ -1280,6 +1280,27 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
         'one summary per full cluster ID', item ? item.query : 'query missing');
     });
 
+    const supportedVersion = allQueries.find(query => query.name === 'tile-supported-version');
+    const unsupportedVersion = allQueries.find(query => query.name === 'tile-unsupported-version');
+    const unknownVersion = allQueries.find(query => query.name === 'tile-unknown-version');
+    const complianceQueries = [supportedVersion, unsupportedVersion, unknownVersion];
+    complianceQueries.forEach(item => {
+        assert(item && item.query.includes("releaseMonth = todatetime(strcat('20'") &&
+            item.query.includes("monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)") &&
+            !item.query.includes('isSupportedYymm') && !item.query.includes('| take 6'),
+        `${item?.name || 'Update compliance tile'} derives support from calendar age, not offered updates`,
+        'calendar-month calculation without tenant update catalog', item ? item.query : 'query missing');
+    });
+    assert(supportedVersion?.query.includes('monthsSinceRelease between (0 .. 5)'),
+        'Supported release tile includes the current and previous five calendar months',
+        'monthsSinceRelease between (0 .. 5)', supportedVersion ? supportedVersion.query : 'query missing');
+    assert(unsupportedVersion?.query.includes('monthsSinceRelease > 6'),
+        'Unsupported release tile includes only releases definitely beyond six months',
+        'monthsSinceRelease > 6', unsupportedVersion ? unsupportedVersion.query : 'query missing');
+    assert(unknownVersion?.query.includes('not(hasValidYymm) or monthsSinceRelease < 0 or monthsSinceRelease == 6'),
+        'Unknown version tile includes invalid, future, and date-sensitive boundary releases',
+        'invalid, future, or six-month-boundary release', unknownVersion ? unknownVersion.query : 'query missing');
+
     ['pie-arb-status', 'tile-arb-offline', 'tile-total-vms', 'tile-total-aks-arc'].forEach(queryName => {
         const item = allQueries.find(query => query.name === queryName);
         assert(item && item.query.includes('clusterScope') && !item.query.includes('arcBridgeRG'),

@@ -4145,7 +4145,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "🔔 **Alerting:** Use **Open in Logs** above the table to investigate a forecast row. Do not create a log search alert from this forecast query: Azure Monitor caps alert lookback at two days, while this model is intended for 30+ days of history. Create operational alerts on current CPU, memory, or storage thresholds instead. [Create a log search alert](https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-create-log-alert-rule)",
+                    "json": "🔔 **Alerting:** Use the **Open in Logs** button above each table to inspect its query and investigate the results. Do not create log search alerts from these forecast queries: Azure Monitor caps alert lookback at two days, while these models are intended for 30+ days of history. Create operational alerts on current CPU, memory, or storage thresholds instead. [Create a log search alert](https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-create-log-alert-rule?WT.mc_id=Portal-fx)",
                     "style": "info"
                   },
                   "name": "forecast-alert-guidance"

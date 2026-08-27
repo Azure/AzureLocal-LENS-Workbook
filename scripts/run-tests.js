@@ -742,6 +742,8 @@ testSuite('Customer-Facing Content Style', () => {
         { label: 'physical node', pattern: /\bphysical(?: cluster)? nodes?\b|\bphysical-node\b/i },
         { label: 'ambiguous forecast description', pattern: /Days how long the forecast should be/i },
         { label: 'retired AKS on Windows Server link', pattern: /aks\/hybrid\/aks-hybrid-options-overview/i },
+        { label: 'stale DCR associations link', pattern: /azure-monitor\/agents\/data-collection-rule-associations/i },
+        { label: 'stale Cluster Shared Volumes link', pattern: /failover-clustering\/manage-cluster-shared-volumes/i },
         { label: 'stale Arc Resource Bridge fragment', pattern: /#arc-resource-bridge-is-offline/i }
     ];
     const foundDeprecatedWording = deprecatedWording
@@ -1839,6 +1841,16 @@ testSuite('DCR Deployment Guidance', () => {
 
     const readiness = overviewItems.find(item => item.name === 'dcr-setup-readiness');
     const dcrGroup = overviewItems.find(item => item.name === 'dcr-setup-group');
+    const capacityScopeTip = overviewItems.find(item => item.name === 'capacity-arg-vs-monitor-tip');
+    const capacityScopeText = capacityScopeTip?.content?.json || '';
+    const capacityScopeLinks = [...capacityScopeText.matchAll(/\[[^\]]+]\((https?:\/\/[^\s)]+)\)/g)]
+        .map(match => match[1]);
+    const s2dCapacityScriptUrl = 'https://github.com/NeilBird/Azure-Local/tree/main/S2D-Show-Used-Available-Storage';
+    assert(capacityScopeText.includes('pool-level **real available** capacity') &&
+        capacityScopeLinks.some(link => link === s2dCapacityScriptUrl),
+        'Capacity Overview preserves real-available pool capacity guidance',
+        'real-available explanation and S2D PowerShell example link', capacityScopeText);
+
     const removedProcedureNames = [
         'dcr-setup-why-faq',
         'dcr-setup-alt-banner',

@@ -1,6 +1,6 @@
 # Azure Local LENS Content Audit
 
-Phase 1 baseline and recommendations, 2026-08-27.
+Post-v1.1.0 status and remaining recommendations, updated 2026-08-27.
 
 ## Scope and method
 
@@ -10,35 +10,37 @@ This audit covers customer-facing text and links in the 12 split workbook source
 
 Per-tab files embed copies of shared parameters and navigation. The audit counts `items[2]` from each tab and counts the shared files once, matching `scripts/build-monolithic.js`.
 
-## Baseline
+## Current baseline
 
 | Measure | Result |
 | --- | ---: |
 | Source files | 14 |
-| Customer-facing text entries | 968 |
-| Customer-facing words | 15,440 |
-| Length-review flags | 88 |
-| Unique clickable external destinations | 44 |
-| Repeated text groups | 35 |
+| Customer-facing text entries | 949 |
+| Customer-facing words | 10,030 |
+| Length-review flags | 72 |
+| Unique clickable external destinations | 40 |
+| Repeated text groups | 33 |
 
-Capacity contains 10,513 words, 68% of all customer-facing copy. Capacity Overview and Hyper-V alone contain 7,548 words. This concentration, not a workbook-wide excess, is the primary scanability issue.
+Capacity contains 5,330 words, 53% of all customer-facing copy, down from the pre-v1.1.0 baseline of 10,513 words. Capacity Overview and Hyper-V together contain 2,858 words, down from 7,548. Capacity remains the largest content area, but v1.1.0 removed the previous concentration of embedded setup procedures and repeated guidance.
 
 | Source | Words | Length flags |
 | --- | ---: | ---: |
-| Capacity Overview | 4,585 | 21 |
-| Capacity Hyper-V | 2,963 | 22 |
-| Capacity Single Cluster | 2,053 | 26 |
-| System Health | 904 | 4 |
-| Capacity Multi-Cluster | 826 | 7 |
+| Capacity Single Cluster | 1,718 | 25 |
+| Capacity Overview | 1,646 | 12 |
+| Capacity Hyper-V | 1,212 | 17 |
+| System Health | 750 | 4 |
 | Update Progress | 720 | 2 |
 | AKS Arc | 718 | 1 |
 | Overview | 710 | 0 |
-| ARB Status | 667 | 4 |
-| Machines | 590 | 0 |
+| Capacity Multi-Cluster | 667 | 6 |
+| ARB Status | 614 | 4 |
+| Machines | 570 | 0 |
 | Shared header | 292 | 1 |
 | VMs | 269 | 0 |
+| Capacity navigation | 87 | 0 |
+| Shared parameters | 57 | 0 |
 
-The largest individual blocks are `dcr-setup-deploy-steps` (711 words), `hyperv-limitations-note` (661), `dcr-setup-arm-template` (450), `hyperv-inv-help` (435), and `dcr-setup-why-faq` (388).
+The largest individual blocks are `filter-instructions` (157 words), `hyperv-limitations-note` (152), `dcr-setup-readiness` (151), `sc-hyperv-notes` (140), and `hyperv-dcr-readiness` (128). Length flags remain editorial triage signals, not automatic defects.
 
 ## Priority findings
 
@@ -54,56 +56,59 @@ The audit identified three customer links that required replacement. All three w
 
 The ARB links also used the fragment `#arc-resource-bridge-is-offline`, which was not present in the current article fetched during this audit. v1.1.0 removes the stale fragment and retains the working `troubleshoot-resource-bridge` article URL.
 
-### P1: Restore Capacity's decision path
+### Completed in v1.1.0: Restored Capacity's decision path
 
-Keep the four-tab journey: Overview, Single Cluster, Multi-Cluster, Hyper-V VMs. Change the information hierarchy inside it:
+The four-tab journey remains Overview, Single Cluster, Multi-Cluster, and Hyper-V VMs. v1.1.0 changed the information hierarchy inside it to:
 
 1. Show state and risk first: current utilization, headroom, threshold crossings, and forecast confidence.
 2. Put the next action beside the evidence: drill into a cluster, inspect a node or VM, review collection coverage, or open alert setup.
 3. Keep one short inline explanation per concept.
 4. Move setup procedures, counter inventories, formulas, and limitations behind progressive disclosure or to the existing repository guide.
 
-The DCR guide is useful but currently interrupts the operational path. `dcr-setup-deploy-steps`, `dcr-setup-arm-template`, `dcr-setup-required-counters`, `dcr-setup-required-eventlogs`, and `dcr-setup-portal-method` should become a short readiness summary plus links to the maintained example DCR guide. Preserve exact counter and verification details in that guide.
+The embedded DCR procedures no longer interrupt the operational path. `dcr-setup-deploy-steps`, `dcr-setup-arm-template`, `dcr-setup-required-counters`, `dcr-setup-required-eventlogs`, and `dcr-setup-portal-method` were replaced by a short readiness summary and links to the maintained example DCR guide, where the exact counter and verification details remain.
 
-Shorten `capacity-n1-memory-tip` to the decision-relevant explanation. Move formulas and edge cases into a tooltip or expanded “How calculated” section. Retain forecast disclaimers, but use one shared wording per view instead of repeating it near each chart.
+`capacity-n1-memory-tip` now contains the decision-relevant explanation, and forecast guidance is consolidated by view instead of repeated near each chart.
 
-The “real used” and “real available” explanation is important because thin provisioning makes portal and WAC figures differ. Retain the distinction, but avoid presenting a single value without its scope and assumptions. Use labels such as “physical footprint,” “logical written,” and “estimated new logical capacity,” with reserve and resiliency assumptions visible.
+The thin-provisioning distinction remains in `capacity-arg-vs-monitor-tip`, including the restored PowerShell example for calculating pool-level real available capacity with reserve and resiliency adjustments.
 
-### P1: Make empty states diagnostic
+### Completed in v1.1.0: Made empty states diagnostic
 
-No-data messages currently mix three different meanings:
+No-data messages previously mixed four different meanings:
 
 - Healthy zero: no failures, disconnected resources, or expiring certificates.
 - Empty scope: no resources match subscription or workbook filters.
 - Missing telemetry: resources exist, but the required table, counter, event, or update summary is absent.
+- Insufficient history: the selected time range does not contain enough samples for the calculation.
 
-Each message should identify exactly one of these states where the query can distinguish it. Do not imply “healthy” when the query can also be empty because scope or telemetry is missing. System Health's “clusters may not be reporting Update Summaries yet” and Capacity's counter-specific messages are good diagnostic patterns, although the latter should link to setup instead of repeating setup prose.
+Customer-facing guidance now defines these four states in `CONTRIBUTING.md`, and regression tests reject generic “No data/results/resources/records/information” messages. Query-specific messages name scope, telemetry, history, or the absent warning condition where the query can distinguish it. Live-data validation remains necessary to prove that each query selects the correct state at runtime.
 
-### P1: Standardize operational terminology
+### Completed in v1.1.0: Standardized operational terminology
 
 - Use “Azure Local node” for the managed host concept. Reserve “physical machine” for text that must distinguish hardware from VMs.
 - Expand “Arc Resource Bridge (ARB)” at first use on every independently reachable tab.
 - Use one status pair consistently: “Connected/Disconnected” rather than mixing “Non-Connected,” “Disconnected,” and “Offline” for the same signal.
 - Keep “Offline” for a resource state that is genuinely distinct from Azure Arc connection status.
 - Define Capacity terms once: provisioned, committed, physical footprint, logical written, available, and forecast.
-- Replace “Days how long the forecast should be” with “Number of days to project.”
+- Replaced “Days how long the forecast should be” with “Number of days to project.”
 
-## Per-tab disposition
+Contributor guidance and regression tests now enforce the principal terminology and empty-state rules. First-use acronym expansion on every independently reachable tab remains a manual release review item.
 
-| Area | Retain | Shorten | Move or consolidate | Remove |
-| --- | --- | --- | --- | --- |
-| Shared header | Global filters, support and learning links | `filter-instructions` to task-first steps | Detailed filter examples into one expandable help block | Repeated explanation already present in controls |
-| Overview | Fleet summary, health and update risk hierarchy | Ambiguous “no clusters” messages | Keep detailed remediation in owning tabs | Parenthetical empty-state hedges such as “or no clusters match” |
-| Machines | Node inventory, Arc status, failed extension sections | Intro and extension labels | Put one remediation link next to disconnected and failed states | Repeated warning symbols in prose |
-| VMs | Inventory, status, OS and deployment trends | Scope-empty messages | Align intro with the operational jobs shown | None identified |
-| AKS Arc | Cluster health, versions, extensions, Flux, certificate risk | Dense opening sentence | Put remediation links beside failed extension and Flux sections | Retired AKS on Windows Server link |
-| ARB Status | Offline threshold, resource-specific alert links | `arb-manual-alert-steps` | One alert setup guide plus a “view rules” action | Duplicate generic alert navigation |
-| System Health | Health checks, readiness matrix, remediation links | `detailed-health-check-results-tip` and matrix explainer | “How to read” detail into an expandable block | None identified |
-| Update Progress | In-flight status, history, error details | Intro to “track, diagnose, verify” | Consolidate update phases, failures, and known-issues links | Duplicate troubleshooting links where row remediation already exists |
-| Capacity Overview | Summary and coverage indicators | N-1 memory explanation | DCR procedure and formulas into progressive help or repository docs | Duplicate counter/setup prose |
-| Capacity Single Cluster | Node and workload drill-down, source-specific no-data help | Repeated source and forecast caveats | One setup pointer and one disclaimer per section | Repeated “Show DCR Setup Guide” wording |
-| Capacity Multi-Cluster | Exhaustion table, comparison charts, forecast caveat | Filter descriptions and “How this works” | Put alert/action entry beside the exhaustion table after validation | Repeated setup wording |
-| Capacity Hyper-V | VM inventory, six performance views, scope caveats | Inventory help and 661-word limitations block | Counter deployment and verification into the common DCR guide | Duplicate setup guidance already maintained in Capacity Overview |
+## Current per-tab disposition
+
+| Area | v1.1.0 outcome | Remaining follow-up |
+| --- | --- | --- |
+| Shared header | Global filters, support links, and task guidance retained | `filter-instructions` is now the largest block at 157 words; review only if usability testing shows friction |
+| Overview | Fleet summary and diagnostic empty states retained | Validate authenticated portal remediation paths |
+| Machines | Node inventory, Arc status, extension terminology, and remediation retained | No content defect identified |
+| VMs | Inventory, status, OS, deployment trends, and scope guidance retained | No content defect identified |
+| AKS Arc | Retired AKS on Windows Server destination replaced by the AKS on Azure Local overview | No content defect identified |
+| ARB Status | Alert guidance consolidated and shortened | Validate authenticated alert blades and parameters |
+| System Health | Health-check and readiness guidance shortened while preserving operational facts | Review authenticated remediation links during portal validation |
+| Update Progress | In-flight status, history, error details, and troubleshooting retained | No content defect identified |
+| Capacity Overview | DCR procedures moved to maintained docs; N-1 and storage guidance shortened; S2D example retained | Validate any future alert action before adding it |
+| Capacity Single Cluster | Setup pointers and forecast/source caveats consolidated | Length flags remain available for editorial review |
+| Capacity Multi-Cluster | Forecast and setup guidance consolidated | Validate any future scheduled-query alert workflow |
+| Capacity Hyper-V | Limitations reduced from 661 to 152 words; inventory help from 435 to 125; deployment detail moved to maintained docs | Length flags remain available for editorial review |
 
 ## Actions and alerts
 
@@ -114,7 +119,7 @@ The workbook already proves two action patterns:
 
 Capacity forecast charts do not currently expose alert creation. Do not copy the ARB action blindly: forecast results are Log Analytics calculations, not Resource Health events. First test a grid or adjacent action that opens scheduled query rule creation with the correct workspace, query, scope, threshold, evaluation window, and dimensions. If full prefill is unsupported, link to concise alert guidance and expose the query for reuse.
 
-Authenticated portal validation is required for these hard-coded blades before release:
+Authenticated portal validation remains outstanding for these hard-coded blades. It does not block this content-only fast-follow because no blade or action URL changed:
 
 - `CreateAlertRuleFromResourceBlade` and its `alertType` parameters.
 - `DataCollectionRulesBlade`.
@@ -122,27 +127,27 @@ Authenticated portal validation is required for these hard-coded blades before r
 - Azure Local `SingleInstanceHistoryDetails.ReactView`.
 - Grid context blades populated with KQL `pack()` values.
 
-## Recommended implementation sequence
+## Implementation status and remaining sequence
 
-1. Completed in v1.1.0: replace the three confirmed stale or mismatched links and remove the stale ARB fragment.
-2. Establish a small terminology and empty-state style contract in contributor guidance and tests.
-3. Redesign Capacity Overview copy first: compact the N-1 explanation and collapse the DCR setup material.
-4. Apply the same setup pointer, forecast disclaimer, and terminology across Single Cluster, Multi-Cluster, and Hyper-V.
-5. Tighten isolated long blocks in System Health and ARB Status.
-6. Run an authenticated portal action spike, then implement only the alert actions that preserve correct scope and query semantics.
-7. Validate with the full workbook test suite, shared-parameter parity, monolithic rebuild, accessibility lint, authenticated portal rendering, and representative live data.
+1. Completed in v1.1.0: replace the three stale or mismatched links and remove the stale ARB fragment.
+2. Completed in v1.1.0: establish terminology and empty-state guidance in contributor documentation and tests.
+3. Completed in v1.1.0: compact Capacity Overview guidance and move detailed DCR procedures to maintained documentation.
+4. Completed in v1.1.0: consolidate setup pointers, forecast disclaimers, and terminology across Capacity views.
+5. Completed in v1.1.0: tighten the identified long blocks in System Health and ARB Status.
+6. Remaining: run an authenticated portal action spike, then implement only alert actions that preserve correct scope and query semantics.
+7. Local validation completed: full workbook suite, shared-parameter parity, monolithic rebuild, gallery validation, and accessibility checks. Authenticated portal rendering and representative live-data checks remain separate release activities when runtime behavior changes.
 
 ## Acceptance measures
 
-Measure the edited source set with the same inventory script. Suggested targets are directional and should not override clarity:
+The edited source set was measured with the same inventory script:
 
-- Reduce Capacity customer-facing words by at least 30% while retaining all operational facts in context or linked documentation.
-- Reduce Capacity markdown blocks over 140 words from 17 to no more than 5.
-- Keep confirmed 404 and mismatched customer links eliminated through regression checks.
-- Ensure every independently reachable tab expands acronyms at first use.
-- Classify every no-data message as healthy zero, empty scope, missing telemetry, or insufficient history.
-- Give each critical or warning result a next action or a clearly labeled reason why no direct action is available.
+- Completed: Capacity customer-facing words fell 49% from 10,513 to 5,330, exceeding the 30% target while retaining detailed procedures in linked documentation.
+- Completed: Capacity markdown blocks over 140 words fell from 17 to 2, below the target of 5.
+- Completed: confirmed 404 and mismatched customer links are eliminated and covered by regression checks.
+- Implemented: the contributor contract requires first-use acronym expansion; independently reachable tabs still need manual release review.
+- Implemented: no-data guidance defines healthy zero, empty scope, missing telemetry, and insufficient history; regression checks reject generic empty messages.
+- Remaining design criterion: each critical or warning result should provide a next action or clearly state why no direct action is available.
 
 ## Validation boundary
 
-This phase validates source structure, copy inventory, public documentation destinations, and existing action construction. It does not claim that KQL returns correct live results, authenticated portal blades render, chart layouts fit at all viewport sizes, or alert rules can be safely pre-populated. Those require the live-data and portal checks listed above.
+This audit validates source structure, copy inventory, public documentation destinations, and existing action construction. It does not claim that KQL returns correct live results, authenticated portal blades render, chart layouts fit at all viewport sizes, or alert rules can be safely pre-populated. Those require the live-data and portal checks listed above. No KQL changed in the v1.1.0 content release or this fast-follow.

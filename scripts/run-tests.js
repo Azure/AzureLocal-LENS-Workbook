@@ -720,19 +720,71 @@ testSuite('README Structure Validation', () => {
     assert(readme.includes('## License'),
         'README has license section', 'found', readme.includes('## License') ? 'found' : 'not found');
 
-    const dcrGuide = fs.readFileSync(
-        path.resolve(__dirname, '..', 'example-dcr-template', 'README.md'),
-        'utf8');
-    const physicalNodePattern = /physical(?: cluster)? nodes?|physical-node/i;
-    assert(!physicalNodePattern.test(workbookRaw) && !physicalNodePattern.test(dcrGuide) &&
-        workbookRaw.includes('physical machines for detailed capacity') &&
-        workbookRaw.includes('Arc-enabled physical machine') &&
-        dcrGuide.includes('Azure Local physical machines'),
-    'Current customer guidance consistently uses physical machines terminology',
-    'physical machines in workbook and DCR guide', JSON.stringify({
-        workbookHasLegacyTerm: physicalNodePattern.test(workbookRaw),
-        dcrGuideHasLegacyTerm: physicalNodePattern.test(dcrGuide)
-    }));
+});
+
+// --- 14a. Customer-Facing Content Style ---
+testSuite('Customer-Facing Content Style', () => {
+    const contributing = fs.readFileSync(path.resolve(__dirname, '..', 'CONTRIBUTING.md'), 'utf8');
+    const requiredContractTerms = [
+        '### Customer-facing content',
+        '**Healthy zero**',
+        '**Empty scope**',
+        '**Missing telemetry**',
+        '**Insufficient history**'
+    ];
+    const missingContractTerms = requiredContractTerms.filter(term => !contributing.includes(term));
+    assert(missingContractTerms.length === 0,
+        'Contributor guidance defines the customer-facing content and empty-state contract',
+        'all contract sections present', missingContractTerms.join(', ') || 'all present');
+
+    const deprecatedWording = [
+        { label: 'Non-Connected', pattern: /\bNon-Connected\b/i },
+        { label: 'physical node', pattern: /\bphysical(?: cluster)? nodes?\b|\bphysical-node\b/i },
+        { label: 'ambiguous forecast description', pattern: /Days how long the forecast should be/i },
+        { label: 'retired AKS on Windows Server link', pattern: /aks\/hybrid\/aks-hybrid-options-overview/i },
+        { label: 'stale Arc Resource Bridge fragment', pattern: /#arc-resource-bridge-is-offline/i }
+    ];
+    const foundDeprecatedWording = deprecatedWording
+        .filter(entry => entry.pattern.test(workbookRaw))
+        .map(entry => entry.label);
+    assert(foundDeprecatedWording.length === 0,
+        'Workbook avoids deprecated operational terminology',
+        'no deprecated wording', foundDeprecatedWording.join(', ') || 'none');
+
+    const genericEmptyStatePattern = /^No (?:data|results|resources|records|information)(?: available| found)?[.!]?$/i;
+    const genericEmptyStates = allItems
+        .filter(item => typeof item.content?.noDataMessage === 'string')
+        .filter(item => genericEmptyStatePattern.test(item.content.noDataMessage.trim()))
+        .map(item => item.name || 'unnamed');
+    assert(genericEmptyStates.length === 0,
+        'Query empty states identify a diagnostic condition or next action',
+        'no generic empty states', genericEmptyStates.join(', ') || 'none');
+
+    const conciseGuidanceNames = ['detailed-health-check-results-tip', 'arb-manual-alert-steps'];
+    const longGuidanceItems = conciseGuidanceNames
+        .map(name => allItems.find(item => item.name === name))
+        .map(item => ({
+            name: item?.name || 'missing',
+            words: (item?.content?.json || '').replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length
+        }))
+        .filter(item => item.name === 'missing' || item.words > 140);
+    assert(longGuidanceItems.length === 0,
+        'System Health and ARB operational guidance remains concise',
+        'named guidance items present and <=140 words', JSON.stringify(longGuidanceItems));
+
+    const arbAlertGuidance = allItems.find(item => item.name === 'arb-manual-alert-steps')?.content?.json || '';
+    assert(arbAlertGuidance.includes('scoped to a Log Analytics workspace') &&
+        arbAlertGuidance.includes('managed identity with Reader access') &&
+        arbAlertGuidance.includes('not supported in government clouds'),
+        'Resource Graph alert guidance preserves identity, scope, and cloud requirements',
+        'workspace scope, managed identity Reader access, and government-cloud limitation', arbAlertGuidance);
+
+    const forecastAlertGuidance = allItems.find(item => item.name === 'forecast-alert-guidance')?.content?.json || '';
+    assert(forecastAlertGuidance.includes('caps alert lookback at two days') &&
+        forecastAlertGuidance.includes('30+ days of history') &&
+        forecastAlertGuidance.includes('current CPU, memory, or storage thresholds'),
+        'Forecast alert guidance explains the incompatible alert lookback',
+        'two-day alert limit, 30+ day forecast history, and current-threshold alternative', forecastAlertGuidance);
 });
 
 // --- 15. Portal Link Integrity ---
@@ -1236,18 +1288,18 @@ testSuite('Machines Subscription-Scoped Identity', () => {
         'All machines table labels its first column Machine Name',
         'Machine Name', machineNameLabel?.label || 'missing');
     const machinesGroup = allItems.find(item =>
-        item.content?.title === 'Azure Local Physical Machines' &&
+        item.content?.title === 'Azure Local Nodes' &&
         item.content?.items?.some(child => child.name === 'text-nodes-header'));
     const machinesHeader = allItems.find(item => item.name === 'text-nodes-header');
-    assert(machinesGroup && machinesHeader?.content?.json.startsWith('## 🖥️ Azure Local Physical Machines\r\n'),
-        'Machines tab uses Azure Local Physical Machines at both heading levels',
+    assert(machinesGroup && machinesHeader?.content?.json.startsWith('## 🖥️ Azure Local Nodes\r\n'),
+        'Machines tab uses Azure Local Nodes at both heading levels',
         'group title and Markdown heading', JSON.stringify({
             groupTitle: machinesGroup?.content?.title,
             header: machinesHeader?.content?.json
         }));
     const extensionsHeader = allItems.find(item => item.name === 'text-extensions-divider');
     const failedExtensionsTable = allItems.find(item => item.name === 'failed-extensions-table');
-    assert(extensionsHeader?.content?.json === '---\r\n## 🧩 Machine Extensions\r\nArc agent extensions installed on physical machines of the Azure Local instances.' &&
+    assert(extensionsHeader?.content?.json === '---\r\n## 🧩 Machine Extensions\r\nAzure Arc agent extensions installed on Azure Local nodes.' &&
         failedExtensionsTable?.content?.title === '⚠️ Failed Machine Extensions' &&
         !JSON.stringify(allItems).includes('Node Extensions'),
     'Machines tab consistently uses Machine Extensions terminology',
@@ -1778,33 +1830,89 @@ testSuite('DCR Deployment Guidance', () => {
     const hyperVPath = path.resolve(__dirname, '..', 'workbooks', 'Capacity-HyperV', 'Capacity-HyperV.workbook');
     const dcrReadmePath = path.resolve(__dirname, '..', 'example-dcr-template', 'README.md');
     const overviewRaw = fs.readFileSync(overviewPath, 'utf8');
+    const overview = JSON.parse(overviewRaw);
+    const overviewItems = collectAllItems(overview.items || []);
     const hyperVRaw = fs.readFileSync(hyperVPath, 'utf8');
+    const hyperV = JSON.parse(hyperVRaw);
+    const hyperVItems = collectAllItems(hyperV.items || []);
     const dcrReadme = fs.readFileSync(dcrReadmePath, 'utf8');
 
-    const recommendedIndex = overviewRaw.indexOf('Recommended — Dedicated All-in-One DCR with ARM / Azure CLI');
-    const portalFallbackIndex = overviewRaw.indexOf('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR');
-    assert(recommendedIndex >= 0 && portalFallbackIndex > recommendedIndex,
-        'Capacity DCR guidance presents CLI before the portal fallback',
-        'CLI recommendation before portal fallback', `${recommendedIndex} / ${portalFallbackIndex}`);
+    const readiness = overviewItems.find(item => item.name === 'dcr-setup-readiness');
+    const dcrGroup = overviewItems.find(item => item.name === 'dcr-setup-group');
+    const removedProcedureNames = [
+        'dcr-setup-why-faq',
+        'dcr-setup-alt-banner',
+        'dcr-setup-prereqs',
+        'dcr-setup-required-counters',
+        'dcr-setup-required-eventlogs',
+        'dcr-setup-arm-template',
+        'dcr-setup-deploy-steps',
+        'dcr-setup-azure-policy',
+        'dcr-setup-portal-method'
+    ];
+    const retainedProcedureNames = removedProcedureNames.filter(name => overviewItems.some(item => item.name === name));
+    assert(dcrGroup?.content?.items?.length === 1 && readiness && retainedProcedureNames.length === 0,
+        'Capacity Overview uses one concise DCR checklist with embedded links',
+        'one-item help group with no embedded procedures', JSON.stringify({
+            groupItems: dcrGroup?.content?.items?.map(item => item.name),
+            retainedProcedureNames
+        }));
 
-    const templateJsonLink = '[`example-dcr-template/dcr-azurelocal-capacity-perf.json`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)';
-    const capacityGuideLink = '➡️ **[Open the dedicated template and detailed deployment instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**';
-    const capacityGuideHasNormalLink = overviewRaw.split(capacityGuideLink).length === 2 && !overviewRaw.includes('[`example-dcr-template/README.md`](');
-    assert(overviewRaw.includes(templateJsonLink) && capacityGuideHasNormalLink && hyperVRaw.includes('example-dcr-template/README.md'),
-        'DCR guidance uses the JSON target and normal-size detailed-guide links',
-        'JSON target and normal-size README links',
-        `${overviewRaw.includes(templateJsonLink)} / ${capacityGuideHasNormalLink} / ${hyperVRaw.includes('example-dcr-template/README.md')}`);
+    const readinessText = readiness?.content?.json || '';
+    const readinessWordCount = readinessText.replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    assert(readinessWordCount <= 180 && readinessText.includes('all 27 host and Hyper-V counter paths plus Event 3002') &&
+        readinessText.includes('remediation task') && readinessText.includes('does not deduplicate'),
+        'Capacity DCR checklist stays concise while retaining deployment safeguards',
+        '<=180 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
 
-    assert(overviewRaw.includes('Ongoing Fleet Enforcement with Azure Policy') && overviewRaw.includes('remediation task') &&
-        overviewRaw.includes('all 27 exact paths') && overviewRaw.includes('EventID=3002') &&
-        overviewRaw.includes('### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR'),
-        'Capacity DCR guidance covers Azure Policy and existing-resource remediation',
-        'Policy, remediation, and portal fallback guidance', 'present');
+    const requiredDcrLinks = [
+        'https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md',
+        'https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json',
+        'https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations',
+        'https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade',
+        'https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs'
+    ];
+    const numberedDcrLinks = readinessText.match(/^#### \d\. \[[^\]]+\]\([^)]+\)$/gm) || [];
+    assert(readinessText.startsWith('### Capacity telemetry checklist and steps') &&
+        readinessText.includes('### Knowledge links and instructions') &&
+        readinessText.includes('1. [📘 LENS DCR Setup and Deployment Guide]') &&
+        requiredDcrLinks.every(link => readinessText.includes(link)) && numberedDcrLinks.length === 5 &&
+        !overviewItems.some(item => item.name === 'dcr-setup-links') &&
+        hyperVRaw.includes('example-dcr-template/README.md'),
+        'DCR guidance embeds five large numbered maintained links in the blue checklist',
+        'knowledge heading, LENS guide label, and five level-4 link headings', JSON.stringify(numberedDcrLinks));
 
-    assert(!hyperVRaw.includes('dcr-azurelocal-hyperv.json') && hyperVRaw.includes('Do not associate another DCR'),
-        'Hyper-V guidance does not offer an overlapping standalone DCR',
-        'no standalone template and explicit overlap warning',
-        `${hyperVRaw.includes('dcr-azurelocal-hyperv.json')} / ${hyperVRaw.includes('Do not associate another DCR')}`);
+    const hyperVReadiness = hyperVItems.find(item => item.name === 'hyperv-dcr-readiness');
+    const hyperVDcrGroup = hyperVItems.find(item => item.name === 'hyperv-dcr-setup-group');
+    const removedHyperVProcedureNames = [
+        'hyperv-dcr-prereqs',
+        'hyperv-dcr-counters-table',
+        'hyperv-dcr-portal-limitation',
+        'hyperv-dcr-verify'
+    ];
+    const retainedHyperVProcedureNames = removedHyperVProcedureNames
+        .filter(name => hyperVItems.some(item => item.name === name));
+    const hyperVReadinessText = hyperVReadiness?.content?.json || '';
+    const hyperVReadinessWordCount = hyperVReadinessText
+        .replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    const numberedHyperVLinks = hyperVReadinessText.match(/^#### \d\. \[[^\]]+\]\([^)]+\)$/gm) || [];
+    assert(hyperVDcrGroup?.content?.items?.length === 1 && hyperVReadiness &&
+        retainedHyperVProcedureNames.length === 0 && hyperVReadinessWordCount <= 150 &&
+        hyperVReadinessText.startsWith('### Hyper-V telemetry checklist and steps') &&
+        hyperVReadinessText.includes('### Knowledge links and instructions') &&
+        hyperVReadinessText.includes('1. [📘 LENS DCR Setup and Deployment Guide]') &&
+        numberedHyperVLinks.length === 4 &&
+        hyperVReadinessText.includes('14 Hyper-V counter paths') &&
+        hyperVReadinessText.includes('Do not associate another DCR') &&
+        !hyperVItems.some(item => item.name === 'hyperv-dcr-links') &&
+        !hyperVRaw.includes('dcr-azurelocal-hyperv.json'),
+        'Hyper-V embeds concise setup guidance and four large numbered links',
+        'one item, <=150 words, knowledge links, complete coverage, and overlap warning', JSON.stringify({
+            groupItems: hyperVDcrGroup?.content?.items?.map(item => item.name),
+            retainedHyperVProcedureNames,
+            hyperVReadinessWordCount,
+            numberedHyperVLinks
+        }));
 
     assert(dcrReadme.includes('Additive does not mean deduplicated') && dcrReadme.includes('Keep current and future hosts associated with Azure Policy'),
         'Detailed DCR README documents duplicate ingestion and Policy enforcement',

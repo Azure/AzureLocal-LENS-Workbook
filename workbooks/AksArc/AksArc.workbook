@@ -294,7 +294,7 @@
               "links": [
                 {
                   "id": "aks-arc-docs-link",
-                  "cellValue": "https://learn.microsoft.com/azure/aks/hybrid/aks-hybrid-options-overview",
+                  "cellValue": "https://learn.microsoft.com/azure/aks/aksarc/aks-local-overview",
                   "linkTarget": "Url",
                   "linkLabel": "📚 Documentation: AKS on Azure Local",
                   "style": "link"

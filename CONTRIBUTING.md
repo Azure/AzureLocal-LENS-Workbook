@@ -56,7 +56,7 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (248 tests across 29 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, DCR deployment guidance, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (384 tests across 37 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, DCR deployment guidance, content style, and accessibility. |
 | `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for all 11 Capacity storage usage, storage performance, and network throughput charts. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
@@ -90,6 +90,19 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
 - **Row Limits**: Set `rowLimit` to at least `2000` in grid settings
 - **Cross-Component Resources**: Use `{Subscriptions}` for `crossComponentResources` to respect the user's subscription filter
 - **No inline-style HTML**: For visual emphasis on markdown items, set the workbook `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead of using `<div style=...>` / `<span style=...>` / `<font color=...>`. The accessibility lint will block PRs that introduce inline styling.
+
+### Customer-facing content
+
+- Use **Azure Local node** for a managed cluster host. Use **physical machine** only when the text must distinguish host hardware from guest VMs, such as DCR association guidance.
+- Expand **Azure Resource Bridge (ARB)** at first use on every independently reachable tab.
+- Use **Connected / Disconnected** for Azure Arc connectivity. Reserve **Offline** for a distinct resource state reported by the service.
+- Keep the decision and next action inline. Put long procedures, complete counter lists, formulas, and edge cases in progressive help or maintained repository documentation.
+- Classify each `noDataMessage` as exactly one state that the query can prove:
+   - **Healthy zero**: state which warning or failure condition is absent.
+   - **Empty scope**: state that no resources match the selected scope or filters and name the filter action.
+   - **Missing telemetry**: name the required table, counter, event, permission, or setup action.
+   - **Insufficient history**: name the required time range or sample history and suggest widening it.
+- Do not combine possible empty-state causes with "or" when the query cannot distinguish them. Avoid generic messages such as "No data available" or "No results found".
 
 ### KQL Query Best Practices
 
@@ -127,7 +140,7 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 248 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
+All 384 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 

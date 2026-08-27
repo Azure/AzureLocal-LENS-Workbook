@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.0.9
+## Latest Version: v1.1.0
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,8 +26,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.0.9)](#whats-new-v109)
-- [v1.1.0 — Planned (post-gallery merge)](#v110--planned-post-gallery-merge)
+- [What's New (v1.1.0)](#whats-new-v110)
+- [v1.1.5 — Planned (post-gallery merge)](#v115--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
@@ -155,13 +155,7 @@ Centralized view of cluster resource utilization, capacity forecasting, and work
   - vCPU Total (combined VM + AKS) and VM Memory Total (GB)
   - V:P CPU Ratio (e.g., `4.2:1`) — computed inline via Azure Resource Graph sub-joins
   - **Target vCPU:pCPU Ratio** drop-down (default `4:1`) lets you flag clusters whose actual ratio exceeds your target
-- **Capacity DCR Setup Guide** (collapsible) — everything required to make the Top 5 Log-Analytics charts work:
-  - Prerequisites (Azure Monitor Agent, Log Analytics workspace, RBAC, regions)
-  - Required Performance Counters table (Processor / Memory / LogicalDisk / Cluster CSV File System / Network Interface)
-  - **Recommended:** deploy the dedicated all-in-one [`dcr-azurelocal-capacity-perf.json`](example-dcr-template/dcr-azurelocal-capacity-perf.json) template with ARM / Azure CLI and associate it with every Azure Local physical host. The [detailed deployment guide](example-dcr-template/README.md) covers single-cluster and fleet-wide rollout, physical-host filtering, verification, overlap warnings, and cost considerations
-  - **Ongoing enforcement:** use Azure Policy to associate current and future matching Arc-enabled hosts; existing nodes require a remediation task
-  - **Manual fallback:** merge all 27 exact counter paths plus Event 3002 into an existing organization-managed DCR through the portal
-  - Multiple DCR associations are supported, but overlapping data sources are not deduplicated and can increase ingestion cost
+- **Capacity Telemetry Readiness** (collapsible) — a concise checklist for Azure Monitor Agent, workspace region, complete counter and Event 3002 coverage, node association, verification, and duplicate-ingestion safeguards. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains the exact counter paths, deployment commands, verification queries, Azure Policy guidance, and manual merge procedure; the source-controlled [`dcr-azurelocal-capacity-perf.json`](example-dcr-template/dcr-azurelocal-capacity-perf.json) remains the recommended all-in-one template
 - **Top 5 Azure Local Instances by Resource Capacity Usage** — Top-5 line/area charts (size: large) sourced from Log Analytics:
   - CPU Usage (%) · Memory Usage (%) · Storage Usage (%) · Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s)
 - **AKS Node usage** — Prometheus-sourced timecharts of Top AKS Nodes by CPU, Memory, Disk I/O (bytes/sec), and Network Throughput (bytes/sec)
@@ -189,7 +183,7 @@ Fleet-wide capacity trending and forecasting:
 
 #### 🖥️ Hyper-V VMs sub-tab
 Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):
-- **Hyper-V DCR Setup Guide** (collapsible) — prerequisites, required Hyper-V counters table (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`), a link to the recommended all-in-one Capacity DCR, a portal merge fallback, duplicate-ingestion warning, and a Kusto helper to verify counters are flowing. No second Hyper-V DCR is required when the all-in-one template is deployed
+- **Hyper-V Telemetry Readiness** (collapsible) — a concise checklist for AMA, the 14 Hyper-V counter paths, DCR association, and `Perf` verification. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains exact paths, merge procedures, verification queries, and troubleshooting. No second Hyper-V DCR is required when the all-in-one template is deployed
 - **📊 Active VMs (from Log Analytics)** summary
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
 - **Top VMs / Top Virtual Disks** charts:
@@ -401,30 +395,32 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.0.9)
+## What's New (v1.1.0)
 
-A correctness release for the **Azure Local Instances → Update Compliance** tiles, addressing [Issue #94](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/94).
+A content, usability, and maintainability release focused on making operational guidance concise, consistent, and easier to act on across the workbook.
 
-1. **Six-month support now uses a conservative release-month estimate.** Azure Local support begins on each update's actual release date, not the first day of its calendar month. Azure Resource Graph exposes the reported solution version and its `YYMM` release month but not the official release day. LENS therefore marks the current and previous five months as Supported, the date-sensitive six-month boundary as Unknown, and only older months as Unsupported. Boundary cases link to the official Latest Releases table for confirmation.
+1. **Capacity guidance streamlined.** The Capacity Overview, Multi-cluster, Single cluster, and Hyper-V views now use shorter task-focused guidance, consistent terminology, and clearer diagnostic empty states. Detailed DCR procedures live in the maintained deployment guide while readiness checks and immediate actions remain in the workbook.
 
-2. **Tenant update-catalog dependency removed.** The previous implementation treated only the six highest distinct `YYMM` values found in non-obsolete `microsoft.azurestackhci/clusters/updates` resources as supported. Superseded or unavailable update resources could therefore make a recent release disappear from that set and be incorrectly labelled Unsupported. Compliance no longer depends on which update resources happen to be offered in the selected subscriptions.
+2. **Capacity readiness and forecast guidance improved.** Capacity Overview and Hyper-V use compact readiness surfaces for required telemetry. Forecast descriptions distinguish directional planning estimates from operational alerts and explain why the 30-day-plus forecast model should not be used directly as a log search alert with Azure Monitor's two-day alert lookback limit.
 
-3. **Hotfix versions remain within their release train.** Versions such as `12.2607.1003.69`, `12.2607.1003.71`, and `12.2607.1003.73` all resolve to release month `2607`; additional hotfix builds do not consume support-window slots. This fixes the reported case where `12.2606.1003.205` was shown as Unsupported alongside a supported `12.2607` cluster even though both releases were within six months.
+3. **System Health and Arc Resource Bridge help tightened.** Detailed health-check guidance preserves filtering, snapshot freshness, and result-limit facts in a shorter format. Arc Resource Bridge alert guidance prioritizes Resource Health, retains Activity Log guidance, and documents the workspace, managed-identity, permission, and cloud constraints for Resource Graph log search alerts.
 
-4. **Unknown classification and regression coverage hardened.** Missing, malformed, impossible, future-dated, or six-month-boundary `YYMM` values are classified as Unknown. Tests enforce the conservative boundaries and reject the former tenant-dependent `take 6` implementation.
+4. **Terminology, links, and no-data states standardized.** Customer-facing text consistently uses current Azure Local terminology, distinguishes no resources from no telemetry and query failures, and replaces retired or stale documentation destinations.
 
-The workbook header banner bumps from `v1.0.8` to `v1.0.9`.
+5. **Content quality is now continuously auditable.** A reusable content-audit script inventories customer-facing words, long guidance blocks, links, and repeated text. Regression tests enforce concise critical guidance, current alert constraints, content style, documentation links, and existing workbook contracts.
 
-## v1.1.0 — Planned (post-gallery merge)
+The workbook header banner bumps from `v1.0.9` to `v1.1.0`. The complete local suite runs 384 tests across 37 suites.
 
-Not yet released. The following changes are queued for v1.1.0 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Workbooks/Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
+## v1.1.5 — Planned (post-gallery merge)
+
+Not yet released. The following changes are queued for v1.1.5 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Workbooks/Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
 
 - **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
 - **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
 - **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
 - **Gallery package publication** — `scripts/build-gallery.js` already derives each runtime template ID from its final upstream folder (`community-Workbooks/Azure Local/<galleryFolderName>`), clears stale generated output, and emits the 12-folder package. The upstream PR will copy those folders into `Workbooks/Azure Local/` and add `LENS-Overview` to the shared Azure Monitor gallery file.
 
-**Trigger:** v1.1.0 ships in the same change-set as bumping the workbook version banner from the current release to `v1.1.0` once the upstream gallery PR has merged. No code changes are required ahead of that point — the current wording remains accurate while the gallery PR is in flight.
+**Trigger:** v1.1.5 ships in the same change-set as bumping the workbook version banner from the current release to `v1.1.5` once the upstream gallery PR has merged. No code changes are required ahead of that point — the current wording remains accurate while the gallery PR is in flight.
 
 ## Contributing
 
@@ -432,7 +428,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **379 unit tests across 35 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **384 unit tests across 37 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -490,6 +486,20 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.0.9
+
+A correctness release for the **Azure Local Instances → Update Compliance** tiles, addressing [Issue #94](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/94).
+
+1. **Six-month support now uses a conservative release-month estimate.** Azure Local support begins on each update's actual release date, not the first day of its calendar month. Azure Resource Graph exposes the reported solution version and its `YYMM` release month but not the official release day. LENS therefore marks the current and previous five months as Supported, the date-sensitive six-month boundary as Unknown, and only older months as Unsupported. Boundary cases link to the official Latest Releases table for confirmation.
+
+2. **Tenant update-catalog dependency removed.** The previous implementation treated only the six highest distinct `YYMM` values found in non-obsolete `microsoft.azurestackhci/clusters/updates` resources as supported. Superseded or unavailable update resources could therefore make a recent release disappear from that set and be incorrectly labelled Unsupported. Compliance no longer depends on which update resources happen to be offered in the selected subscriptions.
+
+3. **Hotfix versions remain within their release train.** Versions such as `12.2607.1003.69`, `12.2607.1003.71`, and `12.2607.1003.73` all resolve to release month `2607`; additional hotfix builds do not consume support-window slots. This fixes the reported case where `12.2606.1003.205` was shown as Unsupported alongside a supported `12.2607` cluster even though both releases were within six months.
+
+4. **Unknown classification and regression coverage hardened.** Missing, malformed, impossible, future-dated, or six-month-boundary `YYMM` values are classified as Unknown. Tests enforce the conservative boundaries and reject the former tenant-dependent `take 6` implementation.
+
+The workbook header banner bumps from `v1.0.8` to `v1.0.9`.
 
 ### v1.0.8
 

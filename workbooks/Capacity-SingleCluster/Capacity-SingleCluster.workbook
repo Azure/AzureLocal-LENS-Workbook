@@ -369,7 +369,7 @@
                   "name": "ForecastHorizonDays",
                   "label": "Forecast Horizon",
                   "type": 2,
-                  "description": "Days how long the forecast should be",
+                  "description": "Number of days to project.",
                   "isRequired": true,
                   "typeSettings": {
                     "additionalResourceOptions": []
@@ -620,7 +620,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Physical Machines"
+              "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Azure Local Nodes"
             },
             "name": "sc-perf-charts-header"
           },
@@ -666,7 +666,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node CPU metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -711,7 +711,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node memory metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node memory telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -756,7 +756,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node storage metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node storage usage telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -799,7 +799,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No per-node storage latency metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node storage latency telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -844,7 +844,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node storage IOPS metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node storage IOPS telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -889,7 +889,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node network throughput metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+              "noDataMessage": "No per-node network throughput telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1022,14 +1022,14 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The charts below read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` **Event ID 3002** in your selected Log Analytics workspace — not from the `Perf` table. This event log is **not collected by the default Azure Local DCR**; expand the **🔔 Performance Counter DCR Configuration → 🪵 Required Windows Event Log** section on the Capacity Overview tab for instructions on adding it."
+              "json": "💡 **Source:** Storage forecasts use Event ID 3002 from `Microsoft-Windows-SDDC-Management/Operational`, not the `Perf` table. This event is not collected by the default Azure Local DCR. Open **Capacity > Overview > Show DCR Setup Guide** for collection and verification guidance."
             },
             "name": "sc-stor-forecast-source-tip"
           },
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+              "json": "⚠️ **Forecast:** These lines extrapolate the selected historical trend with linear regression. Treat them as directional planning indicators, not predictions; workload or seasonal changes can produce different results.",
               "style": "warning"
             },
             "name": "sc-stor-forecast-disclaimer-tip"
@@ -1074,7 +1074,7 @@
                 "locInfo": "AzureResource",
                 "locInfoColumn": "ArmId"
               },
-              "noDataMessage": "No storage pool capacity data for this cluster in the selected time range. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the cluster nodes (expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance).",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1137,17 +1137,9 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The CPU and Memory forecast charts below read from the `Perf` table (`Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes` and `Memory\\Available Bytes`) in your selected Log Analytics workspace and apply linear-regression forecasting. They require AMA + a DCR collecting those counters — expand the **🔔 Performance Counter DCR Configuration** section on the Capacity Overview tab for setup guidance."
+              "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection."
             },
             "name": "sc-compute-forecast-source-tip"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
-              "style": "warning"
-            },
-            "name": "sc-compute-forecast-disclaimer-tip"
           },
           {
             "type": 3,
@@ -1177,7 +1169,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No CPU trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting `Processor(_Total)\\% Processor Time` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+              "noDataMessage": "No CPU trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1215,7 +1207,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No memory trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+              "noDataMessage": "No memory trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1562,7 +1554,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The charts below use the same **Hyper-V** Perf counters as the **🪟 Hyper-V VMs** sub-tab (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`) — but **scoped to only the physical hosts of {SingleCluster:label}**. They read from the **Log Analytics Workspace** picker driving the per-machine charts above (the `Log Analytics Workspace` parameter at the top of this sub-tab), and use the same **Historic Time Range** picker.\r\n\r\nIf you see *No data*, expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of the **🪟 Hyper-V VMs** sub-tab for a ready-to-deploy ARM template. **Memory Pressure** only emits for VMs with **Dynamic Memory** enabled — VMs with static memory (including most AKS-on-AzureLocal worker VMs) will never appear on that chart.",
+              "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V VMs** view, scoped to the Azure Local nodes in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
               "style": "upsell"
             },
             "conditionalVisibility": {
@@ -1582,7 +1574,7 @@
               "showExportToExcel": true,
               "timeContextFromParameter": "NodeTrendsTimeRange",
               "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
-              "noDataMessage": "No Hyper-V VMs found running on the selected cluster's hosts in this time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the cluster nodes — see the **Show DCR Setup Guide** at the top of this sub-tab and the **🔔 Hyper-V Performance Counter DCR Configuration** section on the **🪟 Hyper-V VMs** sub-tab for ready-to-deploy ARM templates.",
+              "noDataMessage": "No Hyper-V CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
               "noDataMessageStyle": 4,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",

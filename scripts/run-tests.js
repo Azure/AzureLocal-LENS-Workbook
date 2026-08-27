@@ -21,9 +21,9 @@ let currentSuite = null;
 const ITEM_TYPE_MARKDOWN = 1;
 const ITEM_TYPE_QUERY = 3;
 const ITEM_TYPE_PARAMETER = 9;
-const ITEM_TYPE_NOTEBOOKGROUP = 10;
+const ITEM_TYPE_METRIC = 10;
 const ITEM_TYPE_LINK = 11;
-const ITEM_TYPE_TEXT_PARAMETER = 12;
+const ITEM_TYPE_GROUP = 12;
 
 // Workbook parameter reference pattern: matches {ParamName} or {ParamName:format}; group 1 is the param name.
 // Source kept as a string so each call to getParamRefPattern() returns a FRESH RegExp instance —
@@ -273,7 +273,7 @@ console.log(`Loaded workbook: ${allItems.length} items, ${allQueries.length} que
 // TEST SUITES
 // ============================================================================
 
-// --- 1. JSON Structure Validation ---
+// --- JSON Structure Validation ---
 testSuite('JSON Structure Validation', () => {
     assert(workbook !== null && typeof workbook === 'object',
         'Workbook JSON parses successfully', 'object', typeof workbook);
@@ -295,7 +295,7 @@ testSuite('JSON Structure Validation', () => {
         'Has fallbackResourceIds property', 'defined', String(workbook.fallbackResourceIds !== undefined));
 });
 
-// --- 2. Item Structure Validation ---
+// --- Item Structure Validation ---
 testSuite('Item Structure Validation', () => {
     // Every item should have a type
     const itemsWithType = allItems.filter(i => i.type !== undefined);
@@ -309,14 +309,14 @@ testSuite('Item Structure Validation', () => {
         'All items have a "content" property',
         allItems.length, itemsWithContent.length);
 
-    // Check items have valid types (1=markdown, 3=query, 9=parameter, 10=notebookgroup, 11=link, 12=textParameter)
+    // Check items have valid types (1=markdown, 3=query, 9=parameter, 10=metric, 11=link, 12=group)
     const validTypes = [
         ITEM_TYPE_MARKDOWN,
         ITEM_TYPE_QUERY,
         ITEM_TYPE_PARAMETER,
-        ITEM_TYPE_NOTEBOOKGROUP,
+        ITEM_TYPE_METRIC,
         ITEM_TYPE_LINK,
-        ITEM_TYPE_TEXT_PARAMETER
+        ITEM_TYPE_GROUP
     ];
     const itemsWithValidType = allItems.filter(i => validTypes.includes(i.type));
     assert(itemsWithValidType.length === allItems.length,
@@ -332,7 +332,7 @@ testSuite('Item Structure Validation', () => {
         `<=${MAX_ALLOWED_DUPLICATE_NAMES}`, duplicateCount);
 });
 
-// --- 3. Tab Structure Validation ---
+// --- Tab Structure Validation ---
 testSuite('Tab Structure Validation', () => {
     // Check for the expected tabs (link items with tabs)
     const expectedTabs = [
@@ -353,13 +353,13 @@ testSuite('Tab Structure Validation', () => {
         'Workbook contains tab navigation links', '>0', tabLinks.length);
 
     // Verify group items exist for tab content (type 12 = group in Azure Workbooks)
-    const groupItems = allItems.filter(i => i.type === 12 || i.type === 10);
+    const groupItems = allItems.filter(i => i.type === ITEM_TYPE_GROUP);
     assert(groupItems.length >= expectedTabs.length,
         `Has at least ${expectedTabs.length} group items for tabs`,
         `>=${expectedTabs.length}`, groupItems.length);
 });
 
-// --- 4. Version Consistency ---
+// --- Version Consistency ---
 testSuite('Version Consistency', () => {
     // Extract version from workbook JSON banner
     const versionMatch = workbookRaw.match(/Workbook Version: v([\d.]+)/);
@@ -436,7 +436,7 @@ testSuite('Version Consistency', () => {
 });
 
 
-// --- 5. KQL Query Validation ---
+// --- KQL Query Validation ---
 testSuite('KQL Query Validation', () => {
     assert(allQueries.length > 0,
         'Workbook contains KQL queries', '>0', allQueries.length);
@@ -503,7 +503,7 @@ testSuite('KQL Query Validation', () => {
         '>0', queriesWithOrderBy.length);
 });
 
-// --- 6. Chart Configuration Validation ---
+// --- Chart Configuration Validation ---
 testSuite('Chart Configuration Validation', () => {
     assert(allCharts.length > 0,
         'Workbook contains chart visualizations', '>0', allCharts.length);
@@ -555,7 +555,7 @@ testSuite('Chart Configuration Validation', () => {
     }
 });
 
-// --- 7. Parameter Validation ---
+// --- Parameter Validation ---
 testSuite('Parameter Validation', () => {
     const parameterItems = allItems.filter(i => i.type === 9);
     assert(parameterItems.length > 0,
@@ -584,7 +584,7 @@ testSuite('Parameter Validation', () => {
         'ClusterTagValue parameter exists', 'defined', String(tagValue !== undefined));
 });
 
-// --- 8. Markdown Content Validation ---
+// --- Markdown Content Validation ---
 testSuite('Markdown Content Validation', () => {
     const markdownItems = allItems.filter(i => i.type === 1);
     assert(markdownItems.length > 0,
@@ -605,7 +605,7 @@ testSuite('Markdown Content Validation', () => {
     }
 });
 
-// --- 9. Visualization Types Validation ---
+// --- Visualization Types Validation ---
 testSuite('Visualization Types Validation', () => {
     const visualizationTypes = allItems
         .filter(i => i.content && i.content.visualization)
@@ -619,7 +619,7 @@ testSuite('Visualization Types Validation', () => {
         '[]', JSON.stringify(invalidVizTypes));
 });
 
-// --- 10. Grid/Table Settings Validation ---
+// --- Grid/Table Settings Validation ---
 testSuite('Grid and Table Settings Validation', () => {
     const gridItems = allItems.filter(i =>
         i.content && i.content.gridSettings
@@ -637,7 +637,7 @@ testSuite('Grid and Table Settings Validation', () => {
         `${gridsWithRowLimit.length}/${gridItems.filter(i => i.content.gridSettings.rowLimit).length} >= 2000`);
 });
 
-// --- 11. Cross-Component Resources Validation ---
+// --- Cross-Component Resources Validation ---
 testSuite('Cross-Component Resources Validation', () => {
     const itemsWithCCR = allItems.filter(i =>
         i.content && i.content.crossComponentResources
@@ -655,7 +655,7 @@ testSuite('Cross-Component Resources Validation', () => {
         itemsWithCCR.length, itemsRefValid.length);
 });
 
-// --- 12. Resource Type References Validation ---
+// --- Resource Type References Validation ---
 testSuite('Resource Type References Validation', () => {
     const itemsWithResourceType = allItems.filter(i =>
         i.content && i.content.resourceType
@@ -677,7 +677,7 @@ testSuite('Resource Type References Validation', () => {
         '0 invalid', `${invalidResourceTypeItems.length} invalid`);
 });
 
-// --- 13. File Size and Performance Checks ---
+// --- File Size and Performance Checks ---
 testSuite('File Size and Performance Checks', () => {
     const fileSizeBytes = Buffer.byteLength(workbookRaw, 'utf8');
     const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2);
@@ -696,7 +696,7 @@ testSuite('File Size and Performance Checks', () => {
     }
 });
 
-// --- 14. README Structure Validation ---
+// --- README Structure Validation ---
 testSuite('README Structure Validation', () => {
     const readme = getReadme();
     assert(readme.includes('# Azure Local LENS'),
@@ -789,7 +789,7 @@ testSuite('Customer-Facing Content Style', () => {
         'two-day alert limit, 30+ day forecast history, and current-threshold alternative', forecastAlertGuidance);
 });
 
-// --- 15. Portal Link Integrity ---
+// --- Portal Link Integrity ---
 testSuite('Portal Link Integrity', () => {
     // GUID pattern is only used here, so keep it local to this suite.
     const guidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -846,7 +846,7 @@ testSuite('Portal Link Integrity', () => {
         '0', queriesWithHardcodedGuids.length);
 });
 
-// --- 16. Conditional Visibility Consistency ---
+// --- Conditional Visibility Consistency ---
 testSuite('Conditional Visibility Consistency', () => {
     // Top-level groups (direct children of workbook.items) with type 12 should have conditionalVisibility
     const topLevelGroups = (workbook.items || []).filter(i => i.type === 12);
@@ -865,7 +865,7 @@ testSuite('Conditional Visibility Consistency', () => {
         tabValues.length, uniqueTabValues.size);
 });
 
-// --- 17. KQL Query Robustness ---
+// --- KQL Query Robustness ---
 testSuite('KQL Query Robustness', () => {
     const argQueries = allQueries.filter(q =>
         q.queryType === 1 || q.resourceType === 'microsoft.resourcegraph/resources'
@@ -1005,29 +1005,43 @@ testSuite('KQL Query Robustness', () => {
         networkPrecedenceIsCorrect ? 'all three' : 'missing network precedence');
 
     const liveManifestPath = path.resolve(__dirname, 'live-test-queries.json');
-    const liveManifest = JSON.parse(fs.readFileSync(liveManifestPath, 'utf8'));
-    const liveQuerySpecs = liveManifest.queries || [];
-    assert(liveQuerySpecs.length === 11,
-        'Live integration manifest covers all 11 Capacity storage and network charts',
-        '11 queries', `${liveQuerySpecs.length} queries`);
+    let liveQuerySpecs = null;
+    try {
+        const liveManifest = JSON.parse(fs.readFileSync(liveManifestPath, 'utf8'));
+        liveQuerySpecs = Array.isArray(liveManifest.queries) ? liveManifest.queries : [];
+    } catch (e) {
+        assert(false,
+            'Live integration manifest loads as valid JSON',
+            'valid JSON', e.message);
+    }
 
-    const unresolvedLiveQuerySpecs = [];
-    liveQuerySpecs.forEach(spec => {
-        const splitPath = path.resolve(__dirname, '..', spec.file || '');
-        if (!fs.existsSync(splitPath)) {
-            unresolvedLiveQuerySpecs.push(`${spec.name}: missing ${spec.file}`);
-            return;
-        }
-        const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
-        const splitItems = collectAllItems(splitWorkbook.items || []);
-        const matchingItem = splitItems.find(item =>
-            item.name === spec.name && item.content?.query && item.content.queryType === 0
-        );
-        if (!matchingItem) unresolvedLiveQuerySpecs.push(`${spec.name}: query not found`);
-    });
-    assert(unresolvedLiveQuerySpecs.length === 0,
-        `Every live integration manifest entry resolves to a Log Analytics query (${unresolvedLiveQuerySpecs.join(', ') || 'all resolved'})`,
-        '0 unresolved', unresolvedLiveQuerySpecs.length);
+    if (liveQuerySpecs !== null) {
+        assert(liveQuerySpecs.length === 11,
+            'Live integration manifest covers all 11 Capacity storage and network charts',
+            '11 queries', `${liveQuerySpecs.length} queries`);
+
+        const unresolvedLiveQuerySpecs = [];
+        liveQuerySpecs.forEach(spec => {
+            const splitPath = path.resolve(__dirname, '..', spec.file || '');
+            if (!fs.existsSync(splitPath)) {
+                unresolvedLiveQuerySpecs.push(`${spec.name}: missing ${spec.file}`);
+                return;
+            }
+            try {
+                const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
+                const splitItems = collectAllItems(splitWorkbook.items || []);
+                const matchingItem = splitItems.find(item =>
+                    item.name === spec.name && item.content?.query && item.content.queryType === 0
+                );
+                if (!matchingItem) unresolvedLiveQuerySpecs.push(`${spec.name}: query not found`);
+            } catch (e) {
+                unresolvedLiveQuerySpecs.push(`${spec.name}: ${e.message}`);
+            }
+        });
+        assert(unresolvedLiveQuerySpecs.length === 0,
+            `Every live integration manifest entry resolves to a Log Analytics query (${unresolvedLiveQuerySpecs.join(', ') || 'all resolved'})`,
+            '0 unresolved', unresolvedLiveQuerySpecs.length);
+    }
 
     const deadWorkspaceWarningItems = [
         { file: 'Capacity-Overview', name: 'overview-workspace-all-warning' },
@@ -1035,16 +1049,24 @@ testSuite('KQL Query Robustness', () => {
         { file: 'Capacity-MultiCluster', name: 'multi-workspace-all-warning' },
         { file: 'Capacity-HyperV', name: 'hyperv-workspace-tip' }
     ];
-    const retainedDeadWorkspaceWarnings = [];
+    const deadWorkspaceWarningIssues = [];
     deadWorkspaceWarningItems.forEach(spec => {
         const splitPath = path.resolve(__dirname, '..', 'workbooks', spec.file, `${spec.file}.workbook`);
-        const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
-        const warning = collectAllItems(splitWorkbook.items || []).find(item => item.name === spec.name);
-        if (warning) retainedDeadWorkspaceWarnings.push(spec.name);
+        if (!fs.existsSync(splitPath)) {
+            deadWorkspaceWarningIssues.push(`${spec.name}: missing ${splitPath}`);
+            return;
+        }
+        try {
+            const splitWorkbook = JSON.parse(fs.readFileSync(splitPath, 'utf8'));
+            const warning = collectAllItems(splitWorkbook.items || []).find(item => item.name === spec.name);
+            if (warning) deadWorkspaceWarningIssues.push(`${spec.name}: warning retained`);
+        } catch (e) {
+            deadWorkspaceWarningIssues.push(`${spec.name}: ${e.message}`);
+        }
     });
-    assert(retainedDeadWorkspaceWarnings.length === 0,
-        `Capacity views omit non-rendering value::all conditional warnings (${retainedDeadWorkspaceWarnings.join(', ') || 'none retained'})`,
-        '0 dead warnings', retainedDeadWorkspaceWarnings.length);
+    assert(deadWorkspaceWarningIssues.length === 0,
+        `Capacity views omit non-rendering value::all conditional warnings (${deadWorkspaceWarningIssues.join(', ') || 'none retained'})`,
+        '0 issues', deadWorkspaceWarningIssues.length);
 
     // Check for orphaned parameter references - parameters used in queries should be defined
     const definedParamNames = new Set(allParams.filter(p => p.name).map(p => p.name));
@@ -1068,7 +1090,7 @@ testSuite('KQL Query Robustness', () => {
         '0 orphaned', `${orphanedParams.length} orphaned`);
 });
 
-// --- 18. Grid Formatter Consistency ---
+// --- Grid Formatter Consistency ---
 testSuite('Grid Formatter Consistency', () => {
     const gridItems = allItems.filter(i => i.content && i.content.gridSettings);
 
@@ -1101,7 +1123,7 @@ testSuite('Grid Formatter Consistency', () => {
     }
 });
 
-// --- 19. Azure Licensing & Verification Columns (v0.8.1) ---
+// --- Azure Licensing & Verification Columns (v0.8.1) ---
 testSuite('Azure Licensing & Verification Columns', () => {
     // Find the direct All Clusters table query
     const clusterBaseQuery = allQueries.find(q => q.name === 'table-all-clusters');
@@ -1210,7 +1232,7 @@ testSuite('Azure Licensing & Verification Columns', () => {
     }
 });
 
-// --- 20. All Clusters Subscription-Scoped Identity ---
+// --- All Clusters Subscription-Scoped Identity ---
 testSuite('All Clusters Subscription-Scoped Identity', () => {
     const clusterTable = allQueries.find(q => q.name === 'table-all-clusters');
     const clusterTableItem = allItems.find(item => item.name === 'table-all-clusters');
@@ -1623,7 +1645,7 @@ testSuite('Fleet Identity Regression Backstops', () => {
     });
 });
 
-// --- 21. Azure Licensing & Verification Pie Charts (v0.8.1) ---
+// --- Azure Licensing & Verification Pie Charts (v0.8.1) ---
 testSuite('Azure Licensing & Verification Pie Charts', () => {
     // Verify the section header exists
     const sectionHeader = allItems.find(i =>
@@ -1698,7 +1720,7 @@ testSuite('Azure Licensing & Verification Pie Charts', () => {
     }
 });
 
-// --- 21. Item Count Regression Guard ---
+// --- Item Count Regression Guard ---
 testSuite('Item Count Regression Guard', () => {
     // Total item count should not drop significantly
     assert(allItems.length >= MIN_EXPECTED_ITEMS,
@@ -1716,7 +1738,7 @@ testSuite('Item Count Regression Guard', () => {
         `>=${MIN_EXPECTED_CHARTS}`, allCharts.length);
 });
 
-// --- 22. Prometheus / AKS Node Resource Usage Validation ---
+// --- Prometheus / AKS Node Resource Usage Validation ---
 testSuite('Prometheus AKS Node Resource Usage', () => {
     // Verify Azure Monitor Workspace parameter exists
     const amwParam = allParams.find(p => p.name === 'AzureMonitorWorkspace');
@@ -1826,7 +1848,7 @@ testSuite('Prometheus AKS Node Resource Usage', () => {
         promItems.length, promWith50Width.length);
 });
 
-// --- 23. DCR Deployment Guidance ---
+// --- DCR Deployment Guidance ---
 testSuite('DCR Deployment Guidance', () => {
     const overviewPath = path.resolve(__dirname, '..', 'workbooks', 'Capacity-Overview', 'Capacity-Overview.workbook');
     const hyperVPath = path.resolve(__dirname, '..', 'workbooks', 'Capacity-HyperV', 'Capacity-HyperV.workbook');
@@ -1931,7 +1953,7 @@ testSuite('DCR Deployment Guidance', () => {
         'both safeguards documented', 'present');
 });
 
-// --- 24. Documentation File Validation ---
+// --- Documentation File Validation ---
 testSuite('Documentation File Validation', () => {
     const contributingPath = path.resolve(__dirname, '..', 'CONTRIBUTING.md');
     const securityPath = path.resolve(__dirname, '..', 'SECURITY.md');
@@ -1959,7 +1981,7 @@ testSuite('Documentation File Validation', () => {
         'LICENSE file exists', 'true', String(licenseExists));
 });
 
-// --- 25. Split Architecture: Sub-Template Existence ---
+// --- Split Architecture: Sub-Template Existence ---
 testSuite('Split Architecture - Sub-Template Existence', () => {
     const tabMap = require('./template-ids.json');
     const workbooksDir = path.resolve(__dirname, '..', 'workbooks');
@@ -2032,7 +2054,7 @@ testSuite('Split Architecture - Sub-Template Existence', () => {
     }
 });
 
-// --- 25. Split Architecture: Shared Parameters Parity ---
+// --- Split Architecture: Shared Parameters Parity ---
 testSuite('Split Architecture - Shared Parameters Parity', () => {
     const tabMap = require('./template-ids.json');
     const sharedParamsPath = path.resolve(__dirname, '..', 'shared', 'parameters.json');
@@ -2063,7 +2085,7 @@ testSuite('Split Architecture - Shared Parameters Parity', () => {
     }
 });
 
-// --- 26. Split Architecture: Round-Trip Integrity ---
+// --- Split Architecture: Round-Trip Integrity ---
 testSuite('Split Architecture - Round-Trip Integrity', () => {
     // Build the monolithic in-memory and compare against the on-disk root file.
     // If the round-trip fails the on-disk file must be regenerated:
@@ -2121,7 +2143,7 @@ testSuite('Split Architecture - Round-Trip Integrity', () => {
             : `drift (${builtText.length} vs ${workbookRaw.length} bytes)`);
 });
 
-// --- 27. Split Architecture: Sub-Template Size Recommendations ---
+// --- Split Architecture: Sub-Template Size Recommendations ---
 testSuite('Split Architecture - Sub-Template Size Recommendations', () => {
     // Azure Monitor Workbooks team recommends sub-templates ≤ 200KB for
     // gallery submissions. Hard limit here is 350KB; warn but pass at 200-350KB.
@@ -2150,7 +2172,7 @@ testSuite('Split Architecture - Sub-Template Size Recommendations', () => {
     }
 });
 
-// --- 28. Accessibility: No Inline-Style HTML ---
+// --- Accessibility: No Inline-Style HTML ---
 testSuite('Accessibility - No Inline-Style HTML', () => {
     // John Gardner (Azure Monitor team) review guidance: replace inline HTML
     // styling with the workbook text "style" field for accessibility.

@@ -1843,8 +1843,11 @@ testSuite('DCR Deployment Guidance', () => {
     const dcrGroup = overviewItems.find(item => item.name === 'dcr-setup-group');
     const capacityScopeTip = overviewItems.find(item => item.name === 'capacity-arg-vs-monitor-tip');
     const capacityScopeText = capacityScopeTip?.content?.json || '';
+    const capacityScopeLinks = [...capacityScopeText.matchAll(/\[[^\]]+]\((https?:\/\/[^\s)]+)\)/g)]
+        .map(match => match[1]);
+    const s2dCapacityScriptUrl = 'https://github.com/NeilBird/Azure-Local/tree/main/S2D-Show-Used-Available-Storage';
     assert(capacityScopeText.includes('pool-level **real available** capacity') &&
-        capacityScopeText.includes('https://github.com/NeilBird/Azure-Local/tree/main/S2D-Show-Used-Available-Storage'),
+        capacityScopeLinks.some(link => link === s2dCapacityScriptUrl),
         'Capacity Overview preserves real-available pool capacity guidance',
         'real-available explanation and S2D PowerShell example link', capacityScopeText);
 

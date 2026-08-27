@@ -42,17 +42,17 @@ The largest individual blocks are `dcr-setup-deploy-steps` (711 words), `hyperv-
 
 ## Priority findings
 
-### P0: Fix confirmed navigation defects
+### Resolved in v1.1.0: navigation defects
 
-Three customer links need replacement:
+The audit identified three customer links that required replacement. All three were corrected before v1.1.0 publication:
 
-| Source item | Current destination | Finding | Recommended destination |
+| Source item | Previous destination | Finding | Resolved destination |
 | --- | --- | --- | --- |
 | AKS Arc knowledge links | `azure/aks/hybrid/aks-hybrid-options-overview` | Redirects to the retired AKS on Windows Server offering, not AKS on Azure Local | `azure/aks/aksarc/aks-local-overview` |
 | Capacity DCR links (Overview and Hyper-V) | `azure/azure-monitor/agents/data-collection-rule-associations` | Returns 404 | `azure/azure-monitor/data-collection/data-collection-rule-associations` |
 | Capacity Overview DCR links | `windows-server/failover-clustering/manage-cluster-shared-volumes` | Returns 404 | `windows-server/failover-clustering/failover-cluster-csvs` |
 
-The ARB links use the fragment `#arc-resource-bridge-is-offline`, which was not present in the current article fetched during this audit. The article loads, so this is lower severity: remove the fragment or replace it after confirming the current equivalent section.
+The ARB links also used the fragment `#arc-resource-bridge-is-offline`, which was not present in the current article fetched during this audit. v1.1.0 removes the stale fragment and retains the working `troubleshoot-resource-bridge` article URL.
 
 ### P1: Restore Capacity's decision path
 
@@ -124,7 +124,7 @@ Authenticated portal validation is required for these hard-coded blades before r
 
 ## Recommended implementation sequence
 
-1. Replace the three confirmed stale or mismatched links and remove the stale ARB fragment.
+1. Completed in v1.1.0: replace the three confirmed stale or mismatched links and remove the stale ARB fragment.
 2. Establish a small terminology and empty-state style contract in contributor guidance and tests.
 3. Redesign Capacity Overview copy first: compact the N-1 explanation and collapse the DCR setup material.
 4. Apply the same setup pointer, forecast disclaimer, and terminology across Single Cluster, Multi-Cluster, and Hyper-V.
@@ -138,7 +138,7 @@ Measure the edited source set with the same inventory script. Suggested targets 
 
 - Reduce Capacity customer-facing words by at least 30% while retaining all operational facts in context or linked documentation.
 - Reduce Capacity markdown blocks over 140 words from 17 to no more than 5.
-- Eliminate confirmed 404 and mismatched customer links.
+- Keep confirmed 404 and mismatched customer links eliminated through regression checks.
 - Ensure every independently reachable tab expands acronyms at first use.
 - Classify every no-data message as healthy zero, empty scope, missing telemetry, or insufficient history.
 - Give each critical or warning result a next action or a clearly labeled reason why no direct action is available.

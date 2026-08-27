@@ -739,7 +739,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Data scope:** The table above uses Azure Resource Graph and requires no Log Analytics workspace. It reports provisioned workload allocations; the charts below use Azure Monitor counters for runtime usage and include Hyper-V VMs that ARG cannot see.\r\n\r\n⚠️ **Storage scope:** **Storage Available** and **Storage Used %** use each thin-provisioned volume's logical maximum, not physical pool headroom. Thin-volume totals can exceed pool capacity and differ from Azure portal or Windows Admin Center values. Treat these columns as logical allocation indicators and use pool-level storage tooling when making physical capacity decisions.",
+              "json": "💡 **Data scope:** The table above uses Azure Resource Graph and requires no Log Analytics workspace. It reports provisioned workload allocations; the charts below use Azure Monitor counters for runtime usage and include Hyper-V VMs that ARG cannot see.\r\n\r\n⚠️ **Storage scope:** **Storage Available** and **Storage Used %** use each thin-provisioned volume's logical maximum, not physical pool headroom. Thin-volume totals can exceed pool capacity and differ from Azure portal or Windows Admin Center values. Treat these columns as logical allocation indicators. For accurate pool-level **real available** capacity, including capacity-reserve and resiliency-factor adjustments, use PowerShell; an example script is available at [S2D-Show-Used-Available-Storage](https://github.com/NeilBird/Azure-Local/tree/main/S2D-Show-Used-Available-Storage).",
               "style": "info"
             },
             "name": "capacity-arg-vs-monitor-tip"

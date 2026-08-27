@@ -206,7 +206,7 @@
     {
       "type": 1,
       "content": {
-        "json": "### 📋 Workbook Version: v1.0.9\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
+        "json": "### 📋 Workbook Version: v1.1.0\r\n\r\n🔄 [**Check GitHub for Updates**](https://aka.ms/AzureLocalLENS#readme) — Compare your version against the latest release on GitHub, and copy/paste, then Apply to update if needed",
         "style": "info"
       },
       "name": "version-update-banner"
@@ -2289,7 +2289,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its physical machines for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its Azure Local nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
             },
             "name": "cap-instructions-text"
           },
@@ -2395,7 +2395,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** This table shows provisioned workload memory and CPU ratios using data from **Azure Resource Graph** — *what's been allocated*, not *what's currently committed*. Two memory percentage columns are provided so you can compare cluster headroom against N-1 node availability, to determine your workload resilience risk should a node be unavailable during planned or unplanned downtime:\r\n\r\n- **Workload Memory %** = provisioned ÷ usable physical memory (usable = physical × 90% − 8 GiB; the 90% leaves ~10% per-node for host OS / Storage Spaces Direct cache / platform overhead, and the flat 8 GiB accounts for the **Azure Resource Bridge (ARB) control-plane VM** that runs on every Azure Local cluster — its memory footprint is not tracked by ARG so it is deducted from the denominator here). This is the closest ARG-only equivalent to the per-node memory bars in **Cluster Insights** — but Cluster Insights shows *committed* memory measured by Performance Counters via AMA, while this column shows *provisioned* memory derived from VM SKU sizes. The two numbers will differ for any cluster where workloads are over- or under-allocated versus their actual runtime footprint.\r\n- **N-1 Memory Risk %** deducts one machine's worth of usable memory from the denominator for multi-machine clusters, so values **≥ 100 %** indicate that workloads would not survive a single-machine failure or drain. **Single-machine clusters** cannot tolerate a node loss at all — the column shows '**No HA resiliency**' (yellow) instead of a percentage, since workloads always go offline when the single host is rebooted (e.g. for monthly Azure Local updates).\r\n\r\nAKS Arc node memory is estimated from [documented VM sizes for AKS on Azure Local](https://learn.microsoft.com/azure/aks/aksarc/scale-requirements#default-values-for-virtual-machine-sizes). For real-time **committed** memory, see the Memory Usage (%) chart further down this tab, or open the **🔍 Single cluster** sub-tab to drill into any cluster's per-node Performance Counter charts — this keeps the navigation flow on the Capacity tab itself, instead of jumping out to the cluster's portal blade.",
+                    "json": "💡 **How to read memory risk:** This Azure Resource Graph (ARG) table shows **provisioned** workload memory, not runtime committed memory.\r\n\r\n- **Workload Memory %** compares provisioned VM and AKS memory with estimated usable cluster memory.\r\n- **N-1 Memory Risk %** removes one node from usable memory. A value **≥ 100%** means the remaining nodes cannot accommodate all provisioned memory. A single-node cluster shows **No HA resiliency** because it cannot tolerate a node loss.\r\n\r\nThe estimate reserves 10% of physical memory for platform overhead and 8 GiB for the Azure Resource Bridge (ARB) VM. AKS memory uses [documented VM-size defaults](https://learn.microsoft.com/azure/aks/aksarc/scale-requirements#default-values-for-virtual-machine-sizes). For runtime **committed** memory, use the Memory Usage chart below or the **Single cluster** view.",
                     "style": "upsell"
                   },
                   "name": "capacity-n1-memory-tip"
@@ -2839,7 +2839,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The 'Cluster Capacity Overview' table above uses data from **Azure Resource Graph (ARG)** to show high-level capacity at a glance — no Azure Monitor / Log Analytics Workspace required. All other tables and charts on the 'Capacity' tab *(and its sub-tabs)* draw on **Azure Monitor performance counters**, which yield more accurate memory usage and additionally cover **Hyper-V (unmanaged) VMs** that ARG does not see — on top of the Azure Local VMs and AKS Arc clusters that ARG already reports.\r\n\r\n⚠️ **Storage columns caveat:** Azure Local provisions **Thin** volumes by default, so the 'Storage Available' and 'Storage Used %' columns reflect each volume's *thin maximum* (a logical ceiling), not real pool-level headroom — the sum of thin maximums can exceed physical pool capacity, which is why these numbers can disagree with the Portal and WAC. Use PowerShell if you require accurate pool-level ***real available*** capacity *(with capacity-reserve and resiliency-factor adjustments)*, an EXAMPLE script is available here: [S2D-Show-Used-Available-Storage](https://github.com/NeilBird/Azure-Local/tree/main/S2D-Show-Used-Available-Storage).\r\n\r\nℹ️ **N-1 Memory Risk %:** This column estimates memory headroom if **one node** were lost (e.g. during a platform update or hardware failure). Single-machine clusters cannot tolerate a node loss, so the column shows '**No HA resiliency**' — workloads will go offline whenever the single host is rebooted (e.g. for monthly Azure Local updates).",
+                    "json": "💡 **Data scope:** The table above uses Azure Resource Graph and requires no Log Analytics workspace. It reports provisioned workload allocations; the charts below use Azure Monitor counters for runtime usage and include Hyper-V VMs that ARG cannot see.\r\n\r\n⚠️ **Storage scope:** **Storage Available** and **Storage Used %** use each thin-provisioned volume's logical maximum, not physical pool headroom. Thin-volume totals can exceed pool capacity and differ from Azure portal or Windows Admin Center values. Treat these columns as logical allocation indicators and use pool-level storage tooling when making physical capacity decisions.",
                     "style": "info"
                   },
                   "name": "capacity-arg-vs-monitor-tip"
@@ -2847,7 +2847,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "---\n## 🔔 Performance Counter DCR Configuration\n💡 **Tip:** The Capacity views require a customer-managed **Data Collection Rule (DCR)** that sends 27 host and Hyper-V performance counter paths plus Event 3002 to the selected Log Analytics workspace. The recommended all-in-one LENS Capacity DCR below provides complete coverage through a repeatable ARM / Azure CLI deployment. Use the manual portal fallback only when you must merge these data sources into an existing organization-managed DCR.\n\n> *Wondering why these LENS charts are empty when **Cluster Insights** or the cluster's **Monitoring → Metrics** blade already show storage numbers? Those views use Microsoft-managed pipelines that bypass your Log Analytics workspace. Expand **Show DCR Setup Guide** for the explanation, requirements, and deployment choices.*"
+                    "json": "---\r\n## 🔔 Capacity Telemetry Readiness\r\nThe ARG capacity table above works without Log Analytics. The performance and forecast charts below require Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. Expand **Show DCR Setup Guide** for a short readiness checklist and maintained deployment links."
                   },
                   "name": "text-dcr-setup-header"
                 },
@@ -2886,114 +2886,10 @@
                       {
                         "type": 1,
                         "content": {
-                          "json": "### ❓ Why does LENS need DCR work when Cluster Insights / the Monitoring blade *already* show storage numbers?\r\n\r\nIt's a great question, and a common point of confusion — Cluster Insights and the LENS workbook read from **completely different telemetry pipelines**:\r\n\r\n| View | Data source | Who configures it |\r\n|------|-------------|-------------------|\r\n| **Cluster Insights** (the *Insights* blade on the Azure Local resource) | `InsightsMetrics` table, populated by the **Arc VM Insights** extension via a **Microsoft-managed DCR** that auto-deploys with the extension. Cluster-level CSV health surfaces from the SDDC management providers running on the cluster itself, rendered by a pre-canned Microsoft workbook. | Microsoft (auto-managed) |\r\n| **Azure Local resource blade → Monitoring → Metrics** | **Azure Monitor *platform* metrics** — counters lifted off the host by the Azure Local resource provider. **Doesn't flow through Log Analytics at all**, so no customer DCR is involved. | Microsoft (built into the RP) |\r\n| **LENS workbook** *(this dashboard)* | The customer's own **Log Analytics workspace** — which contains only the rows your DCR told AMA to collect, plus optional `InsightsMetrics` when VM Insights is enabled. | **You** (customer-managed DCR) |\r\n\r\n**Why does the gap exist?** The Azure Portal DCR wizard offers a fixed dropdown of generic Windows-server performance objects — `Processor`, `LogicalDisk`, `Memory`, `Network Interface`, etc. It **does not list** `Cluster CSV File System` or `Cluster Shared Volume`, which are the Azure-Local-specific S2D counters that report real CSV capacity, latency, and IOPS. So most customers end up with a DCR that collects OS-drive (`LogicalDisk`) data only — Cluster Insights and the Monitoring blade fill the gap silently via Microsoft-managed pipelines, but LENS can only show what *your* workspace contains.\n\n**Bottom line:** LENS needs one customer-managed DCR that sends the required data to the workspace selected in this workbook. Use the dedicated all-in-one DCR below for complete coverage, or merge the same sources into an existing DCR through the manual fallback.\n\n### 🔁 Coexistence with Cluster Insights\n\nMultiple DCR associations are supported and additive, but AMA does not deduplicate overlapping data sources. If Cluster Insights and the LENS DCR target the same workspace, generic host counters and Event 3002 may overlap. Review the dedicated template guide's overlap options before deployment; the LENS queries do not require the broader SDDC event scope collected by Cluster Insights.\n\n---",
+                          "json": "### Capacity telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every node.\r\n2. Select this workbook's Log Analytics workspace. Create the DCR in the same Azure region.\r\n3. Deploy the dedicated **LENS Capacity DCR** with all 27 host and Hyper-V counter paths plus Event 3002. Event 3002 is required only for storage volume-size forecasts.\r\n4. Associate the DCR with every physical host, excluding Arc-enabled guest VMs. Use Azure Policy and run a remediation task for existing nodes.\r\n5. Verify every node sends `Heartbeat`, `Perf`, and, for volume forecasts, Event 3002 data.\r\n\r\nA dedicated rule is recommended. Multiple DCR associations are additive, and AMA does not deduplicate overlapping collection into the same workspace.\r\n\r\n### Knowledge links and instructions\r\n\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🧭 Data Collection Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)\r\n\r\n#### 5. [💾 Cluster Shared Volumes](https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs)",
                           "style": "info"
                         },
-                        "name": "dcr-setup-why-faq"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### ✅ Recommended — Dedicated All-in-One DCR with ARM / Azure CLI\r\n\r\nDeploy the checked-in **LENS Capacity DCR** as a new, uniquely named DCR, then associate it with every Azure Local physical host. It collects all **27 host and Hyper-V performance counter paths plus Event 3002**, so one deployment supports every Capacity view.\r\n\r\n➡️ **[Open the dedicated template and detailed deployment instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)** — includes prerequisites, deployment commands, single-cluster and fleet-wide association options, physical-host filtering, verification queries, idempotency guidance, overlap warnings, and cost considerations.\r\n\r\n> **Multiple DCR associations are supported and additive**, so this dedicated DCR can coexist with Microsoft-managed and organization-managed DCRs. AMA does not deduplicate overlapping data sources, however: review existing rules and avoid collecting the same counters or events into the same workspace more than once.\r\n>\r\n> **Do not deploy this template over an unrelated existing DCR name.** ARM deployments replace the target DCR's full `properties` block. Use the template's unique default name, or merge its data sources into an exported existing definition intentionally.\r\n\r\n---",
-                          "style": "warning"
-                        },
-                        "name": "dcr-setup-alt-banner"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📋 Prerequisites for the Capacity DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (deployed as an Arc extension on the `Microsoft.HybridCompute/machines` resource).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Machines Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-prereqs"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| CPU Usage — Top 5 Clusters | `\\Processor(_Total)\\% Processor Time` |\r\n| Memory Usage — Top 5 Clusters | `\\Memory\\Committed Bytes`, `\\Memory\\Available Bytes` |\r\n| Storage % Used — Top 5 Clusters | `\\LogicalDisk(*)\\% Free Space`, `\\Cluster CSV File System(*)\\% Used Space`, `\\Cluster CSV File System(*)\\% Free Space` |\r\n| Storage Latency — Top 5 Clusters | `\\LogicalDisk(*)\\Avg. Disk sec/Read`, `\\LogicalDisk(*)\\Avg. Disk sec/Write`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Read`, `\\Cluster CSV File System(*)\\Avg. Disk sec/Write` |\r\n| Storage IOPS — Top 5 Clusters | `\\LogicalDisk(*)\\Disk Transfers/sec`, `\\Cluster CSV File System(*)\\Disk Transfers/sec` |\r\n| Network Throughput — Top 5 Clusters | `\\Network Interface(*)\\Bytes Total/sec` |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream. `Heartbeat` is supplied automatically by AMA and does not need to be configured.\r\n\r\n> 💡 **Need per-VM performance (Hyper-V)?** The 13 counters above cover the six **cluster-aggregate** charts immediately below. The **🖥️ Hyper-V VMs** sub-tab — and the **🪟 Hyper-V VMs on: {cluster}** section inside the **🔍 Single cluster** sub-tab — additionally need 14 Hyper-V counter paths (`Hyper-V Hypervisor Virtual Processor(*)`, `Hyper-V Dynamic Memory VM(*)`, `Hyper-V Virtual Storage Device(*)`, `Hyper-V Virtual Network Adapter(*)`).\r\n>\r\n> **✅ Recommended:** The dedicated all-in-one DCR includes all 27 paths (13 host + 14 Hyper-V) plus Event 3002. For a manual merge, use the checked-in template's [`performanceCounters.counterSpecifiers`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json) array as the authoritative copy list; do not add only the five CSV paths and assume Capacity coverage is complete.\n\n---"
-                        },
-                        "name": "dcr-setup-required-counters"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🪵 Required Windows Event Log (Storage Forecast tiles only)\r\n\r\nThe **Storage capacity / volume-size forecast** charts on the *Multi-Node* and *Single-Node* sub-tabs read **per-volume size and used-space figures** that exist **only** in **Event ID 3002** of the `Microsoft-Windows-SDDC-Management/Operational` event log. Those values are **not** in the `Perf` table, so they require a `windowsEventLogs` data source.\r\n\r\n> **⚠️ Not collected by default.** The Azure Local **AMA DCR** that ships out-of-the-box (`AzureStackHCI-AzureLocal-Default-DCR`) declares only `performanceCounters` — it does **not** include `windowsEventLogs`. Storage capacity forecasts will be empty until you add this event log to a DCR associated with each Azure Local node.\r\n\r\n**Required XPath:** `Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]`\n\nThe recommended all-in-one template already includes this `windowsEventLogs` source. For a manual merge, add the same XPath through **Data sources → Windows Event Logs → Custom** as described in the portal fallback below.\n\nLatest update notes: SDDC dependency has been **removed** from all CPU, Memory, Storage Latency / IOPS, and Network Throughput tiles in v1.0.1 — those now use only `Heartbeat` + `Perf` counters and the ARG-derived `ClusterNodeMap`. SDDC remains required only for the **Storage volume-size forecasts**.\r\n\r\n---",
-                          "style": "info"
-                        },
-                        "name": "dcr-setup-required-eventlogs"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 📄 All-in-One ARM Template\r\n\r\nThe source-controlled template and full operating guide are maintained at [`example-dcr-template/`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md). The embedded copy below is provided for reference; use the checked-in file for deployment so future guidance and template updates remain together.\r\n\r\n> 💡 **Prefer to deploy from a file in the repo?** The same template (with a companion `README.md` containing step-by-step instructions and the *multiple-DCRs-per-machine* guidance) is checked in at [`example-dcr-template/dcr-azurelocal-capacity-perf.json`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json). Grab it with `curl -L -o dcr-azurelocal-capacity-perf.json https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/main/example-dcr-template/dcr-azurelocal-capacity-perf.json` instead of copy-pasting the JSON below.\r\n\r\n```json\r\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"dcrName\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dcr-azurelocal-lens-capacity-perf\",\n      \"metadata\": {\n        \"description\": \"Name of the Data Collection Rule.\"\n      }\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\",\n      \"metadata\": {\n        \"description\": \"Region for the DCR. Must match the Log Analytics workspace region.\"\n      }\n    },\n    \"workspaceResourceId\": {\n      \"type\": \"string\",\n      \"metadata\": {\n        \"description\": \"Resource ID of the Log Analytics workspace used by the LENS workbook.\"\n      }\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Insights/dataCollectionRules\",\n      \"apiVersion\": \"2022-06-01\",\n      \"name\": \"[parameters('dcrName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"kind\": \"Windows\",\n      \"properties\": {\n        \"dataSources\": {\n          \"performanceCounters\": [\n            {\n              \"name\": \"azureLocalCapacityCounters\",\n              \"streams\": [\n                \"Microsoft-Perf\"\n              ],\n              \"samplingFrequencyInSeconds\": 60,\n              \"counterSpecifiers\": [\n                \"\\\\Processor(_Total)\\\\% Processor Time\",\n                \"\\\\Memory\\\\Committed Bytes\",\n                \"\\\\Memory\\\\Available Bytes\",\n                \"\\\\LogicalDisk(*)\\\\% Free Space\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\LogicalDisk(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\LogicalDisk(*)\\\\Disk Transfers/sec\",\n                \"\\\\Network Interface(*)\\\\Bytes Total/sec\",\n                \"\\\\Cluster CSV File System(*)\\\\% Used Space\",\n                \"\\\\Cluster CSV File System(*)\\\\% Free Space\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Read\",\n                \"\\\\Cluster CSV File System(*)\\\\Avg. Disk sec/Write\",\n                \"\\\\Cluster CSV File System(*)\\\\Disk Transfers/sec\",\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Guest Run Time\",\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Hypervisor Run Time\",\n                \"\\\\Hyper-V Hypervisor Virtual Processor(*)\\\\% Total Run Time\",\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Current Pressure\",\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Physical Memory\",\n                \"\\\\Hyper-V Dynamic Memory VM(*)\\\\Guest Visible Physical Memory\",\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Bytes/sec\",\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Bytes/sec\",\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Read Operations/Sec\",\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Write Operations/Sec\",\n                \"\\\\Hyper-V Virtual Storage Device(*)\\\\Latency\",\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes/sec\",\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Sent/sec\",\n                \"\\\\Hyper-V Virtual Network Adapter(*)\\\\Bytes Received/sec\"\n              ]\n            }\n          ],\n          \"windowsEventLogs\": [\n            {\n              \"name\": \"azureLocalSddcEvents\",\n              \"streams\": [\n                \"Microsoft-Event\"\n              ],\n              \"xPathQueries\": [\n                \"Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]\"\n              ]\n            }\n          ]\n        },\n        \"destinations\": {\n          \"logAnalytics\": [\n            {\n              \"name\": \"laDestination\",\n              \"workspaceResourceId\": \"[parameters('workspaceResourceId')]\"\n            }\n          ]\n        },\n        \"dataFlows\": [\n          {\n            \"streams\": [\n              \"Microsoft-Perf\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          },\n          {\n            \"streams\": [\n              \"Microsoft-Event\"\n            ],\n            \"destinations\": [\n              \"laDestination\"\n            ]\n          }\n        ]\n      }\n    }\n  ],\n  \"outputs\": {\n    \"dcrResourceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.Insights/dataCollectionRules', parameters('dcrName'))]\"\n    }\n  }\n}\r\n```"
-                        },
-                        "name": "dcr-setup-arm-template"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🚀 Deployment Steps\r\n\r\n**1. Deploy the DCR** (replace `<rg>`, `<subId>`, `<la-rg>`, `<la-workspace>`):\r\n\r\n```bash\r\naz deployment group create \\\r\n  --resource-group <rg> \\\r\n  --template-file dcr-azurelocal-capacity-perf.json \\\r\n  --parameters workspaceResourceId=/subscriptions/<subId>/resourceGroups/<la-rg>/providers/Microsoft.OperationalInsights/workspaces/<la-workspace>\r\n```\r\n\r\n> 🌍 **Region note.** A resource group's `location` is metadata only; the resources inside it can live in any region. What matters is that the **DCR and the Log Analytics workspace must be in the same region**. The template's `location` parameter defaults to `[resourceGroup().location]` — convenient when the target RG is already in the LAW's region, but if those two differ you **must** override it explicitly (otherwise the deployment fails with a region-mismatch error): add `location=<law-region>` (e.g. `location=eastus`) to the `--parameters` list. DCR associations are region-agnostic — they follow the Arc machine's region — so step 3 below works regardless of where the DCR / LAW / nodes physically live.\r\n\r\n**2. Capture the DCR resource ID** from the deployment output (or from the portal).\r\n\r\n**3. Associate the DCR to every Azure Local host** (Arc-enabled physical machine). Two variants:\r\n\r\n**3a. Single resource group** (one cluster):\r\n\r\n```bash\r\nDCR_ID=$(az deployment group show -g <rg> -n dcr-azurelocal-capacity-perf --query properties.outputs.dcrResourceId.value -o tsv)\r\n\r\naz connectedmachine list -g <cluster-rg> --query \"[].id\" -o tsv | while read MACHINE_ID; do\r\n  az monitor data-collection rule association create \\\r\n    --name azlocal-lens-capacity-dcra \\\r\n    --resource \"$MACHINE_ID\" \\\r\n    --rule-id \"$DCR_ID\"\r\ndone\r\n```\r\n\r\n**3b. Fleet-wide via Azure Resource Graph** (every Azure Local host in a subscription, across all RGs). Filter explanation: `provider =~ 'AzSHCI'` keeps only Azure Local participants, and `properties.detectedProperties.model !~ 'Virtual Machine'` excludes Arc-onboarded guest VMs (Hyper-V reports the model as the literal string `Virtual Machine`). Filtering on `kind` or `parentClusterResourceId` alone is **not** sufficient — Arc-onboarded guest VMs on a cluster inherit `provider = AzSHCI` and `kind = \"\"` just like physical hosts.\r\n\r\n```powershell\r\n$SubId = '<subId>'; $DcrId = '<full DCR resource id from step 2>'; $DcraName = 'azlocal-lens-capacity-dcra'\r\n$Machines = az graph query -q \"resources | where type =~ 'microsoft.hybridcompute/machines' and subscriptionId =~ '$SubId' and properties.cloudMetadata.provider =~ 'AzSHCI' and tostring(properties.detectedProperties.model) !~ 'Virtual Machine' | project id, name, resourceGroup, location\" --first 500 --query \"data\" -o json | ConvertFrom-Json\r\n\"Found $($Machines.Count) Arc-enabled Azure Local host(s). Associating $DcraName...\"\r\nforeach ($m in $Machines) { az monitor data-collection rule association create --name $DcraName --resource $m.id --rule-id $DcrId --query \"provisioningState\" -o tsv }\r\n```\r\n\r\n> 💡 **Sanity check first.** Run just the `az graph query` line and inspect the output — every row should have `detectedProperties.model` set to a physical hardware string (e.g. `ASEPRO2`, `ThinkSystem …`, `PowerEdge …`), never `Virtual Machine`. The `az monitor data-collection rule association` command needs the `monitor-control-service` CLI extension — to skip the install prompt across a long loop, run `az config set extension.use_dynamic_install=yes_without_prompt` once beforehand.\r\n\r\n> 💡 **A single Arc-enabled machine can have multiple DCR associations** — counter collection is the **union** of all associated DCRs. Deploying this dedicated `dcr-azurelocal-lens-capacity-perf` DCR alongside any DCRs you already have (Defender for Cloud, custom application telemetry, etc.) is safe and additive — both sets of counters will continue to be collected.\r\n\r\n> 💰 **Before you associate this DCR to a production fleet, review your Log Analytics workspace data-retention and ingestion settings** so they match your business monitoring and cost-optimization requirements. The workbook only **reads** from the workspace; retention (default 30 days, configurable up to 730 days, plus cheaper long-term archive), per-table overrides on `Perf` / `Event`, commitment tiers / capacity reservations, and the daily ingestion cap are all set **on the workspace itself**, not on the DCR. Microsoft's [Cost optimization and Azure Monitor — best practices](https://learn.microsoft.com/azure/azure-monitor/fundamentals/best-practices-cost) guide covers all of the above plus DCR-side filtering / transformations you can use to drop unwanted rows *before* they hit the workspace.\r\n\r\nData typically begins flowing within a few minutes. The charts above will then show per-cluster CPU, memory, storage %, latency, IOPS and network throughput — including CSV volumes — plus per-VM Hyper-V metrics (CPU `% Guest Run Time`, Memory Pressure, VHD throughput / IOPS / latency, Network throughput) on the **🖥️ Hyper-V VMs** sub-tab and the **🪟 Hyper-V VMs on: {cluster}** section.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-deploy-steps"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🔁 Ongoing Fleet Enforcement with Azure Policy\r\n\r\nThe CLI association loops are recommended for an initial rollout, explicit repair, or small fleet. For ongoing coverage, assign an **Azure Policy** that associates matching Azure Arc-enabled Windows servers with the dedicated LENS DCR as nodes are added or rebuilt.\r\n\r\n- Scope and exclude carefully so only Azure Local **physical hosts** receive the association, not Arc-enabled guest VMs.\r\n- Supply the deployed LENS DCR resource ID to the policy assignment.\r\n- Create a **remediation task** for existing nodes; policy applies automatically to new matching resources, but existing noncompliant resources require remediation.\r\n\r\nSee **[Azure Monitor Agent and DCR association with Azure Policy](https://learn.microsoft.com/azure/azure-monitor/agents/azure-monitor-agent-policy)**. The [detailed LENS DCR guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md) remains the source of truth for initial deployment, verification, and targeted CLI repair.\r\n\r\n---",
-                          "style": "info"
-                        },
-                        "name": "dcr-setup-azure-policy"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🧭 Manual Fallback — Merge Complete Capacity Collection into an Existing DCR\r\n\r\nUse this path only for a small environment, a one-off correction, or when your organization requires the LENS data sources to be merged into an existing managed DCR. Complete Capacity coverage requires **all 27 performance counter paths plus Event 3002**, not only the five CSV paths missing from the portal's preset dropdown.\r\n\r\n**Steps:**\r\n1. Open **Azure Monitor → Data Collection Rules** (or the [DCR blade](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)) and select the organization-managed DCR already associated with your Azure Local physical hosts.\r\n2. Inspect its existing data sources and destination workspace first. Do not add paths or events that another DCR already sends to the same workspace.\r\n3. Under **Data sources → Performance Counters**, add or edit a data source and select **Custom** mode.\r\n4. Copy all 27 exact paths from the checked-in template's [`performanceCounters.counterSpecifiers`](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json) array, keep the sample rate at **60 seconds**, and save. This is the authoritative list for the 13 host and 14 Hyper-V paths described above.\r\n5. Under **Data sources → Windows Event Logs**, add a **Custom** source with: `Microsoft-Windows-SDDC-Management/Operational!*[System[(EventID=3002)]]`\r\n6. Confirm the DCR is associated with every Azure Local physical host and use the verification queries below after AMA has refreshed.\r\n\r\nFor a new dedicated DCR or fleet-wide rollout, use the recommended ARM / Azure CLI deployment above instead.\r\n\r\n---"
-                        },
-                        "name": "dcr-setup-portal-method"
-                      },
-                      {
-                        "type": 11,
-                        "content": {
-                          "version": "LinkItem/1.0",
-                          "style": "nav",
-                          "links": [
-                            {
-                              "id": "dcr-ama-perf-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
-                              "linkTarget": "Url",
-                              "linkLabel": "📚 AMA Performance Counters",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-arm-reference",
-                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
-                              "linkTarget": "Url",
-                              "linkLabel": "📘 DCR ARM Reference",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-association-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
-                              "linkTarget": "Url",
-                              "linkLabel": "🔗 DCR Associations",
-                              "style": "link"
-                            },
-                            {
-                              "id": "dcr-portal-blade",
-                              "cellValue": "https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade",
-                              "linkTarget": "Url",
-                              "linkLabel": "🧭 DCR Portal Blade",
-                              "style": "link"
-                            },
-                            {
-                              "id": "csv-perf-counters-docs",
-                              "cellValue": "https://learn.microsoft.com/windows-server/failover-clustering/manage-cluster-shared-volumes",
-                              "linkTarget": "Url",
-                              "linkLabel": "💾 Cluster Shared Volume Reference",
-                              "style": "link"
-                            }
-                          ]
-                        },
-                        "name": "dcr-setup-links"
+                        "name": "dcr-setup-readiness"
                       }
                     ]
                   },
@@ -4170,7 +4066,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** Data availability may vary across clusters depending on which performance counters are configured in the Azure Monitoring Agent (AMA) [Data Collection Rule (DCR)](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-overview). If a cluster does not appear in a chart, it may not be collecting that specific counter (e.g., Processor, Memory, Storage or Network). Review the **DCR Setup Guide** under the *🔔 Performance Counter DCR Configuration* section on the **Capacity — Overview** tab for the exact counter list and step-by-step DCR configuration instructions (Portal *Custom counter specifier* + ARM template). The Storage **volume-size forecasts** below additionally require the `Microsoft-Windows-SDDC-Management/Operational` event log (Event ID 3002) — also documented in that section.",
+                    "json": "💡 **Telemetry coverage:** A cluster appears only when its nodes send the required counters to the selected workspace. Open **Capacity > Overview > Show DCR Setup Guide** to verify host and Hyper-V collection. Storage volume-size forecasts additionally require Event ID 3002 from `Microsoft-Windows-SDDC-Management/Operational`.",
                     "style": "upsell"
                   },
                   "name": "mc-perf-data-tip"
@@ -4193,7 +4089,7 @@
                     "showExportToExcel": true,
                     "aggregation": 3,
                     "title": "Predictive Resource Exhaustion Forecast by Cluster",
-                    "noDataMessage": "No data available. Ensure Azure Stack HCI nodes are reporting Heartbeat and Perf data to the selected workspace — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a cluster forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
@@ -4249,6 +4145,14 @@
                 {
                   "type": 1,
                   "content": {
+                    "json": "🔔 **Alerting:** Use **Open in Logs** above the table to investigate a forecast row. Do not create a log search alert from this forecast query: Azure Monitor caps alert lookback at two days, while this model is intended for 30+ days of history. Create operational alerts on current CPU, memory, or storage thresholds instead. [Create a log search alert](https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-create-log-alert-rule)",
+                    "style": "info"
+                  },
+                  "name": "forecast-alert-guidance"
+                },
+                {
+                  "type": 1,
+                  "content": {
                     "json": "---\r\n### 📊 Cluster-wise Resource Forecast"
                   },
                   "name": "multi-charts-header"
@@ -4264,7 +4168,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "json": "⚠️ **Forecast:** These lines extrapolate the selected historical trend with linear regression. Treat them as directional planning indicators, not predictions; workload or seasonal changes can produce different results.",
                     "style": "warning"
                   },
                   "name": "multi-forecast-disclaimer-tip"
@@ -4349,7 +4253,7 @@
                         "name": "ForecastHorizonDays",
                         "label": "Forecast Horizon",
                         "type": 2,
-                        "description": "Days how long the forecast should be",
+                        "description": "Number of days to project.",
                         "isRequired": true,
                         "typeSettings": {
                           "additionalResourceOptions": []
@@ -4494,7 +4398,7 @@
                         "max": 100
                       }
                     },
-                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -4541,7 +4445,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "Not enough historical storage data in the selected time range to build a forecast. These charts read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 (not from the `Perf` table). Try widening the time range, or expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab to confirm the SDDC event log is being collected.",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "48",
@@ -4645,7 +4549,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster storage latency metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Avg. Disk sec/Read|Write` and `Cluster CSV File System(*)\\Avg. Disk sec/Read|Write` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No storage-latency telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required LogicalDisk and Cluster CSV counters.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -4690,7 +4594,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster storage IOPS metrics for the selected scope and time range. Confirm AMA + a DCR collecting `LogicalDisk(*)\\Disk Transfers/sec` and `Cluster CSV File System(*)\\Disk Transfers/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No storage-IOPS telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Disk Transfers/sec collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -4735,7 +4639,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No multi-cluster network throughput metrics for the selected scope and time range. Confirm AMA + a DCR collecting `Network Interface(*)\\Bytes Total/sec` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No network-throughput telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -4901,7 +4805,7 @@
                         "name": "ForecastHorizonDays",
                         "label": "Forecast Horizon",
                         "type": 2,
-                        "description": "Days how long the forecast should be",
+                        "description": "Number of days to project.",
                         "isRequired": true,
                         "typeSettings": {
                           "additionalResourceOptions": []
@@ -5152,7 +5056,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Physical Machines"
+                    "json": "### 🏗️ Cluster: {SingleCluster:label} — Capacity & Performance of Azure Local Nodes"
                   },
                   "name": "sc-perf-charts-header"
                 },
@@ -5198,7 +5102,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-node CPU metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5243,7 +5147,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-node memory metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node memory telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5288,7 +5192,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-node storage metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node storage usage telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5331,7 +5235,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No per-node storage latency metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node storage latency telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5376,7 +5280,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-node storage IOPS metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node storage IOPS telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5421,7 +5325,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-node network throughput metrics for this cluster in the selected time range. Review the \"Show DCR Setup Guide\" section in Capacity Overview tab for detailed instructions.",
+                    "noDataMessage": "No per-node network throughput telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5554,14 +5458,14 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The charts below read per-volume capacity from `Microsoft-Windows-SDDC-Management/Operational` **Event ID 3002** in your selected Log Analytics workspace — not from the `Perf` table. This event log is **not collected by the default Azure Local DCR**; expand the **🔔 Performance Counter DCR Configuration → 🪵 Required Windows Event Log** section on the Capacity Overview tab for instructions on adding it."
+                    "json": "💡 **Source:** Storage forecasts use Event ID 3002 from `Microsoft-Windows-SDDC-Management/Operational`, not the `Perf` table. This event is not collected by the default Azure Local DCR. Open **Capacity > Overview > Show DCR Setup Guide** for collection and verification guidance."
                   },
                   "name": "sc-stor-forecast-source-tip"
                 },
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
+                    "json": "⚠️ **Forecast:** These lines extrapolate the selected historical trend with linear regression. Treat them as directional planning indicators, not predictions; workload or seasonal changes can produce different results.",
                     "style": "warning"
                   },
                   "name": "sc-stor-forecast-disclaimer-tip"
@@ -5606,7 +5510,7 @@
                       "locInfo": "AzureResource",
                       "locInfoColumn": "ArmId"
                     },
-                    "noDataMessage": "No storage pool capacity data for this cluster in the selected time range. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the cluster nodes (expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance).",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -5669,17 +5573,9 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The CPU and Memory forecast charts below read from the `Perf` table (`Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes` and `Memory\\Available Bytes`) in your selected Log Analytics workspace and apply linear-regression forecasting. They require AMA + a DCR collecting those counters — expand the **🔔 Performance Counter DCR Configuration** section on the Capacity Overview tab for setup guidance."
+                    "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection."
                   },
                   "name": "sc-compute-forecast-source-tip"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "⚠️ **Forecast Disclaimer:** The forecast lines are statistical extrapolations based on historic usage trends using linear regression. They are **not guaranteed predictions** — if usage patterns change (e.g., new workloads deployed, workloads removed, or seasonal variation), actual values may differ significantly. Use these forecasts as directional indicators to support capacity planning discussions, not as definitive projections.",
-                    "style": "warning"
-                  },
-                  "name": "sc-compute-forecast-disclaimer-tip"
                 },
                 {
                   "type": 3,
@@ -5709,7 +5605,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No CPU trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting `Processor(_Total)\\% Processor Time` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No CPU trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -5747,7 +5643,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No memory trend data for this cluster in the selected time range. Confirm AMA + a DCR collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` is deployed — expand the \"Show DCR Setup Guide\" section in the Capacity Overview tab for setup guidance.",
+                    "noDataMessage": "No memory trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -6094,7 +5990,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The charts below use the same **Hyper-V** Perf counters as the **🪟 Hyper-V VMs** sub-tab (`Hyper-V Hypervisor Virtual Processor`, `Hyper-V Dynamic Memory VM`, `Hyper-V Virtual Storage Device`, `Hyper-V Virtual Network Adapter`) — but **scoped to only the physical hosts of {SingleCluster:label}**. They read from the **Log Analytics Workspace** picker driving the per-machine charts above (the `Log Analytics Workspace` parameter at the top of this sub-tab), and use the same **Historic Time Range** picker.\r\n\r\nIf you see *No data*, expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of the **🪟 Hyper-V VMs** sub-tab for a ready-to-deploy ARM template. **Memory Pressure** only emits for VMs with **Dynamic Memory** enabled — VMs with static memory (including most AKS-on-AzureLocal worker VMs) will never appear on that chart.",
+                    "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V VMs** view, scoped to the Azure Local nodes in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
                     "style": "upsell"
                   },
                   "conditionalVisibility": {
@@ -6114,7 +6010,7 @@
                     "showExportToExcel": true,
                     "timeContextFromParameter": "NodeTrendsTimeRange",
                     "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
-                    "noDataMessage": "No Hyper-V VMs found running on the selected cluster's hosts in this time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the cluster nodes — see the **Show DCR Setup Guide** at the top of this sub-tab and the **🔔 Hyper-V Performance Counter DCR Configuration** section on the **🪟 Hyper-V VMs** sub-tab for ready-to-deploy ARM templates.",
+                    "noDataMessage": "No Hyper-V CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
                     "noDataMessageStyle": 4,
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
@@ -6683,14 +6579,14 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** The Top VMs / Top virtual disks charts below surface the busiest VMs and disks by CPU, memory pressure, storage throughput, IOPS, latency, and network — sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the top of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
+                    "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** Identify the busiest hypervisor-visible VMs and virtual disks by CPU, memory pressure, storage, and network activity. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, expand **Show Hyper-V DCR Setup Guide** below."
                   },
                   "name": "text-hyperv-header"
                 },
                 {
                   "type": 1,
                   "content": {
-                    "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters aren't in the portal's preset dropdown, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — the recommended approach because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the **Show Hyper-V DCR Setup Guide** section below for step-by-step guidance."
+                    "json": "---\r\n## 🔔 Hyper-V Telemetry Readiness\r\nThe charts require Azure Monitor Agent (AMA) and the 14 Hyper-V counter paths included in the all-in-one LENS Capacity DCR. Expand **Show Hyper-V DCR Setup Guide** for readiness checks and maintained deployment links."
                   },
                   "name": "text-hyperv-dcr-setup-header"
                 },
@@ -6729,69 +6625,10 @@
                       {
                         "type": 1,
                         "content": {
-                          "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-prereqs"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-counters-table"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### ✅ Recommended — Use the All-in-One LENS Capacity DCR\r\n\r\nIf you deployed the dedicated LENS Capacity DCR from **Capacity → Overview**, no additional Hyper-V DCR is required. The all-in-one template already collects all **14 Hyper-V counter paths** listed above, along with the host counters and Event 3002 required by the other Capacity views.\r\n\r\n➡️ **[Open the all-in-one template and detailed ARM / Azure CLI instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**\r\n\r\n> ⚠️ **Do not associate another DCR that collects the same Hyper-V paths into the same workspace.** Multiple DCR associations are supported, but AMA evaluates each rule independently; overlapping data sources can produce duplicate `Perf` rows and additional ingestion cost.\r\n\r\n### 🧭 Manual Portal Fallback\r\n\r\nUse the portal only when you need to merge the Hyper-V paths into an existing organization-managed DCR or make a one-off correction:\r\n\r\n1. Open **Azure Monitor → Data Collection Rules** and select the existing DCR associated with the Azure Local physical hosts.\r\n2. Under **Data sources → Performance Counters**, add or edit a data source and select **Custom** mode.\r\n3. Add the 14 exact counter paths from the table above, keep the sample rate at **60 seconds**, and save.\r\n4. Confirm the DCR is associated with every physical host and use the verification query below after AMA has refreshed.\r\n\r\nBefore adding paths, inspect the machine's existing DCR associations and definitions to avoid overlap.\r\n\r\n---",
+                          "json": "### Hyper-V telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every node; select its Log Analytics workspace above.\r\n2. Use the **LENS Capacity DCR** with all **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds.\r\n3. Create it in the workspace region and associate every physical machine, excluding guests.\r\n4. Verify the Hyper-V counters in `Perf`. Missing rows indicate a path, association, agent, or propagation issue.\r\n\r\n> ⚠️ **Do not associate another DCR collecting the same Hyper-V paths into this workspace.** AMA does not deduplicate them, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
                           "style": "warning"
                         },
-                        "name": "hyperv-dcr-portal-limitation"
-                      },
-                      {
-                        "type": 1,
-                        "content": {
-                          "json": "### 🔍 Verify Counters Are Flowing\r\n\r\nA correctly-deployed DCR can still result in empty charts if AMA isn't actually shipping every counter you listed (most commonly: a typo / extra whitespace in `counterSpecifiers`, AMA still propagating after a DCR change, or a DCRA missing on some nodes). Use this query to confirm what's **actually** arriving in the workspace selected on this tab:\r\n\r\n```kusto\r\nPerf\r\n| where TimeGenerated > ago(1h)\r\n| where ObjectName startswith \"Hyper-V\"\r\n| summarize Samples = count(), Hosts = dcount(Computer), AnyInstance = any(InstanceName)\r\n    by ObjectName, CounterName\r\n| order by ObjectName asc, CounterName asc\r\n```\r\n\r\nCompare the result against the **Required Performance Counters** table above. Any required `(ObjectName, CounterName)` pair that **does not appear** is not being shipped — the corresponding chart will be empty until you fix the upstream collection.\r\n\r\n**Common causes when a counter is missing:**\r\n- The counter specifier in the DCR has a typo, an extra space, or wrong casing (e.g. `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure ` with a trailing space). DCRs are case-sensitive on counter paths.\r\n- The DCR was saved but its DCRAs were not yet (re)applied. AMA polls for DCR changes every ~5 minutes; allow up to 20 minutes after a save.\r\n- The DCRA exists on the node but the AMA extension is unhealthy. On the node: `azcmagent extension list` should show **AzureMonitorWindowsAgent** in `Succeeded` state.\r\n- The counter only exists on certain workloads — for example `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` is only emitted for VMs running with **Dynamic Memory enabled**. VMs with static memory (including most AKS-on-AzureLocal worker VMs) will not appear under this object.\r\n- **Region mismatch**: DCR and the destination Log Analytics workspace must be in the same Azure region.\r\n\r\nThe `AnyInstance` column is also useful — it shows the InstanceName format on your Windows version. The dashboard's per-VM/per-VHD parsing logic depends on it; if the format differs significantly from the expected `<VMName>:<vCpuId>` (CPU) or path-with-extension (Storage) shape, raise an issue against this workbook.\r\n\r\n---"
-                        },
-                        "name": "hyperv-dcr-verify"
-                      },
-                      {
-                        "type": 11,
-                        "content": {
-                          "version": "LinkItem/1.0",
-                          "style": "nav",
-                          "links": [
-                            {
-                              "id": "hyperv-dcr-ama-perf-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
-                              "linkTarget": "Url",
-                              "linkLabel": "📚 AMA Performance Counters",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-dcr-arm-reference",
-                              "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
-                              "linkTarget": "Url",
-                              "linkLabel": "📘 DCR ARM Reference",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-dcr-association-docs",
-                              "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
-                              "linkTarget": "Url",
-                              "linkLabel": "🔗 DCR Associations",
-                              "style": "link"
-                            },
-                            {
-                              "id": "hyperv-counters-docs",
-                              "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
-                              "linkTarget": "Url",
-                              "linkLabel": "🖥️ Hyper-V Performance Tuning",
-                              "style": "link"
-                            }
-                          ]
-                        },
-                        "name": "hyperv-dcr-links"
+                        "name": "hyperv-dcr-readiness"
                       }
                     ]
                   },
@@ -7091,7 +6928,7 @@
                     },
                     "timeContextFromParameter": "HyperVTrendsTimeRange",
                     "title": "📋 Hyper-V VM Inventory (Perf-derived)",
-                    "noDataMessage": "No Hyper-V VMs match the current filters in the selected workspace(s) and time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the nodes — expand the **Show Hyper-V DCR Setup Guide** section at the top of this tab for step-by-step guidance.",
+                    "noDataMessage": "No Hyper-V CPU telemetry matched the current filters, workspace, and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every Azure Local node.",
                     "noDataMessageStyle": 4,
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
@@ -7226,7 +7063,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`VM Name`** is clickable when the VM is **Arc-enabled** (control-plane resource `microsoft.hybridcompute/machines` — i.e. an Azure Local VM, AVD session-host on Azure Local, or any Hyper-V guest you've onboarded to Azure Arc); the link opens the Arc machine's portal blade where you can browse `microsoft.azurestackhci/virtualmachineinstances`, extensions, policy compliance, etc. **AKS-on-Azure-Local agent VMs** (`moc-…` MOC-managed nodes) are intentionally **not** Arc-enrolled and will remain un-linked here — use the **☸️ AKS Arc Clusters** tab to navigate the cluster control plane instead. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`Cluster Name`** is resolved by a two-tier lookup: first against the authoritative `reportedProperties.nodes[]` array on `microsoft.azurestackhci/clusters` (same source of truth Azure Local uses internally), and if that misses, by joining `Heartbeat.ResourceGroup` for the host through the cluster RG map (`ClusterRGMap`). The cell links straight to the cluster's portal blade. A blank `Cluster Name` means **both** lookups failed — i.e. the Hyper-V host isn't a member of any in-scope Azure Local cluster (genuinely standalone Hyper-V, or a cluster outside the current `ResourceGroupFilter` / `ClusterTagName` / `ClusterTagValue` scope). **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure** (guest paging to disk); cells are coloured **green &lt;80**, **yellow 80–99**, **red ≥100**. This counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen (UTC)` / `Last Seen (UTC)` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen (UTC))` which is also UTC).",
+                    "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Host** is the last reporting host, so a migrated VM appears once. **Cluster Name** uses Azure Local node membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. **Avg Memory %** is available only for Dynamic Memory VMs: below 80 is green, 80-99 yellow, and 100 or more red. First/last-seen values are UTC.",
                     "style": "info"
                   },
                   "name": "hyperv-inv-help"
@@ -7241,7 +7078,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The six charts below read from the `Perf` table and require Hyper-V performance counters to be collected via AMA + DCR. If you see \"No data\", expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of this tab for a ready-to-deploy ARM template. Storage charts are shown **per virtual disk (VHD)** — see the limitations note beneath the charts.",
+                    "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
                     "style": "upsell"
                   },
                   "name": "hyperv-perf-tip"
@@ -7507,7 +7344,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "⚠️ **Chart Units & Interpretation Guide:**\r\n\r\n| Chart | Unit | Healthy / What to look for |\r\n|---|---|---|\r\n| **Top VMs by CPU Usage** | **Percent (%)** — averaged across all of the VM's virtual processors. `% Guest Run Time` is the share of time each vCPU was running guest code. | Sustained values **<70%** are typical; **>85%** for hours = the VM is CPU-bound (consider adding vCPUs or right-sizing the workload). 100% across all vCPUs = fully pegged. |\r\n| **Top VMs by Memory Pressure** | **Unitless ratio expressed as a percentage** — `(memory the VM is requesting / memory currently assigned) × 100`. **NOT** GB / MB. | **≤80** = healthy (Dynamic Memory target, ~25% headroom); **~100** = at limit; **>100** = under pressure (host is paging guest memory via Smart Paging). Example: `258.7` means the VM wants ~2.6× the memory currently assigned to it — undersized. |\r\n| **Top Virtual Disks by Throughput** | **Megabytes / second (MB/s)** — sum of Read Bytes/sec + Write Bytes/sec, divided by 1,048,576. Reported **per VHD/VHDX**, not per VM. | Compare against the underlying disk's expected throughput. NVMe-backed S2D pools comfortably sustain hundreds of MB/s per VHD; HDD-tiered pools much less. Sudden sustained spikes per VHD often indicate workload changes (backups, indexing, log truncation). |\r\n| **Top Virtual Disks by IOPS** | **Operations / second (IOPS)** — sum of Read Operations/Sec + Write Operations/Sec. Reported **per VHD/VHDX**. | A single all-flash S2D VHD typically sustains 5k–20k IOPS depending on block size; an HDD-tier VHD should rarely exceed a few hundred. Pair with the Latency chart — high IOPS at low latency is healthy; high IOPS at high latency = saturation. |\r\n| **Top Virtual Disks by Latency** | **Milliseconds (ms)** — average per-operation latency reported by the Hyper-V Virtual Storage Device. | **<10 ms** = healthy for SSD/NVMe-backed storage. **10–20 ms** = monitor (queue depth or storage congestion). **>20 ms** sustained = the storage layer is stressed; investigate S2D health, repair jobs, or noisy-neighbour VHDs. HDD-tier latency is naturally higher (~15–30 ms acceptable). |\r\n| **Top VMs by Network Throughput** | **Megabytes / second (MB/s)** — sum of all Bytes/sec (or Sent + Received) across the VM's virtual NICs. Multiply by 8 for Mb/s (e.g. 125 MB/s ≈ 1 Gbps). | Compare against the virtual switch / physical NIC capacity. RDMA/SET teams on Azure Local typically expose 25–100 Gbps; a single VM rarely exceeds a few hundred MB/s sustained outside backup/migration windows. |\r\n\r\n---\r\n\r\n⚠️ **Known Limitations:**\r\n- **Memory Pressure only reports for VMs with Dynamic Memory enabled.** VMs with static memory assignments (including most AKS-on-AzureLocal worker VMs) will never appear on this chart — the counter is not emitted for them. An empty chart is not necessarily a fault.\r\n- **Storage counters are per virtual disk (VHD), not per VM.** The `Hyper-V Virtual Storage Device` performance object uses the VHD path as its instance identifier; there is no reliable per-VM aggregation available in Log Analytics without cross-referencing ARG. Series names show the VHD filename (or, on AzureLocal 24H2, the hyphen-flattened InstanceName until the chart regex is updated for that format).\r\n- **Network counter VM-name resolution.** The `Hyper-V Virtual Network Adapter` performance object emits rows for *every* adapter plumbed into the virtual switch — guest VM virtual NICs, host management vNICs (`vManagement`, `vCompute`, `vSMB` …) and the underlying physical NICs (e.g. `Mellanox ConnectX-…`). The chart filters these out by cross-referencing each row's InstanceName against the authoritative VM list derived from the `Hyper-V Hypervisor Virtual Processor` counter; only InstanceNames that start with a known VM name are kept. As a result, a VM whose CPU counter isn't being collected won't appear in this chart either.\r\n- **Latency counter names vary by Windows Server version.** The chart matches `Latency`, `Average Latency`, `Read Latency` and `Write Latency`; if your nodes expose a different counter, the chart will be empty until the DCR is updated.\r\n- **All charts show the Top 5 VMs/VHDs by average value over the selected time range.** A noisy short-lived workload may not appear if its average is below the top 5.",
+                    "json": "⚠️ **Chart interpretation:**\r\n\r\n| Chart | Unit and interpretation |\r\n|---|---|\r\n| **VM CPU** | `% Guest Run Time`, averaged across the VM vCPUs. Sustained values near 100% indicate CPU saturation. |\r\n| **Memory Pressure** | Requested ÷ assigned memory. Below 80 is green, 80-99 yellow, and 100 or more red. |\r\n| **Disk Throughput** | Read + write MB/s per VHD/VHDX. Compare with the storage tier baseline. |\r\n| **Disk IOPS** | Read + write operations/second per VHD/VHDX. Interpret with latency. |\r\n| **Disk Latency** | Milliseconds per operation. Below 10 ms is healthy, 10-20 ms warrants monitoring, and sustained values above 20 ms indicate stress. |\r\n| **Network** | Guest virtual-NIC MB/s. Multiply by 8 for Mb/s. |\r\n\r\n**Limits:** Memory Pressure exists only for Dynamic Memory VMs. Storage remains per virtual disk, and Windows versions can expose different latency counter names. Network series require the VM CPU counter for name resolution. Every chart ranks the top five series by average value, so a short spike may not appear.",
                     "style": "warning"
                   },
                   "name": "hyperv-limitations-note"
@@ -7645,7 +7482,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Warning:** Azure resource bridge appliance can't be offline for more than 45 days because this inactivity can affect the validity of the security key used for authentication. [Learn more](https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline)"
+              "json": "⚠️ **Warning:** Azure resource bridge appliance can't be offline for more than 45 days because this inactivity can affect the validity of the security key used for authentication. [Learn more](https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge)"
             },
             "name": "arb-offline-warning"
           },
@@ -7872,7 +7709,7 @@
               "links": [
                 {
                   "id": "arb-offline-troubleshoot-link",
-                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge",
                   "linkTarget": "Url",
                   "linkLabel": "📚 Knowledge Link: Troubleshoot Azure Resource Bridge (ARB) Offline status",
                   "style": "link"
@@ -8335,7 +8172,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "---\r\n### 📝 Manual Alert Rule Creation Steps\r\n\r\n**Option 1: Resource Health Alert (Recommended for Offline Detection)**\r\n1. Click **Resource Health Alert** link above for the specific ARB\r\n2. Configure the alert condition:\r\n   - **Current resource status**: Select `Unavailable`\r\n   - **Previous resource status**: Select `Available`\r\n   - **Reason type**: Select `Platform Initiated` and `User Initiated`\r\n3. Select or create an **Action Group**\r\n4. Set alert severity (Sev 1 recommended for offline)\r\n5. Name the alert rule and create\r\n\r\n**Option 2: Activity Log Alert (For status changes)**\r\n1. Click **Activity Log Alert** link above for the specific ARB\r\n2. Select signal: `All Administrative operations`\r\n3. Filter by operation: `Microsoft.ResourceConnector/appliances/write`\r\n4. Select or create an **Action Group**\r\n5. Name the alert rule and create\r\n\r\n**Option 3: Azure Resource Graph Alert (Advanced - For bulk monitoring)**\r\n1. Go to [Azure Monitor Alert Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/alertsV2)\r\n2. Create a new **Log Search Alert**\r\n3. Use the following ARG query:\r\n```kusto\r\narg(\"\").resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| project name, resourceGroup, status = tostring(properties.status)\r\n```\r\n4. Set condition: `Number of results > 0`\r\n5. Configure frequency (e.g., every 15 minutes)\r\n6. Select Action Group and create"
+                    "json": "---\r\n### 📝 Alert choices\r\n\r\n1. **Resource Health (recommended for availability):** Select the row action, set current status to `Unavailable`, previous status to `Available`, choose platform/user-initiated reasons, then select an action group, severity, and rule name.\r\n2. **Activity Log (configuration changes):** Select the row action, choose `All Administrative operations`, filter to `Microsoft.ResourceConnector/appliances/write`, then select an action group and rule name.\r\n3. **Fleet status (preview):** Create a log search alert scoped to a Log Analytics workspace and use:\r\n\r\n```kusto\r\narg(\"\").Resources\r\n| where type =~ \"microsoft.resourceconnector/appliances\"\r\n| where tostring(properties.status) == \"Offline\"\r\n| project _ResourceId = id, name, resourceGroup\r\n```\r\n\r\nTrigger when table rows are greater than zero. A managed identity with Reader access to the queried resources is required; Azure Resource Graph alert queries are not supported in government clouds."
                   },
                   "name": "arb-manual-alert-steps"
                 },
@@ -8372,6 +8209,13 @@
                         "linkTarget": "Url",
                         "linkLabel": "🔧 Troubleshoot ARB",
                         "style": "link"
+                      },
+                      {
+                        "id": "log-search-alert-docs-link",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-create-log-alert-rule",
+                        "linkTarget": "Url",
+                        "linkLabel": "📚 Log Search Alert Docs",
+                        "style": "link"
                       }
                     ]
                   },
@@ -8400,12 +8244,12 @@
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
-        "title": "Azure Local Physical Machines",
+        "title": "Azure Local Nodes",
         "items": [
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Machine Extensions sections to spot any Arc connection issues or failed agent extensions (with full error detail)."
+              "json": "## 🖥️ Azure Local Nodes\r\n**Actionable data:** Nodes that make up each Azure Local instance and connect to Azure through the Azure Arc-enabled servers agent. Review **Disconnected Nodes** and **Failed Machine Extensions** to find Arc connectivity or extension failures."
             },
             "name": "text-nodes-header"
           },
@@ -8517,9 +8361,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| extend status = tostring(properties.status)\r\n| where status != \"Connected\"\r\n| summarize NonConnected = count()\r\n| extend Label = 'Non-Connected'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| extend status = tostring(properties.status)\r\n| where status != \"Connected\"\r\n| summarize NonConnected = count()\r\n| extend Label = 'Disconnected'",
               "size": 4,
-              "title": "Non-Connected",
+              "title": "Disconnected",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -8938,7 +8782,7 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| where tostring(properties.status) != \"Connected\"\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), lastStatusChange, resourceGroup, subscriptionId\r\n| order by lastStatusChange asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "⚠️ Non-Connected Machines",
+              "title": "⚠️ Disconnected Nodes",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,
@@ -9056,7 +8900,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🧩 Machine Extensions\r\nArc agent extensions installed on physical machines of the Azure Local instances."
+              "json": "---\r\n## 🧩 Machine Extensions\r\nAzure Arc agent extensions installed on Azure Local nodes."
             },
             "name": "text-extensions-divider"
           },
@@ -10489,7 +10333,7 @@
               "links": [
                 {
                   "id": "aks-arc-docs-link",
-                  "cellValue": "https://learn.microsoft.com/azure/aks/hybrid/aks-hybrid-options-overview",
+                  "cellValue": "https://learn.microsoft.com/azure/aks/aksarc/aks-local-overview",
                   "linkTarget": "Url",
                   "linkLabel": "📚 Documentation: AKS on Azure Local",
                   "style": "link"
@@ -13288,7 +13132,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** By design this table shows only **failures / non-succeeded** health checks — succeeded entries are filtered out to keep the view focused on what needs attention and to minimise the data returned in large fleets. Set **Show Succeeded Checks → Yes** to include passing checks as well (off by default). The **Cluster Health Rollup** column is the cluster-level health state from its most recent update-summary evaluation (the same value on every row of a given cluster), while each row is an *individual* check from that same `healthCheckResult` snapshot — each stamped with its own **Timestamp**. A check that has since been fixed only drops off this view after the cluster **re-runs its health evaluation** and republishes results (a periodic / on-demand process — not continuous, and separate from Azure Resource Graph's own few-minute sync), so a cluster showing a `Success` rollup can still list a non-succeeded check whose **Timestamp** predates the fix. Review the **Timestamp** (and **Days Since Check**) to judge how current each row is, and use the **Check Severity** filter to focus on Critical / Warning items.\r\n\r\n⚠️ **Result limits (large fleets):** the grid renders at most **10,000 rows**, and Azure Resource Graph expands each cluster's health-check array up to **2,000 entries** (the `mv-expand limit`) — so a single cluster contributes up to 2,000 rows before filtering. If you suspect results are truncated, narrow the **Cluster Name**, **Health Check State** or **Check Severity** filters to bring the row count under the cap.",
+              "json": "💡 **How to read this table:** It shows non-succeeded checks by default; set **Show Succeeded Checks > Yes** to include passing checks. **Cluster Health Rollup** is the latest cluster-level update-summary state, while each row is an individual check from that health snapshot. A resolved check remains until the cluster runs and publishes another health evaluation, so compare **Timestamp** and **Days Since Check** before acting.\r\n\r\n⚠️ **Result limits:** The grid displays up to 10,000 rows, and Azure Resource Graph expands up to 2,000 checks per cluster before filtering. If results might be truncated, narrow **Cluster Name**, **Health Check State**, or **Check Severity**.",
               "style": "info"
             },
             "name": "detailed-health-check-results-tip"

@@ -387,7 +387,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Warning:** Azure resource bridge appliance can't be offline for more than 45 days because this inactivity can affect the validity of the security key used for authentication. [Learn more](https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline)"
+              "json": "⚠️ **Warning:** Azure resource bridge appliance can't be offline for more than 45 days because this inactivity can affect the validity of the security key used for authentication. [Learn more](https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge)"
             },
             "name": "arb-offline-warning"
           },
@@ -614,7 +614,7 @@
               "links": [
                 {
                   "id": "arb-offline-troubleshoot-link",
-                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge#arc-resource-bridge-is-offline",
+                  "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge",
                   "linkTarget": "Url",
                   "linkLabel": "📚 Knowledge Link: Troubleshoot Azure Resource Bridge (ARB) Offline status",
                   "style": "link"
@@ -1077,7 +1077,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "---\r\n### 📝 Manual Alert Rule Creation Steps\r\n\r\n**Option 1: Resource Health Alert (Recommended for Offline Detection)**\r\n1. Click **Resource Health Alert** link above for the specific ARB\r\n2. Configure the alert condition:\r\n   - **Current resource status**: Select `Unavailable`\r\n   - **Previous resource status**: Select `Available`\r\n   - **Reason type**: Select `Platform Initiated` and `User Initiated`\r\n3. Select or create an **Action Group**\r\n4. Set alert severity (Sev 1 recommended for offline)\r\n5. Name the alert rule and create\r\n\r\n**Option 2: Activity Log Alert (For status changes)**\r\n1. Click **Activity Log Alert** link above for the specific ARB\r\n2. Select signal: `All Administrative operations`\r\n3. Filter by operation: `Microsoft.ResourceConnector/appliances/write`\r\n4. Select or create an **Action Group**\r\n5. Name the alert rule and create\r\n\r\n**Option 3: Azure Resource Graph Alert (Advanced - For bulk monitoring)**\r\n1. Go to [Azure Monitor Alert Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade/~/alertsV2)\r\n2. Create a new **Log Search Alert**\r\n3. Use the following ARG query:\r\n```kusto\r\narg(\"\").resources\r\n| where type == \"microsoft.resourceconnector/appliances\"\r\n| where properties.status == \"Offline\"\r\n| project name, resourceGroup, status = tostring(properties.status)\r\n```\r\n4. Set condition: `Number of results > 0`\r\n5. Configure frequency (e.g., every 15 minutes)\r\n6. Select Action Group and create"
+                    "json": "---\r\n### 📝 Alert choices\r\n\r\n1. **Resource Health (recommended for availability):** Select the row action, set current status to `Unavailable`, previous status to `Available`, choose platform/user-initiated reasons, then select an action group, severity, and rule name.\r\n2. **Activity Log (configuration changes):** Select the row action, choose `All Administrative operations`, filter to `Microsoft.ResourceConnector/appliances/write`, then select an action group and rule name.\r\n3. **Fleet status (preview):** Create a log search alert scoped to a Log Analytics workspace and use:\r\n\r\n```kusto\r\narg(\"\").Resources\r\n| where type =~ \"microsoft.resourceconnector/appliances\"\r\n| where tostring(properties.status) == \"Offline\"\r\n| project _ResourceId = id, name, resourceGroup\r\n```\r\n\r\nTrigger when table rows are greater than zero. A managed identity with Reader access to the queried resources is required; Azure Resource Graph alert queries are not supported in government clouds."
                   },
                   "name": "arb-manual-alert-steps"
                 },
@@ -1113,6 +1113,13 @@
                         "cellValue": "https://learn.microsoft.com/azure/azure-arc/resource-bridge/troubleshoot-resource-bridge",
                         "linkTarget": "Url",
                         "linkLabel": "🔧 Troubleshoot ARB",
+                        "style": "link"
+                      },
+                      {
+                        "id": "log-search-alert-docs-link",
+                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-create-log-alert-rule",
+                        "linkTarget": "Url",
+                        "linkLabel": "📚 Log Search Alert Docs",
                         "style": "link"
                       }
                     ]

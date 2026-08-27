@@ -277,12 +277,12 @@
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
-        "title": "Azure Local Physical Machines",
+        "title": "Azure Local Nodes",
         "items": [
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Physical Machines\r\n**Actionable data:** Physical machines that make up each Azure Local instance, connected to Azure using the Azure Arc for Servers agent — watch the ⚠️ Non-Connected Machines and ⚠️ Failed Machine Extensions sections to spot any Arc connection issues or failed agent extensions (with full error detail)."
+              "json": "## 🖥️ Azure Local Nodes\r\n**Actionable data:** Nodes that make up each Azure Local instance and connect to Azure through the Azure Arc-enabled servers agent. Review **Disconnected Nodes** and **Failed Machine Extensions** to find Arc connectivity or extension failures."
             },
             "name": "text-nodes-header"
           },
@@ -394,9 +394,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| extend status = tostring(properties.status)\r\n| where status != \"Connected\"\r\n| summarize NonConnected = count()\r\n| extend Label = 'Non-Connected'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| extend status = tostring(properties.status)\r\n| where status != \"Connected\"\r\n| summarize NonConnected = count()\r\n| extend Label = 'Disconnected'",
               "size": 4,
-              "title": "Non-Connected",
+              "title": "Disconnected",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -815,7 +815,7 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| where tostring(properties.status) != \"Connected\"\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), lastStatusChange, resourceGroup, subscriptionId\r\n| order by lastStatusChange asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "⚠️ Non-Connected Machines",
+              "title": "⚠️ Disconnected Nodes",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,
@@ -933,7 +933,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🧩 Machine Extensions\r\nArc agent extensions installed on physical machines of the Azure Local instances."
+              "json": "---\r\n## 🧩 Machine Extensions\r\nAzure Arc agent extensions installed on Azure Local nodes."
             },
             "name": "text-extensions-divider"
           },

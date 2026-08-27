@@ -231,14 +231,14 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** The Top VMs / Top virtual disks charts below surface the busiest VMs and disks by CPU, memory pressure, storage throughput, IOPS, latency, and network — sourced entirely from **Log Analytics** (Hyper-V performance counters collected by the Azure Monitor Agent).\r\n\r\n> **Note:** this tab covers **all** hypervisor-visible VMs (including raw Hyper-V VMs not onboarded to Arc), but at the VM-name level only — it does not show vCPU / memory / OS / resource group. For Arc-enabled VM inventory (VM size, SKU, RG, subscription, links to the Azure resource), use the dedicated **Azure Local VMs** tab.\r\n\r\nThe charts and counts below require the **Azure Monitor Agent (AMA)** and a **Data Collection Rule (DCR)** that captures Hyper-V performance counters. If you see \"No data\", expand the 🔔 **Hyper-V Performance Counter DCR Configuration** section at the top of this tab. The Hyper-V counters aren't in the portal's preset dropdown, but you can add them in the portal via the **Custom counter specifier** input (recommended — adds to an existing DCR without replacing it), or deploy the ARM template provided there."
+              "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** Identify the busiest hypervisor-visible VMs and virtual disks by CPU, memory pressure, storage, and network activity. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, expand **Show Hyper-V DCR Setup Guide** below."
             },
             "name": "text-hyperv-header"
           },
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🔔 Hyper-V Performance Counter DCR Configuration\r\n💡 **Tip:** The six performance charts above require a **Data Collection Rule (DCR)** that collects Hyper-V-specific Windows performance counters via the Azure Monitor Agent (AMA). These counters aren't in the portal's preset dropdown, but you can add them in the portal using the **Custom counter specifier** input on an existing DCR — the recommended approach because it adds to, rather than replaces, your current counters. An ARM template is also provided below as an alternative. Expand the **Show Hyper-V DCR Setup Guide** section below for step-by-step guidance."
+              "json": "---\r\n## 🔔 Hyper-V Telemetry Readiness\r\nThe charts require Azure Monitor Agent (AMA) and the 14 Hyper-V counter paths included in the all-in-one LENS Capacity DCR. Expand **Show Hyper-V DCR Setup Guide** for readiness checks and maintained deployment links."
             },
             "name": "text-hyperv-dcr-setup-header"
           },
@@ -277,69 +277,10 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### 📋 Prerequisites for the Hyper-V DCR\r\n\r\n1. **Azure Monitor Agent (AMA)** installed on each Azure Local node (the same agent already in use for the Overview tab's Capacity DCR).\r\n2. **Log Analytics workspace** — the same workspace selected in the *Log Analytics Workspace* parameter above.\r\n3. **Permissions**: `Monitoring Contributor` (or `Contributor`) on the resource group that will host the DCR, plus rights to create Data Collection Rule Associations on each Arc machine.\r\n4. **Region match**: the DCR must be created in the same Azure region as the Log Analytics workspace.\r\n5. **Hyper-V running on the nodes** — these counters only exist on machines where the Hyper-V role is active (which all Azure Local nodes satisfy).\r\n\r\n---"
-                  },
-                  "name": "hyperv-dcr-prereqs"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "### 🎯 Required Performance Counters\r\n\r\n| Chart | Required counter(s) |\r\n|-------|---------------------|\r\n| Top VMs by CPU Usage | `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` |\r\n| Top VMs by Memory Pressure | `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` |\r\n| Top Virtual Disks by Storage Throughput | `\\Hyper-V Virtual Storage Device(*)\\Read Bytes/sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Bytes/sec` |\r\n| Top Virtual Disks by Storage IOPS | `\\Hyper-V Virtual Storage Device(*)\\Read Operations/Sec`, `\\Hyper-V Virtual Storage Device(*)\\Write Operations/Sec` |\r\n| Top Virtual Disks by Storage Latency | `\\Hyper-V Virtual Storage Device(*)\\Latency` (counter name may vary — see limitations note) |\r\n| Top VMs by Network Throughput | `\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec` (or `Bytes Sent/sec` + `Bytes Received/sec` on older Windows) |\r\n\r\nAll counters are sampled every **60 seconds** and flow into the `Perf` table via the `Microsoft-Perf` stream.\r\n\r\n---"
-                  },
-                  "name": "hyperv-dcr-counters-table"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "### ✅ Recommended — Use the All-in-One LENS Capacity DCR\r\n\r\nIf you deployed the dedicated LENS Capacity DCR from **Capacity → Overview**, no additional Hyper-V DCR is required. The all-in-one template already collects all **14 Hyper-V counter paths** listed above, along with the host counters and Event 3002 required by the other Capacity views.\r\n\r\n➡️ **[Open the all-in-one template and detailed ARM / Azure CLI instructions](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)**\r\n\r\n> ⚠️ **Do not associate another DCR that collects the same Hyper-V paths into the same workspace.** Multiple DCR associations are supported, but AMA evaluates each rule independently; overlapping data sources can produce duplicate `Perf` rows and additional ingestion cost.\r\n\r\n### 🧭 Manual Portal Fallback\r\n\r\nUse the portal only when you need to merge the Hyper-V paths into an existing organization-managed DCR or make a one-off correction:\r\n\r\n1. Open **Azure Monitor → Data Collection Rules** and select the existing DCR associated with the Azure Local physical hosts.\r\n2. Under **Data sources → Performance Counters**, add or edit a data source and select **Custom** mode.\r\n3. Add the 14 exact counter paths from the table above, keep the sample rate at **60 seconds**, and save.\r\n4. Confirm the DCR is associated with every physical host and use the verification query below after AMA has refreshed.\r\n\r\nBefore adding paths, inspect the machine's existing DCR associations and definitions to avoid overlap.\r\n\r\n---",
+                    "json": "### Hyper-V telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every node; select its Log Analytics workspace above.\r\n2. Use the **LENS Capacity DCR** with all **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds.\r\n3. Create it in the workspace region and associate every physical machine, excluding guests.\r\n4. Verify the Hyper-V counters in `Perf`. Missing rows indicate a path, association, agent, or propagation issue.\r\n\r\n> ⚠️ **Do not associate another DCR collecting the same Hyper-V paths into this workspace.** AMA does not deduplicate them, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
                     "style": "warning"
                   },
-                  "name": "hyperv-dcr-portal-limitation"
-                },
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "### 🔍 Verify Counters Are Flowing\r\n\r\nA correctly-deployed DCR can still result in empty charts if AMA isn't actually shipping every counter you listed (most commonly: a typo / extra whitespace in `counterSpecifiers`, AMA still propagating after a DCR change, or a DCRA missing on some nodes). Use this query to confirm what's **actually** arriving in the workspace selected on this tab:\r\n\r\n```kusto\r\nPerf\r\n| where TimeGenerated > ago(1h)\r\n| where ObjectName startswith \"Hyper-V\"\r\n| summarize Samples = count(), Hosts = dcount(Computer), AnyInstance = any(InstanceName)\r\n    by ObjectName, CounterName\r\n| order by ObjectName asc, CounterName asc\r\n```\r\n\r\nCompare the result against the **Required Performance Counters** table above. Any required `(ObjectName, CounterName)` pair that **does not appear** is not being shipped — the corresponding chart will be empty until you fix the upstream collection.\r\n\r\n**Common causes when a counter is missing:**\r\n- The counter specifier in the DCR has a typo, an extra space, or wrong casing (e.g. `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure ` with a trailing space). DCRs are case-sensitive on counter paths.\r\n- The DCR was saved but its DCRAs were not yet (re)applied. AMA polls for DCR changes every ~5 minutes; allow up to 20 minutes after a save.\r\n- The DCRA exists on the node but the AMA extension is unhealthy. On the node: `azcmagent extension list` should show **AzureMonitorWindowsAgent** in `Succeeded` state.\r\n- The counter only exists on certain workloads — for example `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` is only emitted for VMs running with **Dynamic Memory enabled**. VMs with static memory (including most AKS-on-AzureLocal worker VMs) will not appear under this object.\r\n- **Region mismatch**: DCR and the destination Log Analytics workspace must be in the same Azure region.\r\n\r\nThe `AnyInstance` column is also useful — it shows the InstanceName format on your Windows version. The dashboard's per-VM/per-VHD parsing logic depends on it; if the format differs significantly from the expected `<VMName>:<vCpuId>` (CPU) or path-with-extension (Storage) shape, raise an issue against this workbook.\r\n\r\n---"
-                  },
-                  "name": "hyperv-dcr-verify"
-                },
-                {
-                  "type": 11,
-                  "content": {
-                    "version": "LinkItem/1.0",
-                    "style": "nav",
-                    "links": [
-                      {
-                        "id": "hyperv-dcr-ama-perf-docs",
-                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-performance",
-                        "linkTarget": "Url",
-                        "linkLabel": "📚 AMA Performance Counters",
-                        "style": "link"
-                      },
-                      {
-                        "id": "hyperv-dcr-arm-reference",
-                        "cellValue": "https://learn.microsoft.com/azure/templates/microsoft.insights/datacollectionrules",
-                        "linkTarget": "Url",
-                        "linkLabel": "📘 DCR ARM Reference",
-                        "style": "link"
-                      },
-                      {
-                        "id": "hyperv-dcr-association-docs",
-                        "cellValue": "https://learn.microsoft.com/azure/azure-monitor/agents/data-collection-rule-associations",
-                        "linkTarget": "Url",
-                        "linkLabel": "🔗 DCR Associations",
-                        "style": "link"
-                      },
-                      {
-                        "id": "hyperv-counters-docs",
-                        "cellValue": "https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/",
-                        "linkTarget": "Url",
-                        "linkLabel": "🖥️ Hyper-V Performance Tuning",
-                        "style": "link"
-                      }
-                    ]
-                  },
-                  "name": "hyperv-dcr-links"
+                  "name": "hyperv-dcr-readiness"
                 }
               ]
             },
@@ -639,7 +580,7 @@
               },
               "timeContextFromParameter": "HyperVTrendsTimeRange",
               "title": "📋 Hyper-V VM Inventory (Perf-derived)",
-              "noDataMessage": "No Hyper-V VMs match the current filters in the selected workspace(s) and time range. Confirm AMA + a DCR with `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` is configured on the nodes — expand the **Show Hyper-V DCR Setup Guide** section at the top of this tab for step-by-step guidance.",
+              "noDataMessage": "No Hyper-V CPU telemetry matched the current filters, workspace, and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every Azure Local node.",
               "noDataMessageStyle": 4,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -774,7 +715,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Inventory notes:** This table is derived **entirely from `Perf` data** (the `\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time` counter), so it reflects every VM that emitted Hyper-V telemetry during the selected time range. **Power state is not available** from `Perf` — VMs that are stopped, paused or saved do not emit performance counters and therefore do not appear here. **`VM Name`** is clickable when the VM is **Arc-enabled** (control-plane resource `microsoft.hybridcompute/machines` — i.e. an Azure Local VM, AVD session-host on Azure Local, or any Hyper-V guest you've onboarded to Azure Arc); the link opens the Arc machine's portal blade where you can browse `microsoft.azurestackhci/virtualmachineinstances`, extensions, policy compliance, etc. **AKS-on-Azure-Local agent VMs** (`moc-…` MOC-managed nodes) are intentionally **not** Arc-enrolled and will remain un-linked here — use the **☸️ AKS Arc Clusters** tab to navigate the cluster control plane instead. **`Physical Host`** shows the host the VM was **last seen on** within the window (via `arg_max(TimeGenerated, Computer)`); a VM that live-migrated will appear once with its most recent host. **`Cluster Name`** is resolved by a two-tier lookup: first against the authoritative `reportedProperties.nodes[]` array on `microsoft.azurestackhci/clusters` (same source of truth Azure Local uses internally), and if that misses, by joining `Heartbeat.ResourceGroup` for the host through the cluster RG map (`ClusterRGMap`). The cell links straight to the cluster's portal blade. A blank `Cluster Name` means **both** lookups failed — i.e. the Hyper-V host isn't a member of any in-scope Azure Local cluster (genuinely standalone Hyper-V, or a cluster outside the current `ResourceGroupFilter` / `ClusterTagName` / `ClusterTagValue` scope). **`vCPUs (observed)`** is the distinct count of `:<vCpuId>` instance suffixes for that VM in the window — equal to its assigned vCPU count for steady-state VMs. **`Avg CPU %`** is computed at the VM level by averaging across vCPUs at each 1-minute bin and then taking the mean across the window. **`Avg Memory %`** is the average of `\\Hyper-V Dynamic Memory VM(*)\\Current Pressure` across the window — a unitless ratio where **100 = at-limit** and **>100 = under pressure** (guest paging to disk); cells are coloured **green &lt;80**, **yellow 80–99**, **red ≥100**. This counter only emits for VMs with **Dynamic Memory enabled**, so static-memory VMs (including most AKS-on-AzureLocal worker VMs) will show blank. **`First Seen (UTC)` / `Last Seen (UTC)` are shown in UTC** so they line up with the `Activity` bucket (computed via `datetime_diff('minute', now(), Last Seen (UTC))` which is also UTC).",
+              "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Host** is the last reporting host, so a migrated VM appears once. **Cluster Name** uses Azure Local node membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. **Avg Memory %** is available only for Dynamic Memory VMs: below 80 is green, 80-99 yellow, and 100 or more red. First/last-seen values are UTC.",
               "style": "info"
             },
             "name": "hyperv-inv-help"
@@ -789,7 +730,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The six charts below read from the `Perf` table and require Hyper-V performance counters to be collected via AMA + DCR. If you see \"No data\", expand the **🔔 Hyper-V Performance Counter DCR Configuration** section at the top of this tab for a ready-to-deploy ARM template. Storage charts are shown **per virtual disk (VHD)** — see the limitations note beneath the charts.",
+              "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
               "style": "upsell"
             },
             "name": "hyperv-perf-tip"
@@ -1055,7 +996,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Chart Units & Interpretation Guide:**\r\n\r\n| Chart | Unit | Healthy / What to look for |\r\n|---|---|---|\r\n| **Top VMs by CPU Usage** | **Percent (%)** — averaged across all of the VM's virtual processors. `% Guest Run Time` is the share of time each vCPU was running guest code. | Sustained values **<70%** are typical; **>85%** for hours = the VM is CPU-bound (consider adding vCPUs or right-sizing the workload). 100% across all vCPUs = fully pegged. |\r\n| **Top VMs by Memory Pressure** | **Unitless ratio expressed as a percentage** — `(memory the VM is requesting / memory currently assigned) × 100`. **NOT** GB / MB. | **≤80** = healthy (Dynamic Memory target, ~25% headroom); **~100** = at limit; **>100** = under pressure (host is paging guest memory via Smart Paging). Example: `258.7` means the VM wants ~2.6× the memory currently assigned to it — undersized. |\r\n| **Top Virtual Disks by Throughput** | **Megabytes / second (MB/s)** — sum of Read Bytes/sec + Write Bytes/sec, divided by 1,048,576. Reported **per VHD/VHDX**, not per VM. | Compare against the underlying disk's expected throughput. NVMe-backed S2D pools comfortably sustain hundreds of MB/s per VHD; HDD-tiered pools much less. Sudden sustained spikes per VHD often indicate workload changes (backups, indexing, log truncation). |\r\n| **Top Virtual Disks by IOPS** | **Operations / second (IOPS)** — sum of Read Operations/Sec + Write Operations/Sec. Reported **per VHD/VHDX**. | A single all-flash S2D VHD typically sustains 5k–20k IOPS depending on block size; an HDD-tier VHD should rarely exceed a few hundred. Pair with the Latency chart — high IOPS at low latency is healthy; high IOPS at high latency = saturation. |\r\n| **Top Virtual Disks by Latency** | **Milliseconds (ms)** — average per-operation latency reported by the Hyper-V Virtual Storage Device. | **<10 ms** = healthy for SSD/NVMe-backed storage. **10–20 ms** = monitor (queue depth or storage congestion). **>20 ms** sustained = the storage layer is stressed; investigate S2D health, repair jobs, or noisy-neighbour VHDs. HDD-tier latency is naturally higher (~15–30 ms acceptable). |\r\n| **Top VMs by Network Throughput** | **Megabytes / second (MB/s)** — sum of all Bytes/sec (or Sent + Received) across the VM's virtual NICs. Multiply by 8 for Mb/s (e.g. 125 MB/s ≈ 1 Gbps). | Compare against the virtual switch / physical NIC capacity. RDMA/SET teams on Azure Local typically expose 25–100 Gbps; a single VM rarely exceeds a few hundred MB/s sustained outside backup/migration windows. |\r\n\r\n---\r\n\r\n⚠️ **Known Limitations:**\r\n- **Memory Pressure only reports for VMs with Dynamic Memory enabled.** VMs with static memory assignments (including most AKS-on-AzureLocal worker VMs) will never appear on this chart — the counter is not emitted for them. An empty chart is not necessarily a fault.\r\n- **Storage counters are per virtual disk (VHD), not per VM.** The `Hyper-V Virtual Storage Device` performance object uses the VHD path as its instance identifier; there is no reliable per-VM aggregation available in Log Analytics without cross-referencing ARG. Series names show the VHD filename (or, on AzureLocal 24H2, the hyphen-flattened InstanceName until the chart regex is updated for that format).\r\n- **Network counter VM-name resolution.** The `Hyper-V Virtual Network Adapter` performance object emits rows for *every* adapter plumbed into the virtual switch — guest VM virtual NICs, host management vNICs (`vManagement`, `vCompute`, `vSMB` …) and the underlying physical NICs (e.g. `Mellanox ConnectX-…`). The chart filters these out by cross-referencing each row's InstanceName against the authoritative VM list derived from the `Hyper-V Hypervisor Virtual Processor` counter; only InstanceNames that start with a known VM name are kept. As a result, a VM whose CPU counter isn't being collected won't appear in this chart either.\r\n- **Latency counter names vary by Windows Server version.** The chart matches `Latency`, `Average Latency`, `Read Latency` and `Write Latency`; if your nodes expose a different counter, the chart will be empty until the DCR is updated.\r\n- **All charts show the Top 5 VMs/VHDs by average value over the selected time range.** A noisy short-lived workload may not appear if its average is below the top 5.",
+              "json": "⚠️ **Chart interpretation:**\r\n\r\n| Chart | Unit and interpretation |\r\n|---|---|\r\n| **VM CPU** | `% Guest Run Time`, averaged across the VM vCPUs. Sustained values near 100% indicate CPU saturation. |\r\n| **Memory Pressure** | Requested ÷ assigned memory. Below 80 is green, 80-99 yellow, and 100 or more red. |\r\n| **Disk Throughput** | Read + write MB/s per VHD/VHDX. Compare with the storage tier baseline. |\r\n| **Disk IOPS** | Read + write operations/second per VHD/VHDX. Interpret with latency. |\r\n| **Disk Latency** | Milliseconds per operation. Below 10 ms is healthy, 10-20 ms warrants monitoring, and sustained values above 20 ms indicate stress. |\r\n| **Network** | Guest virtual-NIC MB/s. Multiply by 8 for Mb/s. |\r\n\r\n**Limits:** Memory Pressure exists only for Dynamic Memory VMs. Storage remains per virtual disk, and Windows versions can expose different latency counter names. Network series require the VM CPU counter for name resolution. Every chart ranks the top five series by average value, so a short spike may not appear.",
               "style": "warning"
             },
             "name": "hyperv-limitations-note"

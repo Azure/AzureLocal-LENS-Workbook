@@ -653,6 +653,39 @@ testSuite('Cross-Component Resources Validation', () => {
     assert(itemsRefValid.length === itemsWithCCR.length,
         'All crossComponentResources reference valid parameters',
         itemsWithCCR.length, itemsRefValid.length);
+
+    const workspaceParams = allParams.filter(param =>
+        param.query && param.query.includes('microsoft.operationalinsights/workspaces'));
+    const expectedWorkspaceIds = ['machines-log-analytics-workspace-ov',
+        'machines-log-analytics-workspace-sc', 'forecast-workspace-param', 'hyperv-la-workspace'];
+    assert(expectedWorkspaceIds.every(id => workspaceParams.some(param => param.id === id)),
+        'All four Capacity workspace selectors are covered by the tag-filter regression guard',
+        expectedWorkspaceIds.join(', '), workspaceParams.map(param => param.id).join(', '));
+
+    const taggedWorkspaceParams = workspaceParams.filter(param =>
+        /\{ClusterTag(Name|Value)\}/.test(param.query));
+    assert(taggedWorkspaceParams.length === 0,
+        'Workspace discovery does not require workspaces to carry cluster tags (issue #103)',
+        '0 tag-filtered selectors', taggedWorkspaceParams.map(param => param.id).join(', '));
+
+    assert(workspaceParams.every(param =>
+        param.crossComponentResources?.includes('{Subscriptions}') &&
+        param.query.includes('{ResourceGroupFilter}')),
+        'Workspace discovery retains subscription and resource-group scope',
+        'existing scope retained', workspaceParams.map(param => param.id).join(', '));
+
+    const forecastClusterParam = allParams.find(param => param.id === 'forecast-cluster-filter-param');
+    assert(forecastClusterParam?.query.includes('{ClusterTagName}') &&
+        forecastClusterParam?.query.includes('{ClusterTagValue}'),
+        'Multi-cluster cluster selection retains both cluster-tag filters',
+        'cluster tag name and value', forecastClusterParam?.query || 'missing');
+
+    const forecastWorkspaceParam = workspaceParams.find(param => param.id === 'forecast-workspace-param');
+    const singleWorkspaceParam = workspaceParams.find(param => param.id === 'machines-log-analytics-workspace-sc');
+    assert(Boolean(forecastWorkspaceParam && singleWorkspaceParam &&
+        forecastWorkspaceParam.query === singleWorkspaceParam.query),
+        'Multi-cluster and Single cluster discover the same workspaces',
+        singleWorkspaceParam?.query || 'missing', forecastWorkspaceParam?.query || 'missing');
 });
 
 // --- Resource Type References Validation ---

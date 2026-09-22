@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.0
+## Latest Version: v1.1.1
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.1.0)](#whats-new-v110)
+- [What's New (v1.1.1)](#whats-new-v111)
 - [v1.1.5 — Planned (post-gallery merge)](#v115--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -395,21 +395,15 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.1.0)
+## What's New (v1.1.1)
 
-A content, usability, and maintainability release focused on making operational guidance concise, consistent, and easier to act on across the workbook.
+A patch release addressing [Issue #103](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/103), reported by [@arunkumar-dhanapal](https://github.com/arunkumar-dhanapal).
 
-1. **Capacity guidance streamlined.** The Capacity Overview, Multi-cluster, Single cluster, and Hyper-V views now use shorter task-focused guidance, consistent terminology, and clearer diagnostic empty states. Detailed DCR procedures live in the maintained deployment guide while readiness checks and immediate actions remain in the workbook.
+1. **Multi-cluster workspace selection works with cluster tag filters.** The Log Analytics Workspace dropdown no longer requires workspace resources to carry the selected cluster tags. Cluster tags still filter the clusters, so workspace selection and tag-based cluster filtering can be used together. Existing subscription and resource-group scoping is unchanged.
 
-2. **Capacity readiness and forecast guidance improved.** Capacity Overview and Hyper-V use compact readiness surfaces for required telemetry. Forecast descriptions distinguish directional planning estimates from operational alerts and explain why the 30-day-plus forecast model should not be used directly as a log search alert with Azure Monitor's two-day alert lookback limit.
+2. **Regression coverage protects workspace discovery.** Tests check that all four Capacity workspace selectors remain independent of cluster tags, preserve existing scope, and retain tag filtering on the Multi-cluster cluster selector.
 
-3. **System Health and Arc Resource Bridge help tightened.** Detailed health-check guidance preserves filtering, snapshot freshness, and result-limit facts in a shorter format. Arc Resource Bridge alert guidance prioritizes Resource Health, retains Activity Log guidance, and documents the workspace, managed-identity, permission, and cloud constraints for Resource Graph log search alerts.
-
-4. **Terminology, links, and no-data states standardized.** Customer-facing text consistently uses current Azure Local terminology, distinguishes no resources from no telemetry and query failures, and replaces retired or stale documentation destinations.
-
-5. **Content quality is now continuously auditable.** A reusable content-audit script inventories customer-facing words, long guidance blocks, links, and repeated text. Regression tests enforce concise critical guidance, current alert constraints, content style, documentation links, and existing workbook contracts.
-
-The workbook header banner bumps from `v1.0.9` to `v1.1.0`. The complete local suite runs 384 tests across 37 suites.
+The workbook header banner bumps from `v1.1.0` to `v1.1.1`.
 
 ## v1.1.5 — Planned (post-gallery merge)
 
@@ -428,7 +422,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **384 unit tests across 37 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **390 unit tests across 36 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -486,6 +480,22 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.1.0
+
+A content, usability, and maintainability release focused on making operational guidance concise, consistent, and easier to act on across the workbook.
+
+1. **Capacity guidance streamlined.** The Capacity Overview, Multi-cluster, Single cluster, and Hyper-V views now use shorter task-focused guidance, consistent terminology, and clearer diagnostic empty states. Detailed DCR procedures live in the maintained deployment guide while readiness checks and immediate actions remain in the workbook.
+
+2. **Capacity readiness and forecast guidance improved.** Capacity Overview and Hyper-V use compact readiness surfaces for required telemetry. Forecast descriptions distinguish directional planning estimates from operational alerts and explain why the 30-day-plus forecast model should not be used directly as a log search alert with Azure Monitor's two-day alert lookback limit.
+
+3. **System Health and Arc Resource Bridge help tightened.** Detailed health-check guidance preserves filtering, snapshot freshness, and result-limit facts in a shorter format. Arc Resource Bridge alert guidance prioritizes Resource Health, retains Activity Log guidance, and documents the workspace, managed-identity, permission, and cloud constraints for Resource Graph log search alerts.
+
+4. **Terminology, links, and no-data states standardized.** Customer-facing text consistently uses current Azure Local terminology, distinguishes no resources from no telemetry and query failures, and replaces retired or stale documentation destinations.
+
+5. **Content quality is now continuously auditable.** A reusable content-audit script inventories customer-facing words, long guidance blocks, links, and repeated text. Regression tests enforce concise critical guidance, current alert constraints, content style, documentation links, and existing workbook contracts.
+
+The workbook header banner bumps from `v1.0.9` to `v1.1.0`. The complete local suite runs 384 tests across 37 suites.
 
 ### v1.0.9
 

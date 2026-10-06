@@ -374,9 +374,34 @@
             "name": "hyperv-perf-params"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "hyperv-node-capacity-map",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeCapacityMap",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "query": "resources\r\n| where type =~ 'microsoft.hybridcompute/machines'\r\n| where properties.cloudMetadata.provider =~ 'AzSHCI' and kind !~ 'HCI'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend matchKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', name))\r\n| project hostId = tolower(id), machine = name, matchKey, logicalProcessors = toint(properties.detectedProperties.logicalCoreCount), arcMemoryGiB = todouble(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type =~ 'microsoft.azurestackhci/clusters'\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | mv-expand node = properties.reportedProperties.nodes limit 2000\r\n    | extend matchKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(tostring(node.name), '.')[0])))\r\n    | project matchKey, cluster = name, clusterId = id, physicalCores = toint(node.coreCount), nodeMemoryGiB = todouble(node.memoryInGiB)\r\n) on matchKey\r\n| where '{ClusterTagName}' == '' or isnotempty(clusterId)\r\n| extend memoryGiB = iff(nodeMemoryGiB > 0, nodeMemoryGiB, arcMemoryGiB)\r\n| summarize mappings = make_list(bag_pack('hostId', hostId, 'machine', machine, 'cluster', cluster, 'clusterId', clusterId, 'physicalCores', physicalCores, 'logicalProcessors', logicalProcessors, 'memoryGiB', memoryGiB))\r\n| project value = tostring(mappings)",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "hyperv-node-capacity-params"
+          },
+          {
             "type": 1,
             "content": {
-              "json": "> ℹ️ **Note — global filters do not apply on this tab:** The page-level **Resource Group** and **Cluster Tag Name / Value** filters at the top of the workbook scope ARG queries against `microsoft.azurestackhci/clusters`. This tab does **not** query ARG — every tile, chart and the inventory table read directly from the **`Perf`** table in the selected **Log Analytics Workspace(s)**, which has no concept of resource group or cluster tag. Use the **Log Analytics Workspace** picker (above) and the **Physical Host** filter (below the tiles) to scope this tab.",
+              "json": "> **Scope:** Node Capacity uses Arc machine inventory and cluster metadata from the selected subscriptions, Resource Group, and Cluster Tag filters. Metrics come from the selected Log Analytics workspaces; nodes without matching telemetry remain visible as unavailable. VM inventory, tiles, and trends use workspace telemetry rather than global cluster filters. Physical Host scopes both tables; VM Name and Activity apply only to VM inventory.",
               "style": "info"
             },
             "name": "hyperv-global-filters-note"
@@ -523,7 +548,7 @@
                   "name": "HyperVInvHostFilter",
                   "label": "Physical Host",
                   "type": 2,
-                  "description": "Filter the inventory table to one or more physical Hyper-V hosts.",
+                  "description": "Filter Node Capacity and VM inventory to physical Hyper-V hosts. All includes nodes without VM CPU telemetry.",
                   "multiSelect": true,
                   "quote": "'",
                   "delimiter": ",",
@@ -566,6 +591,156 @@
               "resourceType": "microsoft.operationalinsights/workspaces"
             },
             "name": "hyperv-inv-filters"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "hyperv-node-ratio-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeRatioFilter",
+                  "label": "V:P Ratio",
+                  "type": 2,
+                  "description": "Show nodes at or above the selected observed vCPU to physical core ratio. All also includes unavailable ratios.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"1\",\"label\":\"\u2265 1:1\"},{\"value\":\"2\",\"label\":\"\u2265 2:1\"},{\"value\":\"3\",\"label\":\"\u2265 3:1\"},{\"value\":\"4\",\"label\":\"\u2265 4:1\"},{\"value\":\"5\",\"label\":\"\u2265 5:1\"},{\"value\":\"6\",\"label\":\"\u2265 6:1\"}]",
+                  "value": "0"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "hyperv-node-ratio-params"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let snapshotEnd = now() - 2m;\r\nlet windowStart = snapshotEnd - 15m;\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet minimumRatio = todouble('{HyperVNodeRatioFilter}');\r\nlet nodeMap = materialize(print mapping = dynamic({HyperVNodeCapacityMap})\r\n    | mv-expand mapping\r\n    | extend HostId = tolower(tostring(mapping.hostId))\r\n    | summarize MappingCount = count(), Metadata = take_any(mapping) by HostId\r\n    | project HostId, Machine = tostring(Metadata.machine), Cluster = iff(MappingCount == 1, tostring(Metadata.cluster), ''), ClusterId = iff(MappingCount == 1, tostring(Metadata.clusterId), ''), PhysicalCores = iff(MappingCount == 1, toint(Metadata.physicalCores), int(null)), LogicalProcessors = toint(Metadata.logicalProcessors), TotalMemoryGiB = iff(MappingCount == 1, todouble(Metadata.memoryGiB), real(null)), MappingCount);\r\nlet raw = materialize(Perf\r\n    | where TimeGenerated between (windowStart .. snapshotEnd)\r\n    | where (ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time')\r\n        or (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n        or (ObjectName == 'Memory' and CounterName == 'Available Bytes')\r\n    | extend HostId = tolower(_ResourceId)\r\n    | where isnotempty(HostId));\r\nlet hostNames = raw | summarize arg_max(TimeGenerated, Computer) by HostId;\r\nlet snapshots = materialize(raw\r\n    | where ObjectName == 'Hyper-V Hypervisor Virtual Processor'\r\n    | extend VMName = extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName)\r\n    | summarize by HostId, TimeGenerated, InstanceName, VMName\r\n    | summarize VcpuSet = make_set_if(InstanceName, isnotempty(VMName) and VMName != '_Total'), VMNames = make_set_if(VMName, isnotempty(VMName) and VMName != '_Total'), AggregateCount = countif(InstanceName == '_Total'), UnknownCount = countif(isempty(VMName) and InstanceName != '_Total') by HostId, TimeGenerated);\r\nlet newest = snapshots | summarize arg_max(TimeGenerated, *) by HostId | project HostId, CpuSampleTime = TimeGenerated, VcpuSet, VMNames, AggregateCount, UnknownCount;\r\nlet previous = snapshots\r\n    | join kind=inner (newest | project HostId, CpuSampleTime) on HostId\r\n    | where TimeGenerated < CpuSampleTime\r\n    | summarize arg_max(TimeGenerated, *) by HostId\r\n    | project HostId, PreviousTime = TimeGenerated, PreviousSet = VcpuSet, PreviousAggregate = AggregateCount, PreviousUnknown = UnknownCount;\r\nlet collisions = newest\r\n    | join kind=inner nodeMap on HostId\r\n    | where isnotempty(ClusterId)\r\n    | mv-expand VMName = VMNames to typeof(string)\r\n    | summarize HostIds = make_set(HostId) by ClusterId, VMName\r\n    | where array_length(HostIds) > 1\r\n    | mv-expand HostId = HostIds to typeof(string)\r\n    | summarize ConflictingNames = count() by HostId;\r\nlet hostCpu = raw\r\n    | where ObjectName == 'Processor' and CounterValue between (0.0 .. 100.0)\r\n    | summarize SampleCpu = avg(CounterValue) by HostId, TimeGenerated\r\n    | summarize AvgCpu = avg(SampleCpu) by HostId;\r\nlet memory = raw\r\n    | where ObjectName == 'Memory'\r\n    | summarize FreeBytes = avg(CounterValue) by HostId, TimeGenerated\r\n    | summarize arg_max(TimeGenerated, FreeBytes) by HostId\r\n    | project HostId, MemorySampleTime = TimeGenerated, FreeMemoryGiB = FreeBytes / 1073741824.0;\r\nnodeMap\r\n| join kind=leftouter hostNames on HostId\r\n| where set_has_element(hosts, '*') or set_has_element(hosts, Computer) or set_has_element(hosts, Machine)\r\n| join kind=leftouter newest on HostId\r\n| join kind=leftouter previous on HostId\r\n| join kind=leftouter collisions on HostId\r\n| join kind=leftouter hostCpu on HostId\r\n| join kind=leftouter memory on HostId\r\n| extend CpuStatus = case(isnull(CpuSampleTime), 'Missing VM CPU telemetry', ConflictingNames > 0, 'VM name on multiple nodes', isnull(PreviousTime) or CpuSampleTime - PreviousTime > 2m or AggregateCount != 1 or PreviousAggregate != 1 or UnknownCount > 0 or PreviousUnknown > 0 or array_length(VcpuSet) == 0 or array_length(set_difference(VcpuSet, PreviousSet)) > 0 or array_length(set_difference(PreviousSet, VcpuSet)) > 0, 'Unconfirmed CPU snapshot', 'Observed')\r\n| extend ObservedVcpus = iff(CpuStatus == 'Observed', array_length(VcpuSet), long(null)), ValidMemory = TotalMemoryGiB > 0 and FreeMemoryGiB >= 0 and FreeMemoryGiB <= TotalMemoryGiB\r\n| extend Ratio = iff(PhysicalCores > 0 and MappingCount == 1, todouble(ObservedVcpus) / PhysicalCores, real(null)), UsedMemoryGiB = iff(ValidMemory, TotalMemoryGiB - FreeMemoryGiB, real(null))\r\n| where minimumRatio == 0 or Ratio >= minimumRatio\r\n| extend Status = strcat(CpuStatus, iff(MappingCount != 1, '; ambiguous cluster mapping', iff(isempty(ClusterId), '; cluster unresolved', '')), iff(isnull(PhysicalCores) or PhysicalCores <= 0, '; physical cores unavailable', ''), iff(isnull(AvgCpu), '; host CPU unavailable', ''), iff(coalesce(ValidMemory, false), '', '; memory unavailable'))\r\n| project Machine, Cluster, ['Physical CPU Cores'] = PhysicalCores, ['Logical Processors'] = LogicalProcessors, ['Observed VM vCPUs'] = ObservedVcpus, ['V:P CPU Ratio'] = round(Ratio, 2), ['Avg CPU % (15 min)'] = round(AvgCpu, 1), ['Avg CPU Free %'] = round(100.0 - AvgCpu, 1), ['Memory Used %'] = round(100.0 * UsedMemoryGiB / TotalMemoryGiB, 1), ['Memory Total GiB'] = round(TotalMemoryGiB, 1), ['Memory Used GiB'] = round(UsedMemoryGiB, 1), ['Memory Free / Available GiB'] = round(iff(ValidMemory, FreeMemoryGiB, real(null)), 1), Status, ['VM CPU Sample (UTC)'] = CpuSampleTime, ['Memory Sample (UTC)'] = MemorySampleTime, machineLink = strcat('https://portal.azure.com/#@/resource', HostId), clusterLink = iff(isempty(ClusterId), '', strcat('https://portal.azure.com/#@/resource', ClusterId))\r\n| order by ['V:P CPU Ratio'] desc nulls last, Machine asc",
+              "size": 0,
+              "title": "Node Capacity - CPU, Memory and VM Density",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{HyperVLogAnalyticsWorkspace}"
+              ],
+              "timeContext": {
+                "durationMs": 3600000
+              },
+              "showAnalytics": true,
+              "showExportToExcel": true,
+              "visualization": "table",
+              "noDataMessage": "No Arc-enabled Azure Local nodes match the selected scope, Physical Host, and minimum ratio. Select All for V:P Ratio to include unavailable ratios, then check the scope filters.",
+              "noDataMessageStyle": 4,
+              "gridSettings": {
+                "rowLimit": 5000,
+                "filter": true,
+                "sortBy": [
+                  {
+                    "itemKey": "V:P CPU Ratio",
+                    "sortOrder": 2
+                  }
+                ],
+                "formatters": [
+                  {
+                    "columnMatch": "Machine",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "machineLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "Cluster",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "machineLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "Memory Used %",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "redBright",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "yellow",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "VM CPU Sample (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  },
+                  {
+                    "columnMatch": "Memory Sample (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "V:P CPU Ratio",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "hyperv-node-capacity"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "**Node capacity:** V:P compares observed guest vCPUs with physical CPU cores, not SMT threads. Blank values mean unavailable, not zero. Average CPU free is utilization headroom, not unallocated vCPUs. Memory used is physical total minus Available Bytes, not committed memory.\r\n\r\nThe table uses a 15-minute window ending two minutes ago, independent of Historic Time Range. Changing, aggregate-only, or conflicting VM-name snapshots remain unconfirmed. **[Calculations and limitations](https://github.com/Azure/AzureLocal-LENS-Workbook#hyper-v-node-capacity)**",
+              "style": "info"
+            },
+            "name": "hyperv-node-capacity-help"
           },
           {
             "type": 3,

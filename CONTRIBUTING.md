@@ -56,8 +56,8 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (390 tests across 36 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, DCR deployment guidance, content style, and accessibility. |
-| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for all 11 Capacity storage usage, storage performance, and network throughput charts. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
+| `scripts/run-tests.js` | Unit tests (404 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, node capacity, DCR deployment guidance, content style, and accessibility. |
+| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 11 Capacity storage/network charts, or the node capacity live and synthetic KQL suite with `-NodeCapacityOnly`. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
@@ -140,7 +140,7 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 390 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
+All 404 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 
@@ -166,6 +166,22 @@ or added to documentation. A successful run writes a sanitized query-name and
 row-count report to `test-results/live-integration-nunit.xml`. These tests are
 deliberately excluded from CI because they require Azure authentication, RBAC,
 a DCR, and current telemetry.
+
+For node capacity, use the same confirmation procedure and add `-NodeCapacityOnly`:
+
+```powershell
+./scripts/run-live-tests.ps1 `
+   -SubscriptionId '<confirmed-subscription-id>' `
+   -WorkspaceResourceId '<log-analytics-workspace-resource-id>' `
+   -NodeCapacityOnly
+```
+
+This mode uses the exact Hyper-V node metadata and table queries, a fixed snapshot
+time, and synthetic samples executed by Log Analytics. It validates physical-core
+ratios, CPU/memory arithmetic, numeric sorting, ratio/host filtering, duplicate
+samples, migration, ambiguous mappings, stale/missing data, and invalid metrics.
+It writes sanitized results to `test-results/node-capacity-integration-nunit.xml`.
+It does not move VMs, change a DCR, or verify host inventory using `Get-VM`.
 
 ## Code of Conduct
 

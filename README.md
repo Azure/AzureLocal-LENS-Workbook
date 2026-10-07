@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.1
+## Latest Version: v1.1.2
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.1.1)](#whats-new-v111)
+- [What's New (v1.1.2)](#whats-new-v112)
 - [v1.1.5 — Planned (post-gallery merge)](#v115--planned-post-gallery-merge)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -182,9 +182,10 @@ Fleet-wide capacity trending and forecasting:
 - Forecast disclaimer banners are shown alongside each forecast chart
 
 #### 🖥️ Hyper-V VMs sub-tab
-Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):
+Hyper-V performance from Log Analytics (including VMs not onboarded to Arc), with Arc and cluster hardware metadata for node capacity:
 - **Hyper-V Telemetry Readiness** (collapsible) — a concise checklist for AMA, the 14 Hyper-V counter paths, DCR association, and `Perf` verification. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains exact paths, merge procedures, verification queries, and troubleshooting. No second Hyper-V DCR is required when the all-in-one template is deployed
 - **📊 Active VMs (from Log Analytics)** summary
+- **Node Capacity - CPU, Memory and VM Density** - Machine and Cluster links first, followed by physical cores, logical processors, observed VM vCPUs, V:P ratio, average CPU usage/free capacity, and physical memory total/used/free. Numeric columns support sorting; V:P defaults highest first. **V:P Ratio** offers All and minimum thresholds from 1:1 through 6:1, independently of the Overview filter
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
 - **Top VMs / Top Virtual Disks** charts:
   - 📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)
@@ -193,6 +194,27 @@ Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervis
   - 📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)
   - 📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)
   - 📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only)
+
+#### Hyper-V Node Capacity
+
+The node table combines current Arc hardware inventory with a **15-minute telemetry window ending two minutes ago**. This fixed window is independent of Historic Time Range; the delay allows ingestion to settle. It is an observed capacity view, not authoritative VM power-state inventory or a synchronized cluster-wide snapshot.
+
+| Column | Calculation |
+|---|---|
+| Machine / Cluster | Arc machine and resolved Azure Local cluster, linked to their portal resources |
+| Physical CPU Cores / Logical Processors | Each node's reported `coreCount` / Arc `logicalCoreCount`; logical processors can include SMT threads |
+| Observed VM vCPUs / V:P CPU Ratio | Distinct guest virtual-processor instances in the latest confirmed host sample / physical CPU cores |
+| Avg CPU % (15 min) / Avg CPU Free % | Mean host `Processor(_Total)\% Processor Time` / 100 minus that mean; free CPU is utilization headroom, not unallocated vCPUs |
+| Memory Used % | First memory column: used divided by physical total. Green below 80%, amber from 80% to below 90%, red at 90% and above; visual guides, not health alerts |
+| Memory Total GiB | Node `memoryInGiB`, falling back to Arc physical-memory metadata |
+| Memory Free / Available GiB | Latest `Memory\Available Bytes`, divided by 1,073,741,824; available memory includes reclaimable memory, not only the OS free-page list |
+| Memory Used GiB | Physical total minus available; this is not committed memory |
+
+- **Scope:** Subscription, Resource Group, and Cluster Tag filters scope node inventory. Selected Log Analytics workspaces provide the metrics. Nodes in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; VM Name and Activity affect only VM inventory. All in V:P Ratio retains unavailable ratios; minimum thresholds exclude them.
+- **Identity:** Telemetry joins by Arc resource ID. Cluster membership resolves by subscription, resource group, and normalized reported node name. Missing or ambiguous membership does not borrow another node's cores or infer physical cores from logical processors; its ratio remains unavailable. Nodes registered outside the cluster resource group may not resolve.
+- **Snapshot checks:** Two consecutive host samples, no more than two minutes apart, must have matching guest-vCPU instance sets and the aggregate counter. Duplicate samples and `_Total` do not inflate vCPU counts. Changing, single-sample, malformed, and aggregate-only snapshots are unconfirmed rather than assumed to represent zero workloads.
+- **Migration and names:** A VM name appearing on multiple nodes in the same cluster suppresses those ratios. Matching names in different clusters remain independent. Migration and vCPU resizing can temporarily make a ratio unavailable until samples stabilize. Perf has no immutable VM identifier here; same-host duplicate names and consistently incomplete collection cannot be conclusively detected. Sample timestamps indicate the observation time, not a guarantee of current placement.
+- **Telemetry:** The existing all-in-one LENS DCR already includes the guest-vCPU, host CPU, and Available Bytes counters. A Hyper-V-only DCR must also collect the host CPU and memory paths for those columns. Missing, stale, or invalid metrics remain blank with a status message; no automatic balancing or resource changes occur.
 
 ### 📋 System Health
 Detailed view of cluster system health and update readiness:
@@ -395,15 +417,16 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
 
-## What's New (v1.1.1)
+## What's New (v1.1.2)
 
-A patch release addressing [Issue #103](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/103), reported by [@arunkumar-dhanapal](https://github.com/arunkumar-dhanapal).
+Adds node-level capacity visibility for [Issue #102](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/102), requested by [@riemi92](https://github.com/riemi92).
 
-1. **Multi-cluster workspace selection works with cluster tag filters.** The Log Analytics Workspace dropdown no longer requires workspace resources to carry the selected cluster tags. Cluster tags still filter the clusters, so workspace selection and tag-based cluster filtering can be used together. Existing subscription and resource-group scoping is unchanged.
+1. **Node Capacity under Capacity > Hyper-V.** Machine and Cluster columns link to Azure resources. Physical cores, logical processors, observed guest vCPUs, and V:P ratio sit together beside average host CPU usage and free utilization capacity. Memory Used % is the first memory column, coloured green below 80%, amber from 80% to below 90%, and red at 90% and above, followed by physical total, used, and free/available GiB. These colours are visual guides, not health alerts.
+2. **Sortable numeric metrics and minimum-ratio filtering.** Highest V:P ratios appear first; V:P Ratio offers All and thresholds from 1:1 through 6:1, matching the Overview pattern without sharing its state.
+3. **Conservative telemetry handling.** Settled, matching snapshots reduce stale allocation counts. Missing data, changing or conflicting VM placements, ambiguous hardware mappings, and invalid memory values stay unavailable rather than becoming zero. The cluster-level Capacity Overview remains ARM-only.
+4. **Regression and live query coverage.** Offline checks protect column order, filtering, identity, and formulas. The opt-in node-capacity suite executes the exact workbook queries against live data and synthetic KQL cases for migration, duplicate samples, missing data, and sorting/filtering.
 
-2. **Regression coverage protects workspace discovery.** Tests check that all four Capacity workspace selectors remain independent of cluster tags, preserve existing scope, and retain tag filtering on the Multi-cluster cluster selector.
-
-The workbook header banner bumps from `v1.1.0` to `v1.1.1`.
+The workbook header banner bumps from `v1.1.1` to `v1.1.2`.
 
 ## v1.1.5 — Planned (post-gallery merge)
 
@@ -480,6 +503,16 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.1.1
+
+A patch release addressing [Issue #103](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/103), reported by [@arunkumar-dhanapal](https://github.com/arunkumar-dhanapal).
+
+1. **Multi-cluster workspace selection works with cluster tag filters.** The Log Analytics Workspace dropdown no longer requires workspace resources to carry the selected cluster tags. Cluster tags still filter the clusters, so workspace selection and tag-based cluster filtering can be used together. Existing subscription and resource-group scoping is unchanged.
+
+2. **Regression coverage protects workspace discovery.** Tests check that all four Capacity workspace selectors remain independent of cluster tags, preserve existing scope, and retain tag filtering on the Multi-cluster cluster selector.
+
+The workbook header banner bumps from `v1.1.0` to `v1.1.1`.
 
 ### v1.1.0
 

@@ -2226,6 +2226,71 @@ testSuite('Accessibility - No Inline-Style HTML', () => {
         '0', String(occurrences));
 });
 
+testSuite('Hyper-V Node Capacity', () => {
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'workbooks', 'Capacity-HyperV', 'Capacity-HyperV.workbook'), 'utf8'));
+    const items = collectAllItems(source.items);
+    const table = items.find(item => item.name === 'hyperv-node-capacity')?.content;
+    const metadata = items.find(item => item.name === 'hyperv-node-capacity-params')?.content.parameters[0];
+    const filter = items.find(item => item.name === 'hyperv-node-ratio-params')?.content.parameters[0];
+    assert(!!table && !!metadata && !!filter, 'Node capacity table, metadata and ratio filter exist', 'all present', !!table && !!metadata && !!filter);
+    if (!table || !metadata || !filter) return;
+    const query = table.query;
+    const projection = query.slice(query.lastIndexOf('| project Machine, Cluster'));
+    assert(projection.startsWith('| project Machine, Cluster') &&
+        projection.indexOf('Physical CPU Cores') < projection.indexOf('Observed VM vCPUs') &&
+        projection.indexOf('Observed VM vCPUs') < projection.indexOf('V:P CPU Ratio') &&
+        projection.indexOf('V:P CPU Ratio') < projection.indexOf('Memory Used %') &&
+        projection.indexOf('Memory Used %') < projection.indexOf('Memory Total GiB'),
+        'Machine and Cluster lead with V:P beside CPU columns', 'ordered columns', projection.slice(0, 210));
+    const expectedSort = [{ itemKey: 'V:P CPU Ratio', sortOrder: 2 }];
+    assert(JSON.stringify(table.gridSettings.sortBy) === JSON.stringify(expectedSort) &&
+        JSON.stringify(table.sortBy) === JSON.stringify(expectedSort) &&
+        query.includes("order by ['V:P CPU Ratio'] desc nulls last"),
+        'Node ratio defaults to descending numeric sort with missing values last', 'query and grid descending', table.sortBy);
+    assert(query.includes("['V:P CPU Ratio'] = round(Ratio, 2)") && !query.includes('format_number('),
+        'Node ratio stays numeric for interactive column sorting', 'numeric ratio', query.includes('round(Ratio, 2)'));
+    const options = JSON.parse(filter.jsonData);
+    assert(filter.label === 'V:P Ratio' && filter.value === '0' && options.map(option => option.value).join(',') === '0,1,2,3,4,5,6' &&
+        query.includes("todouble('{HyperVNodeRatioFilter}')") && query.includes('where minimumRatio == 0 or Ratio >= minimumRatio'),
+        'Node ratio filter matches Overview and preserves unknown rows under All', 'All and 1-6 thresholds', options.map(option => option.value));
+    assert(metadata.query.includes("strcat(subscriptionId, '/', resourceGroup, '/', name)") &&
+        metadata.query.includes('physicalCores = toint(node.coreCount)') && metadata.query.includes('bag_pack(') &&
+        metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)"),
+        'Node hardware lookup scopes identity and uses each node physical core count', 'scoped identity and per-node cores', metadata.name);
+    assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
+        query.includes('todouble(ObservedVcpus) / PhysicalCores'),
+        'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);
+    assert(query.includes('snapshotEnd = now() - 2m') && query.includes('windowStart = snapshotEnd - 15m') &&
+        !table.timeContextFromParameter && table.timeContext.durationMs >= 17 * 60000 &&
+        !query.includes('{HyperVInvVMFilter}') && !query.includes('{HyperVInvActivity}'),
+        'Node capacity uses a settled window independent of VM inventory filters', 'fixed settled window', table.timeContext);
+    assert(query.includes('summarize by HostId, TimeGenerated, InstanceName, VMName') &&
+        query.includes('set_difference(VcpuSet, PreviousSet)') && query.includes('set_difference(PreviousSet, VcpuSet)') &&
+        query.includes('AggregateCount != 1') && query.includes('UnknownCount > 0') && query.includes('array_length(VcpuSet) == 0'),
+        'Node vCPU snapshots deduplicate and reject partial or aggregate-only samples', 'conservative exact snapshots', true);
+    assert(query.includes('by ClusterId, VMName') && query.includes('ConflictingNames > 0') &&
+        query.indexOf('let collisions =') < query.indexOf('| where set_has_element(hosts'),
+        'Duplicate VM names are checked per cluster before host filtering', 'cluster-scoped collision detection', true);
+    assert(query.includes("ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total'") &&
+        query.includes('AvgCpu = avg(SampleCpu)') && query.includes('CounterValue between (0.0 .. 100.0)'),
+        'Average CPU uses the host total counter with bounded numeric samples', 'host CPU counter', true);
+    const memoryFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Memory Used %');
+    assert(memoryFormatter?.formatter === 18 &&
+        JSON.stringify(memoryFormatter.formatOptions.thresholdsGrid.map(threshold => [threshold.operator, threshold.thresholdValue, threshold.representation])) ===
+            JSON.stringify([['>=', '90', 'redBright'], ['>=', '80', 'yellow'], ['Default', null, 'green']]) &&
+        query.includes("ObjectName == 'Memory' and CounterName == 'Available Bytes'") &&
+        query.includes('FreeMemoryGiB <= TotalMemoryGiB') && query.includes('TotalMemoryGiB - FreeMemoryGiB') &&
+        !query.includes('Committed Bytes'),
+        'Used memory has 80/90 percent colours and validated physical-memory arithmetic', '80/90 thresholds and physical memory arithmetic', memoryFormatter?.formatOptions);
+    assert(query.includes("'Missing VM CPU telemetry'") && query.includes('long(null)') &&
+        query.includes('real(null)') && table.noDataMessage.includes('minimum ratio'),
+        'Missing telemetry remains unavailable and empty filtered scope is actionable', 'null metrics and filter guidance', table.noDataMessage);
+    assert(table.gridSettings.rowLimit >= 2000 && table.showAnalytics && table.showExportToExcel &&
+        table.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Machine' && formatter.formatOptions?.linkColumn === 'machineLink') &&
+        table.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Cluster' && formatter.formatOptions?.linkColumn === 'clusterLink'),
+        'Node grid preserves export, analytics and linked Machine/Cluster columns', 'linked exportable table', true);
+});
+
 // ============================================================================
 // RESULTS
 // ============================================================================

@@ -445,7 +445,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **390 unit tests across 36 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **404 unit tests across 37 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -478,6 +478,7 @@ All pull requests are automatically validated by a GitHub Actions workflow that 
 | **Split Architecture - Round-Trip Integrity** | `AzureLocal-LENS-Workbook.json` is in sync with split sources (run `scripts/build-monolithic.js` if this fails) |
 | **Split Architecture - Sub-Template Size Recommendations** | Each sub-template is under the 350 KB hard limit (warns at the 200 KB gallery recommendation) |
 | **Accessibility - No Inline-Style HTML** | No `<div style=...>`, `<span style=...>`, `<font color=...>` etc. in markdown items |
+| Hyper-V Node Capacity | Column order, numeric sorting and ratio filtering, node identity, settled vCPU snapshots, CPU and memory calculations, missing telemetry, and resource links |
 
 Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
 
@@ -493,6 +494,8 @@ Maintainers can also run the opt-in 11-query live Capacity suite against an appr
   -SubscriptionId '<confirmed-subscription-id>' `
   -WorkspaceResourceId '<log-analytics-workspace-resource-id>'
 ```
+
+For the node-capacity live and synthetic KQL suite, add `-NodeCapacityOnly` to the command above. This mode validates the exact node-capacity queries, including hardware mapping, CPU and memory calculations, migration, duplicate samples, missing data, and sorting/filtering. It requires the same explicit subscription/workspace confirmation and does not run in CI.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#optional-live-azure-integration-tests) for prerequisites, privacy safeguards, and expected output.
 

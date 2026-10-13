@@ -2340,7 +2340,24 @@ testSuite('Hyper-V Node Capacity', () => {
         'CPU usage and free headroom retain numeric 0-100 values with percent display', 'host CPU counter and decimal percent formatters', true);
     const memoryFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Memory Used %');
     const memoryAmountFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === '^Memory (Total|Used|Free / Available) GiB$');
+    const vmInventory = items.find(item => item.name === 'hyperv-vm-inventory')?.content;
+    const vmMemoryFormatter = vmInventory?.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Avg Memory %');
+    const vmMemoryQuery = vmInventory?.query.split('let memStats = ')[1]?.split(';\r\n')[0];
+    const vmInventoryHelp = items.find(item => item.name === 'hyperv-inv-help')?.content.json;
     assert(memoryFormatter?.formatter === 18 && memoryFormatter.formatOptions.thresholdsOptions === 'icons' &&
+        vmMemoryFormatter?.formatter === memoryFormatter.formatter && vmMemoryFormatter.formatOptions.thresholdsOptions === 'icons' &&
+        vmMemoryFormatter.numberFormat?.unit === 1 && vmMemoryFormatter.numberFormat.options.maximumFractionDigits === 1 &&
+        JSON.stringify(vmMemoryFormatter.formatOptions.thresholdsGrid) === JSON.stringify(
+            memoryFormatter.formatOptions.thresholdsGrid.map(threshold => ({
+                ...threshold, thresholdValue: threshold.thresholdValue === '90' ? '100' : threshold.thresholdValue
+            }))) &&
+        vmMemoryQuery === [
+            'Perf',
+            '    | where ObjectName == "Hyper-V Dynamic Memory VM" and CounterName == "Current Pressure"',
+            '    | where InstanceName != "_Total" and isnotempty(InstanceName)',
+            "    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName"
+        ].join('\r\n') &&
+        vmInventoryHelp?.includes('demand / assigned memory * 100') && vmInventoryHelp.includes('not pagefile usage or paging I/O') &&
         usesNeutralText(memoryAmountFormatter) && memoryAmountFormatter.numberFormat?.unit === 0 &&
         memoryAmountFormatter.numberFormat.options.maximumFractionDigits === 1 &&
         ['Memory Total GiB', 'Memory Used GiB', 'Memory Free / Available GiB'].every(column => new RegExp(memoryAmountFormatter.columnMatch).test(column)) &&
@@ -2357,7 +2374,7 @@ testSuite('Hyper-V Node Capacity', () => {
         query.includes('round(100.0 * CommittedBytes / MemoryDenominator, 1)') &&
         projection.includes("['Memory Used GiB']") && projection.includes("['Memory Total GiB']") &&
         !query.includes('TotalMemoryGiB - FreeMemoryGiB'),
-        'Used memory matches Capacity committed/available math with 80/90 status icons', 'paired nonnegative counters and positive denominator', memoryFormatter?.formatOptions);
+        'Host and VM memory share icons while preserving host 80/90 math and uncapped VM 80/100 pressure', 'distinct counters, thresholds and paging guidance', { host: memoryFormatter?.formatOptions, vm: vmMemoryFormatter?.formatOptions });
     assert(query.includes("'Missing VM CPU telemetry'") && query.includes('long(null)') &&
         query.includes('real(null)') && table.noDataMessage.includes('minimum ratio'),
         'Missing telemetry remains unavailable and empty filtered scope is actionable', 'null metrics and filter guidance', table.noDataMessage);

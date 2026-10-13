@@ -1024,24 +1024,24 @@
                     "columnMatch": "Avg Memory %",
                     "formatter": 18,
                     "formatOptions": {
-                      "thresholdsOptions": "colors",
+                      "thresholdsOptions": "icons",
                       "thresholdsGrid": [
                         {
                           "operator": ">=",
                           "thresholdValue": "100",
-                          "representation": "redBright",
+                          "representation": "4",
                           "text": "{0}{1}"
                         },
                         {
                           "operator": ">=",
                           "thresholdValue": "80",
-                          "representation": "yellow",
+                          "representation": "2",
                           "text": "{0}{1}"
                         },
                         {
                           "operator": "Default",
                           "thresholdValue": null,
-                          "representation": "green",
+                          "representation": "success",
                           "text": "{0}{1}"
                         }
                       ]
@@ -1092,7 +1092,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Host** is the last reporting host, so a migrated VM appears once. **Cluster Name** uses Azure Local node membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. **Avg Memory %** is available only for Dynamic Memory VMs: below 80 is green, 80-99 yellow, and 100 or more red. First/last-seen values are UTC.",
+              "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Host** is the last reporting host, so a migrated VM appears once. **Cluster Name** uses Azure Local node membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. First/last-seen values are UTC.\r\n\r\n**Avg Memory %** averages Dynamic Memory `Current Pressure` (demand / assigned memory * 100) over the selected time range. Demand reflects guest committed-memory requirements, not just resident RAM. Above 100% means demand exceeds assigned memory; this is not pagefile usage or paging I/O, and differs from host **Memory Used %**. Dynamic Memory VMs only; missing data is unavailable. Icons: green tick below 80%, warning from 80% to below 100%, red cross at 100% and above.",
               "style": "info"
             },
             "name": "hyperv-inv-help"

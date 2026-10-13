@@ -1,16 +1,22 @@
-# Azure Local LENS Content Audit
+# Azure Local LENS Historical Content Audit (v1.1.0)
 
-Post-v1.1.0 status and remaining recommendations, updated 2026-08-27.
+Post-v1.1.0 snapshot recorded 2026-08-27. Archived as historical rationale on 2026-10-13.
+
+This document preserves the measurements, decisions, and recommendations from that snapshot. It is not a current content inventory, contributor contract, or release-validation report. The original measurements below are intentionally retained and should not be refreshed for each release.
+
+For active conventions, see [CONTRIBUTING.md](CONTRIBUTING.md); for current feature behavior and metric definitions, see [README.md](README.md). Run `node scripts/audit-content.js` (or add `--json`) for fresh source measurements using the [read-only inventory script](scripts/audit-content.js). Counts and length flags are editorial review aids, not proof of usability or correctness.
+
+Portal and live-data follow-ups below remain unverified recommendations from the original audit, not confirmed current defects or completed work. Reassess them against the current implementation before acting.
 
 ## Scope and method
 
-This audit covers customer-facing text and links in the 12 split workbook sources plus `shared/header.json` and `shared/parameters.json`. The generated monolithic workbook is excluded because it is built from those sources.
+This audit covered customer-facing text and links in the 12 split workbook sources plus `shared/header.json` and `shared/parameters.json` as of the snapshot date. The generated monolithic workbook was excluded because it is built from those sources.
 
 `node scripts/audit-content.js` walks rendered text fields, records their source item, counts words, inventories clickable links, identifies repeated text, and flags length outliers for editorial review. A flag is a triage signal, not an automatic failure.
 
 Per-tab files embed copies of shared parameters and navigation. The audit counts `items[2]` from each tab and counts the shared files once, matching `scripts/build-monolithic.js`.
 
-## Current baseline
+## Historical baseline
 
 | Measure | Result |
 | --- | ---: |
@@ -21,7 +27,7 @@ Per-tab files embed copies of shared parameters and navigation. The audit counts
 | Unique clickable external destinations | 40 |
 | Repeated text groups | 33 |
 
-Capacity contains 5,330 words, 53% of all customer-facing copy, down from the pre-v1.1.0 baseline of 10,513 words. Capacity Overview and Hyper-V together contain 2,858 words, down from 7,548. Capacity remains the largest content area, but v1.1.0 removed the previous concentration of embedded setup procedures and repeated guidance.
+At the snapshot date, Capacity contained 5,330 words, 53% of all customer-facing copy, down from the pre-v1.1.0 baseline of 10,513 words. Capacity Overview and Hyper-V together contained 2,858 words, down from 7,548. Capacity remained the largest content area, but v1.1.0 removed the previous concentration of embedded setup procedures and repeated guidance.
 
 | Source | Words | Length flags |
 | --- | ---: | ---: |
@@ -40,7 +46,7 @@ Capacity contains 5,330 words, 53% of all customer-facing copy, down from the pr
 | Capacity navigation | 87 | 0 |
 | Shared parameters | 57 | 0 |
 
-The largest individual blocks are `filter-instructions` (157 words), `hyperv-limitations-note` (152), `dcr-setup-readiness` (151), `sc-hyperv-notes` (140), and `hyperv-dcr-readiness` (128). Length flags remain editorial triage signals, not automatic defects.
+The largest individual blocks in the snapshot were `filter-instructions` (157 words), `hyperv-limitations-note` (152), `dcr-setup-readiness` (151), `sc-hyperv-notes` (140), and `hyperv-dcr-readiness` (128). Length flags remain editorial triage signals, not automatic defects.
 
 ## Priority findings
 
@@ -93,11 +99,11 @@ Customer-facing guidance now defines these four states in `CONTRIBUTING.md`, and
 
 Contributor guidance and regression tests now enforce the principal terminology and empty-state rules. First-use acronym expansion on every independently reachable tab remains a manual release review item.
 
-## Current per-tab disposition
+## Historical per-tab disposition
 
-| Area | v1.1.0 outcome | Remaining follow-up |
+| Area | v1.1.0 outcome | Follow-up identified at the snapshot date |
 | --- | --- | --- |
-| Shared header | Global filters, support links, and task guidance retained | `filter-instructions` is now the largest block at 157 words; review only if usability testing shows friction |
+| Shared header | Global filters, support links, and task guidance retained | `filter-instructions` was the largest block at 157 words; review only if usability testing shows friction |
 | Overview | Fleet summary and diagnostic empty states retained | Validate authenticated portal remediation paths |
 | Machines | Node inventory, Arc status, extension terminology, and remediation retained | No content defect identified |
 | VMs | Inventory, status, OS, deployment trends, and scope guidance retained | No content defect identified |
@@ -112,14 +118,14 @@ Contributor guidance and regression tests now enforce the principal terminology 
 
 ## Actions and alerts
 
-The workbook already proves two action patterns:
+At the snapshot date, the workbook used two action patterns:
 
 - Standard resource links using `https://portal.azure.com/#@/resource{resourceId}`.
 - Resource-aware alert links in ARB Status using `CreateAlertRuleFromResourceBlade` for Resource Health and Activity Log alerts.
 
-Capacity forecast charts do not currently expose alert creation. Do not copy the ARB action blindly: forecast results are Log Analytics calculations, not Resource Health events. First test a grid or adjacent action that opens scheduled query rule creation with the correct workspace, query, scope, threshold, evaluation window, and dimensions. If full prefill is unsupported, link to concise alert guidance and expose the query for reuse.
+Capacity forecast charts did not expose alert creation at the snapshot date. The proposed follow-up was to test a grid or adjacent action that opens scheduled query rule creation with the correct workspace, query, scope, threshold, evaluation window, and dimensions. The ARB action is not interchangeable: forecast results are Log Analytics calculations, not Resource Health events. If full prefill is unsupported, the recommendation was to link to concise alert guidance and expose the query for reuse.
 
-Authenticated portal validation remains outstanding for these hard-coded blades. It does not block this content-only fast-follow because no blade or action URL changed:
+Authenticated portal validation was outstanding for these hard-coded blades and remains unverified in this record. Those checks were outside the content-only fast-follow, which changed no blade or action URL:
 
 - `CreateAlertRuleFromResourceBlade` and its `alertType` parameters.
 - `DataCollectionRulesBlade`.
@@ -127,19 +133,19 @@ Authenticated portal validation remains outstanding for these hard-coded blades.
 - Azure Local `SingleInstanceHistoryDetails.ReactView`.
 - Grid context blades populated with KQL `pack()` values.
 
-## Implementation status and remaining sequence
+## Historical implementation status and proposed follow-ups
 
 1. Completed in v1.1.0: replace the three stale or mismatched links and remove the stale ARB fragment.
 2. Completed in v1.1.0: establish terminology and empty-state guidance in contributor documentation and tests.
 3. Completed in v1.1.0: compact Capacity Overview guidance and move detailed DCR procedures to maintained documentation.
 4. Completed in v1.1.0: consolidate setup pointers, forecast disclaimers, and terminology across Capacity views.
 5. Completed in v1.1.0: tighten the identified long blocks in System Health and ARB Status.
-6. Remaining: run an authenticated portal action spike, then implement only alert actions that preserve correct scope and query semantics.
-7. Local validation completed: full workbook suite, shared-parameter parity, monolithic rebuild, gallery validation, and accessibility checks. Authenticated portal rendering and representative live-data checks remain separate release activities when runtime behavior changes.
+6. Unverified recommendation from the audit: run an authenticated portal action spike, then implement only alert actions that preserve correct scope and query semantics.
+7. Local validation reported for the audited snapshot: full workbook suite, shared-parameter parity, monolithic rebuild, gallery validation, and accessibility checks. This is not evidence of validation for later revisions. Authenticated portal rendering and representative live-data checks remain separate release activities when runtime behavior changes.
 
-## Acceptance measures
+## Historical acceptance measures
 
-The edited source set was measured with the same inventory script:
+The v1.1.0 source set was measured with the same inventory script. These outcomes refer to the original snapshot:
 
 - Completed: Capacity customer-facing words fell 49% from 10,513 to 5,330, exceeding the 30% target while retaining detailed procedures in linked documentation.
 - Completed: Capacity markdown blocks over 140 words fell from 17 to 2, below the target of 5.
@@ -150,4 +156,4 @@ The edited source set was measured with the same inventory script:
 
 ## Validation boundary
 
-This audit validates source structure, copy inventory, public documentation destinations, and existing action construction. It does not claim that KQL returns correct live results, authenticated portal blades render, chart layouts fit at all viewport sizes, or alert rules can be safely pre-populated. Those require the live-data and portal checks listed above. No KQL changed in the v1.1.0 content release or this fast-follow.
+This audit recorded source structure, copy inventory, public documentation destination checks, and action construction for the original snapshot only. It does not certify current external destinations or later workbook changes, and does not claim that KQL returns correct live results, authenticated portal blades render, chart layouts fit at all viewport sizes, or alert rules can be safely pre-populated. Those require the live-data and portal checks listed above. The statement that no KQL changed applies only to the v1.1.0 content release and its audited content-only fast-follow, not subsequent releases or working-tree changes.

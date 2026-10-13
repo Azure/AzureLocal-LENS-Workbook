@@ -772,7 +772,7 @@ testSuite('Customer-Facing Content Style', () => {
 
     const deprecatedWording = [
         { label: 'Non-Connected', pattern: /\bNon-Connected\b/i },
-        { label: 'physical node', pattern: /\bphysical(?: cluster)? nodes?\b|\bphysical-node\b/i },
+        { label: 'physical node', pattern: /\bphysical(?: cluster)? nodes?\b(?! Capacity\b)|\bphysical-node\b/i },
         { label: 'ambiguous forecast description', pattern: /Days how long the forecast should be/i },
         { label: 'retired AKS on Windows Server link', pattern: /aks\/hybrid\/aks-hybrid-options-overview/i },
         { label: 'stale DCR associations link', pattern: /azure-monitor\/agents\/data-collection-rule-associations/i },
@@ -2231,15 +2231,20 @@ testSuite('Hyper-V Node Capacity', () => {
     const items = collectAllItems(source.items);
     const table = items.find(item => item.name === 'hyperv-node-capacity')?.content;
     const metadata = items.find(item => item.name === 'hyperv-node-capacity-params')?.content.parameters[0];
-    const filter = items.find(item => item.name === 'hyperv-node-ratio-params')?.content.parameters[0];
+    const ratioParameters = items.find(item => item.name === 'hyperv-node-ratio-params')?.content.parameters;
+    const filter = ratioParameters?.find(parameter => parameter.name === 'HyperVNodeRatioFilter');
+    const target = ratioParameters?.find(parameter => parameter.name === 'HyperVNodeTargetRatio');
+    const clusterFilter = ratioParameters?.find(parameter => parameter.name === 'HyperVNodeClusterFilter');
     assert(!!table && !!metadata && !!filter, 'Node capacity table, metadata and ratio filter exist', 'all present', !!table && !!metadata && !!filter);
     if (!table || !metadata || !filter) return;
     const query = table.query;
     const projection = query.slice(query.lastIndexOf('| project Machine, Cluster'));
     assert(projection.startsWith('| project Machine, Cluster') &&
+        !projection.includes('Logical Processors') &&
         projection.indexOf('Physical CPU Cores') < projection.indexOf('Observed VM vCPUs') &&
         projection.indexOf('Observed VM vCPUs') < projection.indexOf('V:P CPU Ratio') &&
-        projection.indexOf('V:P CPU Ratio') < projection.indexOf('Memory Used %') &&
+        projection.indexOf('V:P CPU Ratio') < projection.indexOf('% of V:P Target') &&
+        projection.indexOf('% of V:P Target') < projection.indexOf('Memory Used %') &&
         projection.indexOf('Memory Used %') < projection.indexOf('Memory Total GiB'),
         'Machine and Cluster lead with V:P beside CPU columns', 'ordered columns', projection.slice(0, 210));
     const expectedSort = [{ itemKey: 'V:P CPU Ratio', sortOrder: 2 }];
@@ -2250,23 +2255,63 @@ testSuite('Hyper-V Node Capacity', () => {
     const ratioFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'V:P CPU Ratio');
     const overview = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'workbooks', 'Capacity-Overview', 'Capacity-Overview.workbook'), 'utf8'));
     const overviewRatioFormatter = collectAllItems(overview.items).find(item => item.name === 'capacity-overview-table')?.content.gridSettings.formatters.find(formatter => formatter.columnMatch === 'ratioValue');
+    const targetFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === '% of V:P Target');
+    const overviewTargetFormatter = collectAllItems(overview.items).find(item => item.name === 'capacity-overview-table')?.content.gridSettings.formatters.find(formatter => formatter.columnMatch === 'ratioHealthPct');
+    const countColumns = [['Physical CPU Cores', 'physicalCores'], ['Observed VM vCPUs', 'vCPUTotal']];
+    const overviewFormatters = collectAllItems(overview.items).find(item => item.name === 'capacity-overview-table')?.content.gridSettings.formatters;
+    const usesNeutralText = formatter => formatter?.formatter === 18 &&
+        formatter.formatOptions?.thresholdsOptions === 'colors' &&
+        JSON.stringify(formatter.formatOptions.thresholdsGrid) === JSON.stringify([
+            { operator: 'Default', thresholdValue: null, representation: null, text: '{0}{1}' }
+        ]);
     assert(query.includes("['V:P CPU Ratio'] = round(Ratio, 2)") && !query.includes('format_number(') &&
+        query.includes("['Physical CPU Cores'] = PhysicalCores, ['Observed VM vCPUs'] = ObservedVcpus") &&
+        countColumns.every(([nodeColumn, overviewColumn]) => {
+            const nodeFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === nodeColumn);
+            const overviewFormatter = overviewFormatters?.find(formatter => formatter.columnMatch === overviewColumn);
+            return usesNeutralText(nodeFormatter) && usesNeutralText(overviewFormatter) &&
+                nodeFormatter.numberFormat?.options.maximumFractionDigits === 0 &&
+                JSON.stringify(nodeFormatter.numberFormat) === JSON.stringify(overviewFormatter.numberFormat);
+        }) &&
+        ['physicalMemoryGB', 'vmMemoryTotalGB'].every(column => {
+            const formatter = overviewFormatters?.find(candidate => candidate.columnMatch === column);
+            return usesNeutralText(formatter) && formatter.numberFormat?.unit === 5 &&
+                formatter.numberFormat.options.style === 'decimal' &&
+                formatter.numberFormat.options.maximumFractionDigits === (column === 'physicalMemoryGB' ? 0 : 1);
+        }) &&
         ratioFormatter?.formatter === 18 && !!overviewRatioFormatter &&
         JSON.stringify(ratioFormatter.numberFormat) === JSON.stringify(overviewRatioFormatter.numberFormat) &&
         ratioFormatter.formatOptions.thresholdsOptions === 'colors' &&
+        targetFormatter?.formatter === overviewTargetFormatter?.formatter && !!targetFormatter &&
+        JSON.stringify(targetFormatter.formatOptions) === JSON.stringify(overviewTargetFormatter.formatOptions) &&
+        JSON.stringify(targetFormatter.numberFormat) === JSON.stringify(overviewTargetFormatter.numberFormat) &&
         JSON.stringify(ratioFormatter.formatOptions.thresholdsGrid) === JSON.stringify([
             overviewRatioFormatter.formatOptions.thresholdsGrid.find(threshold => threshold.operator === 'Default')
         ]),
-        'Node ratio stays numeric and displays N:1 like Overview', 'numeric ratio with Overview display formatting', ratioFormatter);
+        'Capacity counts and memory use neutral left-aligned text while ratio and target formatting match', 'numeric values with neutral custom text renderers and preserved units', table.gridSettings.formatters);
     const options = JSON.parse(filter.jsonData);
-    assert(filter.label === 'V:P Ratio' && filter.value === '0' && options.map(option => option.value).join(',') === '0,1,2,3,4,5,6' &&
+    assert(filter.label === 'Filter by Ratio' && filter.value === '0' && options.map(option => option.value).join(',') === '0,1,2,3,4,5,6' &&
+        target?.label === 'Target vCPU:pCPU Ratio' && target.value === '4' &&
+        JSON.parse(target.jsonData).map(option => option.value).join(',') === '1,2,3,4,5,6' &&
+        query.includes("let targetRatio = todouble('{HyperVNodeTargetRatio}')") &&
+        query.includes("['% of V:P Target'] = iff(targetRatio > 0, round(Ratio / targetRatio * 100.0, 0), real(null))") &&
         query.includes("todouble('{HyperVNodeRatioFilter}')") && query.includes('where minimumRatio == 0 or Ratio >= minimumRatio'),
-        'Node ratio filter matches Overview and preserves unknown rows under All', 'All and 1-6 thresholds', options.map(option => option.value));
+        'Node target and ratio filter are independent with null-safe target percentage', '4:1 target and All with 1-6 thresholds', options.map(option => option.value));
     assert(metadata.query.includes("strcat(subscriptionId, '/', resourceGroup, '/', name)") &&
         metadata.query.includes('physicalCores = toint(node.coreCount)') && metadata.query.includes('bag_pack(') &&
         metadata.query.split('| join kind=leftouter')[0].includes("| where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'") &&
-        metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)"),
-        'Node hardware lookup excludes guests before joining scoped identity and per-node cores', 'physical hosts, scoped identity and per-node cores', metadata.name);
+        metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)") &&
+        clusterFilter?.label === 'Cluster Name' && clusterFilter.multiSelect === true &&
+        clusterFilter.defaultValue === 'value::all' && clusterFilter.typeSettings.additionalResourceOptions.includes('value::all') &&
+        clusterFilter.query.includes('dynamic({HyperVNodeCapacityMap})') &&
+        clusterFilter.query.includes('value = tolower(tostring(mapping.clusterId))') &&
+        clusterFilter.query.includes('label = tostring(mapping.cluster)') &&
+        query.includes('let clusters = dynamic([{HyperVNodeClusterFilter}])') &&
+        query.includes("| where set_has_element(clusters, '*') or set_has_element(clusters, tolower(ClusterId))") &&
+        query.indexOf("| where set_has_element(clusters, '*')") > query.indexOf('let collisions =') &&
+        items.filter(item => item.type === 3 && item.name !== 'hyperv-node-capacity')
+            .every(item => !item.content.query?.includes('{HyperVNodeClusterFilter}')),
+        'Node hardware lookup excludes guests and independently filters scoped cluster IDs', 'physical hosts and node-only cluster selection', metadata.name);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);
@@ -2281,24 +2326,47 @@ testSuite('Hyper-V Node Capacity', () => {
     assert(query.includes('by ClusterId, VMName') && query.includes('ConflictingNames > 0') &&
         query.indexOf('let collisions =') < query.indexOf('| where set_has_element(hosts'),
         'Duplicate VM names are checked per cluster before host filtering', 'cluster-scoped collision detection', true);
+    const cpuColumns = ['Avg CPU % (15 min)', 'Avg CPU Free %'];
     assert(query.includes("ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total'") &&
-        query.includes('AvgCpu = avg(SampleCpu)') && query.includes('CounterValue between (0.0 .. 100.0)'),
-        'Average CPU uses the host total counter with bounded numeric samples', 'host CPU counter', true);
+        query.includes('AvgCpu = avg(SampleCpu)') && query.includes('CounterValue between (0.0 .. 100.0)') &&
+        query.includes("['Avg CPU % (15 min)'] = round(AvgCpu, 1)") &&
+        query.includes("['Avg CPU Free %'] = round(100.0 - AvgCpu, 1)") &&
+        cpuColumns.every(column => {
+            const formatter = table.gridSettings.formatters.find(candidate => candidate.columnMatch === column);
+            return usesNeutralText(formatter) && formatter.numberFormat?.unit === 1 &&
+                formatter.numberFormat.options.style === 'decimal' &&
+                formatter.numberFormat.options.maximumFractionDigits === 1;
+        }),
+        'CPU usage and free headroom retain numeric 0-100 values with percent display', 'host CPU counter and decimal percent formatters', true);
     const memoryFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Memory Used %');
-    assert(memoryFormatter?.formatter === 18 &&
+    const memoryAmountFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === '^Memory (Total|Used|Free / Available) GiB$');
+    assert(memoryFormatter?.formatter === 18 && memoryFormatter.formatOptions.thresholdsOptions === 'icons' &&
+        usesNeutralText(memoryAmountFormatter) && memoryAmountFormatter.numberFormat?.unit === 0 &&
+        memoryAmountFormatter.numberFormat.options.maximumFractionDigits === 1 &&
+        ['Memory Total GiB', 'Memory Used GiB', 'Memory Free / Available GiB'].every(column => new RegExp(memoryAmountFormatter.columnMatch).test(column)) &&
+        !new RegExp(memoryAmountFormatter.columnMatch).test('Memory Used %') &&
         JSON.stringify(memoryFormatter.formatOptions.thresholdsGrid.map(threshold => [threshold.operator, threshold.thresholdValue, threshold.representation])) ===
-            JSON.stringify([['>=', '90', 'redBright'], ['>=', '80', 'yellow'], ['Default', null, 'green']]) &&
-        query.includes("ObjectName == 'Memory' and CounterName == 'Available Bytes'") &&
-        query.includes('FreeMemoryGiB <= TotalMemoryGiB') && query.includes('TotalMemoryGiB - FreeMemoryGiB') &&
-        !query.includes('Committed Bytes'),
-        'Used memory has 80/90 percent colours and validated physical-memory arithmetic', '80/90 thresholds and physical memory arithmetic', memoryFormatter?.formatOptions);
+            JSON.stringify([['>=', '90', '4'], ['>=', '80', '2'], ['Default', null, 'success']]) &&
+        query.includes("ObjectName == 'Memory' and CounterName in ('Committed Bytes', 'Available Bytes')") &&
+        query.includes("CommittedBytes = avgif(CounterValue, CounterName == 'Committed Bytes')") &&
+        query.includes("AvailableBytes = avgif(CounterValue, CounterName == 'Available Bytes')") &&
+        query.includes('by HostId, MemorySampleTime = bin(TimeGenerated, 1m)') &&
+        query.includes('HaveCommitted > 0 and HaveAvailable > 0') &&
+        query.includes('CommittedBytes >= 0 and AvailableBytes >= 0 and MemoryDenominator > 0') &&
+        query.includes('CommittedBytes + AvailableBytes') &&
+        query.includes('round(100.0 * CommittedBytes / MemoryDenominator, 1)') &&
+        projection.includes("['Memory Used GiB']") && projection.includes("['Memory Total GiB']") &&
+        !query.includes('TotalMemoryGiB - FreeMemoryGiB'),
+        'Used memory matches Capacity committed/available math with 80/90 status icons', 'paired nonnegative counters and positive denominator', memoryFormatter?.formatOptions);
     assert(query.includes("'Missing VM CPU telemetry'") && query.includes('long(null)') &&
         query.includes('real(null)') && table.noDataMessage.includes('minimum ratio'),
         'Missing telemetry remains unavailable and empty filtered scope is actionable', 'null metrics and filter guidance', table.noDataMessage);
     assert(table.gridSettings.rowLimit >= 2000 && table.showAnalytics && table.showExportToExcel &&
+        table.gridSettings.labelSettings?.some(setting => setting.columnId === 'Cluster' && setting.label === 'Cluster Name') &&
+        collectAllItems(overview.items).find(item => item.name === 'capacity-overview-table')?.content.gridSettings.labelSettings.some(setting => setting.columnId === 'ClusterName' && setting.label === 'Cluster Name') &&
         table.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Machine' && formatter.formatOptions?.linkColumn === 'machineLink') &&
         table.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Cluster' && formatter.formatOptions?.linkColumn === 'clusterLink'),
-        'Node grid preserves export, analytics and linked Machine/Cluster columns', 'linked exportable table', true);
+        'Capacity grids label Cluster Name consistently and preserve node links and exports', 'consistent cluster labels and linked exportable table', true);
 });
 
 // ============================================================================

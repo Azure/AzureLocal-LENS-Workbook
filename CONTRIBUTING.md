@@ -104,6 +104,37 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
    - **Insufficient history**: name the required time range or sample history and suggest widening it.
 - Do not combine possible empty-state causes with "or" when the query cannot distinguish them. Avoid generic messages such as "No data available" or "No results found".
 
+### Column and metric consistency
+
+- Reuse established display headings for the same concepts, including **Cluster Name** and **Memory Used %**. Prefer display-label settings over renaming query fields when filters, formatters, exports, or links depend on them.
+- Keep numeric results numeric for sorting, filtering, and export. Apply `%` and `:1` presentation through column formatters; preserve each metric's documented units and scale, including percentage values on a 0-100 scale and binary GiB conversions.
+- For host performance memory, collect **Committed Bytes** and **Available Bytes** and preserve the accepted formula and **Memory Used %** heading documented in [Hyper-V Node Capacity](README.md#hyper-v-node-capacity). Its "Accepted memory calculation and rationale" subsection records the issue/PR decisions. Consult that history before proposing changes; reopening the decision requires reproducible evidence and explicit maintainer agreement. Do not replace it with physical-total-minus-available or percent-of-commit-limit calculations. This convention does not redefine ARM workload-allocation or guest-specific memory metrics.
+- Keep installed physical memory distinct from committed and available memory. In the node table, Memory Used GiB represents committed memory; Memory Total GiB is installed physical memory, not the percentage denominator. Explain these distinctions in help or supported tooltips without changing the established display headings.
+- Missing or invalid telemetry is unavailable, not zero. Preserve the required counter-presence checks, nonnegative-value checks, and positive-denominator guards. A valid zero reading must remain distinguishable from missing data.
+- Preserve each view's intentional sampling window, aggregation scope, thresholds, and filter behavior. Matching formulas do not imply identical values across a latest-node snapshot and a historical cluster chart. Do not copy one view's thresholds or aggregation into another merely for visual consistency.
+- Preserve the physical-core denominator for V:P CPU Ratio; logical processors and CPU utilization are different measures. Keep target comparison separate from observed ratios and row filtering.
+- Before changing an established metric's meaning, explain the proposed change and obtain explicit maintainer agreement. Check the nearest implementation, existing tests, and relevant documented rationale. Update the calculation documentation and focused regression coverage with the change.
+
+### Repository knowledge
+
+Use these existing sources instead of relying on private agent memory or duplicating long explanations:
+
+- [README](README.md): feature behavior, scope filters, resource-join information, operational knowledge links, and release notes. [Node capacity calculations](README.md#hyper-v-node-capacity) define the node table's metrics and limitations; [previous-version notes](README.md#appendix-previous-versions-change-log) preserve the rationale for earlier fixes. Historical notes provide context, not an override of current source and tests.
+- [Historical v1.1.0 content audit](CONTENT-AUDIT.md): rationale for earlier content, terminology, navigation, and empty-state decisions, plus unverified recommendations from that snapshot. It is not current guidance or release-validation evidence. Run `node scripts/audit-content.js` for fresh measurements; keep active conventions in this guide.
+- [DCR setup and deployment guide](example-dcr-template/README.md): maintained counter lists, prerequisites, collection and association guidance, overlap considerations, validation, and troubleshooting.
+- [Regression tests](scripts/run-tests.js): executable structural and behavioral invariants. Extend nearby assertions when changing an existing feature.
+- [Live-test harness](scripts/run-live-tests.ps1) and [query manifest](scripts/live-test-queries.json): opt-in query execution and synthetic scenarios; follow the [environment-confirmation procedure](#optional-live-azure-integration-tests).
+- [Security policy](SECURITY.md): responsible reporting of security concerns.
+
+The [Copilot instructions](.github/copilot-instructions.md) point agents to these shared conventions. Keep the detailed rules here and metric definitions in their maintained documentation; agent memory is supplementary, not authoritative.
+
+### Public-repository privacy
+
+- Do not copy personally identifiable information, private correspondence, agent memory, session transcripts, or raw customer telemetry into documentation, instructions, fixtures, comments, issues, or pull requests.
+- Do not publish credentials, access tokens, tenant or subscription IDs, workspace IDs, customer resource IDs, hostnames, IP addresses, or local user-profile paths. Use generic placeholders or synthetic fixture values instead.
+- Keep real environment identifiers as runtime inputs to explicitly approved live checks. Report only sanitized query names, counts, and outcomes; inspect generated output before staging it.
+- Link to maintained public knowledge rather than copying private troubleshooting records. Review additions and linked material for sensitive information before publishing. Report security-sensitive findings through the security policy, not a public issue.
+
 ### KQL Query Best Practices
 
 - Always include the `ResourceGroupFilter` wildcard check for consistent filtering

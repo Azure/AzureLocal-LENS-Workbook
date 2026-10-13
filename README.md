@@ -185,7 +185,7 @@ Fleet-wide capacity trending and forecasting:
 Hyper-V performance from Log Analytics (including VMs not onboarded to Arc), with Arc and cluster hardware metadata for node capacity:
 - **Hyper-V Telemetry Readiness** (collapsible) — a concise checklist for AMA, the 14 Hyper-V counter paths, DCR association, and `Perf` verification. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains exact paths, merge procedures, verification queries, and troubleshooting. No second Hyper-V DCR is required when the all-in-one template is deployed
 - **📊 Active VMs (from Log Analytics)** summary
-- **Node Capacity - CPU, Memory and VM Density** - Machine and Cluster links first, followed by physical cores, logical processors, observed VM vCPUs, V:P ratio, average CPU usage/free capacity, and physical memory total/used/free. Numeric columns support sorting; V:P defaults highest first. **V:P Ratio** offers All and minimum thresholds from 1:1 through 6:1, independently of the Overview filter
+- **Physical Node Capacity - CPU, Memory and VM Density** - Machine and Cluster Name links first, followed by physical cores, observed VM vCPUs, V:P CPU Ratio, percentage of target, average CPU usage/free capacity, and memory usage with physical total, committed, and available GiB. Numeric columns support sorting; V:P CPU Ratio defaults highest first and displays values such as `4:1` or `2.5:1`. **Target vCPU:pCPU Ratio** defaults to 4:1 for the target-percentage bar; **Filter by Ratio** offers All and minimum thresholds from 1:1 through 6:1. Both controls are independent of Overview
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
 - **Top VMs / Top Virtual Disks** charts:
   - 📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)
@@ -197,24 +197,48 @@ Hyper-V performance from Log Analytics (including VMs not onboarded to Arc), wit
 
 #### Hyper-V Node Capacity
 
+**Prerequisite:** Performance columns require Azure Monitor Agent on the Azure Local nodes and an associated DCR collecting the required host CPU, memory, and Hyper-V counters into the selected Log Analytics workspace(s). Creating the DCR alone is insufficient: counters must be arriving in the workspace. Follow the existing [DCR setup, association, and verification guide](example-dcr-template/README.md). Inventory-backed rows can still appear without telemetry, but performance values and telemetry-dependent ratios remain unavailable.
+
 The node table combines current Arc hardware inventory with a **15-minute telemetry window ending two minutes ago**. This fixed window is independent of Historic Time Range; the delay allows ingestion to settle. It is an observed capacity view, not authoritative VM power-state inventory or a synchronized cluster-wide snapshot.
 
 | Column | Calculation |
 |---|---|
-| Machine / Cluster | Arc machine and resolved Azure Local cluster, linked to their portal resources |
-| Physical CPU Cores / Logical Processors | Each node's reported `coreCount` / Arc `logicalCoreCount`; logical processors can include SMT threads |
-| Observed VM vCPUs / V:P CPU Ratio | Distinct guest virtual-processor instances in the latest confirmed host sample / physical CPU cores |
-| Avg CPU % (15 min) / Avg CPU Free % | Mean host `Processor(_Total)\% Processor Time` / 100 minus that mean; free CPU is utilization headroom, not unallocated vCPUs |
-| Memory Used % | First memory column: used divided by physical total. Green below 80%, amber from 80% to below 90%, red at 90% and above; visual guides, not health alerts |
-| Memory Total GiB | Node `memoryInGiB`, falling back to Arc physical-memory metadata |
-| Memory Free / Available GiB | Latest `Memory\Available Bytes`, divided by 1,073,741,824; available memory includes reclaimable memory, not only the OS free-page list |
-| Memory Used GiB | Physical total minus available; this is not committed memory |
+| Machine / Cluster Name | Arc machine and resolved Azure Local cluster, linked to their portal resources |
+| Physical CPU Cores | Each node's reported `coreCount`; excludes SMT threads and is the denominator for V:P CPU Ratio |
+| Observed VM vCPUs / V:P CPU Ratio | Distinct guest virtual-processor instances in the latest confirmed host sample / physical CPU cores. Ratio displays as `4:1` or `2.5:1`, with at most one decimal place; underlying values remain numeric for sorting and filtering |
+| % of V:P Target | Observed ratio divided by the selected target, multiplied by 100; matches Overview's green-to-red bar. Default target is 4:1. Unavailable ratios remain blank. This is a planning benchmark, not CPU utilization or a platform limit |
+| Avg CPU % (15 min) / Avg CPU Free % | Mean host `Processor(_Total)\% Processor Time` / 100 minus that mean; free CPU is utilization headroom, not unallocated vCPUs. Displayed with a `%` suffix and at most one decimal place (for example, `35.2%` / `64.8%`), retaining numeric 0-100 values |
+| Memory Used % | First memory column: `Committed Bytes / (Committed Bytes + Available Bytes) * 100`, matching the other Capacity tabs. Compact green tick below 80%, warning from 80% to below 90%, and red cross at 90% and above; visual guides, not health alerts |
+| Memory Total GiB | Installed physical memory: node `memoryInGiB`, falling back to Arc physical-memory metadata. This is not the percentage denominator; Used plus Available need not equal Total |
+| Memory Free / Available GiB | Mean `Memory\Available Bytes` in the latest one-minute memory bucket, divided by 1,073,741,824; available memory includes reclaimable memory, not only the OS free-page list |
+| Memory Used GiB | Mean `Memory\Committed Bytes` in that same bucket, divided by 1,073,741,824; committed memory can exceed installed physical memory |
 
-- **Scope:** Subscription, Resource Group, and Cluster Tag filters scope node inventory. Selected Log Analytics workspaces provide the metrics. Nodes in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; VM Name and Activity affect only VM inventory. All in V:P Ratio retains unavailable ratios; minimum thresholds exclude them.
+Memory uses the latest one-minute bucket within the settled window. Both counters must be present, all samples must be nonnegative, and their averaged sum must be positive; otherwise the telemetry-derived memory values remain unavailable. The sample timestamp is the bucket start. The formula matches the existing Capacity memory charts, but values can differ because those charts aggregate different time ranges or cluster scopes.
+
+- **Scope:** Subscription, Resource Group, and Cluster Tag filters scope node inventory. **Cluster Name** is a multi-select dropdown drawn from that inventory and filters only Physical Node Capacity by cluster resource ID, keeping identically named clusters distinct. It defaults to All, which includes unresolved cluster membership; selecting specific clusters excludes unresolved nodes. Selected Log Analytics workspaces provide the metrics. Nodes in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; VM Name and Activity affect only VM inventory. All in Filter by Ratio retains unavailable ratios; minimum thresholds exclude them. Cluster Name, Physical Host, and minimum-ratio filters combine. Changing the target affects only the target percentage, not row filtering or observed ratios.
 - **Identity:** Telemetry joins by Arc resource ID. Cluster membership resolves by subscription, resource group, and normalized reported node name. Missing or ambiguous membership does not borrow another node's cores or infer physical cores from logical processors; its ratio remains unavailable. Nodes registered outside the cluster resource group may not resolve.
 - **Snapshot checks:** Two consecutive host samples, no more than two minutes apart, must have matching guest-vCPU instance sets and the aggregate counter. Duplicate samples and `_Total` do not inflate vCPU counts. Changing, single-sample, malformed, and aggregate-only snapshots are unconfirmed rather than assumed to represent zero workloads.
 - **Migration and names:** A VM name appearing on multiple nodes in the same cluster suppresses those ratios. Matching names in different clusters remain independent. Migration and vCPU resizing can temporarily make a ratio unavailable until samples stabilize. Perf has no immutable VM identifier here; same-host duplicate names and consistently incomplete collection cannot be conclusively detected. Sample timestamps indicate the observation time, not a guarantee of current placement.
-- **Telemetry:** The existing all-in-one LENS DCR already includes the guest-vCPU, host CPU, and Available Bytes counters. A Hyper-V-only DCR must also collect the host CPU and memory paths for those columns. Missing, stale, or invalid metrics remain blank with a status message; no automatic balancing or resource changes occur.
+- **Telemetry:** The existing all-in-one LENS DCR already includes the guest-vCPU, host CPU, Committed Bytes, and Available Bytes counters. A Hyper-V-only DCR must also collect the host CPU and both memory paths for those columns. Missing, stale, or invalid metrics remain blank with a status message; no automatic balancing or resource changes occur.
+
+##### Accepted memory calculation and rationale
+
+The **Memory Used %** formula documented above is an intentional compatibility decision aligned with Cluster Insights and the existing Capacity memory charts. The new Hyper-V node table follows that established convention; it is not introducing a different definition of host memory usage.
+
+- [Issue #79](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/79), resolved by [PR #78](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/78), addressed discrepancies with Cluster Insights. The PR replaced the Overview memory chart's `% Committed Bytes In Use` counter with **Committed Bytes** and **Available Bytes**, using the formula already used by the Capacity memory forecast. It also corrected node membership and missing-node aggregation; changing the formula alone was not sufficient.
+- [Issue #77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77), resolved by [PR #76](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/76), established that the Cluster Capacity Overview table remains **ARG-only**, without an Azure Monitor dependency. Its memory values describe provisioned workload allocation, not measured host usage. That resolution improved allocation accounting and naming rather than replacing the table with Perf data.
+
+These are three distinct metrics, not interchangeable percentages:
+
+| Metric | Meaning |
+|---|---|
+| Memory Used % | Perf-based host memory: committed divided by committed plus available, multiplied by 100 |
+| Workload Memory % | ARG-provisioned workload memory divided by usable physical capacity, including the documented platform reservations |
+| N-1 Memory Risk % | ARG-provisioned workload memory compared with the documented capacity remaining after a single-node loss; single-node clusters have no HA resiliency |
+
+**How to interpret the host formula:** Committed Bytes is memory Windows has promised to back with RAM or the page file; Available Bytes is physical RAM available for use. Their sum is not necessarily installed RAM. For a hypothetical node with 64 GiB installed, 32 GiB committed, and 16 GiB available, the agreed formula reports `32 / (32 + 16) * 100 = 66.7%`, not the `75%` obtained from physical total minus available. These calculations measure different things. Windows `% Committed Bytes In Use` is different again: its denominator is **Commit Limit**, which includes page-file capacity.
+
+This distinction belongs in explanatory help, not in an unrequested formula or heading change. Retain **Memory Used %** and the agreed paired-counter calculation. When comparing results, first check both counters' coverage, authoritative node membership, missing samples, aggregation scope, and matching time windows. A node snapshot, a historical cluster chart, and ARG workload allocation need not agree. Changes to this decision require reproducible evidence and explicit maintainer agreement, with tests and documentation updated together.
 
 ### 📋 System Health
 Detailed view of cluster system health and update readiness:
@@ -421,8 +445,8 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 Adds node-level capacity visibility for [Issue #102](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/102), requested by [@riemi92](https://github.com/riemi92).
 
-1. **Node Capacity under Capacity > Hyper-V.** Machine and Cluster columns link to Azure resources. Physical cores, logical processors, observed guest vCPUs, and V:P ratio sit together beside average host CPU usage and free utilization capacity. Memory Used % is the first memory column, coloured green below 80%, amber from 80% to below 90%, and red at 90% and above, followed by physical total, used, and free/available GiB. These colours are visual guides, not health alerts.
-2. **Sortable numeric metrics and minimum-ratio filtering.** Highest V:P ratios appear first; V:P Ratio offers All and thresholds from 1:1 through 6:1, matching the Overview pattern without sharing its state.
+1. **Physical Node Capacity under Capacity > Hyper-V.** Machine and Cluster Name columns link to Azure resources; Cluster Capacity Overview also uses the Cluster Name heading. Physical cores, observed guest vCPUs, V:P CPU Ratio, and % of V:P Target sit together beside average host CPU usage and free utilization capacity, both displayed with `%` suffixes. Memory Used % uses the established `Committed Bytes / (Committed Bytes + Available Bytes) * 100` formula, with a compact green tick below 80%, warning from 80% to below 90%, and red cross at 90% and above. Physical total, used (committed), and free/available GiB follow; the help text explains their meanings. These icons are visual guides, not health alerts.
+2. **Sortable numeric metrics, target comparison, and cluster/ratio filtering.** Highest V:P ratios appear first, displayed as `4:1` or `2.5:1` while retaining numeric sorting and filtering. Target vCPU:pCPU Ratio defaults to 4:1 and drives the colour-coded % of V:P Target bar; Filter by Ratio offers All and thresholds from 1:1 through 6:1. Both match Overview's controls without sharing its state. A node-only Cluster Name multi-select defaults to All and filters by cluster resource ID without affecting VM inventory.
 3. **Conservative telemetry handling.** Settled, matching snapshots reduce stale allocation counts. Missing data, changing or conflicting VM placements, ambiguous hardware mappings, and invalid memory values stay unavailable rather than becoming zero. The cluster-level Capacity Overview remains ARM-only.
 4. **Regression and live query coverage.** Offline checks protect column order, filtering, identity, and formulas. The opt-in node-capacity suite executes the exact workbook queries against live data and synthetic KQL cases for migration, duplicate samples, missing data, and sorting/filtering.
 

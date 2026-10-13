@@ -517,7 +517,18 @@
                   },
                   {
                     "columnMatch": "physicalCores",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 0,
                       "options": {
@@ -529,7 +540,18 @@
                   },
                   {
                     "columnMatch": "physicalMemoryGB",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 5,
                       "options": {
@@ -557,7 +579,18 @@
                   },
                   {
                     "columnMatch": "vCPUTotal",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 0,
                       "options": {
@@ -569,7 +602,18 @@
                   },
                   {
                     "columnMatch": "vmMemoryTotalGB",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 5,
                       "options": {
@@ -658,7 +702,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster"
+                    "label": "Cluster Name"
                   },
                   {
                     "columnId": "status",

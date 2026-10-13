@@ -85,10 +85,12 @@ function Test-NodeCapacity {
     if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
 
     function Invoke-CapacityQuery {
-        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples)
+        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'")
 
         $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress))
         $query = $query.Replace('{HyperVInvHostFilter}', $HostFilter).Replace('{HyperVNodeRatioFilter}', $MinimumRatio)
+        $query = $query.Replace('{HyperVNodeTargetRatio}', $TargetRatio)
+        $query = $query.Replace('{HyperVNodeClusterFilter}', $ClusterFilter)
         if ($PSBoundParameters.ContainsKey('Samples')) {
             $samplesJson = ConvertTo-Json -InputObject $Samples -Depth 10 -Compress
             $source = "(print fixtureRow = dynamic($samplesJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), _ResourceId=tostring(fixtureRow.HostId), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
@@ -123,21 +125,30 @@ function Test-NodeCapacity {
         $memoryRows = @($liveRows | Where-Object { $null -ne $_.'Memory Used GiB' })
         Assert-Capacity ($cpuRows.Count -gt 0 -and $memoryRows.Count -gt 0) 'node-capacity-live-host-metrics' $memoryRows.Count
         $invalidMemory = @($memoryRows | Where-Object {
-            [math]::Abs($_.'Memory Total GiB' - $_.'Memory Used GiB' - $_.'Memory Free / Available GiB') -gt 0.11
+            $used = $_.'Memory Used GiB'
+            $available = $_.'Memory Free / Available GiB'
+            $percentage = $_.'Memory Used %'
+            if ($null -eq $available -or $null -eq $percentage -or $used -lt 0 -or $available -lt 0 -or $percentage -lt 0 -or $percentage -gt 100) {
+                $true
+            } elseif ($used + $available -gt 0) {
+                $denominator = $used + $available
+                $roundingTolerance = 0.1 + 10 / $denominator
+                [math]::Abs($percentage - 100 * $used / $denominator) -gt $roundingTolerance
+            }
         })
-        Assert-Capacity ($invalidMemory.Count -eq 0) 'node-capacity-live-memory-balance'
+        Assert-Capacity ($invalidMemory.Count -eq 0) 'node-capacity-live-memory-percentage'
         $filtered = @(Invoke-CapacityQuery -NodeMetadata @($metadata) -MinimumRatio '2')
         Assert-Capacity (@($filtered | Where-Object { $null -eq $_.'V:P CPU Ratio' -or $_.'V:P CPU Ratio' -lt 2 }).Count -eq 0) 'node-capacity-live-minimum-ratio' $filtered.Count
 
         $fixtureNodes = [System.Collections.Generic.List[object]]::new()
         $fixtureSamples = [System.Collections.Generic.List[object]]::new()
-        $scenarios = @('healthy', 'high-ratio', 'duplicates', 'partial', 'migrate-source', 'migrate-target', 'collision-a', 'collision-b', 'other-cluster', 'missing', 'aggregate-only', 'missing-cores', 'ambiguous', 'invalid-memory', 'stale', 'single', 'invalid-cpu')
+        $scenarios = @('healthy', 'high-ratio', 'duplicates', 'partial', 'migrate-source', 'migrate-target', 'collision-a', 'collision-b', 'other-cluster', 'missing', 'aggregate-only', 'missing-cores', 'ambiguous', 'invalid-memory', 'stale', 'single', 'invalid-cpu', 'missing-committed', 'missing-available', 'zero-memory', 'high-committed', 'zero-committed', 'zero-available')
         foreach ($scenario in $scenarios) {
             $node = [pscustomobject]@{
                 hostId = "host-$scenario"; machine = $scenario; cluster = 'cluster-a'; clusterId = 'cluster-a'
                 physicalCores = 8; logicalProcessors = 16; memoryGiB = 64
             }
-            if ($scenario -eq 'other-cluster') { $node.cluster = 'cluster-b'; $node.clusterId = 'cluster-b' }
+            if ($scenario -eq 'other-cluster') { $node.clusterId = 'cluster-b' }
             if ($scenario -eq 'high-ratio') { $node.physicalCores = 1 }
             if ($scenario -eq 'missing-cores') { $node.physicalCores = 0 }
             $fixtureNodes.Add($node)
@@ -168,11 +179,20 @@ function Test-NodeCapacity {
                     ObjectName = 'Processor'; CounterName = '% Processor Time'; InstanceName = '_Total'
                     CounterValue = $(if ($scenario -eq 'invalid-cpu') { 150 } else { 20 })
                 })
-                $fixtureSamples.Add([pscustomobject]@{
-                    TimeGenerated = $sampleTime.ToString('o'); Computer = $scenario; HostId = $node.hostId
-                    ObjectName = 'Memory'; CounterName = 'Available Bytes'; InstanceName = ''
-                    CounterValue = $(if ($scenario -eq 'invalid-memory') { 65GB } else { 16GB })
-                })
+                if ($scenario -ne 'missing-available' -or $sampleAge -eq 2) {
+                    $fixtureSamples.Add([pscustomobject]@{
+                        TimeGenerated = $sampleTime.ToString('o'); Computer = $scenario; HostId = $node.hostId
+                        ObjectName = 'Memory'; CounterName = 'Available Bytes'; InstanceName = ''
+                        CounterValue = $(if ($scenario -eq 'invalid-memory') { -1 } elseif ($scenario -in @('zero-memory', 'zero-available')) { 0 } else { 16GB })
+                    })
+                }
+                if ($scenario -ne 'missing-committed' -or $sampleAge -eq 2) {
+                    $fixtureSamples.Add([pscustomobject]@{
+                        TimeGenerated = $sampleTime.ToString('o'); Computer = $scenario; HostId = $node.hostId
+                        ObjectName = 'Memory'; CounterName = 'Committed Bytes'; InstanceName = ''
+                        CounterValue = $(if ($scenario -eq 'high-committed') { 128GB } elseif ($scenario -in @('zero-memory', 'zero-committed')) { 0 } else { 32GB })
+                    })
+                }
             }
         }
         $fixtureRows = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray())
@@ -180,20 +200,38 @@ function Test-NodeCapacity {
         foreach ($row in $fixtureRows) { $byMachine[$row.Machine] = $row }
         Assert-Capacity ($fixtureRows.Count -eq $scenarios.Count) 'node-capacity-fixture-node-preservation'
         Assert-Capacity ($fixtureRows[0].Machine -eq 'high-ratio' -and $fixtureRows[0].'V:P CPU Ratio' -eq 4) 'node-capacity-numeric-descending-sort'
+        Assert-Capacity ($byMachine['high-ratio'].'% of V:P Target' -eq 100) 'node-capacity-default-target-percentage'
+        $targetFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -TargetRatio '2')
+        Assert-Capacity ($targetFixture.Count -eq $fixtureRows.Count -and $targetFixture[0].'V:P CPU Ratio' -eq 4 -and $targetFixture[0].'% of V:P Target' -eq 200) 'node-capacity-target-independent-of-ratio-and-filter'
+        $invalidTargetFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -TargetRatio '0')
+        Assert-Capacity ($invalidTargetFixture.Count -eq $fixtureRows.Count -and @($invalidTargetFixture | Where-Object { $null -ne $_.'% of V:P Target' }).Count -eq 0) 'node-capacity-invalid-target-unavailable'
         Assert-Capacity ($byMachine['healthy'].'V:P CPU Ratio' -eq 0.5 -and $byMachine['healthy'].'Observed VM vCPUs' -eq 4) 'node-capacity-physical-not-logical-denominator'
-        Assert-Capacity ($byMachine['healthy'].'Memory Used GiB' -eq 48 -and $byMachine['healthy'].'Memory Free / Available GiB' -eq 16 -and $byMachine['healthy'].'Memory Used %' -eq 75) 'node-capacity-memory-calculation'
+        Assert-Capacity ($byMachine['healthy'].'Memory Total GiB' -eq 64 -and $byMachine['healthy'].'Memory Used GiB' -eq 32 -and $byMachine['healthy'].'Memory Free / Available GiB' -eq 16 -and $byMachine['healthy'].'Memory Used %' -eq 66.7) 'node-capacity-memory-calculation'
+        Assert-Capacity ($byMachine['high-committed'].'Memory Used GiB' -eq 128 -and $byMachine['high-committed'].'Memory Used %' -eq 88.9) 'node-capacity-committed-above-physical-memory'
+        Assert-Capacity ($byMachine['zero-committed'].'Memory Used %' -eq 0 -and $byMachine['zero-available'].'Memory Used %' -eq 100) 'node-capacity-memory-percentage-boundaries'
         Assert-Capacity ($byMachine['healthy'].'Avg CPU % (15 min)' -eq 20 -and $byMachine['healthy'].'Avg CPU Free %' -eq 80) 'node-capacity-host-cpu-calculation'
         Assert-Capacity ($byMachine['duplicates'].'Observed VM vCPUs' -eq 4) 'node-capacity-deduplication'
         foreach ($scenario in @('partial', 'migrate-source', 'migrate-target', 'collision-a', 'collision-b', 'missing', 'aggregate-only', 'missing-cores', 'ambiguous', 'stale', 'single')) {
-            Assert-Capacity ($null -eq $byMachine[$scenario].'V:P CPU Ratio') "node-capacity-unavailable-$scenario"
+            Assert-Capacity ($null -eq $byMachine[$scenario].'V:P CPU Ratio' -and $null -eq $byMachine[$scenario].'% of V:P Target') "node-capacity-unavailable-$scenario"
         }
         Assert-Capacity ($byMachine['other-cluster'].'V:P CPU Ratio' -eq 0.5) 'node-capacity-duplicate-name-cluster-scope'
-        Assert-Capacity ($null -eq $byMachine['invalid-memory'].'Memory Used GiB') 'node-capacity-invalid-memory'
+        foreach ($scenario in @('invalid-memory', 'missing-committed', 'missing-available', 'zero-memory', 'missing', 'stale')) {
+            Assert-Capacity ($null -eq $byMachine[$scenario].'Memory Used %' -and $null -eq $byMachine[$scenario].'Memory Used GiB' -and $null -eq $byMachine[$scenario].'Memory Free / Available GiB' -and $byMachine[$scenario].Status -like '*memory unavailable*') "node-capacity-memory-unavailable-$scenario"
+        }
         Assert-Capacity ($null -eq $byMachine['invalid-cpu'].'Avg CPU % (15 min)') 'node-capacity-invalid-host-cpu'
         $filteredFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -MinimumRatio '2')
         Assert-Capacity ($filteredFixture.Count -eq 1 -and $filteredFixture[0].Machine -eq 'high-ratio') 'node-capacity-ratio-filter-excludes-unknown'
         $hostFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -HostFilter "'healthy'")
         Assert-Capacity ($hostFixture.Count -eq 1 -and $hostFixture[0].Machine -eq 'healthy') 'node-capacity-host-filter'
+        $clusterFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -ClusterFilter "'cluster-b'")
+        Assert-Capacity ($clusterFixture.Count -eq 1 -and $clusterFixture[0].Machine -eq 'other-cluster') 'node-capacity-cluster-filter-distinguishes-identical-names'
+        $multiClusterFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -ClusterFilter "'cluster-a','cluster-b'")
+        Assert-Capacity ($multiClusterFixture.Count -eq ($fixtureRows.Count - 1) -and @($multiClusterFixture | Where-Object Machine -EQ 'ambiguous').Count -eq 0) 'node-capacity-multi-cluster-excludes-unresolved'
+        Assert-Capacity (@($multiClusterFixture | Where-Object Machine -EQ 'missing').Count -eq 1 -and @($multiClusterFixture | Where-Object { $_.Machine -eq 'collision-a' -and $null -eq $_.'V:P CPU Ratio' }).Count -eq 1) 'node-capacity-cluster-filter-preserves-missing-and-collision-checks'
+        $combinedFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -ClusterFilter "'cluster-b'" -MinimumRatio '2')
+        Assert-Capacity ($combinedFixture.Count -eq 0) 'node-capacity-cluster-and-ratio-intersection'
+        $unmatchedFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -ClusterFilter "'not-in-scope'")
+        Assert-Capacity ($unmatchedFixture.Count -eq 0) 'node-capacity-unmatched-cluster-empty'
     } finally {
         $accessToken = $null
     }

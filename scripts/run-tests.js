@@ -2247,8 +2247,17 @@ testSuite('Hyper-V Node Capacity', () => {
         JSON.stringify(table.sortBy) === JSON.stringify(expectedSort) &&
         query.includes("order by ['V:P CPU Ratio'] desc nulls last"),
         'Node ratio defaults to descending numeric sort with missing values last', 'query and grid descending', table.sortBy);
-    assert(query.includes("['V:P CPU Ratio'] = round(Ratio, 2)") && !query.includes('format_number('),
-        'Node ratio stays numeric for interactive column sorting', 'numeric ratio', query.includes('round(Ratio, 2)'));
+    const ratioFormatter = table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'V:P CPU Ratio');
+    const overview = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'workbooks', 'Capacity-Overview', 'Capacity-Overview.workbook'), 'utf8'));
+    const overviewRatioFormatter = collectAllItems(overview.items).find(item => item.name === 'capacity-overview-table')?.content.gridSettings.formatters.find(formatter => formatter.columnMatch === 'ratioValue');
+    assert(query.includes("['V:P CPU Ratio'] = round(Ratio, 2)") && !query.includes('format_number(') &&
+        ratioFormatter?.formatter === 18 && !!overviewRatioFormatter &&
+        JSON.stringify(ratioFormatter.numberFormat) === JSON.stringify(overviewRatioFormatter.numberFormat) &&
+        ratioFormatter.formatOptions.thresholdsOptions === 'colors' &&
+        JSON.stringify(ratioFormatter.formatOptions.thresholdsGrid) === JSON.stringify([
+            overviewRatioFormatter.formatOptions.thresholdsGrid.find(threshold => threshold.operator === 'Default')
+        ]),
+        'Node ratio stays numeric and displays N:1 like Overview', 'numeric ratio with Overview display formatting', ratioFormatter);
     const options = JSON.parse(filter.jsonData);
     assert(filter.label === 'V:P Ratio' && filter.value === '0' && options.map(option => option.value).join(',') === '0,1,2,3,4,5,6' &&
         query.includes("todouble('{HyperVNodeRatioFilter}')") && query.includes('where minimumRatio == 0 or Ratio >= minimumRatio'),

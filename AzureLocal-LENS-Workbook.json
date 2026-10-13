@@ -7022,6 +7022,30 @@
                           "formatter": 5
                         },
                         {
+                          "columnMatch": "V:P CPU Ratio",
+                          "formatter": 18,
+                          "formatOptions": {
+                            "customColumnWidthSetting": "160px",
+                            "thresholdsOptions": "colors",
+                            "thresholdsGrid": [
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": null,
+                                "text": "{0}:1"
+                              }
+                            ]
+                          },
+                          "numberFormat": {
+                            "unit": 0,
+                            "options": {
+                              "style": "decimal",
+                              "minimumFractionDigits": 0,
+                              "maximumFractionDigits": 1
+                            }
+                          }
+                        },
+                        {
                           "columnMatch": "Memory Used %",
                           "formatter": 18,
                           "formatOptions": {

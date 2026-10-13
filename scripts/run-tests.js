@@ -2255,8 +2255,9 @@ testSuite('Hyper-V Node Capacity', () => {
         'Node ratio filter matches Overview and preserves unknown rows under All', 'All and 1-6 thresholds', options.map(option => option.value));
     assert(metadata.query.includes("strcat(subscriptionId, '/', resourceGroup, '/', name)") &&
         metadata.query.includes('physicalCores = toint(node.coreCount)') && metadata.query.includes('bag_pack(') &&
+        metadata.query.split('| join kind=leftouter')[0].includes("| where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'") &&
         metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)"),
-        'Node hardware lookup scopes identity and uses each node physical core count', 'scoped identity and per-node cores', metadata.name);
+        'Node hardware lookup excludes guests before joining scoped identity and per-node cores', 'physical hosts, scoped identity and per-node cores', metadata.name);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);

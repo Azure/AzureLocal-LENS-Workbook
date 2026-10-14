@@ -15,6 +15,18 @@
     },
     {
       "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-latency-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-iops-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
       "name": "node-network-throughput-trend"
     },
     {
@@ -31,6 +43,18 @@
     },
     {
       "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-logical-storage-usage-machine"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-logical-storage-latency-node"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-logical-storage-iops-node"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
       "name": "sc-network-throughput-node"
     },
     {
@@ -43,7 +67,55 @@
     },
     {
       "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-logical-storage-latency"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-logical-storage-iops"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
       "name": "mc-network-throughput"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-usage-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-latency-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-storage-iops-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-usage-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-latency-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-logical-storage-iops-count"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "node-exhaustion-forecast-table"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "single-cluster-volume-usage"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "single-cluster-storage-pool-trend"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "single-cluster-storage-pool-trend - Copy"
     }
   ]
 }

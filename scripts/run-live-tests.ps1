@@ -4,9 +4,9 @@ Runs opt-in Capacity KQL integration tests against a real Log Analytics workspac
 
 .DESCRIPTION
 This suite is intentionally excluded from CI because it requires Azure access and
-live telemetry. It validates the six storage IOPS/latency queries changed in
-v1.0.6 plus every related storage-usage and network-throughput chart, using
-the exact query text from the split workbook sources.
+live telemetry. It executes the exact storage, coverage, forecast and network
+queries from the split workbook sources, then synthetic storage cases for source
+separation, units, duplicate/partial samples, missing values and volume identity.
 
 IMPORTANT FOR AI/CODING AGENTS:
 1. Run `az account list --query "[?state=='Enabled'].{Name:name,Id:id}" -o table`
@@ -60,6 +60,225 @@ function Get-WorkbookItems {
         $item
         if ($item.content -and $item.content.items) {
             Get-WorkbookItems -Items $item.content.items
+        }
+    }
+}
+
+function Test-StorageSources {
+    param([string]$WorkspaceId, [string]$AccessToken)
+
+    function Invoke-StorageFixture {
+        param([string]$Query)
+        $response = Invoke-RestMethod -Method Post `
+            -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
+            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
+            -Body (@{ query = $Query } | ConvertTo-Json -Depth 10)
+        if ($response.error) { throw 'Storage fixture returned a partial query error.' }
+        $table = $response.tables[0]
+        foreach ($row in $table.rows) {
+            $record = [ordered]@{}
+            for ($columnIndex = 0; $columnIndex -lt $table.columns.Count; $columnIndex++) {
+                $record[$table.columns[$columnIndex].name] = $row[$columnIndex]
+            }
+            [pscustomobject]$record
+        }
+    }
+
+    $samples = [Collections.Generic.List[object]]::new()
+    $csvCounters = @{ 'Reads/sec' = 10; 'Writes/sec' = 20; 'Avg. sec/Read' = 0.002; 'Avg. sec/Write' = 0.004 }
+    foreach ($hostName in @('both', 'duplicates', 'partial', 'zero', 'invalid', 'aggregate-only')) {
+        foreach ($counter in $csvCounters.Keys) {
+            if ($hostName -eq 'partial' -and $counter -like '*Write*') { continue }
+            $counterValue = $csvCounters[$counter]
+            if ($hostName -eq 'zero') { $counterValue = 0 }
+            if ($hostName -eq 'invalid' -and $counter -like '*Read*') { $counterValue = -1 }
+            $sample = [pscustomobject]@{
+                TimeGenerated = '2026-01-01T00:01:00Z'; Computer = $hostName; ObjectName = 'Cluster CSVFS'
+                CounterName = $counter; InstanceName = $(if ($hostName -eq 'aggregate-only') { '_Total' } else { 'Volume01' })
+                CounterValue = $counterValue
+            }
+            $samples.Add($sample)
+            if ($hostName -eq 'duplicates') { $samples.Add($sample) }
+        }
+    }
+    foreach ($counter in @('Disk Transfers/sec', 'Avg. Disk sec/Read', 'Avg. Disk sec/Write')) {
+        $samples.Add([pscustomobject]@{
+            TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'both'; ObjectName = 'LogicalDisk'
+            CounterName = $counter; InstanceName = 'C:'
+            CounterValue = $(if ($counter -eq 'Disk Transfers/sec') { 100 } elseif ($counter -like '*Read') { 0.01 } else { 0.03 })
+        })
+    }
+    $sampleJson = ConvertTo-Json -InputObject $samples.ToArray() -Depth 10 -Compress
+    $perfSource = "(print fixtureRow = dynamic($sampleJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
+    $insights = [Collections.Generic.List[object]]::new()
+    foreach ($hostName in @('both', 'logical-only')) {
+        foreach ($counter in @('ReadsPerSecond', 'WritesPerSecond', 'ReadLatencyMs', 'WriteLatencyMs')) {
+            $insights.Add([pscustomobject]@{
+                TimeGenerated = '2026-01-01T00:01:00Z'; Namespace = 'LogicalDisk'; Name = $counter
+                Val = $(if ($counter -like '*PerSecond') { 60 } else { 10 })
+                Tags = @{ 'vm.azm.ms/mountId' = 'C:' }
+                _ResourceId = "/subscriptions/example/resourceGroups/example/providers/Microsoft.HybridCompute/machines/$hostName"
+            })
+        }
+    }
+    $insightsJson = ConvertTo-Json -InputObject $insights.ToArray() -Depth 10 -Compress
+    $insightsSource = "(print fixtureRow = dynamic($insightsJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Namespace=tostring(fixtureRow.Namespace), Name=tostring(fixtureRow.Name), Val=todouble(fixtureRow.Val), Tags=fixtureRow.Tags, _ResourceId=tostring(fixtureRow._ResourceId))"
+    $fixtureHeader = 'let trendStart=datetime(2026-01-01); let trendEnd=datetime(2026-01-02); let step=1d; '
+    foreach ($tab in @('Capacity-Overview', 'Capacity-SingleCluster', 'Capacity-MultiCluster')) {
+        $book = Get-Content -Raw (Join-Path $repoRoot "workbooks/$tab/$tab.workbook") | ConvertFrom-Json
+        $items = @(Get-WorkbookItems -Items $book.items)
+        foreach ($item in @($items | Where-Object { $_.name -in @('node-storage-latency-trend', 'node-storage-iops-trend', 'sc-storage-latency-node', 'sc-storage-iops-node', 'mc-storage-latency', 'mc-storage-iops') })) {
+            $template = [string]$item.content.query
+            $start = $template.IndexOf('let perfSamples = Perf')
+            $end = $template.IndexOf('let dailySamples =')
+            if ($start -lt 0 -or $end -le $start) { throw "Storage fixture boundary missing: $($item.name)" }
+            $query = $fixtureHeader + $template.Substring($start, $end - $start)
+            $query = $query.Replace('let perfSamples = Perf', "let perfSamples = $perfSource")
+            $query = $query.Replace('let insightsSamples = InsightsMetrics', "let insightsSamples = $insightsSource")
+            $rows = @(Invoke-StorageFixture -Query ($query + 'hostSamples'))
+            $hostColumn = if ($tab -eq 'Capacity-Overview') { 'Computer' } else { 'nodeName' }
+            $metricColumn = if ($item.name -like '*latency*') { 'HostLatencyMs' } else { 'HostIOPS' }
+            $expectedCsv = if ($item.name -like '*latency*') { 3 } else { 30 }
+            $expectedLogical = if ($item.name -like '*latency*') { 20 } else { 100 }
+            $bothCsv = @($rows | Where-Object { $_.$hostColumn -eq 'both' -and $_.StorageScope -eq 'CSV' })
+            $bothLogical = @($rows | Where-Object { $_.$hostColumn -eq 'both' -and $_.StorageScope -eq 'Logical disks' })
+            $duplicate = @($rows | Where-Object { $_.$hostColumn -eq 'duplicates' })
+            $zero = @($rows | Where-Object { $_.$hostColumn -eq 'zero' })
+            if ($bothCsv.Count -ne 1 -or $bothCsv[0].$metricColumn -ne $expectedCsv -or
+                $bothLogical.Count -ne 1 -or $bothLogical[0].$metricColumn -ne $expectedLogical -or
+                $duplicate.Count -ne 1 -or $duplicate[0].$metricColumn -ne $expectedCsv -or
+                $zero.Count -ne 1 -or $zero[0].$metricColumn -ne 0 -or
+                @($rows | Where-Object { $_.$hostColumn -in @('partial', 'invalid', 'aggregate-only') }).Count -ne 0) {
+                throw "Storage scope, units, deduplication or missing-data fixture failed: $($item.name)"
+            }
+            $logicalOnly = @($rows | Where-Object { $_.$hostColumn -eq 'logical-only' })
+            if ($query.Contains('let insightsSamples')) {
+                $expectedInsights = if ($item.name -like '*latency*') { 10 } else { 120 }
+                if ($logicalOnly.Count -ne 1 -or $logicalOnly[0].StorageScope -ne 'Logical disks' -or $logicalOnly[0].$metricColumn -ne $expectedInsights) {
+                    throw "Logical-only data was lost or mislabeled: $($item.name)"
+                }
+            } elseif ($logicalOnly.Count -ne 0) { throw 'Unexpected Insights fallback.' }
+            [pscustomobject]@{ Query = "$($item.name)-fixtures"; Rows = $rows.Count; Result = 'Passed' }
+        }
+    }
+
+    $volumes = @(
+        @{ m_Id = 'volume-a'; m_Label = 'Volume01'; m_Size = 100; m_SizeUsed = 25 },
+        @{ m_Id = 'volume-a'; m_Label = 'Volume01'; m_Size = 100; m_SizeUsed = 25 },
+        @{ m_Id = 'volume-b'; m_Label = 'Volume01'; m_Size = 300; m_SizeUsed = 150 },
+        @{ m_Label = 'ClusterPerformanceHistory'; m_Size = 100; m_SizeUsed = 100 },
+        @{ m_Label = 'Invalid'; m_Size = 100; m_SizeUsed = 101 },
+        @{ m_Label = 'Missing'; m_Size = 100; m_SizeUsed = $null },
+        @{ m_Label = 'Empty'; m_Size = 0; m_SizeUsed = 0 }
+    )
+    $events = @(
+        @{ TimeGenerated = '2026-01-01T00:10:00Z'; ClusterId = 'cluster-a'; Volumes = @(@{ m_Label = 'Old'; m_Size = 100; m_SizeUsed = 1 }) },
+        @{ TimeGenerated = '2026-01-01T00:20:00Z'; ClusterId = 'cluster-a'; Volumes = $volumes },
+        @{ TimeGenerated = '2026-01-01T00:20:00Z'; ClusterId = 'cluster-a'; Volumes = $volumes },
+        @{ TimeGenerated = '2026-01-01T00:20:00Z'; ClusterId = 'cluster-b'; Volumes = @(@{ m_Id = 'volume-a'; m_Label = 'Volume01'; m_Size = 200; m_SizeUsed = 100 }) },
+        @{ TimeGenerated = '2026-01-01T00:20:00Z'; ClusterId = 'outside-scope'; Volumes = $volumes }
+    )
+    $eventJson = ConvertTo-Json -InputObject $events -Depth 10 -Compress
+    $eventSource = "(print fixtureRow = dynamic($eventJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), EventLog='Microsoft-Windows-SDDC-Management/Operational', EventID=3002, EventData=strcat('<DataItem><UserData><EventData><ArmId>', tostring(fixtureRow.ClusterId), '</ArmId></EventData></UserData></DataItem>'), RenderedDescription=tostring(bag_pack('VolumeList', fixtureRow.Volumes)))"
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-Overview/Capacity-Overview.workbook') | ConvertFrom-Json
+    $template = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'node-storage-trend').content.query
+    $start = $template.IndexOf('let csvClusterMap =')
+    $end = $template.IndexOf('let m2 = InsightsMetrics')
+    $query = $fixtureHeader + $template.Substring($start, $end - $start)
+    $query = $query.Replace('{ClusterNodeMap}', '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a","node-c:Cluster B:cluster-b"]')
+    $query = $query.Replace('let csvVolumes = Event', "let csvVolumes = $eventSource")
+    $rows = @(Invoke-StorageFixture -Query ($query + 'csvVolumes | summarize TotalBytes=sum(TotalBytes), UsedBytes=sum(UsedBytes), Volumes=count() by ClusterArmId'))
+    $clusterA = @($rows | Where-Object ClusterArmId -EQ 'cluster-a')
+    $clusterB = @($rows | Where-Object ClusterArmId -EQ 'cluster-b')
+    if ($rows.Count -ne 2 -or $clusterA.Count -ne 1 -or $clusterA[0].TotalBytes -ne 400 -or $clusterA[0].UsedBytes -ne 175 -or
+        $clusterA[0].Volumes -ne 2 -or $clusterB.Count -ne 1 -or $clusterB[0].TotalBytes -ne 200 -or $clusterB[0].UsedBytes -ne 100) {
+        throw 'CSV capacity fixture failed: latest snapshot, duplicate reporter/volume, invalid value or scope handling.'
+    }
+    [pscustomobject]@{ Query = 'csv-capacity-snapshot-fixtures'; Rows = $rows.Count; Result = 'Passed' }
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
+    $template = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'single-cluster-volume-usage').content.query
+    $start = $template.IndexOf('let csvClusterMap =')
+    $end = $template.IndexOf('// 2)')
+    $query = $fixtureHeader + $template.Substring($start, $end - $start)
+    $query = $query.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterNodeMap}', '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a"]')
+    $query = $query.Replace('let csvVolumes = Event', "let csvVolumes = $eventSource")
+    $rows = @(Invoke-StorageFixture -Query ($query + 'perVolumePerDay'))
+    if ($rows.Count -ne 2 -or @($rows.VolumeLabel | Sort-Object -Unique).Count -ne 2 -or
+        @($rows | Where-Object UsedPct -EQ 25).Count -ne 1 -or @($rows | Where-Object UsedPct -EQ 50).Count -ne 1) {
+        throw 'CSV per-volume fixture merged different volumes with the same display label.'
+    }
+    [pscustomobject]@{ Query = 'csv-capacity-volume-label-fixtures'; Rows = $rows.Count; Result = 'Passed' }
+
+    $rankingSamples = [Collections.Generic.List[object]]::new()
+    foreach ($clusterIndex in 1..12) {
+        foreach ($scope in @('CSV', 'Logical disks')) {
+            foreach ($day in 1..2) {
+                $rankingSamples.Add([pscustomobject]@{
+                    clusterName = 'cluster-{0:00}' -f $clusterIndex
+                    StorageScope = $scope
+                    TimeGenerated = '2026-01-{0:00}T00:00:00Z' -f $day
+                    Value = $(if ($scope -eq 'CSV') { $clusterIndex } else { 13 - $clusterIndex })
+                })
+            }
+        }
+    }
+    $rankingJson = ConvertTo-Json -InputObject $rankingSamples.ToArray() -Depth 10 -Compress
+    $rankingSource = "let rankingSamples = print fixtureRow = dynamic($rankingJson) | mv-expand fixtureRow | project clusterName=tostring(fixtureRow.clusterName), StorageScope=tostring(fixtureRow.StorageScope), TimeGenerated=todatetime(fixtureRow.TimeGenerated), UsedPercent=todouble(fixtureRow.Value), HostLatencyMs=todouble(fixtureRow.Value), HostIOPS=todouble(fixtureRow.Value); let allCapacity=rankingSamples; let dailySamples=rankingSamples; "
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-Overview/Capacity-Overview.workbook') | ConvertFrom-Json
+    $rankingCharts = @(Get-WorkbookItems -Items $book.items | Where-Object { $_.name -match '^node-(logical-)?storage-(trend|latency-trend|iops-trend)$' })
+    if ($rankingCharts.Count -ne 6) { throw 'Expected six source-specific storage ranking charts.' }
+    foreach ($chart in $rankingCharts) {
+        $template = [string]$chart.content.query
+        $start = $template.IndexOf('let top5 =')
+        if ($start -lt 0) { throw "Missing Top 5 query boundary: $($chart.name)" }
+        $rows = @(Invoke-StorageFixture -Query ($rankingSource + $template.Substring($start)))
+        $expectedIndices = if ($chart.name -like 'node-logical-*') { 1..5 } else { 8..12 }
+        $expectedClusters = @($expectedIndices | ForEach-Object { 'cluster-{0:00}' -f $_ })
+        $actualClusters = @($rows.clusterName | Sort-Object -Unique)
+        if ($rows.Count -ne 10 -or ($actualClusters -join ',') -cne ($expectedClusters -join ',')) {
+            throw "Top 5 fixture selected too many clusters or the wrong storage source: $($chart.name)"
+        }
+        [pscustomobject]@{ Query = "$($chart.name)-top5-fixtures"; Rows = $rows.Count; Result = 'Passed' }
+    }
+
+    $clusterSamples = [Collections.Generic.List[object]]::new()
+    foreach ($clusterIndex in 1..7) {
+        foreach ($machineIndex in 0..1) {
+            foreach ($scope in @('CSV', 'Logical disks')) {
+                $clusterSamples.Add([pscustomobject]@{
+                    clusterName = 'cluster-{0:00}' -f $clusterIndex
+                    nodeName = ('machine-{0:00}-{1}' -f $clusterIndex, $machineIndex)
+                    StorageScope = $scope
+                    Value = ($clusterIndex * 10 + $machineIndex * 2) * $(if ($scope -eq 'CSV') { 1 } else { 10 })
+                })
+            }
+        }
+    }
+    $clusterJson = ConvertTo-Json -InputObject $clusterSamples.ToArray() -Depth 10 -Compress
+    $clusterSource = "let dailySamples = print fixtureRow = dynamic($clusterJson) | mv-expand fixtureRow | project clusterName=tostring(fixtureRow.clusterName), nodeName=tostring(fixtureRow.nodeName), StorageScope=tostring(fixtureRow.StorageScope), TimeGenerated=datetime(2026-01-01), HostLatencyMs=todouble(fixtureRow.Value), HostIOPS=todouble(fixtureRow.Value); "
+    foreach ($tab in @('Capacity-SingleCluster', 'Capacity-MultiCluster')) {
+        $book = Get-Content -Raw (Join-Path $repoRoot "workbooks/$tab/$tab.workbook") | ConvertFrom-Json
+        $charts = @(Get-WorkbookItems -Items $book.items | Where-Object { $_.name -match '^(sc|mc)-(logical-)?storage-(latency|iops)(-node)?$' })
+        if ($charts.Count -ne 4) { throw "Expected four split performance charts in $tab." }
+        foreach ($chart in $charts) {
+            $template = [string]$chart.content.query
+            $start = $template.IndexOf("`r`ndailySamples`r`n")
+            if ($start -lt 0) { throw "Missing daily sample boundary: $($chart.name)" }
+            $rows = @(Invoke-StorageFixture -Query ($clusterSource + $template.Substring($start)))
+            $single = $chart.name.StartsWith('sc-')
+            $scope = if ($chart.name.Contains('-logical-')) { 'Logical disks' } else { 'CSV' }
+            $expected = @($clusterSamples.ToArray() | Where-Object StorageScope -EQ $scope)
+            $key = if ($single) { 'nodeName' } else { 'clusterName' }
+            $outputKey = if ($single) { 'Computer' } else { 'clusterName' }
+            $expectedGroups = @($expected | Group-Object -Property $key)
+            $metric = [string]$chart.content.chartSettings.yAxis[0]
+            if ($rows.Count -ne $expectedGroups.Count) { throw "Scope fixture lost machines/clusters or mixed sources: $($chart.name)" }
+            foreach ($group in $expectedGroups) {
+                $actual = @($rows | Where-Object { $_.$outputKey -eq $group.Name })
+                $expectedValue = ($group.Group | Measure-Object -Property Value -Average).Average
+                if ($actual.Count -ne 1 -or $actual[0].$metric -ne $expectedValue) { throw "Scope fixture changed aggregation or selected the wrong source: $($chart.name)" }
+            }
+            [pscustomobject]@{ Query = "$($chart.name)-scope-fixtures"; Rows = $rows.Count; Result = 'Passed' }
         }
     }
 }
@@ -290,21 +509,15 @@ try {
     } else {
     $mappingQuery = @'
 resources
-| where type == "microsoft.azurestackhci/clusters"
+| where type == 'microsoft.azurestackhci/clusters'
 | extend nodes = todynamic(properties.reportedProperties.nodes)
 | mv-expand node = nodes
 | extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))
 | where isnotempty(nodeShort)
 | project nodeRG = tolower(resourceGroup), clusterName = name, armId = tostring(id), nodeShort
 '@
-    $argBodyPath = New-TemporaryJsonFile -Value @{
-        subscriptions = @($SubscriptionId)
-        query = $mappingQuery
-        options = @{ resultFormat = 'objectArray'; '$top' = 1000 }
-    }
-    $mappingJson = az rest --method post `
-        --url 'https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01' `
-        --body "@$argBodyPath" --output json 2>$null
+    $mappingJson = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
+        --graph-query ($mappingQuery -replace '\r?\n', ' ') --first 1000 --output json --only-show-errors
     if ($LASTEXITCODE -ne 0) {
         throw 'Azure Resource Graph mapping query failed.'
     }
@@ -337,6 +550,10 @@ resources
         throw 'The live integration query manifest is empty.'
     }
 
+    $accessToken = az account get-access-token --tenant $account.tenantId --resource 'https://api.loganalytics.io' `
+        --query accessToken --output tsv --only-show-errors
+    if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
+
     $results = foreach ($spec in $querySpecs) {
         $workbookPath = Join-Path $repoRoot $spec.file
         $workbook = Get-Content -Raw $workbookPath | ConvertFrom-Json
@@ -354,6 +571,9 @@ resources
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
         $query = $query.Replace('{SingleCluster}', [string]$selectedCluster.armId)
+        $query = $query.Replace('{ForecastTimeRange:start}', "ago($($Days)d)").Replace('{ForecastTimeRange:end}', 'now()')
+        $query = $query.Replace('{ForecastHorizonDays}', '7').Replace('{WarningThreshold}', '80').Replace('{CriticalThreshold}', '90')
+        $query = $query.Replace('{ForecastResourceFilter}', 'value::all').Replace('{ForecastClusterFilter}', 'value::all')
 
         $unresolvedParameters = @([regex]::Matches(
             $query,
@@ -363,19 +583,18 @@ resources
             throw "Unresolved workbook parameters in $($spec.name): $($unresolvedParameters -join ', ')"
         }
 
-        $logBodyPath = New-TemporaryJsonFile -Value @{
+        $logBody = @{
             query = $query
             timespan = "P$($Days)D"
         }
-        $resultJson = az rest --method post `
-            --url "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
-            --resource 'https://api.loganalytics.io' `
-            --body "@$logBodyPath" --output json 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Live Log Analytics query failed: $($spec.name)"
+        $response = Invoke-RestMethod -Method Post `
+            -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
+            -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
+            -Body ($logBody | ConvertTo-Json -Depth 10)
+        if ($response.error) {
+            throw "Live Log Analytics query returned a partial error: $($spec.name)"
         }
 
-        $response = $resultJson -join [Environment]::NewLine | ConvertFrom-Json
         $rowCount = @($response.tables[0].rows).Count
         if ($rowCount -eq 0) {
             throw "Live Log Analytics query returned no rows: $($spec.name)"
@@ -383,6 +602,7 @@ resources
 
         [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed' }
     }
+    $results = @($results) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken)
     }
 
     $results | Format-Table -AutoSize

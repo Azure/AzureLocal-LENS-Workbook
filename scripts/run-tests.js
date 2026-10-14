@@ -957,14 +957,14 @@ testSuite('KQL Query Robustness', () => {
         capacityPerformanceQueryNames.length, capacityPerformanceQueries.size);
 
     const latencyQueriesUseHostSamples = [
-        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
-        capacityPerformanceQueries.get('sc-storage-latency-node')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
-        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
+        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method'),
+        capacityPerformanceQueries.get('sc-storage-latency-node')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method'),
+        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(LatencyMs) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method')
     ].every(Boolean);
     const iopsQueriesUseHostSamples = [
-        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method'),
-        capacityPerformanceQueries.get('sc-storage-iops-node')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method'),
-        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), method')
+        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method'),
+        capacityPerformanceQueries.get('sc-storage-iops-node')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method'),
+        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = sum(IOPS) by nodeName, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method')
     ].every(Boolean);
     assert(latencyQueriesUseHostSamples && iopsQueriesUseHostSamples,
         'Storage performance queries reduce volume rows to one host sample',
@@ -972,10 +972,10 @@ testSuite('KQL Query Robustness', () => {
         latencyQueriesUseHostSamples && iopsQueriesUseHostSamples ? 'all six' : 'missing host reduction');
 
     const clusterQueriesUseEqualHostWeight = [
-        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
-        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = avg(HostIOPS) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
-        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(HostLatencyMs) by nodeName, clusterName, TimeGenerated = bin(TimeGenerated, step)'),
-        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = avg(HostIOPS) by nodeName, clusterName, TimeGenerated = bin(TimeGenerated, step)')
+        capacityPerformanceQueries.get('node-storage-latency-trend')?.includes('HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('node-storage-iops-trend')?.includes('HostIOPS = avg(HostIOPS) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('mc-storage-latency')?.includes('HostLatencyMs = avg(HostLatencyMs) by nodeName, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step)'),
+        capacityPerformanceQueries.get('mc-storage-iops')?.includes('HostIOPS = avg(HostIOPS) by nodeName, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step)')
     ].every(Boolean);
     assert(clusterQueriesUseEqualHostWeight,
         'Cluster storage performance charts average one daily value per host',
@@ -984,20 +984,20 @@ testSuite('KQL Query Robustness', () => {
 
     const overviewIOPS = capacityPerformanceQueries.get('node-storage-iops-trend') || '';
     const overviewSumsReadWriteIOPS = overviewIOPS.includes('Name in ("ReadsPerSecond", "WritesPerSecond")') &&
-        overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method');
+        overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method');
     assert(overviewSumsReadWriteIOPS,
         'Capacity Overview sums VM Insights read and write IOPS per host sample',
         'ReadsPerSecond + WritesPerSecond summed into HostIOPS',
         overviewSumsReadWriteIOPS ? 'summed' : 'not summed');
 
     const performanceFallbackIsPerMinute = [...capacityPerformanceQueries.values()].every(query =>
-        query.includes('summarize arg_min(method, Host') &&
+        /summarize arg_min\(method, Host\w+\) by (?:Computer|nodeName), TimeGenerated, StorageScope/.test(query) &&
         !query.includes('let bestLat =') &&
         !query.includes('let bestIOPS =')
     );
     assert(performanceFallbackIsPerMinute,
-        'Storage latency and IOPS select the best available counter family per host-minute',
-        'all six queries use per-minute arg_min(method)',
+        'Storage latency and IOPS deduplicate providers within each scope per host-minute',
+        'all six queries preserve StorageScope in per-minute arg_min(method)',
         performanceFallbackIsPerMinute ? 'all six' : 'whole-range selector remains');
 
     const storageUsageQueryNames = [
@@ -1008,15 +1008,119 @@ testSuite('KQL Query Robustness', () => {
     const storageUsageQueries = allQueries.filter(query => storageUsageQueryNames.includes(query.name));
     const storageUsagePrecedenceIsCorrect = storageUsageQueries.length === storageUsageQueryNames.length &&
         storageUsageQueries.every(({ query }) =>
-            query.includes('method = iff(ObjectName == "Cluster CSV File System", 1, 2)') &&
-            query.includes('TotalMB = max(sizeMB)') &&
-            query.includes('mountId, TimeGenerated = bin(TimeGenerated, step)') &&
+            query.includes('arg_max(TimeGenerated, Volumes) by ClusterArmId, clusterName, Day') &&
+            query.includes('arg_max(TimeGenerated, TotalBytes, UsedBytes, VolumeLabel)') &&
+            query.includes('coalesce(tostring(volume.m_Id), tostring(volume.m_Path), VolumeLabel)') &&
+            query.includes('UsedBytes >= 0 and UsedBytes <= TotalBytes') &&
+            !query.includes('Cluster CSV File System') &&
             !query.includes('FreeMB = sum(Val), TotalMB = sum(sizeMB)')
         );
     assert(storageUsagePrecedenceIsCorrect,
-        'Storage usage queries deduplicate disk capacity and rank CSV counter families separately',
-        'all three queries reduce per mount and preserve family precedence',
+        'CSV storage usage queries validate volume values and deduplicate cluster snapshots',
+        'all three queries select one cluster snapshot and one row per volume/day',
         storageUsagePrecedenceIsCorrect ? 'all three' : 'missing storage reduction');
+    assert(['sc-storage-usage-machine', 'single-cluster-volume-usage'].every(name =>
+        allQueries.find(item => item.name === name)?.query.includes('LabelVolumes = dcount(VolumeId)')),
+        'CSV volume charts keep distinct volume identities when display labels collide');
+
+    assert([...capacityPerformanceQueries.values()].every(query =>
+        query.includes('ObjectName == "Cluster CSVFS"') &&
+        !query.includes('Cluster CSV File System') &&
+        query.includes('arg_max(TimeGenerated, CounterValue)') &&
+        query.includes('Directions ==') &&
+        query.includes('StorageScope = iff(ObjectName == "Cluster CSVFS", "CSV", "Logical disks")')),
+        'Storage performance requires valid, deduplicated counter pairs and labels each scope');
+    assert([...capacityPerformanceQueries.entries()].filter(([name]) => name.includes('latency')).every(([, query]) =>
+        query.includes('"Avg. sec/Read", "Avg. sec/Write"') && query.includes('avg(CounterValue) * 1000.0')),
+        'CSV latency uses documented seconds counters and converts seconds to milliseconds');
+    assert([...capacityPerformanceQueries.entries()].filter(([name]) => name.includes('iops')).every(([, query]) =>
+        query.includes('"Reads/sec", "Writes/sec"') && query.includes('IOPS = sum(CounterValue)') &&
+        query.includes('Directions == iff(StorageScope == "CSV", 2, 1)')),
+        'CSV IOPS sums one read and one write sample per instance without partial pairs');
+    assert(storageUsageQueries.filter(({ name }) => name !== 'node-exhaustion-forecast-table').every(({ query }) =>
+        query.includes('TotalMB = max(sizeMB)') && query.includes('mountId, TimeGenerated = bin(TimeGenerated, step)') &&
+        query.includes('let logicalCapacity =') && query.includes('let csvCapacity = csvVolumes')),
+        'Logical-disk capacity remains deduplicated and separate from CSV volume capacity');
+    const storageForecast = storageUsageQueries.find(({ name }) => name === 'node-exhaustion-forecast-table')?.query || '';
+    assert(storageForecast.includes('SampleDays >= 3 and Denominator > 0') &&
+        !storageForecast.slice(storageForecast.indexOf('let storData =')).includes('default=0'),
+        'CSV storage exhaustion requires observed daily capacity and does not zero-fill missing days');
+    const storageCoverage = allQueries.filter(({ name }) => /^node-storage-(usage|latency|iops)-count$/.test(name));
+    assert(storageCoverage.length === 3 && storageCoverage.every(({ query }) =>
+        query.includes('CSV') && query.includes('Logical') && !query.includes('Cluster CSV File System')),
+        'Overview coverage tiles distinguish usable CSV and logical-disk telemetry');
+    const overviewSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-Overview/Capacity-Overview.workbook'), 'utf8'));
+    const overviewItems = overviewSource.items.find(item => item.name === 'cap-overview-section').content.items;
+    const storageChartNames = ['node-storage-trend', 'node-storage-latency-trend', 'node-storage-iops-trend'];
+    const storageCaptionNames = ['node-storage-usage-caption', 'node-storage-latency-caption', 'node-storage-iops-caption'];
+    const storageCountNames = ['node-storage-usage-count', 'node-storage-latency-count', 'node-storage-iops-count'];
+    const csvRowNames = [...storageChartNames, ...storageCaptionNames, ...storageCountNames];
+    const logicalRowNames = csvRowNames.map(name => name.replace('node-', 'node-logical-'));
+    const overviewRowNames = [
+        'node-cpu-trend', 'node-memory-trend', 'node-network-throughput-trend',
+        'node-cpu-caption', 'node-memory-caption', 'node-network-caption',
+        'node-cpu-count', 'node-memory-count', 'node-network-count',
+        ...csvRowNames, ...logicalRowNames
+    ];
+    const overviewRows = overviewItems.slice(overviewItems.findIndex(item => item.name === 'node-cpu-trend'),
+        overviewItems.findIndex(item => item.name === 'ov-prometheus-header'));
+    assert(JSON.stringify(overviewRows.map(item => item.name)) === JSON.stringify(overviewRowNames) &&
+        overviewRows.every(item => item.customWidth === '33'),
+        'Overview uses three-column CPU/memory/network, CSV and logical-disk rows with aligned captions and counts');
+    const overviewStorageCharts = overviewRows.filter(item =>
+        storageChartNames.includes(item.name) || storageChartNames.map(name => name.replace('node-', 'node-logical-')).includes(item.name));
+    assert(overviewStorageCharts.length === 6 && overviewStorageCharts.every(item => {
+        const logical = item.name.startsWith('node-logical-');
+        const ranking = item.content.query.slice(item.content.query.indexOf('let top5 ='));
+        return item.content.title.startsWith(logical ? 'Logical Disk ' : 'CSV ') &&
+            item.content.title.endsWith(' - Top 5 Clusters') &&
+            ranking.includes(`| where StorageScope == "${logical ? 'Logical disks' : 'CSV'}"`) &&
+            ranking.includes('| order by Average desc, clusterName asc\r\n| take 5') &&
+            !ranking.includes('row_number');
+    }), 'All six Overview storage charts rank one named source and select at most five clusters');
+    assert([...storageCountNames, ...storageCountNames.map(name => name.replace('node-', 'node-logical-'))].every(name => {
+        const item = overviewItems.find(candidate => candidate.name === name);
+        const logical = name.startsWith('node-logical-');
+        return item && item.content.query.includes(`| where Label == "${logical ? 'Logical' : 'CSV'}`) &&
+            item.content.title.toLowerCase().includes(logical ? 'logical disk' : 'csv');
+    }), 'Each Overview storage coverage tile is filtered and titled for its own chart source');
+    const singleSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook'), 'utf8'));
+    const singleItems = singleSource.items.find(item => item.name === 'cap-single-section').content.items;
+    const singleRows = singleItems.slice(singleItems.findIndex(item => item.name === 'sc-cpu-usage-machine'),
+        singleItems.findIndex(item => item.name === 'sc-storage-bar-header'));
+    assert(JSON.stringify(singleRows.map(item => item.name)) === JSON.stringify([
+        'sc-cpu-usage-machine', 'sc-memory-usage-machine', 'sc-network-throughput-node',
+        'sc-storage-usage-machine', 'sc-storage-latency-node', 'sc-storage-iops-node',
+        'sc-logical-storage-usage-machine', 'sc-logical-storage-latency-node', 'sc-logical-storage-iops-node'
+    ]) && singleRows.every(item => item.customWidth === '33'),
+    'Single Cluster has matching three-column node, CSV and logical-disk rows');
+    const multiSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook'), 'utf8'));
+    const multiItems = multiSource.items.find(item => item.name === 'cap-multi-section').content.items;
+    const multiRows = multiItems.slice(multiItems.findIndex(item => item.name === 'mc-storage-latency'));
+    assert(JSON.stringify(multiRows.map(item => item.name)) === JSON.stringify([
+        'mc-storage-latency', 'mc-storage-iops', 'mc-logical-storage-latency', 'mc-logical-storage-iops', 'mc-network-throughput'
+    ]) && multiRows.slice(0, 4).every(item => item.customWidth === '50') && multiRows[4]?.customWidth === '100' &&
+        ['mc-stor-pct-forecast', 'mc-stor-tb-forecast'].every(name => multiItems.find(item => item.name === name)?.content.title.startsWith('CSV Volume Free Space')),
+    'Multi-Cluster has paired CSV/logical rows, full-width network and source-qualified forecast titles');
+    const clusterStorageCharts = [...singleRows, ...multiRows].filter(item => item.name.includes('-storage-'));
+    assert(clusterStorageCharts.length === 10 && clusterStorageCharts.every(item => {
+        const logical = item.name.includes('-logical-');
+        const usage = item.name.includes('usage');
+        const single = item.name.startsWith('sc-');
+        const granularity = single ? usage && !logical ? 'By Volume' : 'By Machine' : 'Selected Clusters';
+        const query = item.content.query;
+        return item.content.title.startsWith(logical ? 'Logical Disk ' : 'CSV ') &&
+            item.content.title.endsWith(granularity) && !query.includes('| take 5') && !query.includes('| top 5') &&
+            (usage ? query.includes(`\r\n${logical ? 'hostCapacity' : 'csvCapacity'}\r\n| project`) :
+                query.includes(`dailySamples\r\n| where StorageScope == "${logical ? 'Logical disks' : 'CSV'}"`));
+    }), 'Single and Multi-Cluster isolate storage sources without changing granularity or adding Top 5 limits');
+    const capacityDcr = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../example-dcr-template/dcr-azurelocal-capacity-perf.json'), 'utf8'));
+    const capacityCounters = capacityDcr.resources[0].properties.dataSources.performanceCounters[0];
+    assert(capacityCounters.counterSpecifiers.length === 26 && capacityCounters.samplingFrequencyInSeconds === 60 &&
+        ['Avg. sec/Read', 'Avg. sec/Write', 'Reads/sec', 'Writes/sec'].every(counter =>
+            capacityCounters.counterSpecifiers.includes('\\Cluster CSVFS(*)\\' + counter)) &&
+        !capacityCounters.counterSpecifiers.some(counter => counter.includes('Cluster CSV File System')),
+        'All-in-one DCR has 26 paths including four valid CSVFS paths at 60 seconds');
 
     const networkQueryNames = [
         'node-network-throughput-trend',
@@ -1049,9 +1153,9 @@ testSuite('KQL Query Robustness', () => {
     }
 
     if (liveQuerySpecs !== null) {
-        assert(liveQuerySpecs.length === 11,
-            'Live integration manifest covers all 11 Capacity storage and network charts',
-            '11 queries', `${liveQuerySpecs.length} queries`);
+        assert(liveQuerySpecs.length === 29,
+            'Live integration manifest covers 29 Capacity storage, coverage, forecast and network queries',
+            '29 queries', `${liveQuerySpecs.length} queries`);
 
         const unresolvedLiveQuerySpecs = [];
         liveQuerySpecs.forEach(spec => {
@@ -1927,7 +2031,7 @@ testSuite('DCR Deployment Guidance', () => {
 
     const readinessText = readiness?.content?.json || '';
     const readinessWordCount = readinessText.replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-    assert(readinessWordCount <= 180 && readinessText.includes('all 27 host and Hyper-V counter paths plus Event 3002') &&
+    assert(readinessWordCount <= 180 && readinessText.includes('all 26 host and Hyper-V counter paths plus Event 3002') &&
         readinessText.includes('remediation task') && readinessText.includes('does not deduplicate'),
         'Capacity DCR checklist stays concise while retaining deployment safeguards',
         '<=180 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
@@ -1984,6 +2088,21 @@ testSuite('DCR Deployment Guidance', () => {
     assert(dcrReadme.includes('Additive does not mean deduplicated') && dcrReadme.includes('Keep current and future hosts associated with Azure Policy'),
         'Detailed DCR README documents duplicate ingestion and Policy enforcement',
         'both safeguards documented', 'present');
+    const deploymentWorkflow = dcrReadme.split('### End-to-end PowerShell workflow')[1]?.split('### Optional rollback')[0] || '';
+    const rollbackWorkflow = dcrReadme.split('### Optional rollback')[1]?.split('## Keep current')[0] || '';
+    const deploymentScript = fs.readFileSync(path.join(path.dirname(dcrReadmePath), 'deploy-lens-capacity-dcr.ps1'), 'utf8');
+    assert(deploymentWorkflow.includes("SubId = '<subscription-id>'") &&
+        deploymentWorkflow.includes('Invoke-WebRequest') && deploymentWorkflow.includes('@Settings -WhatIf') &&
+        deploymentWorkflow.includes('Verified 4 host associations.') &&
+        deploymentScript.includes("'dcrName=' + $DcrName") && deploymentScript.includes("'location=' + $LawRegion") &&
+        deploymentScript.includes("'--skip-token'") && deploymentScript.includes('properties.reportedProperties.nodes') &&
+        deploymentScript.includes('Where-Object membershipCount -EQ 1') && deploymentScript.includes('Where-Object membershipCount -NE 1') &&
+        !deploymentScript.includes("model) !~ 'Virtual Machine'") && deploymentScript.includes('$LASTEXITCODE -ne 0') &&
+        deploymentScript.includes("'association', 'show'") && deploymentScript.includes('SupportsShouldProcess') &&
+        deploymentScript.includes('if ($Rollback)') && deploymentScript.includes('$association.dataCollectionRuleId -ine $DcrId') &&
+        deploymentScript.includes('-not $UpdateExistingDcr') && rollbackWorkflow.includes('@Settings -Rollback -Confirm'),
+        'DCR guide provides sanitized paged deployment, verification and separately guarded rollback',
+        'complete workflow with placeholders and no automatic rollback', !!deploymentWorkflow && !!rollbackWorkflow);
 });
 
 // --- Documentation File Validation ---
@@ -2312,6 +2431,15 @@ testSuite('Hyper-V Node Capacity', () => {
         items.filter(item => item.type === 3 && item.name !== 'hyperv-node-capacity')
             .every(item => !item.content.query?.includes('{HyperVNodeClusterFilter}')),
         'Node hardware lookup excludes guests and independently filters scoped cluster IDs', 'physical hosts and node-only cluster selection', metadata.name);
+    assert(clusterFilter.query.includes("clusterResourceGroup = tostring(split(value, '/')[4])") &&
+        clusterFilter.query.includes("clusterSubscription = tostring(split(value, '/')[2])") &&
+        clusterFilter.query.includes("strcat(label, ' (', clusterResourceGroup, ' / ', clusterSubscription, ')')"),
+        'Node cluster labels distinguish matching names across resource groups and subscriptions', 'name, resource group and subscription in labels', clusterFilter.query);
+    assert(query.includes('let hostShortNames = toscalar(print selectedHosts = hosts') &&
+        query.includes("summarize make_set(tolower(tostring(split(tostring(selectedHost), '.')[0])))") &&
+        query.includes('set_has_element(hosts, Computer)') &&
+        query.includes("set_has_element(hostShortNames, tolower(tostring(split(Machine, '.')[0])))"),
+        'Node host filtering retains historical FQDN selections without recent telemetry', 'exact Computer match or normalized inventory host name', query.match(/\| where set_has_element\(hosts[^\r\n]*/)?.[0]);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);
@@ -2344,6 +2472,36 @@ testSuite('Hyper-V Node Capacity', () => {
     const vmMemoryFormatter = vmInventory?.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Avg Memory %');
     const vmMemoryQuery = vmInventory?.query.split('let memStats = ')[1]?.split(';\r\n')[0];
     const vmInventoryHelp = items.find(item => item.name === 'hyperv-inv-help')?.content.json;
+    const vmFilters = items.find(item => item.name === 'hyperv-inv-filters')?.content.parameters;
+    const vmThresholds = [
+        ['HyperVInvMinCpu', 'Min Avg CPU %', '0,25,50,75,90'],
+        ['HyperVInvMinMemory', 'Min Avg Memory %', '0,50,80,100']
+    ];
+    assert(vmThresholds.every(([name, label, values]) => {
+        const parameter = vmFilters?.find(candidate => candidate.name === name);
+        const options = JSON.parse(parameter?.jsonData || '[]');
+        return parameter?.label === label && parameter.type === 2 && parameter.isRequired &&
+            parameter.value === '0' && !parameter.multiSelect && options[0]?.label === 'All' &&
+            options.map(option => option.value).join(',') === values;
+    }), 'VM average threshold dropdowns default to All with distinct CPU and memory options', 'CPU 25/50/75/90 and memory 50/80/100', vmFilters);
+    const cpuThresholdClause = "| where minimumCpu == 0 or ['Avg CPU %'] >= minimumCpu";
+    const memoryThresholdClause = "| where minimumMemory == 0 or ['Avg Memory %'] >= minimumMemory";
+    assert(vmInventory.query.includes("let minimumCpu = todouble('{HyperVInvMinCpu}');") &&
+        vmInventory.query.includes("let minimumMemory = todouble('{HyperVInvMinMemory}');") &&
+        vmInventory.query.includes(cpuThresholdClause + '\r\n' + memoryThresholdClause) &&
+        vmInventory.query.indexOf(cpuThresholdClause) > vmInventory.query.indexOf('| join kind=leftouter memStats on VMName') &&
+        vmInventory.query.indexOf(memoryThresholdClause) < vmInventory.query.indexOf('| join kind=leftouter nodeMap on nodeShort'),
+        'VM thresholds combine with AND after averaging and preserve nulls only under All', 'inclusive separate predicates after metric joins', vmInventory.query.includes(cpuThresholdClause + '\r\n' + memoryThresholdClause));
+    assert(items.findIndex(item => item.name === 'hyperv-node-ratio-params') >= 0 &&
+        items.findIndex(item => item.name === 'hyperv-node-ratio-params') < items.findIndex(item => item.name === 'hyperv-node-capacity') &&
+        ratioParameters.map(parameter => parameter.name).join(',') === 'HyperVInvHostFilter,HyperVNodeClusterFilter,HyperVNodeTargetRatio,HyperVNodeRatioFilter' &&
+        !items.some(item => item.name === 'hyperv-host-filter-params') &&
+        items.findIndex(item => item.name === 'hyperv-inv-filters') > items.findIndex(item => item.name === 'hyperv-node-capacity-help') &&
+        items.findIndex(item => item.name === 'hyperv-inv-filters') + 1 === items.findIndex(item => item.name === 'hyperv-vm-inventory') &&
+        vmFilters.map(parameter => parameter.name).join(',') === 'HyperVInvVMFilter,HyperVInvActivity,HyperVInvMinCpu,HyperVInvMinMemory' &&
+        items.filter(item => item.type === 3 && item.name !== 'hyperv-vm-inventory')
+            .every(item => vmThresholds.every(([name]) => !item.content.query?.includes(`{${name}}`))),
+        'VM-only filters sit immediately above inventory and do not affect other tables or charts', 'shared host above both tables; four local VM controls', vmFilters?.map(parameter => parameter.name));
     assert(memoryFormatter?.formatter === 18 && memoryFormatter.formatOptions.thresholdsOptions === 'icons' &&
         vmMemoryFormatter?.formatter === memoryFormatter.formatter && vmMemoryFormatter.formatOptions.thresholdsOptions === 'icons' &&
         vmMemoryFormatter.numberFormat?.unit === 1 && vmMemoryFormatter.numberFormat.options.maximumFractionDigits === 1 &&

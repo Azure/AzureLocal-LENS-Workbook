@@ -55,7 +55,7 @@ The workbook is organized into eight tabs:
 
 ## Cost and Pricing
 
-**TL;DR — The LENS workbook itself is free, and using it incurs zero additional cost — with one exception: the Log Analytics–sourced charts on the Capacity tab.**
+**LENS itself is FREE.** Its Azure Resource Graph (ARG) views require no additional monitoring data collection. Within **Capacity → Overview**, only the first table, **Cluster Capacity Overview**, is ARG-based; the remaining visuals inside the Capacity tab require **Log Analytics data** or optional Managed Prometheus metrics for AKS. The Capacity views that use Log Analytics data, including the **Single cluster**, **Multi-cluster** and **Hyper-V VMs** sub-tabs, require an Azure Monitor data collection rule (DCR), that configures Azure Monitor Agent (AMA) to send performance counters to a Log Analytics (LA) workspace. Depending on the volume of data collected and the size of your environment, this can incur ingestion and potentially retention charges. Optional Managed Prometheus metrics have separate charges. If the required data is already collected in a LA workspace, LENS can reuse it without duplicate collection.
 
 The workbook is just a JSON template you import into Azure Monitor Workbooks. It is not a billable resource, and the vast majority of its views run on data sources that cost nothing to query.
 
@@ -69,7 +69,7 @@ The workbook is just a JSON template you import into Azure Monitor Workbooks. It
 
 ### What can incur cost (_optional_)
 
-The **Log Analytics–sourced charts on the 🏗️ Capacity tab** are the only part of the workbook that requires you to ingest and store data, which is billable:
+The following Capacity tables and charts use **Log Analytics data**. Collecting and retaining this data can incur charges:
 
 - **Capacity → 📋 Overview** — the *Top 5 Azure Local Instances by Resource Capacity Usage* charts (CPU/Memory/Storage/Latency/IOPS/Network)
 - **Capacity → 🔍 Single cluster** — all per-node performance and storage/compute forecast charts
@@ -78,11 +78,13 @@ The **Log Analytics–sourced charts on the 🏗️ Capacity tab** are the only 
 
 These views read performance counters and events that you collect into a **[Log Analytics workspace](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs)** via a Data Collection Rule (see [`example-dcr-template/`](example-dcr-template/README.md)). Billing applies to:
 
-- **Log Analytics data ingestion and retention** — you pay per GB ingested and for retention beyond the free period. See [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/) and [Analyze and optimize Log Analytics costs](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
-- **Azure Managed Prometheus** (optional) — the *AKS Node usage* charts on the Capacity → Overview sub-tab read from [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview), which is billed per metric sample ingested.
+- **Log Analytics data ingestion and retention** — you pay per GB ingested and for retention beyond the included period, subject to applicable allowances. Some table plans also charge for queries; review [table plan compatibility](example-dcr-template/README.md#review-retention-and-costs) before changing plans. See [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/) and [Analyze and optimize Log Analytics costs](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
+- **Azure Managed Prometheus** (optional) — the *AKS Node usage* charts on the Capacity → Overview sub-tab read from [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview), which is billed for data samples ingested and query samples processed.
 - **Azure Monitor Agent (AMA)** — the agent extension itself is free; you only pay for the data it sends to your workspace.
 
-> 💡 **Bottom line:** If you skip the Capacity tab's Log Analytics charts (or only use the free ARG-based *Cluster Capacity Overview* table), the LENS workbook costs you nothing beyond what you already pay for Azure Local and Arc. Cost is fully under your control — you decide which counters to collect, how long to retain them, and whether to enable Managed Prometheus for AKS metrics.
+Use the DCR guide's [single-node measurement query](example-dcr-template/README.md#measure-one-node) to assess observed Log Analytics data and its [cost guidance](example-dcr-template/README.md#review-retention-and-costs) to estimate charges for your environment. Node count alone is not a reliable cost estimate; 26 counter paths do not mean 26 records per node per minute.
+
+> 💡 **Bottom line:** Using LENS's ARG-based views adds no monitoring collection charges. Optional data costs depend on what you collect and retain, not whether you open the charts: an associated DCR continues collecting even when LENS is closed. Reuse existing data where possible and review overlapping DCRs before enabling additional collection.
 
 **Official pricing references:**
 - [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/)
@@ -187,6 +189,7 @@ Hyper-V performance from Log Analytics (including VMs not onboarded to Arc), wit
 - **📊 Active VMs (from Log Analytics)** summary
 - **Physical Node Capacity - CPU, Memory and VM Density** - Machine and Cluster Name links first, followed by physical cores, observed VM vCPUs, V:P CPU Ratio, percentage of target, average CPU usage/free capacity, and memory usage with physical total, committed, and available GiB. Numeric columns support sorting; V:P CPU Ratio defaults highest first and displays values such as `4:1` or `2.5:1`. **Target vCPU:pCPU Ratio** defaults to 4:1 for the target-percentage bar; **Filter by Ratio** offers All and minimum thresholds from 1:1 through 6:1. Both controls are independent of Overview
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
+- **VM inventory metric filters** - Min Avg CPU % offers All or minimum thresholds of 25%, 50%, 75%, and 90%; Min Avg Memory % offers All or 50%, 80%, and 100%. Both default to All and sit beside VM Name and Activity immediately above the inventory table. Thresholds apply to the displayed averages over Historic Time Range, combine with AND, and exclude unavailable values only when selected. They do not filter Physical Node Capacity or trend charts. Memory measures Dynamic Memory pressure and can exceed 100%.
 - **Top VMs / Top Virtual Disks** charts:
   - 📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)
   - 📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)
@@ -217,7 +220,7 @@ The node table combines current Arc hardware inventory with a **15-minute teleme
 
 Memory uses the latest one-minute bucket within the settled window. Both counters must be present, all samples must be nonnegative, and their averaged sum must be positive; otherwise the telemetry-derived memory values remain unavailable. The sample timestamp is the bucket start. The formula matches the existing Capacity memory charts, but values can differ because those charts aggregate different time ranges or cluster scopes.
 
-- **Scope:** Subscription, Resource Group, and Cluster Tag filters scope node inventory. **Cluster Name** is a multi-select dropdown drawn from that inventory and filters only Physical Node Capacity by cluster resource ID, keeping identically named clusters distinct. It defaults to All, which includes unresolved cluster membership; selecting specific clusters excludes unresolved nodes. Selected Log Analytics workspaces provide the metrics. Nodes in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; VM Name and Activity affect only VM inventory. All in Filter by Ratio retains unavailable ratios; minimum thresholds exclude them. Cluster Name, Physical Host, and minimum-ratio filters combine. Changing the target affects only the target percentage, not row filtering or observed ratios.
+- **Scope:** Subscription, Resource Group, and Cluster Tag filters scope node inventory. **Cluster Name** is a multi-select dropdown drawn from that inventory and filters only Physical Node Capacity by cluster resource ID, keeping identically named clusters distinct. Labels include resource group and subscription ID to distinguish matching names. It defaults to All, which includes unresolved cluster membership; selecting specific clusters excludes unresolved nodes. Selected Log Analytics workspaces provide the metrics. Nodes in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; node capacity also matches selected FQDNs to case-insensitive short inventory names when recent telemetry is absent. VM Name and Activity affect only VM inventory. All in Filter by Ratio retains unavailable ratios; minimum thresholds exclude them. Cluster Name, Physical Host, and minimum-ratio filters combine. Changing the target affects only the target percentage, not row filtering or observed ratios.
 - **Identity:** Telemetry joins by Arc resource ID. Cluster membership resolves by subscription, resource group, and normalized reported node name. Missing or ambiguous membership does not borrow another node's cores or infer physical cores from logical processors; its ratio remains unavailable. Nodes registered outside the cluster resource group may not resolve.
 - **Snapshot checks:** Two consecutive host samples, no more than two minutes apart, must have matching guest-vCPU instance sets and the aggregate counter. Duplicate samples and `_Total` do not inflate vCPU counts. Changing, single-sample, malformed, and aggregate-only snapshots are unconfirmed rather than assumed to represent zero workloads.
 - **Migration and names:** A VM name appearing on multiple nodes in the same cluster suppresses those ratios. Matching names in different clusters remain independent. Migration and vCPU resizing can temporarily make a ratio unavailable until samples stabilize. Perf has no immutable VM identifier here; same-host duplicate names and consistently incomplete collection cannot be conclusively detected. Sample timestamps indicate the observation time, not a guarantee of current placement.
@@ -445,15 +448,22 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.1.2)
 
+> **Action required for existing LENS DCR deployments:** Update your existing DCR using the revised template, as well as updating the workbook. Updating the workbook alone does not change data collection. See the [DCR upgrade guidance](example-dcr-template/README.md#csv-storage-sources) for replacing the obsolete CSV counter paths and verifying collection.
+
 Adds node-level capacity visibility for [Issue #102](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/102), requested by [@riemi92](https://github.com/riemi92).
 
 1. **Physical Node Capacity under Capacity > Hyper-V.** Machine and Cluster Name columns link to Azure resources; Cluster Capacity Overview also uses the Cluster Name heading. Physical cores, observed guest vCPUs, V:P CPU Ratio, and % of V:P Target sit together beside average host CPU usage and free utilization capacity, both displayed with `%` suffixes. Memory Used % uses the established `Committed Bytes / (Committed Bytes + Available Bytes) * 100` formula, with a compact green tick below 80%, warning from 80% to below 90%, and red cross at 90% and above. Physical total, used (committed), and free/available GiB follow; the help text explains their meanings. These icons are visual guides, not health alerts.
 2. **Sortable numeric metrics, target comparison, and cluster/ratio filtering.** Highest V:P ratios appear first, displayed as `4:1` or `2.5:1` while retaining numeric sorting and filtering. Target vCPU:pCPU Ratio defaults to 4:1 and drives the colour-coded % of V:P Target bar; Filter by Ratio offers All and thresholds from 1:1 through 6:1. Both match Overview's controls without sharing its state. A node-only Cluster Name multi-select defaults to All and filters by cluster resource ID without affecting VM inventory.
-3. **Conservative telemetry handling.** Settled, matching snapshots reduce stale allocation counts. Missing data, changing or conflicting VM placements, ambiguous hardware mappings, and invalid memory values stay unavailable rather than becoming zero. The cluster-level Capacity Overview remains ARM-only.
+3. **Conservative telemetry handling.** Settled, matching snapshots reduce stale allocation counts. Missing data, changing or conflicting VM placements, ambiguous hardware mappings, and invalid memory values stay unavailable rather than becoming zero. The cluster-level Capacity Overview table remains ARG-only.
 4. **Regression and live query coverage.** Offline checks protect column order, filtering, identity, and formulas. The opt-in node-capacity suite executes the exact workbook queries against live data and synthetic KQL cases for migration, duplicate samples, missing data, and sorting/filtering.
 5. **Consistent VM memory styling.** Hyper-V VM Inventory's Avg Memory % now uses compact status icons instead of full-cell backgrounds, retaining its 80/100 thresholds. Help distinguishes Dynamic Memory demand/assigned-memory pressure, which can exceed 100%, from host memory usage and actual paging activity.
+6. **Corrected CSV storage sources ([Issue #108](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/108)).** The DCR replaces five invalid CSV paths with four `Cluster CSVFS` latency/read/write paths: 26 paths in total. CSV and logical-disk performance series and coverage counts are separate, so OS-disk data cannot imply CSV coverage. CSV volume capacity uses validated, deduplicated Event 3002 snapshots rather than nonexistent percentage counters. Volume free-space forecasts describe logical CSV capacity, not physical S2D pool headroom. Existing deployments need both the workbook and DCR updated; see [CSV storage sources](example-dcr-template/README.md#csv-storage-sources) for measurement scope and verification. Valid all-zero counter samples alone do not prove workload coverage.
 
 The workbook header banner bumps from `v1.1.1` to `v1.1.2`.
+
+Overview storage charts occupy two separate three-column rows: **CSV Volume Usage / CSV Latency / CSV IOPS**, then **Logical Disk Usage / Logical Disk Latency / Logical Disk IOPS**. Every chart ranks only its named source and shows at most five clusters, with matching coverage counts below it. CPU, memory and network share the preceding row.
+
+Single Cluster uses the same three-column arrangement, with CSV usage **By Volume** and the other storage metrics **By Machine**, without a Top 5 limit. Multi-Cluster separates CSV and logical-disk latency/IOPS into two-column rows, followed by a full-width network chart; these charts retain all selected clusters. Its storage forecast titles identify **CSV Volume Free Space**. Forecast calculations and Hyper-V VHD charts are unchanged by the layout split.
 
 ## v1.1.5 — Planned (post-gallery merge)
 
@@ -472,7 +482,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **404 unit tests across 37 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **424 unit tests across 37 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -514,7 +524,7 @@ Run tests locally:
 node scripts/run-tests.js
 ```
 
-Maintainers can also run the opt-in 11-query live Capacity suite against an approved Azure environment. It uses the exact KQL stored in the split workbooks and requires explicit subscription/workspace confirmation:
+Maintainers can also run the opt-in live Capacity suite against an approved Azure environment. It executes 29 exact workbook queries and 22 synthetic KQL scenarios covering storage source separation, source-specific Top 5 rankings, machine/cluster scope and aggregation, units, duplicate/partial samples, zero versus missing data, and volume identity. It requires explicit subscription/workspace confirmation:
 
 ```powershell
 ./scripts/run-live-tests.ps1 `

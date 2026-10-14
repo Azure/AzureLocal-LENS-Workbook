@@ -1045,6 +1045,11 @@ testSuite('KQL Query Robustness', () => {
     assert(storageForecast.includes('SampleDays >= 3 and Denominator > 0') &&
         !storageForecast.slice(storageForecast.indexOf('let storData =')).includes('default=0'),
         'CSV storage exhaustion requires observed daily capacity and does not zero-fill missing days');
+    assert(storageForecast.includes('SumXX = sum(DayIndex * DayIndex) by ClusterArmId, clusterName') &&
+        storageForecast.includes('project clusterName, ArmId = ClusterArmId, Resource, CurrentAvg, SlopePerDay') &&
+        storageForecast.includes('by ArmId, clusterName, Resource') &&
+        !storageForecast.slice(storageForecast.indexOf('union computeData, storData')).includes('armIdByCluster'),
+        'CSV storage regression, history guards and final filtering retain cluster resource identity');
     const storageCoverage = allQueries.filter(({ name }) => /^node-storage-(usage|latency|iops)-count$/.test(name));
     assert(storageCoverage.length === 3 && storageCoverage.every(({ query }) =>
         query.includes('CSV') && query.includes('Logical') && !query.includes('Cluster CSV File System')),
@@ -2416,7 +2421,7 @@ testSuite('Hyper-V Node Capacity', () => {
         query.includes("['% of V:P Target'] = iff(targetRatio > 0, round(Ratio / targetRatio * 100.0, 0), real(null))") &&
         query.includes("todouble('{HyperVNodeRatioFilter}')") && query.includes('where minimumRatio == 0 or Ratio >= minimumRatio'),
         'Node target and ratio filter are independent with null-safe target percentage', '4:1 target and All with 1-6 thresholds', options.map(option => option.value));
-    assert(metadata.query.includes("strcat(subscriptionId, '/', resourceGroup, '/', name)") &&
+    assert(metadata.query.includes("strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(name, '.')[0]))") &&
         metadata.query.includes('physicalCores = toint(node.coreCount)') && metadata.query.includes('bag_pack(') &&
         metadata.query.split('| join kind=leftouter')[0].includes("| where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'") &&
         metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)") &&
@@ -2438,8 +2443,9 @@ testSuite('Hyper-V Node Capacity', () => {
     assert(query.includes('let hostShortNames = toscalar(print selectedHosts = hosts') &&
         query.includes("summarize make_set(tolower(tostring(split(tostring(selectedHost), '.')[0])))") &&
         query.includes('set_has_element(hosts, Computer)') &&
-        query.includes("set_has_element(hostShortNames, tolower(tostring(split(Machine, '.')[0])))"),
-        'Node host filtering retains historical FQDN selections without recent telemetry', 'exact Computer match or normalized inventory host name', query.match(/\| where set_has_element\(hosts[^\r\n]*/)?.[0]);
+        query.includes('summarize InventoryMatches = count() by HostShortName') &&
+        query.includes('isempty(Computer) and InventoryMatches == 1 and set_has_element(hostShortNames, HostShortName)'),
+        'Node host filtering permits only exact telemetry or unique inventory fallback without telemetry', 'identity-safe historical FQDN selection', query.match(/\| where set_has_element\(hosts[^\r\n]*/)?.[0]);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);

@@ -56,9 +56,9 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (424 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, node capacity, storage sources, DCR deployment guidance, content style, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (425 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, node capacity, storage sources, DCR deployment guidance, content style, and accessibility. |
 | `scripts/test-dcr-deployment.ps1` | Offline PowerShell tests for DCR discovery, deployment, preview, and rollback safety. Shadows Azure CLI with a mock; never contacts Azure. |
-| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 29 Capacity storage/coverage/forecast/network queries and 22 synthetic storage cases, or the node capacity suite with `-NodeCapacityOnly`. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
+| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 29 Capacity storage/coverage/forecast/network queries and 24 synthetic storage cases, or the node capacity suite with `-NodeCapacityOnly`. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
@@ -172,15 +172,15 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 424 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
+All 425 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 
 The structural test suite cannot prove that Log Analytics accepts a query or that
 the configured counters produce rows. Maintainers can run the opt-in Capacity
 integration suite against an approved test environment: 29 exact workbook queries
-plus 22 synthetic KQL checks for storage scope, Top 5 rankings, host aggregation, units, duplicate/partial samples,
-valid zero readings, invalid capacity, snapshot deduplication, and volume identity.
+plus 24 synthetic KQL checks for storage scope, Top 5 rankings, host aggregation, units, duplicate/partial samples,
+valid zero readings, invalid capacity, snapshot deduplication, volume identity, and same-name cluster forecast isolation.
 Successful query execution alone does not prove that every expected node or storage
 I/O path is covered; verify the required counters during known activity.
 
@@ -215,7 +215,8 @@ For node capacity, use the same confirmation procedure and add `-NodeCapacityOnl
 This mode uses the exact Hyper-V node metadata and table queries, a fixed snapshot
 time, and synthetic samples executed by Log Analytics. It validates physical-core
 ratios, CPU/memory arithmetic, numeric sorting, ratio/host filtering, duplicate
-samples, migration, ambiguous mappings, stale/missing data, and invalid metrics.
+samples, migration, ambiguous mappings, stale/missing data, invalid metrics,
+same-short-name host isolation, and fully qualified inventory/reported-node names.
 It writes sanitized results to `test-results/node-capacity-integration-nunit.xml`.
 It does not move VMs, change a DCR, or verify host inventory using `Get-VM`.
 

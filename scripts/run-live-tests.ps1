@@ -241,6 +241,40 @@ function Test-StorageSources {
         [pscustomobject]@{ Query = "$($chart.name)-top5-fixtures"; Rows = $rows.Count; Result = 'Passed' }
     }
 
+    $forecastSamples = [Collections.Generic.List[object]]::new()
+    foreach ($clusterIndex in 1..4) {
+        $days = if ($clusterIndex -le 2) { 2 } else { 3 }
+        foreach ($dayIndex in 0..($days - 1)) {
+            $forecastSamples.Add(@{
+                ClusterArmId = "cluster-$clusterIndex"; clusterName = 'same-name'
+                Day = ([datetime]'2026-01-01').AddDays($dayIndex).ToString('yyyy-MM-dd')
+                TotalBytes = 100; UsedBytes = $(if ($clusterIndex -eq 4) { 80 - 10 * $dayIndex } else { 10 + 10 * $dayIndex })
+            })
+        }
+    }
+    $forecastJson = ConvertTo-Json -InputObject $forecastSamples.ToArray() -Depth 10 -Compress
+    $forecastSource = "let trendStart=datetime(2026-01-01); let warnPct=80.0; let critPct=90.0; let csvVolumes=print fixtureRow=dynamic($forecastJson) | mv-expand fixtureRow | project ClusterArmId=tostring(fixtureRow.ClusterArmId), clusterName=tostring(fixtureRow.clusterName), Day=todatetime(fixtureRow.Day), TotalBytes=todouble(fixtureRow.TotalBytes), UsedBytes=todouble(fixtureRow.UsedBytes); let cpuData=datatable(clusterName:string, Resource:string, CurrentAvg:real, SlopePerDay:real)[]; let memData=cpuData; let armIdByCluster=datatable(clusterName:string, armId:string)['same-name','cluster-1','same-name','cluster-2','same-name','cluster-3','same-name','cluster-4']; "
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook') | ConvertFrom-Json
+    $forecastTemplate = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'node-exhaustion-forecast-table').content.query
+    $forecastStart = $forecastTemplate.IndexOf('let storData =')
+    if ($forecastStart -lt 0) { throw 'Storage forecast fixture boundary missing.' }
+    foreach ($selectedCluster in @('value::all', 'cluster-3')) {
+        $query = $forecastSource + $forecastTemplate.Substring($forecastStart)
+        $query = $query.Replace('{ForecastResourceFilter}', 'Storage').Replace('{ForecastClusterFilter}', $selectedCluster)
+        $query = $query.Replace('| project ["Cluster Name"]', '| project ArmId, SlopePerDay, ["Cluster Name"]')
+        $rows = @(Invoke-StorageFixture -Query $query)
+        $expectedCount = if ($selectedCluster -eq 'value::all') { 2 } else { 1 }
+        $rising = @($rows | Where-Object ArmId -EQ 'cluster-3')
+        if ($rows.Count -ne $expectedCount -or $rising.Count -ne 1 -or $rising[0].'Current Avg %%' -ne 20 -or $rising[0].SlopePerDay -ne 10 -or @($rows | Where-Object { $_.ArmId -in @('cluster-1', 'cluster-2') }).Count -ne 0) {
+            throw 'Same-name cluster forecast history or resource filtering failed.'
+        }
+        if ($selectedCluster -eq 'value::all') {
+            $declining = @($rows | Where-Object ArmId -EQ 'cluster-4')
+            if ($declining.Count -ne 1 -or $declining[0].'Current Avg %%' -ne 70 -or $declining[0].SlopePerDay -ne -10) { throw 'Same-name cluster forecast values were blended.' }
+        }
+        [pscustomobject]@{ Query = "storage-forecast-resource-identity-$selectedCluster"; Rows = $rows.Count; Result = 'Passed' }
+    }
+
     $clusterSamples = [Collections.Generic.List[object]]::new()
     foreach ($clusterIndex in 1..7) {
         foreach ($machineIndex in 0..1) {
@@ -304,7 +338,7 @@ function Test-NodeCapacity {
     if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
 
     function Invoke-CapacityQuery {
-        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'")
+        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples)
 
         $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress))
         $query = $query.Replace('{HyperVInvHostFilter}', $HostFilter).Replace('{HyperVNodeRatioFilter}', $MinimumRatio)
@@ -314,6 +348,11 @@ function Test-NodeCapacity {
             $samplesJson = ConvertTo-Json -InputObject $Samples -Depth 10 -Compress
             $source = "(print fixtureRow = dynamic($samplesJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), _ResourceId=tostring(fixtureRow.HostId), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
             $query = $query.Replace('let raw = materialize(Perf', "let raw = materialize($source")
+        }
+        if ($PSBoundParameters.ContainsKey('ResourceSamples')) {
+            $resourceJson = ConvertTo-Json -InputObject $ResourceSamples -Depth 10 -Compress
+            $source = "(print fixtureRow = dynamic($resourceJson) | mv-expand fixtureRow | project id=tostring(fixtureRow.id), name=tostring(fixtureRow.name), type=tostring(fixtureRow.type), subscriptionId=tostring(fixtureRow.subscriptionId), resourceGroup=tostring(fixtureRow.resourceGroup), properties=fixtureRow.properties, tags=fixtureRow.tags)"
+            $query = $mapQuery.Replace('resources', $source)
         }
         $response = Invoke-RestMethod -Method Post `
             -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
@@ -451,6 +490,37 @@ function Test-NodeCapacity {
         Assert-Capacity ($combinedFixture.Count -eq 0) 'node-capacity-cluster-and-ratio-intersection'
         $unmatchedFixture = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -ClusterFilter "'not-in-scope'")
         Assert-Capacity ($unmatchedFixture.Count -eq 0) 'node-capacity-unmatched-cluster-empty'
+
+        $identityNodes = @(
+            [pscustomobject]@{ hostId = 'domain-a'; machine = 'node01'; cluster = 'cluster-a'; clusterId = 'cluster-a'; physicalCores = 8; memoryGiB = 64 },
+            [pscustomobject]@{ hostId = 'domain-b'; machine = 'node01'; cluster = 'cluster-b'; clusterId = 'cluster-b'; physicalCores = 8; memoryGiB = 64 }
+        )
+        $identitySamples = foreach ($node in $identityNodes) {
+            foreach ($sample in @($fixtureSamples.ToArray() | Where-Object HostId -EQ 'host-healthy')) {
+                [pscustomobject]@{
+                    TimeGenerated = $sample.TimeGenerated; Computer = "node01.$($node.hostId).example"; HostId = $node.hostId
+                    ObjectName = $sample.ObjectName; CounterName = $sample.CounterName
+                    InstanceName = $sample.InstanceName; CounterValue = $sample.CounterValue
+                }
+            }
+        }
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata $identityNodes -Samples $identitySamples -HostFilter "'node01.domain-a.example'")
+        Assert-Capacity ($identityRows.Count -eq 1 -and $identityRows[0].clusterLink.EndsWith('cluster-a')) 'node-capacity-fqdn-selection-does-not-expand-short-name'
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata $identityNodes -Samples @() -HostFilter "'node01.domain-a.example'")
+        Assert-Capacity ($identityRows.Count -eq 0) 'node-capacity-ambiguous-missing-telemetry-excluded'
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[0]) -Samples @() -HostFilter "'node01.domain-a.example'")
+        Assert-Capacity ($identityRows.Count -eq 1) 'node-capacity-unique-historical-fqdn-retained'
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[1]) -Samples $identitySamples -HostFilter "'node01.domain-a.example'")
+        Assert-Capacity ($identityRows.Count -eq 0) 'node-capacity-existing-telemetry-blocks-short-name-fallback'
+
+        $resourceSamples = @(
+            @{ id = 'host-fqdn'; name = 'node1.example.test'; type = 'microsoft.hybridcompute/machines'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Example Server' } } },
+            @{ id = 'host-short'; name = 'node2'; type = 'microsoft.hybridcompute/machines'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Example Server' } } },
+            @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; tags = @{}; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'node1'; coreCount = 8 }, @{ name = 'node2.example.test'; coreCount = 16 }) } } }
+        )
+        $metadataRows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $resourceSamples)
+        $metadataFixture = @($metadataRows[0].value | ConvertFrom-Json)
+        Assert-Capacity ($metadataFixture.Count -eq 2 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-fqdn' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 8 }).Count -eq 1 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-short' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 16 }).Count -eq 1) 'node-capacity-metadata-normalizes-both-name-forms'
     } finally {
         $accessToken = $null
     }

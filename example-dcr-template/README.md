@@ -207,6 +207,12 @@ Recommended quick checks on the target workspace:
 
 **Estimate from measured data, not node count.** Measure representative nodes after collection stabilizes, then apply your region's current rate, currency, agreement, applicable allowances, and pricing tier using [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/). For pay-as-you-go ingestion, a starting estimate is measured billable GB/day multiplied by days and the applicable price/GB, adjusted for any available allowance. An account-level allowance is shared, not a separate allowance for each node or workspace. Retention and other enabled services can add charges. Azure bills ingestion in decimal GB (1 GB = 1,000,000,000 bytes), not GiB; see [Log Analytics cost calculations](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
 
+### Example ingestion volume
+
+**Illustrative ingestion estimate:** A two-host cluster with **20 observed VMs** (12 on one host and 8 on the other, totaling 160 observed vCPUs), using 60-second performance sampling including the CSVFS counters, has an estimated billable ingestion volume of **21.1 MB/hour across both hosts**, or **15.2 GB over 30 days if sustained**. MB and GB use decimal units. This is a data-volume example, not a price estimate.
+
+**Caveat:** This illustrative estimate is based on a one-hour ingestion baseline. Actual data volume varies with the number of nodes, VM density, CSV volume count, resulting performance-counter instances, event activity, and overlapping data collection.
+
 ### Measure one node
 
 In the target workspace's Logs view, replace the node resource ID below. Set the query time picker to include the previous complete UTC day. This measures **all Perf and Event records attributed to that node**, including other DCRs; it does not attribute individual records to LENS.

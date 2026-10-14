@@ -448,7 +448,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.1.2)
 
-> **TL;DR - Action required for existing LENS DCR deployments:** Redeploy the revised ARM template using the **same subscription, resource group, and DCR name** to update your existing rule **in place**. This replaces the counter list, removing the five obsolete CSV counter paths and adding the four `Cluster CSVFS` paths. **A new DCR is not required; existing associations continue to reference the same rule.**
+> **TL;DR - Action required for existing LENS DCR deployments:** Redeploy the [revised ARM template](example-dcr-template/dcr-azurelocal-capacity-perf.json) using the **same subscription, resource group, and DCR name** to update your existing rule **in place**. This replaces the counter list, removing the five obsolete CSV counter paths and adding the four `Cluster CSVFS` paths. **A new DCR is not required; existing associations continue to reference the same rule.**
 >
 > Update the workbook too; updating it alone does not change data collection. Back up and review any customized DCR before replacement, because settings absent from the template can be removed. See the [DCR upgrade guidance](example-dcr-template/README.md#csv-storage-sources) for preview, update, and collection verification steps.
 

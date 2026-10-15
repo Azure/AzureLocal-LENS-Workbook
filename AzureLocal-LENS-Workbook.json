@@ -2397,7 +2397,7 @@
           {
             "type": 1,
             "content": {
-              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links.\r\n\r\nManaged Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
+              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links. Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
             },
             "name": "capacity-workspace-scope-note"
           },

@@ -2671,8 +2671,9 @@ testSuite('Azure Local Instance Display Naming', () => {
         ['update-duration-statistics', 'update-duration-statistics-by-solution'].every(name =>
             updates.find(item => item.name === name)?.content.gridSettings.labelSettings.some(setting => setting.columnId === 'Clusters (Distinct)' && setting.label === 'Instances (Distinct)')) &&
         updates.find(item => item.name === 'update-run-history')?.content.query.includes("pack('Instance', hciClusterName") &&
+        vms.some(item => item.content?.gridSettings?.labelSettings?.some(setting => setting.columnId === 'clusterName' && setting.label === 'Instance Name')) &&
         vms.find(item => item.name === 'vm-top-clusters-pie')?.content.query.includes("' instances)'"),
-        'Query-generated tile, chart, legend and statistics captions use instances and machines');
+        'Query-generated captions use instances and machines, and VM inventory labels clusterName as Instance Name');
     const capacity = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-Overview/Capacity-Overview.workbook'), 'utf8')).items);
     assert(['node-storage-usage-count', 'node-logical-storage-usage-count'].every(name => {
         const query = capacity.find(item => item.name === name)?.content.query;

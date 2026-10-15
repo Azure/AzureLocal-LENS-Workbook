@@ -776,7 +776,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Instance"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"

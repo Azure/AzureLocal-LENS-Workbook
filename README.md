@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.2
+## Latest Version: v1.1.2 - Quality and Enhancements
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -183,7 +183,7 @@ Drill into a single instance (selected via the `SingleCluster` picker):
 - **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected instance
 - **📦 Workloads on Instance** section:
   - 🖥️ Azure Local VMs running on the instance
-  - 🪟 **Hyper-V VMs on the instance** — Perf-derived view scoped to the selected instance's physical hosts (reuses the same **Log Analytics Workspace** and **Historic Time Range** pickers as the per-machine charts above). Includes the inventory table plus six Top-5 trend charts: VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — same counters and queries as the **🖥️ Hyper-V** sub-tab, but filtered to this instance only. A dedicated **Hyper-V - Virtual Machine and Virtual Disk Performance** heading and six native Info tooltips distinguish VM, VHD/VHDX and virtual-adapter metrics from physical-machine and CSV metrics.
+  - 🪟 **Hyper-V VMs on the instance** — Perf-derived view scoped to the selected instance's physical hosts (reuses the same **Log Analytics Workspace** and **Historic Data Time Range** pickers as the per-machine charts above). Includes the inventory table plus six Top-5 trend charts: VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — same counters and queries as the **🖥️ Hyper-V** sub-tab, but filtered to this instance only. A dedicated **Hyper-V - Virtual Machine and Virtual Disk Performance** heading and six native Info tooltips distinguish VM, VHD/VHDX and virtual-adapter metrics from physical-machine and CSV metrics.
   - ☸️ AKS Arc Clusters running on the instance (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local instance label, so a single AKS performance view applies fleet-wide)
 
 #### 🖥️ Hyper-V sub-tab
@@ -454,6 +454,8 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 > **Key concept:** The Arc Resource Bridge appliance and the HCI instance are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI instance.
 
 ## What's New (v1.1.2)
+
+### Quality and Enhancements
 
 > **TL;DR - Action required for existing LENS DCR deployments:** Redeploy the [revised ARM template](example-dcr-template/dcr-azurelocal-capacity-perf.json) using the **same subscription, resource group, and DCR name** to update your existing rule **in place**. This replaces the counter list, removing the five obsolete CSV counter paths and adding the four `Cluster CSVFS` paths. **A new DCR is not required; existing associations continue to reference the same rule.**
 >

@@ -667,6 +667,10 @@ testSuite('Cross-Component Resources Validation', () => {
         embeddedWorkspaceParams.length === 1 && capacityWorkspace?.multiSelect === true &&
         capacityWorkspace.defaultValue === 'value::all' && JSON.stringify(capacityWorkspace.value) === '["value::all"]' &&
         capacityWorkspace.quote === "'" && capacityWorkspace.delimiter === ',' &&
+        capacityWorkspace.description.includes('Overview capacity table uses Azure Resource Graph and is unaffected') &&
+        capacityWorkspace.description.includes('Managed Prometheus uses the separate Azure Monitor Workspace selector') &&
+        capacityChildren[navigationIndex + 2]?.name === 'capacity-workspace-scope-note' &&
+        capacityChildren[navigationIndex + 2].content.json === "**'Log Analytics Workspace' filter scope:** This applies across all Capacity views. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected by this filter." &&
         workspaceParams.some(parameter => parameter.id === 'capacity-la-workspace'),
         'Capacity has one persistent multi-select workspace selector immediately below navigation, defaulting to All');
 
@@ -698,6 +702,10 @@ testSuite('Cross-Component Resources Validation', () => {
         return fallback.length === 1 && JSON.stringify(fallback[0]) === JSON.stringify(capacityWorkspace) &&
             sectionItems.every(item => !(item.content?.parameters || []).some(parameter => /^(Machines|HyperV)LogAnalyticsWorkspace$/.test(parameter.name))) &&
             logQueries.length > 0 && logQueries.every(item => item.content.crossComponentResources?.includes('{MachinesLogAnalyticsWorkspace}')) &&
+            !JSON.stringify(section).includes('_BELOW_') &&
+            !JSON.stringify(section).includes('Optionally, select a specific **Log Analytics Workspace**') &&
+            !JSON.stringify(section).includes('Performance Counter DCR Configuration') &&
+            !JSON.stringify(section).includes('full **🔔 DCR Configuration** ARM template') &&
             !JSON.stringify(section).includes('HyperVLogAnalyticsWorkspace');
     }), 'All four Capacity sections inherit the same workspace and retain identical standalone fallbacks without nested selector overrides');
 });

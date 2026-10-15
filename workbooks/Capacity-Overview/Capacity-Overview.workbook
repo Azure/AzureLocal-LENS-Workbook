@@ -235,7 +235,7 @@
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for all Capacity views. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
@@ -883,7 +883,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitoring Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nIf the **Log Analytics Workspace** picker (_BELOW_) is set to **All** and your account cannot read one of the workspaces in scope, every graph below returns an access error — narrow the picker to only the workspace(s) you have permissions to access.",
+              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
               "style": "upsell"
             },
             "name": "capacity-ama-tip"
@@ -950,7 +950,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Coverage tiles below the charts count **reporting machines** for performance metrics and **reporting instances** for CSV volume capacity. Counts reflect the selected **Log Analytics workspace(s)** and **Historic Data Time Range**. To investigate missing coverage, check the scope and time filters, then expand the **🔔 Performance Counter DCR Configuration** section further up the tab to verify collection.",
+              "json": "💡 **Tip:** Coverage tiles below the charts count **reporting machines** for performance metrics and **reporting instances** for CSV volume capacity. Counts reflect the selected **Log Analytics workspace(s)** and time range. To investigate missing coverage, check the scope and time filters, then expand **Show DCR Setup Guide** under **Capacity Telemetry Readiness** to verify collection.",
               "style": "upsell"
             },
             "name": "capacity-counter-coverage-tip"
@@ -990,7 +990,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No CPU metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Processor(_Total)\\% Processor Time` are deployed to the instance machines — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No CPU metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Processor(_Total)\\% Processor Time` are deployed to the instance machines. Open Show DCR Setup Guide under Capacity Telemetry Readiness for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1035,7 +1035,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` are deployed to the instance machines — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` are deployed to the instance machines. Open Show DCR Setup Guide under Capacity Telemetry Readiness for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1079,7 +1079,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No network throughput metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Network Adapter(*)\\Bytes Total/sec` or `Network Interface(*)\\Bytes Total/sec` (or VM Insights `InsightsMetrics`) are deployed to the instance machines — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No network throughput metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Network Adapter(*)\\Bytes Total/sec` or `Network Interface(*)\\Bytes Total/sec` (or VM Insights `InsightsMetrics`) are deployed to the instance machines. Open Show DCR Setup Guide under Capacity Telemetry Readiness for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",

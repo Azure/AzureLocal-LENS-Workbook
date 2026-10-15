@@ -221,7 +221,7 @@
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for all Capacity views. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",

@@ -221,7 +221,7 @@
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for all Capacity views. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
@@ -267,7 +267,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. Optionally, select a specific **Log Analytics Workspace** if your instances report to different workspaces.",
+              "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. The **Log Analytics Workspace** selector is shared across Capacity views; select the workspace(s) receiving this instance's telemetry.",
               "style": "upsell"
             },
             "name": "single-cluster-tip"
@@ -2506,7 +2506,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Notes:** All six charts show the **Top 5 VMs/VHDs by average value** over the selected **Historic Time Range** (picker at the top of this sub-tab), restricted to the physical hosts of **{SingleCluster:label}**. **Memory Pressure** is a unitless ratio (≤80 healthy · 100 = at limit · >100 under pressure); only Dynamic-Memory VMs report it. **Storage** charts are reported **per virtual disk (VHD)**, not per VM (the `Hyper-V Virtual Storage Device` object uses the VHD path as its instance identifier). **Network** counter values are cross-referenced against the Hyper-V Hypervisor Virtual Processor counter so only guest VM vNICs (not host vNICs or physical NICs) are shown. See the **🖥️ Hyper-V** sub-tab for the equivalent fleet-wide view, the full **🔔 DCR Configuration** ARM template, and the complete chart-units interpretation guide.",
+              "json": "ℹ️ **Notes:** All six charts show the **Top 5 VMs/VHDs by average value** over the selected **Historic Data Time Range**, restricted to the physical hosts of **{SingleCluster:label}**. **Memory Pressure** is a unitless ratio (≤80 healthy · 100 = at limit · >100 under pressure); only Dynamic-Memory VMs report it. **Storage** charts are reported **per virtual disk (VHD)**, not per VM (the `Hyper-V Virtual Storage Device` object uses the VHD path as its instance identifier). **Network** counter values are cross-referenced against the Hyper-V Hypervisor Virtual Processor counter so only guest VM vNICs (not host vNICs or physical NICs) are shown. See the **🖥️ Hyper-V** sub-tab for the equivalent fleet-wide view. Expand **Show Hyper-V DCR Setup Guide** there for maintained setup links.",
               "style": "info"
             },
             "conditionalVisibility": {

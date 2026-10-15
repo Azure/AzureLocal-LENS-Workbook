@@ -331,6 +331,20 @@ function Test-NodeCapacity {
     $metadata = (($mappingResponse -join [Environment]::NewLine | ConvertFrom-Json).data[0].value | ConvertFrom-Json)
     if (@($metadata).Count -eq 0) { throw 'No Arc node hardware metadata returned.' }
     $template = ($items | Where-Object name -EQ 'hyperv-node-capacity').content.query
+    $hostIdentityTemplate = ($items | Where-Object name -EQ 'hyperv-node-ratio-params').content.parameters |
+        Where-Object name -EQ 'HyperVNodeSelectedHostIds' | Select-Object -ExpandProperty query
+    $discoveryAst = [System.Management.Automation.Language.Parser]::ParseFile(
+        (Join-Path $repoRoot 'example-dcr-template/deploy-lens-capacity-dcr.ps1'), [ref]$null, [ref]$null)
+    $discoveryAssignment = $discoveryAst.Find({ param($entry)
+        $entry -is [System.Management.Automation.Language.AssignmentStatementAst] -and $entry.Left.VariablePath.UserPath -eq 'hostQuery'
+    }, $true)
+    $discoveryTemplate = $discoveryAssignment.Right.Find({ param($entry)
+        $entry -is [System.Management.Automation.Language.ExpandableStringExpressionAst]
+    }, $true).Value
+    $discoveryQuery = $discoveryTemplate.Replace('$SubId', $SubscriptionId) -replace '\r?\n', ' '
+    $null = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
+        --graph-query $discoveryQuery --output json --only-show-errors
+    if ($LASTEXITCODE -ne 0) { throw 'DCR discovery query failed.' }
     $snapshotEnd = [DateTime]::UtcNow.AddMinutes(-2)
     $template = $template.Replace('now() - 2m', "datetime($($snapshotEnd.ToString('o')))")
     $accessToken = az account get-access-token --tenant $TenantId --resource 'https://api.loganalytics.io' `
@@ -338,7 +352,7 @@ function Test-NodeCapacity {
     if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
 
     function Invoke-CapacityQuery {
-        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples)
+        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples, [object[]]$HistoricalSamples, [switch]$Discovery)
 
         $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress))
         $query = $query.Replace('{HyperVInvHostFilter}', $HostFilter).Replace('{HyperVNodeRatioFilter}', $MinimumRatio)
@@ -349,10 +363,28 @@ function Test-NodeCapacity {
             $source = "(print fixtureRow = dynamic($samplesJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), _ResourceId=tostring(fixtureRow.HostId), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
             $query = $query.Replace('let raw = materialize(Perf', "let raw = materialize($source")
         }
+        $selectedHostIds = '[]'
+        if ($HostFilter -ne "'*'" -and -not $PSBoundParameters.ContainsKey('ResourceSamples')) {
+            $identityQuery = $hostIdentityTemplate.Replace('{HyperVInvHostFilter}', $HostFilter)
+            if ($PSBoundParameters.ContainsKey('Samples') -or $PSBoundParameters.ContainsKey('HistoricalSamples')) {
+                $history = if ($PSBoundParameters.ContainsKey('HistoricalSamples')) { $HistoricalSamples } else { $Samples }
+                $historyJson = ConvertTo-Json -InputObject @($history) -Depth 10 -Compress
+                $historySource = "(print fixtureRow = dynamic($historyJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), _ResourceId=tostring(fixtureRow.HostId), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName))"
+                $identityQuery = $identityQuery.Replace('Perf', $historySource)
+            }
+            $identityResponse = Invoke-RestMethod -Method Post `
+                -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
+                -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
+                -Body (@{ query = $identityQuery; timespan = 'P1D' } | ConvertTo-Json -Depth 10)
+            if ($identityResponse.error) { throw 'Historical host identity returned a partial query error.' }
+            $selectedHostIds = [string]$identityResponse.tables[0].rows[0][0]
+        }
+        $query = $query.Replace('{HyperVNodeSelectedHostIds}', $selectedHostIds)
         if ($PSBoundParameters.ContainsKey('ResourceSamples')) {
             $resourceJson = ConvertTo-Json -InputObject $ResourceSamples -Depth 10 -Compress
-            $source = "(print fixtureRow = dynamic($resourceJson) | mv-expand fixtureRow | project id=tostring(fixtureRow.id), name=tostring(fixtureRow.name), type=tostring(fixtureRow.type), subscriptionId=tostring(fixtureRow.subscriptionId), resourceGroup=tostring(fixtureRow.resourceGroup), properties=fixtureRow.properties, tags=fixtureRow.tags)"
-            $query = $mapQuery.Replace('resources', $source)
+            $source = "(print fixtureRow = dynamic($resourceJson) | mv-expand fixtureRow | project id=tostring(fixtureRow.id), name=tostring(fixtureRow.name), type=tostring(fixtureRow.type), subscriptionId=tostring(fixtureRow.subscriptionId), resourceGroup=tostring(fixtureRow.resourceGroup), location=tostring(fixtureRow.location), properties=fixtureRow.properties, tags=fixtureRow.tags)"
+            $resourceTemplate = if ($Discovery) { $discoveryTemplate.Replace('$SubId', 'example') } else { $mapQuery }
+            $query = $resourceTemplate.Replace('resources', $source)
         }
         $response = Invoke-RestMethod -Method Post `
             -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
@@ -376,6 +408,7 @@ function Test-NodeCapacity {
     }
 
     try {
+        Assert-Capacity $true 'dcr-discovery-live-arg-query'
         $liveRows = @(Invoke-CapacityQuery -NodeMetadata @($metadata))
         $knownRows = @($liveRows | Where-Object { $null -ne $_.'V:P CPU Ratio' })
         Assert-Capacity ($liveRows.Count -gt 0 -and $knownRows.Count -gt 0) 'node-capacity-live-ratios' $knownRows.Count
@@ -508,8 +541,16 @@ function Test-NodeCapacity {
         Assert-Capacity ($identityRows.Count -eq 1 -and $identityRows[0].clusterLink.EndsWith('cluster-a')) 'node-capacity-fqdn-selection-does-not-expand-short-name'
         $identityRows = @(Invoke-CapacityQuery -NodeMetadata $identityNodes -Samples @() -HostFilter "'node01.domain-a.example'")
         Assert-Capacity ($identityRows.Count -eq 0) 'node-capacity-ambiguous-missing-telemetry-excluded'
-        $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[0]) -Samples @() -HostFilter "'node01.domain-a.example'")
+        $historicalSamples = foreach ($sample in $identitySamples) {
+            $historical = $sample.PSObject.Copy()
+            $historical.TimeGenerated = $snapshotEnd.AddHours(-4).ToString('o')
+            $historical
+        }
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[0]) -Samples @() -HistoricalSamples $historicalSamples -HostFilter "'node01.domain-a.example'")
         Assert-Capacity ($identityRows.Count -eq 1) 'node-capacity-unique-historical-fqdn-retained'
+        Assert-Capacity ($null -eq $identityRows[0].'V:P CPU Ratio' -and $null -eq $identityRows[0].'Avg CPU % (15 min)') 'node-capacity-history-does-not-widen-metric-window'
+        $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[0]) -Samples @() -HistoricalSamples $historicalSamples -HostFilter "'node01.domain-b.example'")
+        Assert-Capacity ($identityRows.Count -eq 0) 'node-capacity-historical-selection-outside-inventory-excluded'
         $identityRows = @(Invoke-CapacityQuery -NodeMetadata @($identityNodes[1]) -Samples $identitySamples -HostFilter "'node01.domain-a.example'")
         Assert-Capacity ($identityRows.Count -eq 0) 'node-capacity-existing-telemetry-blocks-short-name-fallback'
 
@@ -521,6 +562,24 @@ function Test-NodeCapacity {
         $metadataRows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $resourceSamples)
         $metadataFixture = @($metadataRows[0].value | ConvertFrom-Json)
         Assert-Capacity ($metadataFixture.Count -eq 2 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-fqdn' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 8 }).Count -eq 1 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-short' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 16 }).Count -eq 1) 'node-capacity-metadata-normalizes-both-name-forms'
+
+        $discoveryResources = @(
+            @{ id = 'qualified-host'; name = 'node01.host.example' },
+            @{ id = 'qualified-guest'; name = 'node01.guest.example' },
+            @{ id = 'nested-host'; name = 'nested.example' },
+            @{ id = 'short-collision-a'; name = 'collision.a.example' },
+            @{ id = 'short-collision-b'; name = 'collision.b.example' },
+            @{ id = 'reported-collision'; name = 'repeated' }
+        ) | ForEach-Object {
+            $_.type = 'microsoft.hybridcompute/machines'; $_.subscriptionId = 'example'; $_.resourceGroup = 'group-a'
+            $_.properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Virtual Machine' } }
+            $_
+        }
+        $discoveryResources += @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'node01.host.example' }, @{ name = 'nested' }, @{ name = 'collision' }, @{ name = 'repeated.a.example' }, @{ name = 'repeated.b.example' }) } } }
+        $discoveryRows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $discoveryResources -Discovery)
+        $eligible = @($discoveryRows | Where-Object membershipCount -EQ 1)
+        Assert-Capacity ($discoveryRows.Count -eq 6 -and $eligible.Count -eq 2 -and @($eligible | Where-Object id -EQ 'qualified-host').Count -eq 1 -and @($eligible | Where-Object id -EQ 'nested-host').Count -eq 1) 'dcr-discovery-qualified-collision-and-nested-hosts'
+        Assert-Capacity (@($discoveryRows | Where-Object { $_.id -in @('short-collision-a', 'short-collision-b', 'reported-collision', 'qualified-guest') -and $_.membershipCount -eq 0 }).Count -eq 4) 'dcr-discovery-ambiguous-matches-excluded'
     } finally {
         $accessToken = $null
     }

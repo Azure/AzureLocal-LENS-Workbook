@@ -2440,12 +2440,16 @@ testSuite('Hyper-V Node Capacity', () => {
         clusterFilter.query.includes("clusterSubscription = tostring(split(value, '/')[2])") &&
         clusterFilter.query.includes("strcat(label, ' (', clusterResourceGroup, ' / ', clusterSubscription, ')')"),
         'Node cluster labels distinguish matching names across resource groups and subscriptions', 'name, resource group and subscription in labels', clusterFilter.query);
-    assert(query.includes('let hostShortNames = toscalar(print selectedHosts = hosts') &&
-        query.includes("summarize make_set(tolower(tostring(split(tostring(selectedHost), '.')[0])))") &&
-        query.includes('set_has_element(hosts, Computer)') &&
-        query.includes('summarize InventoryMatches = count() by HostShortName') &&
-        query.includes('isempty(Computer) and InventoryMatches == 1 and set_has_element(hostShortNames, HostShortName)'),
-        'Node host filtering permits only exact telemetry or unique inventory fallback without telemetry', 'identity-safe historical FQDN selection', query.match(/\| where set_has_element\(hosts[^\r\n]*/)?.[0]);
+    const selectedHosts = ratioParameters.find(parameter => parameter.name === 'HyperVNodeSelectedHostIds');
+    assert(selectedHosts?.timeContextFromParameter === 'HyperVTrendsTimeRange' &&
+        selectedHosts.crossComponentResources.includes('{HyperVLogAnalyticsWorkspace}') &&
+        selectedHosts.query.includes('set_has_element(hosts, Computer)') &&
+        selectedHosts.query.includes('HostId = tolower(_ResourceId)') &&
+        selectedHosts.query.includes('summarize value = tostring(make_set(HostId))') &&
+        query.includes('let selectedHostIds = dynamic({HyperVNodeSelectedHostIds})') &&
+        query.includes("set_has_element(hosts, '*') or set_has_element(selectedHostIds, HostId)") &&
+        !query.includes('hostShortNames') && !query.includes('InventoryMatches'),
+        'Node host filtering resolves historical names to resource IDs without short-name fallback', 'historical resource identity and fixed metric window', selectedHosts?.name);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);
@@ -2500,7 +2504,7 @@ testSuite('Hyper-V Node Capacity', () => {
         'VM thresholds combine with AND after averaging and preserve nulls only under All', 'inclusive separate predicates after metric joins', vmInventory.query.includes(cpuThresholdClause + '\r\n' + memoryThresholdClause));
     assert(items.findIndex(item => item.name === 'hyperv-node-ratio-params') >= 0 &&
         items.findIndex(item => item.name === 'hyperv-node-ratio-params') < items.findIndex(item => item.name === 'hyperv-node-capacity') &&
-        ratioParameters.map(parameter => parameter.name).join(',') === 'HyperVInvHostFilter,HyperVNodeClusterFilter,HyperVNodeTargetRatio,HyperVNodeRatioFilter' &&
+        ratioParameters.filter(parameter => !parameter.isHiddenWhenLocked).map(parameter => parameter.name).join(',') === 'HyperVInvHostFilter,HyperVNodeClusterFilter,HyperVNodeTargetRatio,HyperVNodeRatioFilter' &&
         !items.some(item => item.name === 'hyperv-host-filter-params') &&
         items.findIndex(item => item.name === 'hyperv-inv-filters') > items.findIndex(item => item.name === 'hyperv-node-capacity-help') &&
         items.findIndex(item => item.name === 'hyperv-inv-filters') + 1 === items.findIndex(item => item.name === 'hyperv-vm-inventory') &&

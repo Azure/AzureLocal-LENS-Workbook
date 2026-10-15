@@ -46,16 +46,33 @@ resources
 | where type =~ 'microsoft.hybridcompute/machines'
 | where subscriptionId =~ '$SubId'
 | where properties.cloudMetadata.provider =~ 'AzSHCI'
-| extend nodeKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(name, '.')[0])))
-| project id, name, resourceGroup, location, model = tostring(properties.detectedProperties.model), nodeKey
+| project id = tolower(id), name, resourceGroup, location, model = tostring(properties.detectedProperties.model)
 | join kind=leftouter (
     resources
     | where type =~ 'microsoft.azurestackhci/clusters'
+    | where subscriptionId =~ '$SubId'
     | mv-expand node = properties.reportedProperties.nodes limit 2000
+    | extend reportedName = tolower(tostring(node.name))
     | extend nodeKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(tostring(node.name), '.')[0])))
-    | summarize clusterIds = make_set(id), clusters = make_set(name) by nodeKey
-) on nodeKey
-| project id, name, resourceGroup, location, model, clusters, membershipCount = coalesce(array_length(clusterIds), 0)
+    | project clusterId = tolower(id), clusterName = name, reportedName, nodeKey
+    | join kind=inner (
+        resources
+        | where type =~ 'microsoft.hybridcompute/machines'
+        | where subscriptionId =~ '$SubId'
+        | where properties.cloudMetadata.provider =~ 'AzSHCI'
+        | extend arcName = tolower(name)
+        | extend nodeKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(name, '.')[0])))
+        | project arcId = tolower(id), arcName, nodeKey
+    ) on nodeKey
+    | where arcName == reportedName or indexof(arcName, '.') < 0 or indexof(reportedName, '.') < 0
+    | summarize matchingHostIds = make_set(arcId), clusterIds = make_set(clusterId), clusters = make_set(clusterName) by nodeKey, reportedName
+    | where array_length(matchingHostIds) == 1
+    | mv-expand id = matchingHostIds to typeof(string)
+    | extend clusterCount = array_length(clusterIds)
+    | summarize reportedNodeCount = count(), membershipCount = max(clusterCount), clusters = make_set(clusters) by id
+    | where reportedNodeCount == 1
+) on id
+| project id, name, resourceGroup, location, model, clusters, membershipCount = coalesce(membershipCount, 0)
 | order by id asc
 "@ -replace '\r?\n', ' '
 $machineList = [System.Collections.Generic.List[object]]::new()

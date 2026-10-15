@@ -216,7 +216,10 @@ This mode uses the exact Hyper-V node metadata and table queries, a fixed snapsh
 time, and synthetic samples executed by Log Analytics. It validates physical-core
 ratios, CPU/memory arithmetic, numeric sorting, ratio/host filtering, duplicate
 samples, migration, ambiguous mappings, stale/missing data, invalid metrics,
+historical host selections by resource ID without widening the metric window,
 same-short-name host isolation, and fully qualified inventory/reported-node names.
+It also validates the deployment script's exact discovery query in Resource Graph
+and synthetic qualified-name collisions, ambiguous matches, and nested hosts in Log Analytics.
 It writes sanitized results to `test-results/node-capacity-integration-nunit.xml`.
 It does not move VMs, change a DCR, or verify host inventory using `Get-VM`.
 

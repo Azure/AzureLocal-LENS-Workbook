@@ -98,6 +98,11 @@ function global:az {
 }
 
 try {
+    $source = Get-Content -Raw $deploymentScript
+    Assert-Check ($source.Contains("arcName == reportedName or indexof(arcName, '.') < 0 or indexof(reportedName, '.') < 0")) 'Qualified discovery names must agree.'
+    Assert-Check ($source.Contains('where array_length(matchingHostIds) == 1')) 'Reported nodes must match one Arc resource.'
+    Assert-Check ($source.Contains('where reportedNodeCount == 1')) 'Arc resources must match one reported node.'
+    Assert-Check (-not $source.Contains("model !~ 'Virtual Machine'")) 'Nested hosts must remain eligible.'
     Reset-Scenario
     $null = Invoke-Scenario @{ WhatIf = $true }
     Assert-Check (@(Get-Writes).Count -eq 0) 'WhatIf must not write.'

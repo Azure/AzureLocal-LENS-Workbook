@@ -435,12 +435,37 @@
               "gridSettings": {
                 "formatters": [
                   {
-                    "columnMatch": "Current Avg %",
-                    "formatter": 8,
+                    "columnMatch": "Current Avg %%",
+                    "formatter": 18,
                     "formatOptions": {
-                      "palette": "greenRed",
-                      "min": 0,
-                      "max": 100
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "{CriticalThreshold}",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "{WarningThreshold}",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 1
+                      }
                     }
                   },
                   {
@@ -471,6 +496,10 @@
                   {
                     "columnId": "Days to Critical",
                     "label": "Est. Days to Critical"
+                  },
+                  {
+                    "columnId": "Current Avg %%",
+                    "label": "Current Avg %"
                   }
                 ]
               },

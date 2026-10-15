@@ -100,8 +100,8 @@ function global:az {
 try {
     $source = Get-Content -Raw $deploymentScript
     Assert-Check ($source.Contains("arcName == reportedName or indexof(arcName, '.') < 0 or indexof(reportedName, '.') < 0")) 'Qualified discovery names must agree.'
-    Assert-Check ($source.Contains('where array_length(matchingHostIds) == 1')) 'Reported nodes must match one Arc resource.'
-    Assert-Check ($source.Contains('where reportedNodeCount == 1')) 'Arc resources must match one reported node.'
+    Assert-Check ($source.Contains('matchingHostCount = array_length(matchingHostIds)') -and -not $source.Contains('where array_length(matchingHostIds) == 1')) 'Ambiguous reported groups survive until reverse uniqueness is checked.'
+    Assert-Check ($source.Contains('reportedMatches = count()') -and $source.Contains('where reportedNodeCount == 1 and matchingHostCount == 1 and reportedMatches == 1')) 'Both match directions and duplicate reported rows must be unique.'
     Assert-Check (-not $source.Contains("model !~ 'Virtual Machine'")) 'Nested hosts must remain eligible.'
     Reset-Scenario
     $null = Invoke-Scenario @{ WhatIf = $true }

@@ -1,6 +1,78 @@
 {
-  "$comment": "Opt-in live Log Analytics cohort for the Capacity host storage and network charts. Environment values are supplied only at runtime.",
+  "$comment": "Opt-in live Log Analytics cohort for Capacity performance, coverage, forecasts, storage detail and shared-map consumers. Environment values are supplied only at runtime.",
   "queries": [
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-cpu-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-memory-trend"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-cpu-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-memory-count"
+    },
+    {
+      "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
+      "name": "node-network-count"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-cpu-forecast"
+    },
+    {
+      "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
+      "name": "mc-mem-forecast"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-cpu-usage-machine"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-memory-usage-machine"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "single-cluster-cpu-trend"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "single-cluster-memory-trend"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-inventory"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-cpu"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-mempressure"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-storage-throughput"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-storage-iops"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-storage-latency"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-hyperv-chart-network"
+    },
     {
       "file": "workbooks/Capacity-Overview/Capacity-Overview.workbook",
       "name": "node-storage-trend"
@@ -64,6 +136,14 @@
     {
       "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
       "name": "sc-storage-detail-iops"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-detail-logical-latency"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-detail-logical-iops"
     },
     {
       "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",

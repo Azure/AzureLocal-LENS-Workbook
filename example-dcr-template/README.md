@@ -24,7 +24,7 @@ This is the same template referenced by the workbook's **Capacity → Overview �
 | Stream | Source | Count | Purpose |
 |---|---|---:|---|
 | `Microsoft-Perf` | 12 **host** performance counter paths (Processor, Memory, LogicalDisk, Network Interface, Cluster CSVFS) | 12 | Host CPU / memory / logical-disk usage / CSV and logical-disk latency and IOPS / network throughput |
-| `Microsoft-Perf` | 14 **Hyper-V VM** counter paths (Hypervisor Virtual Processor, Dynamic Memory VM, Virtual Storage Device, Virtual Network Adapter) | 14 | The 🖥️ **Hyper-V** sub-tab and the 🪟 **Hyper-V VMs on: {instance}** section on the 🔍 **Single cluster** sub-tab |
+| `Microsoft-Perf` | 14 **Hyper-V VM** counter paths (Hypervisor Virtual Processor, Dynamic Memory VM, Virtual Storage Device, Virtual Network Adapter) | 14 | The 🖥️ **Hyper-V** sub-tab and the 🪟 **Hyper-V VMs on: {instance}** section on the 🔍 **Single instance** sub-tab |
 | `Microsoft-Event` | `Microsoft-Windows-SDDC-Management/Operational` — `EventID=3002` | 1 XPath | CSV logical volume capacity and forecasts; not physical S2D pool headroom |
 
 **26 performance counter paths sampled every 60 seconds, plus 1 event XPath**, all routed to a single Log Analytics workspace. Wildcard paths expand into separate counter instances. Event 3002 supplies CSV volume capacity and forecasts when emitted; it is not sampled by the 60-second performance-counter setting. Optional Managed Prometheus metrics use separate collection and are not configured by this template.

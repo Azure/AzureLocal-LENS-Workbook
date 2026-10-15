@@ -127,9 +127,21 @@ function Test-StorageSources {
     $detailSamples = @($samples.ToArray())
     foreach ($counter in $csvCounters.Keys) {
         $detailSamples += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'both'; ObjectName = 'Cluster CSVFS'; CounterName = $counter; InstanceName = 'Volume02'; CounterValue = 2 * $csvCounters[$counter] }
+        $detailSamples += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'csv-only'; ObjectName = 'Cluster CSVFS'; CounterName = $counter; InstanceName = 'Volume01'; CounterValue = $csvCounters[$counter] }
     }
     foreach ($counter in @('Disk Transfers/sec', 'Avg. Disk sec/Read', 'Avg. Disk sec/Write')) {
         $detailSamples += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'both'; ObjectName = 'LogicalDisk'; CounterName = $counter; InstanceName = 'D:'; CounterValue = $(if ($counter -eq 'Disk Transfers/sec') { 200 } elseif ($counter -like '*Read') { 0.02 } else { 0.04 }) }
+    }
+    foreach ($hostName in @('zero', 'duplicates', 'partial', 'invalid')) {
+        foreach ($counter in @('Disk Transfers/sec', 'Avg. Disk sec/Read', 'Avg. Disk sec/Write')) {
+            if ($hostName -eq 'partial' -and $counter -ne 'Avg. Disk sec/Read') { continue }
+            $counterValue = if ($counter -eq 'Disk Transfers/sec') { 30 } elseif ($counter -like '*Read') { 0.002 } else { 0.004 }
+            if ($hostName -eq 'zero') { $counterValue = 0 }
+            if ($hostName -eq 'invalid' -and $counter -ne 'Avg. Disk sec/Write') { $counterValue = -1 }
+            $sample = @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = $hostName; ObjectName = 'LogicalDisk'; CounterName = $counter; InstanceName = 'C:'; CounterValue = $counterValue }
+            $detailSamples += $sample
+            if ($hostName -eq 'duplicates') { $detailSamples += $sample }
+        }
     }
     $detailJson = ConvertTo-Json -InputObject $detailSamples -Depth 10 -Compress
     $detailPerfSource = $perfSource.Replace($sampleJson, $detailJson)
@@ -141,26 +153,26 @@ function Test-StorageSources {
     $detailInsightsSource = $insightsSource.Replace($insightsJson, $detailInsightsJson)
     $detailBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
     $detailItems = @(Get-WorkbookItems -Items $detailBook.items)
-    foreach ($chart in @($detailItems | Where-Object { $_.name -in @('sc-storage-detail-latency', 'sc-storage-detail-iops') })) {
+    foreach ($chart in @($detailItems | Where-Object { $_.type -eq 3 -and $_.name -like 'sc-storage-detail-*' })) {
         $template = [string]$chart.content.query
         $start = $template.IndexOf('let perfSamples = Perf')
         if ($start -lt 0) { throw 'Storage detail fixture boundary missing.' }
-        foreach ($scenario in @('CSV', 'Logical disks', 'zero', 'duplicates', 'partial', 'invalid')) {
-            $machine = if ($scenario -in @('CSV', 'Logical disks')) { 'both' } else { $scenario }
-            $scope = if ($scenario -eq 'Logical disks') { $scenario } else { 'CSV' }
-            $query = $fixtureHeader + "let NodeToCluster=datatable(nodeName:string)['both','zero','duplicates','partial','invalid','aggregate-only']; " + $template.Substring($start)
+        $logicalChart = $chart.name.Contains('-logical-')
+        foreach ($scenario in @('selected-source', 'other-source', 'zero', 'duplicates', 'partial', 'invalid')) {
+            $machine = if ($scenario -eq 'selected-source') { 'both' } elseif ($scenario -eq 'other-source') { $(if ($logicalChart) { 'csv-only' } else { 'logical-only' }) } else { $scenario }
+            $query = $fixtureHeader + "let NodeToCluster=datatable(nodeName:string)['both','zero','duplicates','partial','invalid','aggregate-only','csv-only','logical-only']; " + $template.Substring($start)
             $query = $query.Replace('let perfSamples = Perf', "let perfSamples = $detailPerfSource").Replace('let insightsSamples = InsightsMetrics', "let insightsSamples = $detailInsightsSource")
-            $query = $query.Replace('{SCStorageDetailMachine}', $machine).Replace('{SCStorageDetailSource}', $scope)
+            $query = $query.Replace('{SCStorageDetailMachine}', $machine)
             $rows = @(Invoke-StorageFixture -Query $query)
             $latencyChart = $chart.name.EndsWith('latency')
             $metric = if ($latencyChart) { 'Avg Latency (ms)' } else { 'Avg IOPS' }
             $expected = @{}
-            if ($scenario -eq 'CSV') { $expected['Volume01'] = $(if ($latencyChart) { 3 } else { 30 }); $expected['Volume02'] = $(if ($latencyChart) { 6 } else { 60 }) }
-            elseif ($scenario -eq 'Logical disks') {
+            if ($scenario -eq 'selected-source' -and -not $logicalChart) { $expected['Volume01'] = $(if ($latencyChart) { 3 } else { 30 }); $expected['Volume02'] = $(if ($latencyChart) { 6 } else { 60 }) }
+            elseif ($scenario -eq 'selected-source') {
                 $expected['C:'] = $(if ($latencyChart) { 20 } else { 100 }); $expected['D:'] = $(if ($latencyChart) { 30 } else { 200 })
                 if (-not $latencyChart) { $expected['E:'] = 120 }
-            } elseif ($scenario -eq 'zero') { $expected['Volume01'] = 0 }
-            elseif ($scenario -eq 'duplicates') { $expected['Volume01'] = $(if ($latencyChart) { 3 } else { 30 }) }
+            } elseif ($scenario -eq 'zero') { $expected[$(if ($logicalChart) { 'C:' } else { 'Volume01' })] = 0 }
+            elseif ($scenario -eq 'duplicates') { $expected[$(if ($logicalChart) { 'C:' } else { 'Volume01' })] = $(if ($latencyChart) { 3 } else { 30 }) }
             if ($rows.Count -ne $expected.Count) { throw "Storage detail row count failed: $($chart.name) / $scenario (expected $($expected.Count), got $($rows.Count))." }
             foreach ($row in $rows) {
                 if (-not $expected.ContainsKey([string]$row.Volume) -or $row.$metric -ne $expected[[string]$row.Volume]) { throw "Storage detail values failed: $($chart.name) / $scenario." }
@@ -462,6 +474,8 @@ function Test-NodeCapacity {
     try {
         Assert-Capacity $true 'dcr-discovery-live-arg-query'
         $liveRows = @(Invoke-CapacityQuery -NodeMetadata @($metadata))
+        $portalAllRows = @(Invoke-CapacityQuery -NodeMetadata @($metadata) -HostFilter "'value::all'" -ClusterFilter "'value::all'")
+        Assert-Capacity ($portalAllRows.Count -eq $liveRows.Count -and $portalAllRows.Count -gt 0) 'node-capacity-live-portal-all-selectors'
         $knownRows = @($liveRows | Where-Object { $null -ne $_.'V:P CPU Ratio' })
         Assert-Capacity ($liveRows.Count -gt 0 -and $knownRows.Count -gt 0) 'node-capacity-live-ratios' $knownRows.Count
         $cpuRows = @($liveRows | Where-Object { $null -ne $_.'Avg CPU % (15 min)' })
@@ -539,6 +553,12 @@ function Test-NodeCapacity {
             }
         }
         $fixtureRows = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray())
+        foreach ($selection in @('host', 'instance', 'both')) {
+            $hostSelection = if ($selection -in @('host', 'both')) { "'value::all'" } else { "'*'" }
+            $instanceSelection = if ($selection -in @('instance', 'both')) { "'value::all'" } else { "'*'" }
+            $allRows = @(Invoke-CapacityQuery -NodeMetadata $fixtureNodes.ToArray() -Samples $fixtureSamples.ToArray() -HostFilter $hostSelection -ClusterFilter $instanceSelection)
+            Assert-Capacity ($allRows.Count -eq $fixtureRows.Count -and @($allRows | Where-Object Machine -EQ 'missing').Count -eq 1) "node-capacity-portal-all-$selection-retains-inventory"
+        }
         $byMachine = @{}
         foreach ($row in $fixtureRows) { $byMachine[$row.Machine] = $row }
         Assert-Capacity ($fixtureRows.Count -eq $scenarios.Count) 'node-capacity-fixture-node-preservation'
@@ -657,17 +677,23 @@ function Test-NodeCapacity {
             @{ id = 'nested-host'; name = 'nested.example' },
             @{ id = 'short-collision-a'; name = 'collision.a.example' },
             @{ id = 'short-collision-b'; name = 'collision.b.example' },
-            @{ id = 'reported-collision'; name = 'repeated' }
+            @{ id = 'reported-collision'; name = 'repeated' },
+            @{ id = 'mixed-a'; name = 'mixed.a.example' },
+            @{ id = 'mixed-b'; name = 'mixed.b.example' },
+            @{ id = 'duplicate-report'; name = 'duplicate.example' }
         ) | ForEach-Object {
             $_.type = 'microsoft.hybridcompute/machines'; $_.subscriptionId = 'example'; $_.resourceGroup = 'group-a'
             $_.properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Virtual Machine' } }
             $_
         }
-        $discoveryResources += @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'node01.host.example' }, @{ name = 'nested' }, @{ name = 'collision' }, @{ name = 'repeated.a.example' }, @{ name = 'repeated.b.example' }) } } }
+        $discoveryResources += @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'node01.host.example' }, @{ name = 'nested' }, @{ name = 'collision' }, @{ name = 'repeated.a.example' }, @{ name = 'repeated.b.example' }, @{ name = 'mixed.a.example' }, @{ name = 'duplicate.example' }, @{ name = 'duplicate.example' }) } } }
+        $discoveryResources += @{ id = 'cluster-b'; name = 'cluster-b'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'mixed' }) } } }
         $discoveryRows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $discoveryResources -Discovery)
         $eligible = @($discoveryRows | Where-Object membershipCount -EQ 1)
-        Assert-Capacity ($discoveryRows.Count -eq 6 -and $eligible.Count -eq 2 -and @($eligible | Where-Object id -EQ 'qualified-host').Count -eq 1 -and @($eligible | Where-Object id -EQ 'nested-host').Count -eq 1) 'dcr-discovery-qualified-collision-and-nested-hosts'
+        Assert-Capacity ($discoveryRows.Count -eq 9 -and $eligible.Count -eq 2 -and @($eligible | Where-Object id -EQ 'qualified-host').Count -eq 1 -and @($eligible | Where-Object id -EQ 'nested-host').Count -eq 1) 'dcr-discovery-qualified-collision-and-nested-hosts'
         Assert-Capacity (@($discoveryRows | Where-Object { $_.id -in @('short-collision-a', 'short-collision-b', 'reported-collision', 'qualified-guest') -and $_.membershipCount -eq 0 }).Count -eq 4) 'dcr-discovery-ambiguous-matches-excluded'
+        Assert-Capacity (@($discoveryRows | Where-Object { $_.id -in @('mixed-a', 'mixed-b') -and $_.membershipCount -eq 0 }).Count -eq 2) 'dcr-discovery-mixed-name-ambiguity-preserved'
+        Assert-Capacity (@($discoveryRows | Where-Object { $_.id -eq 'duplicate-report' -and $_.membershipCount -eq 0 }).Count -eq 1) 'dcr-discovery-duplicate-reported-rows-excluded'
     } finally {
         $accessToken = $null
     }
@@ -797,7 +823,7 @@ resources
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
         $query = $query.Replace('{SingleCluster}', [string]$selectedCluster.armId)
-        $query = $query.Replace('{SCStorageDetailMachine}', $detailMachine).Replace('{SCStorageDetailSource}', 'CSV')
+        $query = $query.Replace('{SCStorageDetailMachine}', $detailMachine)
         $query = $query.Replace('{ForecastTimeRange:start}', "ago($($Days)d)").Replace('{ForecastTimeRange:end}', 'now()')
         $query = $query.Replace('{ForecastHorizonDays}', '7').Replace('{WarningThreshold}', '80').Replace('{CriticalThreshold}', '90')
         $query = $query.Replace('{ForecastResourceFilter}', 'value::all').Replace('{ForecastClusterFilter}', 'value::all')
@@ -828,6 +854,19 @@ resources
         }
 
         [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed' }
+        if ($item.content.query -match '\{Cluster(?:RG|Node)Map\}') {
+            foreach ($mapValue in @('', '[]')) {
+                $emptyQuery = $query.Replace("parse_json('$clusterRGJson')", "parse_json('$mapValue')").Replace("parse_json('$clusterNodeJson')", "parse_json('$mapValue')")
+                if ($emptyQuery -eq $query) { throw "Empty-map fixture did not replace a mapping: $($spec.name)" }
+                $emptyResponse = Invoke-RestMethod -Method Post `
+                    -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
+                    -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
+                    -Body (@{ query = $emptyQuery; timespan = "P$($Days)D" } | ConvertTo-Json -Depth 10)
+                if ($emptyResponse.error) { throw "Empty-map query returned a partial error: $($spec.name)" }
+                $suffix = if ($mapValue -eq '') { 'unset-maps' } else { 'empty-array-maps' }
+                [pscustomobject]@{ Query = "$($spec.name)-$suffix"; Rows = @($emptyResponse.tables[0].rows).Count; Result = 'Passed' }
+            }
+        }
     }
     $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken)
     }

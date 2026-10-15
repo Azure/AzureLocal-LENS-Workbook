@@ -330,7 +330,7 @@
                   "id": "tab-multi",
                   "cellValue": "CapacitySection",
                   "linkTarget": "parameter",
-                  "linkLabel": "🌍 Multi-cluster",
+                  "linkLabel": "🌍 Multi-instance",
                   "subTarget": "multi",
                   "style": "link"
                 },
@@ -338,7 +338,7 @@
                   "id": "tab-single",
                   "cellValue": "CapacitySection",
                   "linkTarget": "parameter",
-                  "linkLabel": "🔍 Single cluster",
+                  "linkLabel": "🔍 Single instance",
                   "subTarget": "single",
                   "style": "link"
                 },

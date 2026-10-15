@@ -1091,6 +1091,14 @@ testSuite('KQL Query Robustness', () => {
     }), 'Each Overview storage coverage tile is filtered and titled for its own chart source');
     const singleSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook'), 'utf8'));
     const singleItems = singleSource.items.find(item => item.name === 'cap-single-section').content.items;
+    const vmPerformanceHeader = singleItems.findIndex(item => item.name === 'sc-hyperv-performance-header');
+    const vmPerformanceHelp = singleItems.find(item => item.name === 'sc-hyperv-performance-help');
+    assert(vmPerformanceHeader >= 0 && singleItems[vmPerformanceHeader].content.json.includes('VHD/VHDX') &&
+        vmPerformanceHeader < singleItems.findIndex(item => item.name === 'sc-hyperv-chart-cpu') &&
+        vmPerformanceHelp?.content.style === 'toolbar' && vmPerformanceHelp.content.links.length === 6 &&
+        vmPerformanceHelp.content.links.every(link => link.icon === 'Info' && link.postText.length > 80 && link.linkTarget === 'Url') &&
+        singleItems.filter(item => item.name.startsWith('sc-hyperv-chart-')).length === 6,
+        'Six VM charts have a section title, virtual-disk context and native metric information tooltips');
     const singleRows = singleItems.slice(singleItems.findIndex(item => item.name === 'sc-cpu-usage-machine'),
         singleItems.findIndex(item => item.name === 'sc-storage-bar-header'));
     assert(JSON.stringify(singleRows.map(item => item.name)) === JSON.stringify([
@@ -1101,32 +1109,38 @@ testSuite('KQL Query Robustness', () => {
     'Single Cluster has matching three-column node, CSV and logical-disk rows');
     const detailFilters = singleItems.find(item => item.name === 'sc-storage-detail-filters')?.content.parameters;
     const detailMachine = detailFilters?.find(parameter => parameter.name === 'SCStorageDetailMachine');
-    const detailSource = detailFilters?.find(parameter => parameter.name === 'SCStorageDetailSource');
-    const details = ['sc-storage-detail-latency', 'sc-storage-detail-iops'].map(name => singleItems.find(item => item.name === name));
+    const details = ['sc-storage-detail-latency', 'sc-storage-detail-iops', 'sc-storage-detail-logical-latency', 'sc-storage-detail-logical-iops']
+        .map(name => singleItems.find(item => item.name === name));
     assert(detailMachine?.isRequired && !detailMachine.multiSelect && detailMachine.timeContextFromParameter === 'NodeTrendsTimeRange' &&
         detailMachine.query.includes("armId =~ '{SingleCluster}'") && detailMachine.query.includes('selected = row_number() == 1') &&
-        detailSource?.value === 'CSV' && JSON.parse(detailSource.jsonData).map(option => option.value).join(',') === 'CSV,Logical disks',
-        'Storage detail selectors choose one cluster-scoped machine and one storage source');
+        detailFilters.length === 1 && !JSON.stringify(singleSource).includes('SCStorageDetailSource'),
+        'Storage detail selects one cluster-scoped machine without a storage-source filter');
     assert(details.every(item => item?.customWidth === '50' && item.content.chartSettings.group === 'Volume' &&
         item.content.timeContextFromParameter === 'NodeTrendsTimeRange' && item.content.showAnalytics &&
-        item.content.query.includes("nodeName == tolower('{SCStorageDetailMachine}') and StorageScope == '{SCStorageDetailSource}'") &&
-        item.content.query.includes('Volume = InstanceName') && item.content.query.includes('let step = 1d;')),
-        'Storage detail charts retain individual volumes with settled daily metrics and local filters');
+        item.content.query.includes(`nodeName == tolower('{SCStorageDetailMachine}') and StorageScope == '${item.name.includes('-logical-') ? 'Logical disks' : 'CSV'}'`) &&
+        item.content.title.startsWith(item.name.includes('-logical-') ? 'Logical Disk -' : 'Cluster Shared Volumes -') &&
+        item.content.query.includes('Volume = InstanceName') && item.content.query.includes('let step = 1d;')) &&
+        singleItems.find(item => item.name === 'sc-storage-detail-header').content.json.includes('Cluster Shared Volumes - Per Machine Detailed Analysis') &&
+        singleItems.find(item => item.name === 'sc-storage-detail-logical-header').content.json.includes('Logical Disk - Per Machine Detailed Analysis'),
+        'Four storage detail charts retain per-volume daily metrics in separate fixed-source CSV and logical-disk rows');
     assert(details.every(item => item?.content.query.includes('arg_max(TimeGenerated, CounterValue)') &&
         item.content.query.includes('CounterValue >= 0') && item.content.query.includes('InstanceName !~ "_Total"') &&
         !item.content.query.includes('let hostSamples =') && item.content.query.includes('by nodeName, InstanceName, StorageScope, TimeGenerated')) &&
-        details[0].content.query.includes('avg(CounterValue) * 1000.0') &&
-        details[1].content.query.includes('arg_min(method, IOPS)') && details[1].content.query.includes('Directions == iff(StorageScope == "CSV", 2, 1)'),
+        details.filter(item => item.name.endsWith('latency')).every(item => item.content.query.includes('avg(CounterValue) * 1000.0')) &&
+        details.filter(item => item.name.endsWith('iops')).every(item => item.content.query.includes('arg_min(method, IOPS)') &&
+            item.content.query.includes('Directions == iff(StorageScope == "CSV", 2, 1)')),
         'Storage detail preserves units, valid zeroes, counter pairing and per-volume source precedence');
     assert(singleItems.filter(item => item.type === 3 && !item.name.startsWith('sc-storage-detail-'))
         .every(item => !item.content.query.includes('{SCStorageDetailMachine}') && !item.content.query.includes('{SCStorageDetailSource}')) &&
         singleItems.findIndex(item => item.name === 'sc-storage-detail-header') > singleItems.findIndex(item => item.name === 'single-cluster-storage-pool-trend - Copy'),
         'Storage detail selectors do not affect the existing comparison charts');
-    const capacityNav = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity/Capacity.workbook'), 'utf8')).items)
-        .find(item => item.name === 'cap-section-tabs').content.links;
+    const capacityItems = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity/Capacity.workbook'), 'utf8')).items);
+    const capacityNav = capacityItems.find(item => item.name === 'cap-section-tabs').content.links;
     assert(capacityNav.map(link => link.subTarget).join(',') === 'overview,multi,single,hyperv' &&
-        capacityNav[3].linkLabel.endsWith('Hyper-V'),
-        'Capacity navigation follows fleet-to-machine flow and labels the expanded Hyper-V tab');
+        capacityNav[1].linkLabel.endsWith('Multi-instance') && capacityNav[2].linkLabel.endsWith('Single instance') &&
+        capacityNav[3].linkLabel.endsWith('Hyper-V') &&
+        capacityNav.every(link => capacityItems.some(item => item.content?.json?.includes(`**${link.linkLabel}**`))),
+        'Capacity navigation follows fleet-to-machine flow and help uses the visible tab labels');
     const multiSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook'), 'utf8'));
     const multiItems = multiSource.items.find(item => item.name === 'cap-multi-section').content.items;
     const multiRows = multiItems.slice(multiItems.findIndex(item => item.name === 'mc-storage-latency'));
@@ -1186,9 +1200,9 @@ testSuite('KQL Query Robustness', () => {
     }
 
     if (liveQuerySpecs !== null) {
-        assert(liveQuerySpecs.length === 31,
-            'Live integration manifest covers 31 Capacity storage, detail, coverage, forecast and network queries',
-            '31 queries', `${liveQuerySpecs.length} queries`);
+        assert(liveQuerySpecs.length === 51,
+            'Live integration manifest covers 51 Capacity performance, detail, coverage, forecast and VM queries',
+            '51 queries', `${liveQuerySpecs.length} queries`);
 
         const unresolvedLiveQuerySpecs = [];
         liveQuerySpecs.forEach(spec => {
@@ -2459,8 +2473,8 @@ testSuite('Hyper-V Node Capacity', () => {
         clusterFilter.query.includes('value = tolower(tostring(mapping.clusterId))') &&
         clusterFilter.query.includes('label = tostring(mapping.cluster)') &&
         query.includes('let clusters = dynamic([{HyperVNodeClusterFilter}])') &&
-        query.includes("| where set_has_element(clusters, '*') or set_has_element(clusters, tolower(ClusterId))") &&
-        query.indexOf("| where set_has_element(clusters, '*')") > query.indexOf('let collisions =') &&
+        query.includes("| where (set_has_element(clusters, '*') or set_has_element(clusters, 'value::all')) or set_has_element(clusters, tolower(ClusterId))") &&
+        query.indexOf("| where (set_has_element(clusters, '*')") > query.indexOf('let collisions =') &&
         items.filter(item => item.type === 3 && item.name !== 'hyperv-node-capacity')
             .every(item => !item.content.query?.includes('{HyperVNodeClusterFilter}')),
         'Node hardware lookup excludes guests and independently filters scoped cluster IDs', 'physical hosts and node-only cluster selection', metadata.name);
@@ -2475,7 +2489,7 @@ testSuite('Hyper-V Node Capacity', () => {
         selectedHosts.query.includes('HostId = tolower(_ResourceId)') &&
         selectedHosts.query.includes('summarize value = tostring(make_set(HostId))') &&
         query.includes('let selectedHostIds = dynamic({HyperVNodeSelectedHostIds})') &&
-        query.includes("set_has_element(hosts, '*') or set_has_element(selectedHostIds, HostId)") &&
+        query.includes("(set_has_element(hosts, '*') or set_has_element(hosts, 'value::all')) or set_has_element(selectedHostIds, HostId)") &&
         !query.includes('hostShortNames') && !query.includes('InventoryMatches'),
         'Node host filtering resolves historical names to resource IDs without short-name fallback', 'historical resource identity and fixed metric window', selectedHosts?.name);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
@@ -2496,7 +2510,7 @@ testSuite('Hyper-V Node Capacity', () => {
         query.includes('AggregateCount != 1') && query.includes('UnknownCount > 0') && query.includes('array_length(VcpuSet) == 0'),
         'Node vCPU snapshots deduplicate and reject partial or aggregate-only samples', 'conservative exact snapshots', true);
     assert(query.includes('by ClusterId, VMName') && query.includes('ConflictingNames > 0') &&
-        query.indexOf('let collisions =') < query.indexOf('| where set_has_element(hosts'),
+        query.indexOf('let collisions =') < query.indexOf('| where (set_has_element(hosts'),
         'Duplicate VM names are checked per cluster before host filtering', 'cluster-scoped collision detection', true);
     const cpuColumns = ['Avg CPU % (15 min)', 'Avg CPU Free %'];
     assert(query.includes("ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total'") &&
@@ -2505,7 +2519,7 @@ testSuite('Hyper-V Node Capacity', () => {
         query.includes("['Avg CPU Free %'] = round(100.0 - AvgCpu, 1)") &&
         cpuColumns.every(column => {
             const formatter = table.gridSettings.formatters.find(candidate => candidate.columnMatch === column);
-            return usesNeutralText(formatter) && formatter.numberFormat?.unit === 1 &&
+            return (column === 'Avg CPU Free %' ? usesNeutralText(formatter) : formatter.formatOptions?.thresholdsOptions === 'icons') && formatter.numberFormat?.unit === 1 &&
                 formatter.numberFormat.options.style === 'decimal' &&
                 formatter.numberFormat.options.maximumFractionDigits === 1;
         }),
@@ -2656,6 +2670,7 @@ testSuite('Azure Local Instance Display Naming', () => {
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
 });
 testSuite('Capacity shared-map parameter expansion', () => {
+    const liveQueries = new Set(JSON.parse(fs.readFileSync(path.resolve(__dirname, 'live-test-queries.json'), 'utf8')).queries.map(spec => `${spec.file}:${spec.name}`));
     for (const tab of ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster']) {
         const book = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
         const queries = collectAllItems(book.items).filter(item => typeof item.content?.query === 'string' &&
@@ -2663,11 +2678,35 @@ testSuite('Capacity shared-map parameter expansion', () => {
         const safe = queries.length >= 6 && queries.every(item => {
             const query = item.content.query;
             const empty = query.replaceAll('{ClusterRGMap}', '').replaceAll('{ClusterNodeMap}', '');
-            return !/dynamic\(\s*\)/.test(empty) && ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
+            return liveQueries.has(`workbooks/${tab}/${tab}.workbook:${item.name}`) && !/dynamic\(\s*\)/.test(empty) && ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
                 !query.includes(`{${parameter}}`) || query.includes(`parse_json('{${parameter}}')`));
         });
         assert(safe, `${tab} safely parses shared maps without emitting dynamic() for unset values`);
     }
+});
+testSuite('Capacity restrained metric styling', () => {
+    const loadItems = tab => collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8')).items);
+    const forecast = loadItems('Capacity-MultiCluster').find(item => item.name === 'node-exhaustion-forecast-table').content;
+    assert(forecast.gridSettings.labelSettings.some(label => label.columnId === 'Current Avg %%' && label.label === 'Current Avg %') &&
+        forecast.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Current Avg %%' && formatter.formatOptions?.thresholdsOptions === 'icons'),
+        'Forecast displays a single percent symbol and uses icons for its actual metric field');
+    for (const [tab, name] of [['Capacity-SingleCluster', 'sc-hyperv-inventory'], ['Capacity-HyperV', 'hyperv-vm-inventory']]) {
+        const formatters = loadItems(tab).find(item => item.name === name).content.gridSettings.formatters;
+        const cpu = formatters.find(formatter => formatter.columnMatch === 'Avg CPU %');
+        const memory = formatters.find(formatter => formatter.columnMatch === 'Avg Memory %');
+        const count = formatters.find(formatter => formatter.columnMatch === 'vCPUs (observed)');
+        assert(cpu?.formatOptions?.thresholdsOptions === 'icons' && memory?.formatOptions?.thresholdsOptions === 'icons' &&
+            memory.formatOptions.thresholdsGrid[0].thresholdValue === '100' && count?.numberFormat?.unit === 0 &&
+            count.formatOptions.thresholdsGrid.every(threshold => threshold.representation === null),
+            `${tab} uses compact percentage icons and neutral observed-vCPU counts`);
+    }
+});
+testSuite('Hyper-V portal All selection', () => {
+    const items = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-HyperV/Capacity-HyperV.workbook'), 'utf8')).items);
+    const table = items.find(item => item.name === 'hyperv-node-capacity').content;
+    assert(table.query.includes("set_has_element(hosts, 'value::all')") && table.query.includes("set_has_element(clusters, 'value::all')") &&
+        table.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Avg CPU % (15 min)' && formatter.formatOptions?.thresholdsOptions === 'icons'),
+        'Machine table accepts the dropdown All token and uses compact CPU icons');
 });
 console.log(`\n========================================`);
 console.log(` Test Results: ${passCount}/${totalCount} passed, ${failCount} failed`);

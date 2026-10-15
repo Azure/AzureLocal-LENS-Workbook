@@ -65,12 +65,12 @@ resources
         | project arcId = tolower(id), arcName, nodeKey
     ) on nodeKey
     | where arcName == reportedName or indexof(arcName, '.') < 0 or indexof(reportedName, '.') < 0
-    | summarize matchingHostIds = make_set(arcId), clusterIds = make_set(clusterId), clusters = make_set(clusterName) by nodeKey, reportedName
-    | where array_length(matchingHostIds) == 1
+    | summarize matchingHostIds = make_set(arcId), reportedMatches = count(), clusterIds = make_set(clusterId), clusters = make_set(clusterName) by nodeKey, reportedName
+    | extend matchingHostCount = array_length(matchingHostIds)
     | mv-expand id = matchingHostIds to typeof(string)
     | extend clusterCount = array_length(clusterIds)
-    | summarize reportedNodeCount = count(), membershipCount = max(clusterCount), clusters = make_set(clusters) by id
-    | where reportedNodeCount == 1
+    | summarize reportedNodeCount = count(), matchingHostCount = max(matchingHostCount), reportedMatches = max(reportedMatches), membershipCount = max(clusterCount), clusters = make_set(clusters) by id
+    | where reportedNodeCount == 1 and matchingHostCount == 1 and reportedMatches == 1
 ) on id
 | project id, name, resourceGroup, location, model, clusters, membershipCount = coalesce(membershipCount, 0)
 | order by id asc

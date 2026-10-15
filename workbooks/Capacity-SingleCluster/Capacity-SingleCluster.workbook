@@ -1778,11 +1778,29 @@
                   },
                   {
                     "columnMatch": "AvgCPU",
-                    "formatter": 8,
+                    "formatter": 18,
                     "formatOptions": {
-                      "min": 0,
-                      "max": 100,
-                      "palette": "greenRed"
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
                     },
                     "numberFormat": {
                       "unit": 1,
@@ -1807,11 +1825,29 @@
                   },
                   {
                     "columnMatch": "AvgMemory",
-                    "formatter": 8,
+                    "formatter": 18,
                     "formatOptions": {
-                      "min": 0,
-                      "max": 100,
-                      "palette": "greenRed"
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
                     },
                     "numberFormat": {
                       "unit": 1,
@@ -1961,7 +1997,10 @@
                   },
                   {
                     "columnMatch": "Physical Host",
-                    "formatter": 1
+                    "formatter": 1,
+                    "tooltipFormat": {
+                      "tooltip": "Physical Machine is the last reporting Azure Local machine in the selected time range. A migrated VM appears once, on its last reporting machine."
+                    }
                   },
                   {
                     "columnMatch": "vCPUs (observed)",
@@ -2068,6 +2107,12 @@
                       "showUtcTime": true,
                       "formatName": "shortDateTimePattern"
                     }
+                  }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Physical Host",
+                    "label": "Physical Machine"
                   }
                 ],
                 "rowLimit": 5000,

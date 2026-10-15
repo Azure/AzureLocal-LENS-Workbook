@@ -371,19 +371,19 @@ Monitor virtual machines running on Azure Local instances:
 
 ### ☸️ AKS Arc Clusters
 Monitor AKS Arc clusters running on Azure Local:
-- Summary tiles showing total instances, connected/offline, and provisioning state
+- Summary tiles showing total clusters, connected/offline, and provisioning state
 - Connectivity status distribution pie chart
 - Kubernetes version distribution pie chart
 - Provisioning state pie chart
-- Bar chart showing instance deployments over time (configurable 3-24 months)
+- Bar chart showing cluster deployments over time (configurable 3-24 months)
 - Complete list of all AKS Arc clusters with details including:
-  - Machine count and total core count
+  - Node count and total core count
   - Kubernetes and agent versions
   - Distribution type
   - Last connectivity time
   - Certificate expiration date
-  - Instance creation date
-- Certificate expiration warning table showing instances with certificates expiring within 30 days
+  - Cluster creation date
+- Certificate expiration warning table showing clusters with certificates expiring within 30 days
 - **AKS Arc Cluster Extensions**:
   - Filter by extension status (Succeeded, Failed, Creating, Updating, Deleting)
   - Filter by extension name

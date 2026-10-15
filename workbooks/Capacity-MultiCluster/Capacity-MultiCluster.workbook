@@ -424,7 +424,7 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "title": "Predictive Resource Exhaustion Forecast by Instance - CSV Storage",
+              "title": "Predictive Resource Exhaustion Forecast by Instance",
               "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -436,30 +436,7 @@
                 "formatters": [
                   {
                     "columnMatch": "Current Avg %%",
-                    "formatter": 18,
-                    "formatOptions": {
-                      "thresholdsOptions": "icons",
-                      "thresholdsGrid": [
-                        {
-                          "operator": ">=",
-                          "thresholdValue": "{CriticalThreshold}",
-                          "representation": "4",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": ">=",
-                          "thresholdValue": "{WarningThreshold}",
-                          "representation": "2",
-                          "text": "{0}{1}"
-                        },
-                        {
-                          "operator": "Default",
-                          "thresholdValue": null,
-                          "representation": "success",
-                          "text": "{0}{1}"
-                        }
-                      ]
-                    },
+                    "formatter": 0,
                     "numberFormat": {
                       "unit": 1,
                       "options": {
@@ -477,9 +454,30 @@
                   },
                   {
                     "columnMatch": "Trend",
-                    "formatter": 1,
+                    "formatter": 18,
                     "formatOptions": {
-                      "customColumnWidthSetting": "120px"
+                      "customColumnWidthSetting": "120px",
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "==",
+                          "thresholdValue": "↑ Rising",
+                          "representation": "orange",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "==",
+                          "thresholdValue": "↓ Declining",
+                          "representation": "green",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
                     }
                   }
                 ],

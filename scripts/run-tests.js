@@ -2652,12 +2652,16 @@ testSuite('Azure Local Instance Display Naming', () => {
         vms.find(item => item.name === 'vm-top-clusters-pie')?.content.query.includes("' instances)'"),
         'Query-generated tile, chart, legend and statistics captions use instances and machines');
     const capacity = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-Overview/Capacity-Overview.workbook'), 'utf8')).items);
-    assert(capacity.find(item => item.name === 'node-storage-usage-count')?.content.query.includes('Label = "CSV clusters:"') &&
+    assert(['node-storage-usage-count', 'node-logical-storage-usage-count'].every(name => {
+        const query = capacity.find(item => item.name === name)?.content.query;
+        return query?.includes('Label = "CSV instances:"') && query.includes('Nodes = dcount(ClusterArmId)') && !query.includes('CSV clusters:');
+    }) &&
+        capacity.find(item => item.name === 'node-storage-usage-count')?.content.query.includes('where Label == "CSV instances:"') &&
         capacity.find(item => item.name === 'node-storage-latency-trend')?.content.query.includes('ObjectName == "Cluster CSVFS"') &&
         capacity.find(item => item.name === 'dcr-setup-readiness')?.content.json.includes('[💾 Cluster Shared Volumes]') &&
         health.find(item => item.name === 'update-status-by-health-state-matrix')?.content.gridSettings.formatters.some(formatter =>
             formatter.formatOptions?.thresholdsGrid?.some(threshold => threshold.thresholdValue === 'All Clusters' && threshold.text === '📊 All instances (total)')),
-        'CSV cluster wording and technical names remain intact while health total captions use instances');
+        'CSV capacity counts instance identities while CSV technical names remain intact and health total captions use instances');
     const readme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8').split('## Appendix: Previous Versions Change Log')[0];
     const contributing = fs.readFileSync(path.resolve(__dirname, '../CONTRIBUTING.md'), 'utf8');
     const dcrGuide = fs.readFileSync(path.resolve(__dirname, '../example-dcr-template/README.md'), 'utf8');
@@ -2687,18 +2691,32 @@ testSuite('Capacity shared-map parameter expansion', () => {
 testSuite('Capacity restrained metric styling', () => {
     const loadItems = tab => collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8')).items);
     const forecast = loadItems('Capacity-MultiCluster').find(item => item.name === 'node-exhaustion-forecast-table').content;
-    assert(forecast.gridSettings.labelSettings.some(label => label.columnId === 'Current Avg %%' && label.label === 'Current Avg %') &&
-        forecast.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Current Avg %%' && formatter.formatOptions?.thresholdsOptions === 'icons'),
-        'Forecast displays a single percent symbol and uses icons for its actual metric field');
+    const trend = forecast.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Trend');
+    assert(forecast.title === 'Predictive Resource Exhaustion Forecast by Instance' &&
+        forecast.gridSettings.labelSettings.some(label => label.columnId === 'Current Avg %%' && label.label === 'Current Avg %') &&
+        forecast.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Current Avg %%' && formatter.formatter === 0 && formatter.numberFormat?.unit === 1) &&
+        forecast.gridSettings.formatters.filter(formatter => formatter.columnMatch !== 'Trend').every(formatter => ![8, 18].includes(formatter.formatter)) &&
+        trend?.formatter === 18 && trend.formatOptions.thresholdsOptions === 'colors' &&
+        JSON.stringify(trend.formatOptions.thresholdsGrid.map(threshold => [threshold.operator, threshold.thresholdValue, threshold.representation])) ===
+        JSON.stringify([['==', '↑ Rising', 'orange'], ['==', '↓ Declining', 'green'], ['Default', null, null]]),
+        'Forecast title covers all resources, displays one percent symbol and reserves colour coding for Trend');
     for (const [tab, name] of [['Capacity-SingleCluster', 'sc-hyperv-inventory'], ['Capacity-HyperV', 'hyperv-vm-inventory']]) {
-        const formatters = loadItems(tab).find(item => item.name === name).content.gridSettings.formatters;
+        const grid = loadItems(tab).find(item => item.name === name).content.gridSettings;
+        const formatters = grid.formatters;
         const cpu = formatters.find(formatter => formatter.columnMatch === 'Avg CPU %');
         const memory = formatters.find(formatter => formatter.columnMatch === 'Avg Memory %');
         const count = formatters.find(formatter => formatter.columnMatch === 'vCPUs (observed)');
+        const physicalMachine = formatters.find(formatter => formatter.columnMatch === 'Physical Host');
+        const workloadUsesIcons = tab !== 'Capacity-SingleCluster' || ['AvgCPU', 'AvgMemory'].every(column => {
+            const formatter = loadItems(tab).find(item => item.name === 'sc-vms-table').content.gridSettings.formatters.find(entry => entry.columnMatch === column);
+            return formatter?.formatter === 18 && formatter.formatOptions?.thresholdsOptions === 'icons' && formatter.numberFormat?.unit === 1;
+        });
         assert(cpu?.formatOptions?.thresholdsOptions === 'icons' && memory?.formatOptions?.thresholdsOptions === 'icons' &&
             memory.formatOptions.thresholdsGrid[0].thresholdValue === '100' && count?.numberFormat?.unit === 0 &&
-            count.formatOptions.thresholdsGrid.every(threshold => threshold.representation === null),
-            `${tab} uses compact percentage icons and neutral observed-vCPU counts`);
+            count.formatOptions.thresholdsGrid.every(threshold => threshold.representation === null) && workloadUsesIcons &&
+            grid.labelSettings.some(label => label.columnId === 'Physical Host' && label.label === 'Physical Machine') &&
+            physicalMachine?.tooltipFormat?.tooltip.includes('Physical Machine is the last reporting Azure Local machine'),
+            `${tab} uses compact percentage icons, neutral observed-vCPU counts and Physical Machine inventory labels with explanatory tooltips`);
     }
 });
 testSuite('Hyper-V portal All selection', () => {

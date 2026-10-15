@@ -2655,6 +2655,20 @@ testSuite('Azure Local Instance Display Naming', () => {
         dcrGuide.includes('14 **Hyper-V VM** counter paths'),
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
 });
+testSuite('Capacity shared-map parameter expansion', () => {
+    for (const tab of ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster']) {
+        const book = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
+        const queries = collectAllItems(book.items).filter(item => typeof item.content?.query === 'string' &&
+            /\{Cluster(?:RG|Node)Map\}/.test(item.content.query));
+        const safe = queries.length >= 6 && queries.every(item => {
+            const query = item.content.query;
+            const empty = query.replaceAll('{ClusterRGMap}', '').replaceAll('{ClusterNodeMap}', '');
+            return !/dynamic\(\s*\)/.test(empty) && ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
+                !query.includes(`{${parameter}}`) || query.includes(`parse_json('{${parameter}}')`));
+        });
+        assert(safe, `${tab} safely parses shared maps without emitting dynamic() for unset values`);
+    }
+});
 console.log(`\n========================================`);
 console.log(` Test Results: ${passCount}/${totalCount} passed, ${failCount} failed`);
 console.log(`========================================\n`);

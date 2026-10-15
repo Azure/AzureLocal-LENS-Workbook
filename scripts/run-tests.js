@@ -646,7 +646,7 @@ testSuite('Cross-Component Resources Validation', () => {
         'Workbook has items with crossComponentResources', '>0', itemsWithCCR.length);
 
     // All crossComponentResources should reference {Subscriptions} or a valid workspace parameter
-    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}', '{ForecastWorkspace}', '{AzureMonitorWorkspace}', '{HyperVLogAnalyticsWorkspace}'];
+    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}', '{ForecastWorkspace}', '{AzureMonitorWorkspace}'];
     const itemsRefValid = itemsWithCCR.filter(i =>
         i.content.crossComponentResources.some(r => validCCR.includes(r))
     );
@@ -656,11 +656,19 @@ testSuite('Cross-Component Resources Validation', () => {
 
     const workspaceParams = allParams.filter(param =>
         param.query && param.query.includes('microsoft.operationalinsights/workspaces'));
-    const expectedWorkspaceIds = ['machines-log-analytics-workspace-ov',
-        'machines-log-analytics-workspace-sc', 'forecast-workspace-param', 'hyperv-la-workspace'];
-    assert(expectedWorkspaceIds.every(id => workspaceParams.some(param => param.id === id)),
-        'All four Capacity workspace selectors are covered by the tag-filter regression guard',
-        expectedWorkspaceIds.join(', '), workspaceParams.map(param => param.id).join(', '));
+    const capacityGroup = allItems.find(item => item.name === 'capacity-tab-group');
+    const capacityChildren = capacityGroup.content.items;
+    const navigationIndex = capacityChildren.findIndex(item => item.name === 'cap-section-tabs');
+    const workspaceSelector = capacityChildren[navigationIndex + 1];
+    const capacityWorkspace = workspaceSelector?.content.parameters?.find(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
+    const embeddedWorkspaceParams = collectAllItems([capacityGroup]).flatMap(item => item.content?.parameters || [])
+        .filter(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
+    assert(workspaceSelector?.name === 'capacity-workspace-params' && !workspaceSelector.conditionalVisibility &&
+        embeddedWorkspaceParams.length === 1 && capacityWorkspace?.multiSelect === true &&
+        capacityWorkspace.defaultValue === 'value::all' && JSON.stringify(capacityWorkspace.value) === '["value::all"]' &&
+        capacityWorkspace.quote === "'" && capacityWorkspace.delimiter === ',' &&
+        workspaceParams.some(parameter => parameter.id === 'capacity-la-workspace'),
+        'Capacity has one persistent multi-select workspace selector immediately below navigation, defaulting to All');
 
     const taggedWorkspaceParams = workspaceParams.filter(param =>
         /\{ClusterTag(Name|Value)\}/.test(param.query));
@@ -680,12 +688,18 @@ testSuite('Cross-Component Resources Validation', () => {
         'Multi-cluster cluster selection retains both cluster-tag filters',
         'cluster tag name and value', forecastClusterParam?.query || 'missing');
 
-    const forecastWorkspaceParam = workspaceParams.find(param => param.id === 'forecast-workspace-param');
-    const singleWorkspaceParam = workspaceParams.find(param => param.id === 'machines-log-analytics-workspace-sc');
-    assert(Boolean(forecastWorkspaceParam && singleWorkspaceParam &&
-        forecastWorkspaceParam.query === singleWorkspaceParam.query),
-        'Multi-cluster and Single cluster discover the same workspaces',
-        singleWorkspaceParam?.query || 'missing', forecastWorkspaceParam?.query || 'missing');
+    const capacitySections = ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster', 'Capacity-HyperV'];
+    assert(capacitySections.every(tab => {
+        const section = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
+        const fallback = section.items[1].content.parameters.filter(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
+        const sectionItems = collectAllItems([section.items[2]]);
+        const logQueries = sectionItems.filter(item => typeof item.content?.query === 'string' &&
+            item.content.queryType === 0 && item.content.resourceType === 'microsoft.operationalinsights/workspaces');
+        return fallback.length === 1 && JSON.stringify(fallback[0]) === JSON.stringify(capacityWorkspace) &&
+            sectionItems.every(item => !(item.content?.parameters || []).some(parameter => /^(Machines|HyperV)LogAnalyticsWorkspace$/.test(parameter.name))) &&
+            logQueries.length > 0 && logQueries.every(item => item.content.crossComponentResources?.includes('{MachinesLogAnalyticsWorkspace}')) &&
+            !JSON.stringify(section).includes('HyperVLogAnalyticsWorkspace');
+    }), 'All four Capacity sections inherit the same workspace and retain identical standalone fallbacks without nested selector overrides');
 });
 
 // --- Resource Type References Validation ---
@@ -2484,7 +2498,7 @@ testSuite('Hyper-V Node Capacity', () => {
         'Node cluster labels distinguish matching names across resource groups and subscriptions', 'name, resource group and subscription in labels', clusterFilter.query);
     const selectedHosts = ratioParameters.find(parameter => parameter.name === 'HyperVNodeSelectedHostIds');
     assert(selectedHosts?.timeContextFromParameter === 'HyperVTrendsTimeRange' &&
-        selectedHosts.crossComponentResources.includes('{HyperVLogAnalyticsWorkspace}') &&
+        selectedHosts.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
         selectedHosts.query.includes('set_has_element(hosts, Computer)') &&
         selectedHosts.query.includes('HostId = tolower(_ResourceId)') &&
         selectedHosts.query.includes('summarize value = tostring(make_set(HostId))') &&
@@ -2692,14 +2706,18 @@ testSuite('Capacity restrained metric styling', () => {
     const loadItems = tab => collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8')).items);
     const forecast = loadItems('Capacity-MultiCluster').find(item => item.name === 'node-exhaustion-forecast-table').content;
     const trend = forecast.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Trend');
+    const exceeded = forecast.gridSettings.formatters.find(formatter => formatter.columnMatch === '^Days to (Warning|Critical)$');
     assert(forecast.title === 'Predictive Resource Exhaustion Forecast by Instance' &&
         forecast.gridSettings.labelSettings.some(label => label.columnId === 'Current Avg %%' && label.label === 'Current Avg %') &&
         forecast.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Current Avg %%' && formatter.formatter === 0 && formatter.numberFormat?.unit === 1) &&
-        forecast.gridSettings.formatters.filter(formatter => formatter.columnMatch !== 'Trend').every(formatter => ![8, 18].includes(formatter.formatter)) &&
+        forecast.gridSettings.formatters.filter(formatter => !['Trend', '^Days to (Warning|Critical)$'].includes(formatter.columnMatch)).every(formatter => ![8, 18].includes(formatter.formatter)) &&
+        exceeded?.formatter === 18 && exceeded.formatOptions.thresholdsOptions === 'colors' &&
+        JSON.stringify(exceeded.formatOptions.thresholdsGrid.map(threshold => [threshold.operator, threshold.thresholdValue, threshold.representation])) ===
+        JSON.stringify([['==', '⚠ Already exceeded', 'red'], ['==', '🚨 Already exceeded', 'red'], ['Default', null, null]]) &&
         trend?.formatter === 18 && trend.formatOptions.thresholdsOptions === 'colors' &&
         JSON.stringify(trend.formatOptions.thresholdsGrid.map(threshold => [threshold.operator, threshold.thresholdValue, threshold.representation])) ===
         JSON.stringify([['==', '↑ Rising', 'orange'], ['==', '↓ Declining', 'green'], ['Default', null, null]]),
-        'Forecast title covers all resources, displays one percent symbol and reserves colour coding for Trend');
+        'Forecast title covers all resources, displays one percent symbol and reserves colour coding for Trend and exceeded estimates');
     for (const [tab, name] of [['Capacity-SingleCluster', 'sc-hyperv-inventory'], ['Capacity-HyperV', 'hyperv-vm-inventory']]) {
         const grid = loadItems(tab).find(item => item.name === name).content.gridSettings;
         const formatters = grid.formatters;

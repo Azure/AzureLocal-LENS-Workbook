@@ -150,6 +150,8 @@ A high-level overview of your entire Azure Local estate, including:
 ### 🏗️ Capacity
 Centralized view of Azure Local instance utilization, capacity forecasting, and workload allocation. The four sub-tabs flow from **📋 Overview** to **🌍 Multi-instance**, **🔍 Single instance**, then **🖥️ Hyper-V**. Azure Local display headings use **Instance Name**, **Instance Count**, and **Affected Instances**; AKS retains cluster terminology. Internal query fields and resource identities are unchanged.
 
+One **Log Analytics Workspace** selector directly below the Capacity navigation scopes telemetry across all four views. Select one or more workspaces once; the selection stays in effect when switching views. **All** retains the existing subscription and resource-group workspace scope. Instance, machine, time-range and forecast controls remain local to each view. The **Azure Monitor Workspace** selector for Managed Prometheus remains separate. Independently opened Capacity sub-templates retain their own workspace selector.
+
 #### 📋 Overview sub-tab
 - **Instance Capacity Overview** table — one row per instance:
   - Physical Cores and Physical Memory (GB)

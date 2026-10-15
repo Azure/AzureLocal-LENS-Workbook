@@ -214,6 +214,35 @@
               "additionalResourceOptions": []
             },
             "value": "overview"
+          },
+          {
+            "id": "capacity-la-workspace",
+            "version": "KqlParameterItem/1.0",
+            "name": "MachinesLogAnalyticsWorkspace",
+            "label": "Log Analytics Workspace",
+            "type": 2,
+            "description": "Select one or more Log Analytics workspaces for all Capacity views. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "includeAll": true,
+            "defaultValue": "value::all",
+            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
           }
         ],
         "style": "pills",
@@ -299,32 +328,6 @@
                 "{Subscriptions}"
               ],
               "parameters": [
-                {
-                  "id": "hyperv-la-workspace",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "HyperVLogAnalyticsWorkspace",
-                  "label": "Log Analytics Workspace",
-                  "type": 2,
-                  "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local machines. Choose **All** to query every workspace in the selected subscriptions; if queries fail, narrow the selection to accessible workspaces that receive Hyper-V counters.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "includeAll": true,
-                  "defaultValue": "value::all",
-                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
                 {
                   "id": "hyperv-time-range",
                   "version": "KqlParameterItem/1.0",
@@ -426,7 +429,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -462,7 +465,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -498,7 +501,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -530,7 +533,7 @@
             "content": {
               "version": "KqlParameterItem/1.0",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "parameters": [
                 {
@@ -554,7 +557,7 @@
                   "queryType": 0,
                   "resourceType": "microsoft.operationalinsights/workspaces",
                   "crossComponentResources": [
-                    "{HyperVLogAnalyticsWorkspace}"
+                    "{MachinesLogAnalyticsWorkspace}"
                   ],
                   "timeContext": {
                     "durationMs": 0
@@ -572,7 +575,7 @@
                   "queryType": 0,
                   "resourceType": "microsoft.operationalinsights/workspaces",
                   "crossComponentResources": [
-                    "{HyperVLogAnalyticsWorkspace}"
+                    "{MachinesLogAnalyticsWorkspace}"
                   ],
                   "timeContext": {
                     "durationMs": 0
@@ -601,7 +604,7 @@
                   "queryType": 0,
                   "resourceType": "microsoft.operationalinsights/workspaces",
                   "crossComponentResources": [
-                    "{HyperVLogAnalyticsWorkspace}"
+                    "{MachinesLogAnalyticsWorkspace}"
                   ]
                 },
                 {
@@ -651,7 +654,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "timeContext": {
                 "durationMs": 3600000
@@ -943,7 +946,7 @@
             "content": {
               "version": "KqlParameterItem/1.0",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "parameters": [
                 {
@@ -1025,7 +1028,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "table",
               "gridSettings": {
@@ -1233,7 +1236,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)",
@@ -1276,7 +1279,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)",
@@ -1319,7 +1322,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)",
@@ -1362,7 +1365,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)",
@@ -1405,7 +1408,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)",
@@ -1448,7 +1451,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)",

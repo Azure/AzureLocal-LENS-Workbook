@@ -82,6 +82,8 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 
 The monolithic `AzureLocal-LENS-Workbook.json` MUST be committed alongside any source edit — CI runs `node scripts/build-monolithic.js --check` and fails the PR if it is out of sync.
 
+Capacity owns its shared `MachinesLogAnalyticsWorkspace` selector in `workbooks/Capacity/Capacity.workbook`, immediately after the sub-navigation. Each Capacity section keeps an identical fallback in `items[1]` (`cap-shared-params`), outside its section content group. The monolithic build drops that standalone block; gallery template groups merge matching parameter names into the parent selection. Keep all five definitions identical and do not add another workspace selector inside a section group. The Managed Prometheus `AzureMonitorWorkspace` parameter remains separate.
+
 ### Working with the Workbook JSON
 
 The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When making changes:

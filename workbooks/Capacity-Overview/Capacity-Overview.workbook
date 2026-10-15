@@ -228,6 +228,35 @@
             "isHiddenWhenLocked": true,
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "capacity-la-workspace",
+            "version": "KqlParameterItem/1.0",
+            "name": "MachinesLogAnalyticsWorkspace",
+            "label": "Log Analytics Workspace",
+            "type": 2,
+            "description": "Select one or more Log Analytics workspaces for all Capacity views. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "includeAll": true,
+            "defaultValue": "value::all",
+            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
           }
         ],
         "style": "pills",
@@ -867,35 +896,6 @@
                 "{Subscriptions}"
               ],
               "parameters": [
-                {
-                  "id": "machines-log-analytics-workspace-ov",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "MachinesLogAnalyticsWorkspace",
-                  "label": "Log Analytics Workspace",
-                  "type": 2,
-                  "description": "Select one or more Log Analytics workspaces collecting Azure Local machine performance data. Defaults to All.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "includeAll": true,
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "value": [
-                    "value::all"
-                  ],
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
                 {
                   "id": "node-trends-time-range-ov",
                   "version": "KqlParameterItem/1.0",

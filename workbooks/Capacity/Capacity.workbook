@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -307,7 +307,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Navigation:** The Capacity section is organised into four tabs below. Start with **📋 Overview** for a summary of cluster capacity and top resource usage, then use **🔍 Single cluster** to drill into a specific cluster and its Azure Local nodes for detailed capacity, storage and workload insights, **🌍 Multi-cluster** to compare trends and forecasts across your fleet, or **🖥️ Hyper-V VMs** for per-VM inventory and performance data sourced from Log Analytics."
+              "json": "ℹ️ **Navigation:** Start with **📋 Overview**, compare fleet trends and forecasts in **🌍 Multi-instance**, then drill into machines, storage and workloads in **🔍 Single instance**. Use **🖥️ Hyper-V** for Azure Local machine capacity, VM inventory and performance."
             },
             "name": "cap-instructions-text"
           },
@@ -327,14 +327,6 @@
                   "style": "link"
                 },
                 {
-                  "id": "tab-single",
-                  "cellValue": "CapacitySection",
-                  "linkTarget": "parameter",
-                  "linkLabel": "🔍 Single cluster",
-                  "subTarget": "single",
-                  "style": "link"
-                },
-                {
                   "id": "tab-multi",
                   "cellValue": "CapacitySection",
                   "linkTarget": "parameter",
@@ -343,10 +335,18 @@
                   "style": "link"
                 },
                 {
+                  "id": "tab-single",
+                  "cellValue": "CapacitySection",
+                  "linkTarget": "parameter",
+                  "linkLabel": "🔍 Single cluster",
+                  "subTarget": "single",
+                  "style": "link"
+                },
+                {
                   "id": "tab-hyperv",
                   "cellValue": "CapacitySection",
                   "linkTarget": "parameter",
-                  "linkLabel": "🖥️ Hyper-V VMs",
+                  "linkLabel": "🖥️ Hyper-V",
                   "subTarget": "hyperv",
                   "style": "link"
                 }

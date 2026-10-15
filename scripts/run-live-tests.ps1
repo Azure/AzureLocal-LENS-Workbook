@@ -124,6 +124,58 @@ function Test-StorageSources {
     $insightsJson = ConvertTo-Json -InputObject $insights.ToArray() -Depth 10 -Compress
     $insightsSource = "(print fixtureRow = dynamic($insightsJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Namespace=tostring(fixtureRow.Namespace), Name=tostring(fixtureRow.Name), Val=todouble(fixtureRow.Val), Tags=fixtureRow.Tags, _ResourceId=tostring(fixtureRow._ResourceId))"
     $fixtureHeader = 'let trendStart=datetime(2026-01-01); let trendEnd=datetime(2026-01-02); let step=1d; '
+    $detailSamples = @($samples.ToArray())
+    foreach ($counter in $csvCounters.Keys) {
+        $detailSamples += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'both'; ObjectName = 'Cluster CSVFS'; CounterName = $counter; InstanceName = 'Volume02'; CounterValue = 2 * $csvCounters[$counter] }
+    }
+    foreach ($counter in @('Disk Transfers/sec', 'Avg. Disk sec/Read', 'Avg. Disk sec/Write')) {
+        $detailSamples += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Computer = 'both'; ObjectName = 'LogicalDisk'; CounterName = $counter; InstanceName = 'D:'; CounterValue = $(if ($counter -eq 'Disk Transfers/sec') { 200 } elseif ($counter -like '*Read') { 0.02 } else { 0.04 }) }
+    }
+    $detailJson = ConvertTo-Json -InputObject $detailSamples -Depth 10 -Compress
+    $detailPerfSource = $perfSource.Replace($sampleJson, $detailJson)
+    $detailInsights = @($insights.ToArray())
+    foreach ($counter in @('ReadsPerSecond', 'WritesPerSecond')) {
+        $detailInsights += @{ TimeGenerated = '2026-01-01T00:01:00Z'; Namespace = 'LogicalDisk'; Name = $counter; Val = 60; Tags = @{ 'vm.azm.ms/mountId' = 'E:' }; _ResourceId = '/subscriptions/example/resourceGroups/example/providers/Microsoft.HybridCompute/machines/both' }
+    }
+    $detailInsightsJson = ConvertTo-Json -InputObject $detailInsights -Depth 10 -Compress
+    $detailInsightsSource = $insightsSource.Replace($insightsJson, $detailInsightsJson)
+    $detailBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
+    $detailItems = @(Get-WorkbookItems -Items $detailBook.items)
+    foreach ($chart in @($detailItems | Where-Object { $_.name -in @('sc-storage-detail-latency', 'sc-storage-detail-iops') })) {
+        $template = [string]$chart.content.query
+        $start = $template.IndexOf('let perfSamples = Perf')
+        if ($start -lt 0) { throw 'Storage detail fixture boundary missing.' }
+        foreach ($scenario in @('CSV', 'Logical disks', 'zero', 'duplicates', 'partial', 'invalid')) {
+            $machine = if ($scenario -in @('CSV', 'Logical disks')) { 'both' } else { $scenario }
+            $scope = if ($scenario -eq 'Logical disks') { $scenario } else { 'CSV' }
+            $query = $fixtureHeader + "let NodeToCluster=datatable(nodeName:string)['both','zero','duplicates','partial','invalid','aggregate-only']; " + $template.Substring($start)
+            $query = $query.Replace('let perfSamples = Perf', "let perfSamples = $detailPerfSource").Replace('let insightsSamples = InsightsMetrics', "let insightsSamples = $detailInsightsSource")
+            $query = $query.Replace('{SCStorageDetailMachine}', $machine).Replace('{SCStorageDetailSource}', $scope)
+            $rows = @(Invoke-StorageFixture -Query $query)
+            $latencyChart = $chart.name.EndsWith('latency')
+            $metric = if ($latencyChart) { 'Avg Latency (ms)' } else { 'Avg IOPS' }
+            $expected = @{}
+            if ($scenario -eq 'CSV') { $expected['Volume01'] = $(if ($latencyChart) { 3 } else { 30 }); $expected['Volume02'] = $(if ($latencyChart) { 6 } else { 60 }) }
+            elseif ($scenario -eq 'Logical disks') {
+                $expected['C:'] = $(if ($latencyChart) { 20 } else { 100 }); $expected['D:'] = $(if ($latencyChart) { 30 } else { 200 })
+                if (-not $latencyChart) { $expected['E:'] = 120 }
+            } elseif ($scenario -eq 'zero') { $expected['Volume01'] = 0 }
+            elseif ($scenario -eq 'duplicates') { $expected['Volume01'] = $(if ($latencyChart) { 3 } else { 30 }) }
+            if ($rows.Count -ne $expected.Count) { throw "Storage detail row count failed: $($chart.name) / $scenario (expected $($expected.Count), got $($rows.Count))." }
+            foreach ($row in $rows) {
+                if (-not $expected.ContainsKey([string]$row.Volume) -or $row.$metric -ne $expected[[string]$row.Volume]) { throw "Storage detail values failed: $($chart.name) / $scenario." }
+            }
+            [pscustomobject]@{ Query = "$($chart.name)-$scenario-fixture"; Rows = $rows.Count; Result = 'Passed' }
+        }
+    }
+    $picker = ($detailItems | Where-Object name -EQ 'sc-storage-detail-filters').content.parameters | Where-Object name -EQ 'SCStorageDetailMachine'
+    $pickerQuery = $picker.query.Replace('{NodeTrendsTimeRange:start}', 'datetime(2026-01-01)').Replace('{NodeTrendsTimeRange:end}', 'datetime(2026-01-02)')
+    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterRGMap}', '["group-a:Cluster A","group-b:Cluster B"]')
+    $pickerQuery = $pickerQuery.Replace('{ClusterNodeMap}', '["both:Cluster A:cluster-a","outside:Cluster B:cluster-b"]')
+    $pickerQuery = $pickerQuery.Replace('Heartbeat', "(datatable(TimeGenerated:datetime, Computer:string, ResourceGroup:string, OSType:string)[datetime(2026-01-01T00:01:00Z),'both','group-a','Windows',datetime(2026-01-01T00:01:00Z),'outside','group-b','Windows'])")
+    $pickerRows = @(Invoke-StorageFixture -Query $pickerQuery)
+    if ($pickerRows.Count -ne 1 -or $pickerRows[0].value -ne 'both' -or -not $pickerRows[0].selected) { throw 'Storage detail picker did not scope or default to the selected cluster.' }
+    [pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-fixture'; Rows = $pickerRows.Count; Result = 'Passed' }
     foreach ($tab in @('Capacity-Overview', 'Capacity-SingleCluster', 'Capacity-MultiCluster')) {
         $book = Get-Content -Raw (Join-Path $repoRoot "workbooks/$tab/$tab.workbook") | ConvertFrom-Json
         $items = @(Get-WorkbookItems -Items $book.items)
@@ -322,8 +374,8 @@ function Test-NodeCapacity {
 
     $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
     $items = @(Get-WorkbookItems -Items $book.items)
-    $mapQuery = ($items | Where-Object name -EQ 'hyperv-node-capacity-params').content.parameters[0].query
-    $mapQuery = $mapQuery.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', '').Replace('{ClusterTagValue}', '')
+    $mapTemplate = ($items | Where-Object name -EQ 'hyperv-node-capacity-params').content.parameters[0].query
+    $mapQuery = $mapTemplate.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', '').Replace('{ClusterTagValue}', '')
     $mapQuery = $mapQuery -replace '\r?\n', ' '
     $mappingResponse = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
         --graph-query $mapQuery --output json --only-show-errors
@@ -352,7 +404,7 @@ function Test-NodeCapacity {
     if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
 
     function Invoke-CapacityQuery {
-        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples, [object[]]$HistoricalSamples, [switch]$Discovery)
+        param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples, [object[]]$HistoricalSamples, [switch]$Discovery, [string]$TagName = '', [string]$TagValue = '')
 
         $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress))
         $query = $query.Replace('{HyperVInvHostFilter}', $HostFilter).Replace('{HyperVNodeRatioFilter}', $MinimumRatio)
@@ -383,7 +435,7 @@ function Test-NodeCapacity {
         if ($PSBoundParameters.ContainsKey('ResourceSamples')) {
             $resourceJson = ConvertTo-Json -InputObject $ResourceSamples -Depth 10 -Compress
             $source = "(print fixtureRow = dynamic($resourceJson) | mv-expand fixtureRow | project id=tostring(fixtureRow.id), name=tostring(fixtureRow.name), type=tostring(fixtureRow.type), subscriptionId=tostring(fixtureRow.subscriptionId), resourceGroup=tostring(fixtureRow.resourceGroup), location=tostring(fixtureRow.location), properties=fixtureRow.properties, tags=fixtureRow.tags)"
-            $resourceTemplate = if ($Discovery) { $discoveryTemplate.Replace('$SubId', 'example') } else { $mapQuery }
+            $resourceTemplate = if ($Discovery) { $discoveryTemplate.Replace('$SubId', 'example') } else { $mapTemplate.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', $TagName).Replace('{ClusterTagValue}', $TagValue) }
             $query = $resourceTemplate.Replace('resources', $source)
         }
         $response = Invoke-RestMethod -Method Post `
@@ -563,6 +615,42 @@ function Test-NodeCapacity {
         $metadataFixture = @($metadataRows[0].value | ConvertFrom-Json)
         Assert-Capacity ($metadataFixture.Count -eq 2 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-fqdn' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 8 }).Count -eq 1 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-short' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 16 }).Count -eq 1) 'node-capacity-metadata-normalizes-both-name-forms'
 
+        function Test-HardwareMapping {
+            param([string[]]$ArcNames, [string[]]$ReportedNames, [string[]]$ExpectedNames, [string]$Name, [switch]$TagFiltered, [switch]$SeparateClusters)
+
+            $resources = @($ArcNames | ForEach-Object {
+                @{ id = "host-$_"; name = $_; type = 'microsoft.hybridcompute/machines'; subscriptionId = 'example'; resourceGroup = 'group-a'; properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Example Server'; totalPhysicalMemoryInGigabytes = 8 } } }
+            })
+            if ($SeparateClusters) {
+                $resources += @($ReportedNames | ForEach-Object {
+                    @{ id = "cluster-$_"; name = "cluster-$_"; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; tags = @{ purpose = $(if ($_ -eq $ReportedNames[0]) { 'selected' } else { 'other' }) }; properties = @{ reportedProperties = @{ nodes = @(@{ name = $_; coreCount = 8; memoryInGiB = 64 }) } } }
+                })
+            } else {
+                $resources += @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; tags = @{ purpose = 'selected' }; properties = @{ reportedProperties = @{ nodes = @($ReportedNames | ForEach-Object { @{ name = $_; coreCount = 8; memoryInGiB = 64 } }) } } }
+            }
+            $tag = if ($TagFiltered) { @{ TagName = 'purpose'; TagValue = 'selected' } } else { @{} }
+            $rows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $resources @tag)
+            $mappings = @($rows[0].value | ConvertFrom-Json)
+            $matched = @($mappings | Where-Object { $_.clusterId })
+            $unmatched = @($mappings | Where-Object { -not $_.clusterId })
+            $expectedRows = if ($TagFiltered) { $ExpectedNames.Count } else { $ArcNames.Count }
+            $valid = $mappings.Count -eq $expectedRows -and $matched.Count -eq $ExpectedNames.Count
+            foreach ($expected in $ExpectedNames) {
+                $valid = $valid -and @($matched | Where-Object { $_.machine -eq $expected -and $_.physicalCores -eq 8 -and $_.memoryGiB -eq 64 }).Count -eq 1
+            }
+            $valid = $valid -and @($unmatched | Where-Object { $null -ne $_.physicalCores -or $_.memoryGiB -ne 8 }).Count -eq 0
+            Assert-Capacity $valid $Name
+        }
+
+        Test-HardwareMapping -ArcNames @('same.a.example', 'same.b.example') -ReportedNames @('same.a.example') -ExpectedNames @('same.a.example') -Name 'node-capacity-metadata-qualified-collision-isolated'
+        Test-HardwareMapping -ArcNames @('same.a.example', 'same.b.example') -ReportedNames @('same') -ExpectedNames @() -Name 'node-capacity-metadata-ambiguous-arc-matches-unavailable'
+        Test-HardwareMapping -ArcNames @('same') -ReportedNames @('same.a.example', 'same.b.example') -ExpectedNames @() -Name 'node-capacity-metadata-ambiguous-reported-matches-unavailable'
+        Test-HardwareMapping -ArcNames @('same.b.example') -ReportedNames @('same.a.example') -ExpectedNames @() -Name 'node-capacity-metadata-incompatible-qualified-names-unavailable'
+        Test-HardwareMapping -ArcNames @('same.a.example', 'same.b.example') -ReportedNames @('same.a.example', 'same.b.example') -ExpectedNames @('same.a.example', 'same.b.example') -Name 'node-capacity-metadata-distinct-qualified-machines-retained'
+        Test-HardwareMapping -ArcNames @('same') -ReportedNames @('same.a.example', 'same.b.example') -ExpectedNames @() -SeparateClusters -TagFiltered -Name 'node-capacity-metadata-tag-filter-does-not-hide-ambiguity'
+        Test-HardwareMapping -ArcNames @('same.a.example') -ReportedNames @('same.a.example') -ExpectedNames @('same.a.example') -TagFiltered -Name 'node-capacity-metadata-unambiguous-tagged-match-retained'
+        Test-HardwareMapping -ArcNames @('same') -ReportedNames @('same', 'same') -ExpectedNames @() -Name 'node-capacity-metadata-duplicate-reported-rows-unavailable'
+
         $discoveryResources = @(
             @{ id = 'qualified-host'; name = 'node01.host.example' },
             @{ id = 'qualified-guest'; name = 'node01.guest.example' },
@@ -683,6 +771,15 @@ resources
         --query accessToken --output tsv --only-show-errors
     if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
 
+    $detailBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
+    $picker = (@(Get-WorkbookItems -Items $detailBook.items) | Where-Object name -EQ 'sc-storage-detail-filters').content.parameters | Where-Object name -EQ 'SCStorageDetailMachine'
+    $pickerQuery = $picker.query.Replace('{NodeTrendsTimeRange:start}', "ago($($Days)d)").Replace('{NodeTrendsTimeRange:end}', 'now()')
+    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', [string]$selectedCluster.armId).Replace('{ClusterRGMap}', $clusterRGJson).Replace('{ClusterNodeMap}', $clusterNodeJson)
+    $pickerResponse = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
+        -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' -Body (@{ query = $pickerQuery; timespan = "P$($Days)D" } | ConvertTo-Json)
+    if ($pickerResponse.error -or @($pickerResponse.tables[0].rows).Count -eq 0) { throw 'Storage detail machine picker returned no eligible machines.' }
+    $detailMachine = [string]$pickerResponse.tables[0].rows[0][0]
+
     $results = foreach ($spec in $querySpecs) {
         $workbookPath = Join-Path $repoRoot $spec.file
         $workbook = Get-Content -Raw $workbookPath | ConvertFrom-Json
@@ -700,6 +797,7 @@ resources
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
         $query = $query.Replace('{SingleCluster}', [string]$selectedCluster.armId)
+        $query = $query.Replace('{SCStorageDetailMachine}', $detailMachine).Replace('{SCStorageDetailSource}', 'CSV')
         $query = $query.Replace('{ForecastTimeRange:start}', "ago($($Days)d)").Replace('{ForecastTimeRange:end}', 'now()')
         $query = $query.Replace('{ForecastHorizonDays}', '7').Replace('{WarningThreshold}', '80').Replace('{CriticalThreshold}', '90')
         $query = $query.Replace('{ForecastResourceFilter}', 'value::all').Replace('{ForecastClusterFilter}', 'value::all')
@@ -731,7 +829,7 @@ resources
 
         [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed' }
     }
-    $results = @($results) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken)
+    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken)
     }
 
     $results | Format-Table -AutoSize

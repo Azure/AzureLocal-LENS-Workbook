@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -231,7 +231,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🌍 Multi-Cluster View\r\n**Actionable data:** Monitor resource exhaustion trends and capacity forecasts across your Azure Local fleet — surfaces the clusters approaching CPU, memory, or storage limits that need attention."
+              "json": "## 🌍 Multi-Instance View\r\n**Actionable data:** Monitor resource exhaustion trends and capacity forecasts across your Azure Local fleet — surfaces the instances approaching CPU, memory, or storage limits that need attention."
             },
             "name": "multi-header-text"
           },
@@ -246,7 +246,7 @@
                   "name": "MachinesLogAnalyticsWorkspace",
                   "label": "Log Analytics Workspace",
                   "type": 2,
-                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
+                  "description": "Select one or more Log Analytics workspaces collecting Azure Local machine performance data. Defaults to All.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -273,9 +273,9 @@
                   "id": "forecast-cluster-filter-param",
                   "version": "KqlParameterItem/1.0",
                   "name": "ForecastClusterFilter",
-                  "label": "Cluster",
+                  "label": "Instance",
                   "type": 2,
-                  "description": "Filter forecast results by cluster. Defaults to All.",
+                  "description": "Filter forecast results by instance. Defaults to All.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "",
@@ -361,7 +361,7 @@
                   "name": "WarningThreshold",
                   "label": "Warning Threshold (%)",
                   "type": 2,
-                  "description": "Usage percentage at which a node is considered in Warning state.",
+                  "description": "Usage percentage at which a machine is considered in Warning state.",
                   "isRequired": true,
                   "typeSettings": {
                     "additionalResourceOptions": [],
@@ -376,7 +376,7 @@
                   "name": "CriticalThreshold",
                   "label": "Critical Threshold (%)",
                   "type": 2,
-                  "description": "Usage percentage at which a node is considered in Critical state.",
+                  "description": "Usage percentage at which a machine is considered in Critical state.",
                   "isRequired": true,
                   "typeSettings": {
                     "additionalResourceOptions": [],
@@ -395,14 +395,14 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 📉 Predictive Resource Exhaustion Forecast by Cluster\r\nProjected days until resource thresholds are reached, aggregated per cluster."
+              "json": "---\r\n## 📉 Predictive Resource Exhaustion Forecast by Instance\r\nProjected days until resource thresholds are reached, aggregated per instance."
             },
             "name": "text-exhaustion-forecast-header"
           },
           {
             "type": 1,
             "content": {
-              "json": "CSV and logical-disk performance charts are separate and show all selected clusters. Latency and IOPS average daily host values; IOPS is not a cluster total. CSV requires complete Cluster CSVFS read/write counter pairs. Logical disks may include OS volumes and do not prove CSV coverage. CSV capacity forecasts use Event 3002 VolumeList snapshots.",
+              "json": "Charts show all selected instances. Latency and IOPS are daily host averages, not instance totals. CSV needs paired Cluster CSVFS read/write counters. Logical disks may include OS volumes and cannot confirm CSV coverage. CSV forecasts use Event 3002 snapshots.",
               "style": "upsell"
             },
             "name": "mc-perf-data-tip"
@@ -424,8 +424,8 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "title": "Predictive Resource Exhaustion Forecast by Cluster - CSV Storage",
-              "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a cluster forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
+              "title": "Predictive Resource Exhaustion Forecast by Instance - CSV Storage",
+              "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -462,7 +462,7 @@
                 "labelSettings": [
                   {
                     "columnId": "Cluster Name",
-                    "label": "Cluster"
+                    "label": "Instance"
                   },
                   {
                     "columnId": "Days to Warning",
@@ -489,14 +489,14 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n### 📊 Cluster-wise Resource Forecast"
+              "json": "---\r\n### 📊 Instance-wise Resource Forecast"
             },
             "name": "multi-charts-header"
           },
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Select up to 5 specific clusters to compare using the **'Forecast Clusters'** filter (below), or leave as 'All' (defaults to top 5 by resource usage).",
+              "json": "💡 **Tip:** Select up to 5 specific instances to compare using the **'Forecast Instances'** filter (below), or leave as 'All' (defaults to top 5 by resource usage).",
               "style": "upsell"
             },
             "name": "multi-charts-tip"
@@ -521,9 +521,9 @@
                   "id": "chart-cluster-filter-param",
                   "version": "KqlParameterItem/1.0",
                   "name": "ChartClusterFilter",
-                  "label": "Forecast Clusters",
+                  "label": "Forecast Instances",
                   "type": 2,
-                  "description": "Select up to 5 clusters for the forecast charts. Default (All) = Top 5 by resource usage.",
+                  "description": "Select up to 5 instances for the forecast charts. Default (All) = Top 5 by resource usage.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -612,7 +612,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Cluster-wise CPU Forecast",
+              "title": "Instance-wise CPU Forecast",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -657,7 +657,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Cluster-wise Memory Forecast",
+              "title": "Instance-wise Memory Forecast",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -704,7 +704,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CSV Volume Free Space (%) - Selected Cluster Forecasts",
+              "title": "CSV Volume Free Space (%) - Selected Instance Forecasts",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -734,7 +734,7 @@
                   "max": 100
                 }
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -752,7 +752,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CSV Volume Free Space (TB) - Selected Cluster Forecasts",
+              "title": "CSV Volume Free Space (TB) - Selected Instance Forecasts",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -781,7 +781,7 @@
                   }
                 }
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "48",
@@ -790,7 +790,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### 💾 Storage & Network Performance — For Selected Clusters"
+              "json": "### 💾 Storage & Network Performance — For Selected Instances"
             },
             "name": "mc-perf-charts-header"
           },
@@ -858,7 +858,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CSV Latency (ms) - Selected Clusters",
+              "title": "CSV Latency (ms) - Selected Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -903,7 +903,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CSV IOPS - Selected Clusters",
+              "title": "CSV IOPS - Selected Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -948,7 +948,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Logical Disk Latency (ms) - Selected Clusters",
+              "title": "Logical Disk Latency (ms) - Selected Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -993,7 +993,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Logical Disk IOPS - Selected Clusters",
+              "title": "Logical Disk IOPS - Selected Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1038,7 +1038,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Network Throughput (MB/s) — Selected Clusters",
+              "title": "Network Throughput (MB/s) — Selected Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1065,7 +1065,7 @@
                   }
                 }
               },
-              "noDataMessage": "No network-throughput telemetry was returned for the selected clusters and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
+              "noDataMessage": "No network-throughput telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "100",

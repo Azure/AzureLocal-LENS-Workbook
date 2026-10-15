@@ -12,7 +12,7 @@ Read [CONTRIBUTING.md](../CONTRIBUTING.md) before making changes. Its developmen
 ## Consistency
 
 - Follow "Column and metric consistency" in [CONTRIBUTING.md](../CONTRIBUTING.md). Reuse established display names, units, formatters, and nearby query patterns; do not independently redefine a metric.
-- Keep headings such as `Cluster Name` and `Memory Used %`. Explain technical distinctions in existing help or supported tooltips instead of making headings more technical.
+- Use `Instance Name` for Azure Local display headings; preserve AKS cluster terminology and `Memory Used %`. Explain technical distinctions in existing help or supported tooltips instead of making headings more technical.
 - Before changing memory calculations or labels, read "Accepted memory calculation and rationale" under "Hyper-V Node Capacity" in [README.md](../README.md), including its issue/PR provenance. Preserve the accepted Cluster Insights-aligned host-memory formula and `Memory Used %` heading. Do not substitute physical-total-minus-available or percent-of-commit-limit calculations, or conflate Perf usage with ARG workload allocation and N-1 risk. Reopening the decision requires reproducible evidence and explicit maintainer agreement.
 - Preserve intentional differences in thresholds, sampling windows, and scope. Discuss changes to established metric semantics before implementing them; update documentation and focused regression coverage together.
 

@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -300,7 +300,7 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend Status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| summarize Count = count() by Status",
               "size": 3,
               "showAnalytics": true,
-              "title": "Cluster Connectivity",
+              "title": "Instance Connectivity",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -310,7 +310,7 @@
               "chartSettings": {
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No Azure Local clusters match the current Subscription / Resource Group / Cluster Tag filters.",
+              "noDataMessage": "No Azure Local Instances match the current Subscription / Resource Group / Instance Tag filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -327,7 +327,7 @@
               "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend HealthStatus = tostring(properties.healthState)\r\n| extend HealthStatus = case(\r\n    HealthStatus == \"Success\", \"Healthy\",\r\n    HealthStatus == \"Warning\", \"Warning\",\r\n    HealthStatus == \"Failure\", \"Failed\",\r\n    HealthStatus == \"InProgress\", \"In Progress\",\r\n    \"Unknown\")\r\n| summarize Count = count() by HealthStatus",
               "size": 3,
               "showAnalytics": true,
-              "title": "Cluster Health Status",
+              "title": "Instance Health Status",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -337,7 +337,7 @@
               "chartSettings": {
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No clusters match the current filters, so no health summary is available.",
+              "noDataMessage": "No instances match the current filters, so no health summary is available.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -421,7 +421,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| summarize TotalClusters = count()\r\n| extend Label = 'Total Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| summarize TotalClusters = count()\r\n| extend Label = 'Total Instances'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -444,7 +444,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No clusters match the current filters.",
+              "noDataMessage": "No instances match the current filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -458,7 +458,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where properties.status == \"ConnectedRecently\"\r\n| summarize ConnectedClusters = count()\r\n| extend Label = 'Connected Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where properties.status == \"ConnectedRecently\"\r\n| summarize ConnectedClusters = count()\r\n| extend Label = 'Connected Instances'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -481,7 +481,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No connected clusters found in the selected scope.",
+              "noDataMessage": "No connected instances found in the selected scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -495,7 +495,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where properties.status != \"ConnectedRecently\"\r\n| summarize DisconnectedClusters = count()\r\n| extend Label = 'Disconnected Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where properties.status != \"ConnectedRecently\"\r\n| summarize DisconnectedClusters = count()\r\n| extend Label = 'Disconnected Instances'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -518,7 +518,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No disconnected clusters — all clusters appear to be connected (or no clusters match the filters).",
+              "noDataMessage": "No disconnected instances — all instances appear to be connected (or no instances match the filters).",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -575,7 +575,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No clusters match the current filters.",
+              "noDataMessage": "No instances match the current filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -612,7 +612,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No Azure Local nodes (Arc machines with kind=HCI) found in the selected scope.",
+              "noDataMessage": "No Azure Local machines (Arc machines with kind=HCI) found in the selected scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -697,7 +697,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| where properties.healthState == \"Success\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| summarize HealthyClusters = count()\r\n| extend Label = 'Healthy Clusters'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| where properties.healthState == \"Success\"\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| summarize HealthyClusters = count()\r\n| extend Label = 'Healthy Instances'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -720,7 +720,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No cluster health data available — clusters may not be reporting Update Summaries yet.",
+              "noDataMessage": "No instance health data available — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -868,7 +868,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No failed extensions across Azure Local nodes in the selected scope.",
+              "noDataMessage": "No failed extensions across Azure Local machines in the selected scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -925,7 +925,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No cluster health data available for the selected scope.",
+              "noDataMessage": "No instance health data available for the selected scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1082,7 +1082,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters definitely within six months based on the reported YYMM release month"
+                    "tooltip": "Instances definitely within six months based on the reported YYMM release month"
                   }
                 },
                 "leftContent": {
@@ -1095,7 +1095,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessage": "No solution version data — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1133,7 +1133,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters definitely older than six months based on the reported YYMM release month"
+                    "tooltip": "Instances definitely older than six months based on the reported YYMM release month"
                   }
                 },
                 "leftContent": {
@@ -1146,7 +1146,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No clusters on unsupported versions (or no version data available).",
+              "noDataMessage": "No instances on unsupported versions (or no version data available).",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1184,7 +1184,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Clusters with missing, invalid, future, or six-month-boundary versions whose exact support status requires the official release date"
+                    "tooltip": "Instances with missing, invalid, future, or six-month-boundary versions whose exact support status requires the official release date"
                   }
                 },
                 "leftContent": {
@@ -1197,7 +1197,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "All clusters report a recognisable version string.",
+              "noDataMessage": "All instances report a recognisable version string.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1234,7 +1234,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No clusters report an available update at this time.",
+              "noDataMessage": "No instances report an available update at this time.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1308,7 +1308,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No clusters in a Failed update state.",
+              "noDataMessage": "No instances in a Failed update state.",
               "noDataMessageStyle": 4
             },
             "customWidth": "16",
@@ -1339,7 +1339,7 @@
                 ],
                 "showLegend": true
               },
-              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessage": "No solution version data — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
             "customWidth": "100",
@@ -1352,7 +1352,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 📈 Azure Local Clusters Deployment Over Time"
+              "json": "---\r\n## 📈 Azure Local Instances Deployment Over Time"
             },
             "name": "text-cluster-deployments"
           },
@@ -1386,10 +1386,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| where isnotempty(registrationDate)\r\n| extend _days = todouble('{ClusterDeploymentMonths}') * 30\r\n| where registrationDate >= ago(_days * 1d)\r\n| extend TimeBucket = case(\r\n    _days <= 30, startofday(registrationDate),\r\n    _days <= 90, startofweek(registrationDate),\r\n    startofmonth(registrationDate)\r\n)\r\n| summarize Count = count() by TimeBucket\r\n| extend Series = 'Clusters'\r\n| order by TimeBucket asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend registrationDate = todatetime(properties.registrationTimestamp)\r\n| where isnotempty(registrationDate)\r\n| extend _days = todouble('{ClusterDeploymentMonths}') * 30\r\n| where registrationDate >= ago(_days * 1d)\r\n| extend TimeBucket = case(\r\n    _days <= 30, startofday(registrationDate),\r\n    _days <= 90, startofweek(registrationDate),\r\n    startofmonth(registrationDate)\r\n)\r\n| summarize Count = count() by TimeBucket\r\n| extend Series = 'Instances'\r\n| order by TimeBucket asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "Azure Local Clusters Registered Over Time",
+              "title": "Azure Local Instances Registered Over Time",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1405,7 +1405,7 @@
                 "showLegend": true,
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No cluster deployments found in the selected time range.",
+              "noDataMessage": "No instance deployments found in the selected time range.",
               "noDataMessageStyle": 4
             },
             "customWidth": "80",
@@ -1419,7 +1419,7 @@
               "size": 1,
               "showAnalytics": true,
               "showExportToExcel": true,
-              "title": "Clusters Registered by Month",
+              "title": "Instances Registered by Month",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1434,11 +1434,11 @@
                   },
                   {
                     "columnId": "ClusterCount",
-                    "label": "Clusters Registered"
+                    "label": "Instances Registered"
                   }
                 ]
               },
-              "noDataMessage": "No cluster deployments found in the selected time range.",
+              "noDataMessage": "No instance deployments found in the selected time range.",
               "noDataMessageStyle": 4
             },
             "customWidth": "20",
@@ -1617,7 +1617,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "resourceGroup",
@@ -1697,7 +1697,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No clusters match the current Subscription / Resource Group / Cluster Tag filters.",
+              "noDataMessage": "No instances match the current Subscription / Resource Group / Instance Tag filters.",
               "noDataMessageStyle": 4,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1739,7 +1739,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No Azure Hybrid Benefit data — no clusters match the filters.",
+              "noDataMessage": "No Azure Hybrid Benefit data — no instances match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1775,7 +1775,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No Windows Server Subscription data — no clusters match the filters.",
+              "noDataMessage": "No Windows Server Subscription data — no instances match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1811,7 +1811,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No Azure Verification for VMs data — no clusters match the filters.",
+              "noDataMessage": "No Azure Verification for VMs data — no instances match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1831,7 +1831,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### ⚠️ Clusters Not Synced Recently\r\n*Clusters that haven't synced in the last 24 hours*"
+              "json": "### ⚠️ Instances Not Synced Recently\r\n*Instances that haven't synced in the last 24 hours*"
             },
             "name": "section-header-stale-clusters"
           },
@@ -1842,8 +1842,8 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend lastSync = todatetime(properties.lastSyncTimestamp)\r\n| where lastSync < ago(24h)\r\n| extend daysSinceSync = datetime_diff('day', now(), lastSync)\r\n| extend hoursSinceSync = datetime_diff('hour', now(), lastSync)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| join kind=leftouter (resourcecontainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId, subscriptionName = name) on subscriptionId\r\n| extend subscriptionLink = strcat('https://portal.azure.com/#@/resource/subscriptions/', subscriptionId)\r\n| project ClusterName = name, clusterLink, resourceGroup, lastSync, daysSinceSync, hoursSinceSync, location, SubscriptionName = subscriptionName, subscriptionLink\r\n| order by hoursSinceSync desc",
               "size": 0,
               "showAnalytics": true,
-              "title": "Clusters Not Synced in 24+ Hours",
-              "noDataMessage": "All clusters have synced within the last 24 hours",
+              "title": "Instances Not Synced in 24+ Hours",
+              "noDataMessage": "All instances have synced within the last 24 hours",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,
@@ -1941,7 +1941,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "resourceGroup",
@@ -1975,7 +1975,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 📋 Cluster Details"
+              "json": "---\r\n## 📋 Instance Details"
             },
             "name": "section-header-cluster-details"
           },
@@ -1997,7 +1997,7 @@
                 "showLegend": true,
                 "legendPosition": "bottom"
               },
-              "noDataMessage": "No node OS version data — no Arc machines (kind=HCI) match the filters.",
+              "noDataMessage": "No machine OS version data — no Arc machines (kind=HCI) match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -2053,7 +2053,7 @@
                 "showLegend": true,
                 "legendPosition": "bottom"
               },
-              "noDataMessage": "No billing model data — no clusters match the filters.",
+              "noDataMessage": "No billing model data — no instances match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -2123,10 +2123,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend nodeCountLabel = case(nodeCount == 1, '1 Node', nodeCount == 2, '2 Nodes', nodeCount == 3, '3 Nodes', strcat(tostring(nodeCount), ' Nodes'))\r\n| summarize Count = count() by nodeCountLabel\r\n| order by nodeCountLabel asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend nodeCountLabel = case(nodeCount == 1, '1 Machine', nodeCount == 2, '2 Machines', nodeCount == 3, '3 Machines', strcat(tostring(nodeCount), ' Machines'))\r\n| summarize Count = count() by nodeCountLabel\r\n| order by nodeCountLabel asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "Node Count Distribution",
+              "title": "Machine Count Distribution",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -2137,7 +2137,7 @@
                 "showLegend": true,
                 "legendPosition": "bottom"
               },
-              "noDataMessage": "No node-count data — no clusters match the filters.",
+              "noDataMessage": "No machine-count data — no instances match the filters.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",

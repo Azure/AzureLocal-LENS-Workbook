@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -231,14 +231,14 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔍 Single Cluster View\r\n**Actionable data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local cluster — spot a host pinned at high CPU, memory, or storage utilisation, or a workload consuming more than its share."
+              "json": "## 🔍 Single Instance View\r\n**Actionable data:** Drill into capacity, storage, forecasts and workloads for a specific Azure Local instance — spot a host pinned at high CPU, memory, or storage utilisation, or a workload consuming more than its share."
             },
             "name": "single-header-text"
           },
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Select an Azure Local cluster using the **'Select Cluster'** drop-down below. Optionally, select a specific **Log Analytics Workspace** if your clusters report to different workspaces.",
+              "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. Optionally, select a specific **Log Analytics Workspace** if your instances report to different workspaces.",
               "style": "upsell"
             },
             "name": "single-cluster-tip"
@@ -257,7 +257,7 @@
                   "name": "MachinesLogAnalyticsWorkspace",
                   "label": "Log Analytics Workspace",
                   "type": 2,
-                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
+                  "description": "Select one or more Log Analytics workspaces collecting Azure Local machine performance data. Defaults to All.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -286,7 +286,7 @@
                   "name": "SingleClusterResourceGroup",
                   "label": "Resource Group",
                   "type": 2,
-                  "description": "Optional: narrow the Select Cluster dropdown to specific resource groups. Defaults to All. Helpful when multiple Azure Local clusters share the same name across different resource groups or subscriptions (use the workspace-level Subscriptions pill to scope subscriptions first).",
+                  "description": "Optional: narrow the Select Instance dropdown to specific resource groups. Defaults to All. Helpful when multiple Azure Local Instances share the same name across different resource groups or subscriptions (use the workspace-level Subscriptions pill to scope subscriptions first).",
                   "multiSelect": true,
                   "quote": "",
                   "delimiter": ",",
@@ -312,7 +312,7 @@
                   "id": "single-cluster-armid",
                   "version": "KqlParameterItem/1.0",
                   "name": "SingleCluster",
-                  "label": "Select Cluster",
+                  "label": "Select Instance",
                   "type": 2,
                   "isRequired": true,
                   "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend resourceGroupKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n| where '{SingleClusterResourceGroup}' == 'value::all' or resourceGroupKey in~ (split('{SingleClusterResourceGroup}', ','))\r\n| project value = tostring(id), label = strcat(name, ' (', resourceGroup, ', ', subscriptionId, ')')\r\n| order by label asc",
@@ -401,7 +401,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### 🏗️ Cluster Capacity\r\nPhysical hardware resources for: **{SingleCluster:label}**"
+              "json": "### 🏗️ Instance Capacity\r\nPhysical hardware resources for: **{SingleCluster:label}**"
             },
             "name": "sc-fleet-header"
           },
@@ -409,10 +409,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| summarize Clusters = dcount(name)\r\n| extend Label = 'Clusters'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| summarize Clusters = dcount(name)\r\n| extend Label = 'Instances'",
               "size": 0,
               "aggregation": 3,
-              "title": "Clusters",
+              "title": "Instances",
               "noDataMessage": "—",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -451,10 +451,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| where isnotempty(tostring(node.name))\r\n| summarize Nodes = count()\r\n| extend Label = 'Nodes'",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| where id =~ '{SingleCluster}'\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| where isnotempty(tostring(node.name))\r\n| summarize Nodes = count()\r\n| extend Label = 'Machines'",
               "size": 0,
               "aggregation": 3,
-              "title": "Nodes",
+              "title": "Machines",
               "noDataMessage": "—",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -498,8 +498,8 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "title": "Node Hardware Summary",
-              "noDataMessage": "No Azure Stack HCI nodes found. Verify your subscription and resource group filters.",
+              "title": "Machine Hardware Summary",
+              "noDataMessage": "No Azure Stack HCI machines found. Verify your subscription and resource group filters.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -577,7 +577,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster"
+                    "label": "Instance"
                   },
                   {
                     "columnId": "status",
@@ -620,14 +620,14 @@
           {
             "type": 1,
             "content": {
-              "json": "### 🏗️ Cluster: {SingleCluster:label} — Node and CSV Capacity & Performance"
+              "json": "### 🏗️ Instance: {SingleCluster:label} — Machine and CSV Capacity & Performance"
             },
             "name": "sc-perf-charts-header"
           },
           {
             "type": 1,
             "content": {
-              "json": "CPU, host memory and network charts use node performance data. CSV and logical-disk charts are separate. CSV usage is shown by volume from Event 3002 snapshots; CSV latency and IOPS are shown by machine from Cluster CSVFS counters. Logical-disk usage and performance are shown by machine and may include OS volumes. Missing CSV data remains unavailable."
+              "json": "CPU, host memory and network charts use machine performance data. CSV and logical-disk charts are separate. CSV usage is shown by volume from Event 3002 snapshots; CSV latency and IOPS are shown by machine from Cluster CSVFS counters. Logical-disk usage and performance are shown by machine and may include OS volumes. Missing CSV data remains unavailable."
             },
             "name": "sc-perf-charts-source-tip"
           },
@@ -666,7 +666,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
+              "noDataMessage": "No per-machine CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -711,7 +711,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node memory telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
+              "noDataMessage": "No per-machine memory telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -756,7 +756,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-node network throughput telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
+              "noDataMessage": "No per-machine network throughput telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -801,7 +801,7 @@
                   }
                 }
               },
-              "noDataMessage": "No CSV volume capacity snapshots in the selected cluster. Collect Event 3002 VolumeList data using the DCR setup guide.",
+              "noDataMessage": "No CSV volume capacity snapshots in the selected instance. Collect Event 3002 VolumeList data using the DCR setup guide.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1037,7 +1037,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### 💾 Cluster: {SingleCluster:label} — Storage Volume Usage and Forecast"
+              "json": "### 💾 Instance: {SingleCluster:label} — Storage Volume Usage and Forecast"
             },
             "name": "sc-storage-bar-header"
           },
@@ -1056,7 +1056,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute storage containers back to a single HCI cluster when multiple clusters share a resource group, the chart below is **RG-wide** and may include volumes owned by the sibling cluster(s).",
+              "json": "⚠️ **Multi-instance resource group detected.** This instance shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute storage containers back to a single HCI instance when multiple instances share a resource group, the chart below is **RG-wide** and may include volumes owned by the sibling instance(s).",
               "style": "warning"
             },
             "conditionalVisibility": {
@@ -1075,7 +1075,7 @@
               "showAnalytics": true,
               "aggregation": 3,
               "title": "Storage Volume Usage (GB) — {SingleCluster:label}",
-              "noDataMessage": "No storage containers found for this cluster.",
+              "noDataMessage": "No storage containers found for this instance.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1120,7 +1120,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Volume Usage (%) - Single cluster",
+              "title": "Volume Usage (%) - Single instance",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1137,7 +1137,7 @@
                 "showLegend": false,
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No volume usage data for this cluster. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the cluster nodes.",
+              "noDataMessage": "No volume usage data for this instance. This chart reads `Microsoft-Windows-SDDC-Management/Operational` Event ID 3002 from the Log Analytics workspace — confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting that event log are deployed to the instance machines.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1157,7 +1157,7 @@
           {
             "type": 1,
             "content": {
-              "json": "CSV capacity and forecasts use Event 3002 VolumeList snapshots from Microsoft-Windows-SDDC-Management/Operational. Values describe logical CSV volume capacity, not physical S2D pool headroom. One latest snapshot per cluster/day is selected before volumes are summed. Missing or invalid volume sizes remain unavailable."
+              "json": "CSV capacity and forecasts use Event 3002 VolumeList snapshots from Microsoft-Windows-SDDC-Management/Operational. Values describe logical CSV volume capacity, not physical S2D pool headroom. One latest snapshot per instance/day is selected before volumes are summed. Missing or invalid volume sizes remain unavailable."
             },
             "name": "sc-stor-forecast-source-tip"
           },
@@ -1209,7 +1209,7 @@
                 "locInfo": "AzureResource",
                 "locInfoColumn": "ArmId"
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1265,6 +1265,155 @@
           {
             "type": 1,
             "content": {
+              "json": "---\r\n### Storage - Per Machine Detailed Analysis"
+            },
+            "name": "sc-storage-detail-header"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "style": "pills",
+              "parameters": [
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": false,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ],
+                  "id": "sc-storage-detail-machine",
+                  "name": "SCStorageDetailMachine",
+                  "label": "Machine",
+                  "quote": "",
+                  "timeContextFromParameter": "NodeTrendsTimeRange",
+                  "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = 1d;\n\n// Build authoritative NodeToCluster mapping from ARG (Heartbeat + ClusterRGMap + ClusterNodeMap) — no SDDC dependency\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet NodeToCluster = materialize(\n    Heartbeat\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | project nodeName);\n\nNodeToCluster\r\n| distinct nodeName\r\n| order by nodeName asc\r\n| serialize\r\n| project value = nodeName, label = nodeName, selected = row_number() == 1"
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": false,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "id": "sc-storage-detail-source",
+                  "name": "SCStorageDetailSource",
+                  "label": "Storage",
+                  "value": "CSV",
+                  "jsonData": "[{\"value\":\"CSV\",\"label\":\"CSV\"},{\"value\":\"Logical disks\",\"label\":\"Logical Disk\"}]"
+                }
+              ]
+            },
+            "name": "sc-storage-detail-filters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = 1d;\n\n// Build authoritative NodeToCluster mapping from ARG (Heartbeat + ClusterRGMap + ClusterNodeMap) — no SDDC dependency\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet NodeToCluster = materialize(\n    Heartbeat\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | project nodeName);\n\n// Latency only exists in Perf (ReadLatencyMs absent from InsightsMetrics)\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Avg. sec/Read\", \"Avg. sec/Write\")) or (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend nodeName = tolower(Computer)\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by nodeName, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), LatencyMs = avg(CounterValue) * 1000.0 by nodeName, InstanceName, StorageScope, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, nodeName, InstanceName, StorageScope, LatencyMs, method = 1;\r\nlet volumeSamples = perfSamples\r\n| lookup kind=inner NodeToCluster on nodeName\r\n| where nodeName == tolower('{SCStorageDetailMachine}') and StorageScope == '{SCStorageDetailSource}'\r\n| summarize arg_min(method, LatencyMs) by nodeName, InstanceName, StorageScope, TimeGenerated;\r\nvolumeSamples\r\n| summarize [\"Avg Latency (ms)\"] = round(avg(LatencyMs), 2) by TimeGenerated = bin(TimeGenerated, step), Volume = InstanceName\r\n| order by TimeGenerated asc, Volume asc",
+              "size": 0,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "Volume Latency (ms) - Selected Machine",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Latency (ms)"
+                ],
+                "group": "Volume",
+                "createOtherGroup": null,
+                "ySettings": {
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  },
+                  "min": 0
+                },
+                "showLegend": true
+              },
+              "noDataMessage": "No complete per-volume samples for the selected machine and storage source. Verify the required performance counters in the DCR setup guide.",
+              "noDataMessageStyle": 4,
+              "timeContextFromParameter": "NodeTrendsTimeRange"
+            },
+            "customWidth": "50",
+            "name": "sc-storage-detail-latency",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\nlet trendEnd = {NodeTrendsTimeRange:end};\nlet step = 1d;\n\n// Build authoritative NodeToCluster mapping from ARG (Heartbeat + ClusterRGMap + ClusterNodeMap) — no SDDC dependency\nlet clusterMap = materialize(\n    print mapping = dynamic({ClusterRGMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\nlet nodeMap = materialize(\n    print mapping = dynamic({ClusterNodeMap})\n    | mv-expand mapping to typeof(string)\n    | extend parts = split(mapping, ':')\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]), armId = tostring(parts[2]));\nlet thisClusterName = toscalar(nodeMap | where armId =~ '{SingleCluster}' | distinct clusterName | project clusterName);\nlet hasNodeMap = isnotempty(thisClusterName);\nlet NodeToCluster = materialize(\n    Heartbeat\n    | where TimeGenerated between (trendStart .. trendEnd)\n    | where OSType == \"Windows\"\n    | summarize arg_max(TimeGenerated, *) by Computer\n    | extend nodeName = tolower(Computer), nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\n    | lookup kind=inner clusterMap on nodeRG\n    | where (hasNodeMap and clusterName == thisClusterName) or (hasNodeMap == false)\n    | join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\n    | where hasNodeMap == false or nmCluster == thisClusterName\n    | project nodeName);\n\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Reads/sec\", \"Writes/sec\")) or (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend nodeName = tolower(Computer)\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by nodeName, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), IOPS = sum(CounterValue) by nodeName, InstanceName, StorageScope, Minute\r\n| where Directions == iff(StorageScope == \"CSV\", 2, 1)\r\n| project TimeGenerated = Minute, nodeName, InstanceName, StorageScope, IOPS, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend nodeName = tolower(tostring(split(_ResourceId, \"/\")[8]))\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by nodeName, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), IOPS = sum(Val) by nodeName, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, nodeName, InstanceName, StorageScope = \"Logical disks\", IOPS, method = 2;\r\nlet volumeSamples = union perfSamples, insightsSamples\r\n| lookup kind=inner NodeToCluster on nodeName\r\n| where nodeName == tolower('{SCStorageDetailMachine}') and StorageScope == '{SCStorageDetailSource}'\r\n| summarize arg_min(method, IOPS) by nodeName, InstanceName, StorageScope, TimeGenerated;\r\nvolumeSamples\r\n| summarize [\"Avg IOPS\"] = round(avg(IOPS), 0) by TimeGenerated = bin(TimeGenerated, step), Volume = InstanceName\r\n| order by TimeGenerated asc, Volume asc",
+              "size": 0,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "Volume IOPS - Selected Machine",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg IOPS"
+                ],
+                "group": "Volume",
+                "createOtherGroup": null,
+                "showLegend": true,
+                "seriesLabelSettings": [],
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                }
+              },
+              "noDataMessage": "No complete per-volume samples for the selected machine and storage source. Verify the required performance counters in the DCR setup guide.",
+              "noDataMessageStyle": 4,
+              "timeContextFromParameter": "NodeTrendsTimeRange"
+            },
+            "customWidth": "50",
+            "name": "sc-storage-detail-iops",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
               "json": "### ⚙️ Compute Trends & Forecast"
             },
             "name": "sc-compute-forecast-header"
@@ -1284,7 +1433,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CPU Usage (%) - Single cluster (Actual vs Forecast)",
+              "title": "CPU Usage (%) - Single instance (Actual vs Forecast)",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1304,7 +1453,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No CPU trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
+              "noDataMessage": "No CPU trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1322,7 +1471,7 @@
               "size": 0,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Memory Usage (%) - Single cluster (Actual vs Forecast)",
+              "title": "Memory Usage (%) - Single instance (Actual vs Forecast)",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1342,7 +1491,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No memory trend telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
+              "noDataMessage": "No memory trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1355,7 +1504,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute Hyper-V VMs (Arc-enabled machines) back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include VMs owned by the sibling cluster(s).",
+              "json": "⚠️ **Multi-instance resource group detected.** This instance shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute Hyper-V VMs (Arc-enabled machines) back to a single HCI instance when multiple instances share a resource group, the table below is **RG-wide** and may include VMs owned by the sibling instance(s).",
               "style": "warning"
             },
             "conditionalVisibility": {
@@ -1374,7 +1523,7 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "noDataMessage": "No VMs found on this cluster.",
+              "noDataMessage": "No VMs found on this instance.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -1425,7 +1574,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster"
+                    "label": "Instance"
                   },
                   {
                     "columnId": "status",
@@ -1485,7 +1634,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📦 Workloads on Cluster: {SingleCluster:label}"
+              "json": "## 📦 Workloads on Instance: {SingleCluster:label}"
             },
             "name": "sc-workloads-header"
           },
@@ -1505,7 +1654,7 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "noDataMessage": "No VMs found on this cluster.",
+              "noDataMessage": "No VMs found on this instance.",
               "queryType": 7,
               "visualization": "table",
               "gridSettings": {
@@ -1624,7 +1773,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster"
+                    "label": "Instance"
                   },
                   {
                     "columnId": "status",
@@ -1689,7 +1838,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V VMs** view, scoped to the Azure Local nodes in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
+              "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V** view, scoped to the Azure Local machines in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
               "style": "upsell"
             },
             "conditionalVisibility": {
@@ -1709,7 +1858,7 @@
               "showExportToExcel": true,
               "timeContextFromParameter": "NodeTrendsTimeRange",
               "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
-              "noDataMessage": "No Hyper-V CPU telemetry was returned for this cluster and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every node.",
+              "noDataMessage": "No Hyper-V CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1840,7 +1989,7 @@
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by CPU Usage — % Guest Run Time (on {SingleCluster:label})",
-              "noDataMessage": "No Hyper-V CPU data for this cluster's hosts. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every node.",
+              "noDataMessage": "No Hyper-V CPU data for this instance's hosts. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every machine.",
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeGenerated",
@@ -2080,7 +2229,7 @@
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by Network Throughput — Send+Receive MB/s · guest vNICs only (on {SingleCluster:label})",
-              "noDataMessage": "No Hyper-V Virtual Network Adapter data for guest VMs on this cluster. The chart cross-references against the Hyper-V Hypervisor Virtual Processor counter to filter out host vNICs (vManagement, vCompute, etc.) and physical NICs — if no VMs are visible in the CPU chart, none can be matched here either. Confirm '\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec' (or 'Bytes Sent/sec' + 'Bytes Received/sec') is in the DCR's counterSpecifiers.",
+              "noDataMessage": "No Hyper-V Virtual Network Adapter data for guest VMs on this instance. The chart cross-references against the Hyper-V Hypervisor Virtual Processor counter to filter out host vNICs (vManagement, vCompute, etc.) and physical NICs — if no VMs are visible in the CPU chart, none can be matched here either. Confirm '\\Hyper-V Virtual Network Adapter(*)\\Bytes/sec' (or 'Bytes Sent/sec' + 'Bytes Received/sec') is in the DCR's counterSpecifiers.",
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeGenerated",
@@ -2117,7 +2266,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Notes:** All six charts show the **Top 5 VMs/VHDs by average value** over the selected **Historic Time Range** (picker at the top of this sub-tab), restricted to the physical hosts of **{SingleCluster:label}**. **Memory Pressure** is a unitless ratio (≤80 healthy · 100 = at limit · >100 under pressure); only Dynamic-Memory VMs report it. **Storage** charts are reported **per virtual disk (VHD)**, not per VM (the `Hyper-V Virtual Storage Device` object uses the VHD path as its instance identifier). **Network** counter values are cross-referenced against the Hyper-V Hypervisor Virtual Processor counter so only guest VM vNICs (not host vNICs or physical NICs) are shown. See the **🪟 Hyper-V VMs** sub-tab for the equivalent fleet-wide view, the full **🔔 DCR Configuration** ARM template, and the complete chart-units interpretation guide.",
+              "json": "ℹ️ **Notes:** All six charts show the **Top 5 VMs/VHDs by average value** over the selected **Historic Time Range** (picker at the top of this sub-tab), restricted to the physical hosts of **{SingleCluster:label}**. **Memory Pressure** is a unitless ratio (≤80 healthy · 100 = at limit · >100 under pressure); only Dynamic-Memory VMs report it. **Storage** charts are reported **per virtual disk (VHD)**, not per VM (the `Hyper-V Virtual Storage Device` object uses the VHD path as its instance identifier). **Network** counter values are cross-referenced against the Hyper-V Hypervisor Virtual Processor counter so only guest VM vNICs (not host vNICs or physical NICs) are shown. See the **🖥️ Hyper-V** sub-tab for the equivalent fleet-wide view, the full **🔔 DCR Configuration** ARM template, and the complete chart-units interpretation guide.",
               "style": "info"
             },
             "conditionalVisibility": {
@@ -2137,7 +2286,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Multi-cluster resource group detected.** This cluster shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute AKS Arc clusters back to a single HCI cluster when multiple clusters share a resource group, the table below is **RG-wide** and may include AKS clusters owned by the sibling cluster(s).",
+              "json": "⚠️ **Multi-instance resource group detected.** This instance shares its resource group with: **{MultiClusterRGSiblings}**. Because Azure Resource Graph cannot uniquely attribute AKS Arc clusters back to a single Azure Local instance when multiple instances share a resource group, the table below is **RG-wide** and may include AKS clusters owned by the sibling instance(s).",
               "style": "warning"
             },
             "conditionalVisibility": {
@@ -2156,7 +2305,7 @@
               "showAnalytics": true,
               "showExportToExcel": true,
               "aggregation": 3,
-              "noDataMessage": "No AKS Arc clusters found on this cluster.",
+              "noDataMessage": "No AKS Arc clusters found on this instance.",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -2207,7 +2356,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Azure Local Cluster"
+                    "label": "Azure Local instance"
                   },
                   {
                     "columnId": "connectivity",
@@ -2250,7 +2399,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local cluster metadata, so the same Prometheus charts cannot be filtered to a single Azure Local cluster. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
+              "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local instance metadata, so the same Prometheus charts cannot be filtered to a single Azure Local instance. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
               "style": "info"
             },
             "conditionalVisibility": {

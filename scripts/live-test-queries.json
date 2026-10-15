@@ -58,6 +58,14 @@
       "name": "sc-network-throughput-node"
     },
     {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-detail-latency"
+    },
+    {
+      "file": "workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook",
+      "name": "sc-storage-detail-iops"
+    },
+    {
       "file": "workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook",
       "name": "mc-storage-latency"
     },

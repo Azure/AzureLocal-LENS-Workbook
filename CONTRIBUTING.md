@@ -56,9 +56,9 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (425 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, node capacity, storage sources, DCR deployment guidance, content style, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (438 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, DCR deployment guidance, instance naming, content style, and accessibility. |
 | `scripts/test-dcr-deployment.ps1` | Offline PowerShell tests for DCR discovery, deployment, preview, and rollback safety. Shadows Azure CLI with a mock; never contacts Azure. |
-| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 29 Capacity storage/coverage/forecast/network queries and 24 synthetic storage cases, or the node capacity suite with `-NodeCapacityOnly`. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
+| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 31 Capacity storage/coverage/forecast/network queries, the live machine picker, and 37 synthetic storage cases, or the machine capacity suite with `-NodeCapacityOnly`. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
@@ -94,7 +94,7 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
 
 ### Customer-facing content
 
-- Use **Azure Local node** for a managed cluster host. Use **physical machine** only when the text must distinguish host hardware from guest VMs, such as DCR association guidance.
+- Use **Azure Local machine** for a managed host and **instance** for an Azure Local deployment. Keep AKS cluster/node terminology, CSV cluster wording (including **Cluster CSVFS** and **Cluster Shared Volumes**), and the **Single cluster** / **Multi-cluster** navigation labels. Internal field names, parameter IDs, resource types, and technical identifiers may retain cluster/node terminology. Use **physical machine** when distinguishing host hardware from guest VMs, such as DCR association guidance.
 - Expand **Azure Resource Bridge (ARB)** at first use on every independently reachable tab.
 - Use **Connected / Disconnected** for Azure Arc connectivity. Reserve **Offline** for a distinct resource state reported by the service.
 - Keep the decision and next action inline. Put long procedures, complete counter lists, formulas, and edge cases in progressive help or maintained repository documentation.
@@ -107,12 +107,12 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
 
 ### Column and metric consistency
 
-- Reuse established display headings for the same concepts, including **Cluster Name** and **Memory Used %**. Prefer display-label settings over renaming query fields when filters, formatters, exports, or links depend on them.
+- Use **Instance Name**, **Instance Count**, and **Affected Instances** for Azure Local display headings. Keep AKS cluster terminology, including the **AKS Arc Clusters** tab. Query fields and resource identities may retain cluster terminology; prefer display-label settings over renaming fields when filters, formatters, exports, or links depend on them. Preserve **Memory Used %**.
 - Keep numeric results numeric for sorting, filtering, and export. Apply `%` and `:1` presentation through column formatters; preserve each metric's documented units and scale, including percentage values on a 0-100 scale and binary GiB conversions.
-- For host performance memory, collect **Committed Bytes** and **Available Bytes** and preserve the accepted formula and **Memory Used %** heading documented in [Hyper-V Node Capacity](README.md#hyper-v-node-capacity). Its "Accepted memory calculation and rationale" subsection records the issue/PR decisions. Consult that history before proposing changes; reopening the decision requires reproducible evidence and explicit maintainer agreement. Do not replace it with physical-total-minus-available or percent-of-commit-limit calculations. This convention does not redefine ARM workload-allocation or guest-specific memory metrics.
-- Keep installed physical memory distinct from committed and available memory. In the node table, Memory Used GiB represents committed memory; Memory Total GiB is installed physical memory, not the percentage denominator. Explain these distinctions in help or supported tooltips without changing the established display headings.
+- For host performance memory, collect **Committed Bytes** and **Available Bytes** and preserve the accepted formula and **Memory Used %** heading documented in [Hyper-V Machine Capacity](README.md#hyper-v-node-capacity). Its "Accepted memory calculation and rationale" subsection records the issue/PR decisions. Consult that history before proposing changes; reopening the decision requires reproducible evidence and explicit maintainer agreement. Do not replace it with physical-total-minus-available or percent-of-commit-limit calculations. This convention does not redefine ARM workload-allocation or guest-specific memory metrics.
+- Keep installed physical memory distinct from committed and available memory. In the machine table, Memory Used GiB represents committed memory; Memory Total GiB is installed physical memory, not the percentage denominator. Explain these distinctions in help or supported tooltips without changing the established display headings.
 - Missing or invalid telemetry is unavailable, not zero. Preserve the required counter-presence checks, nonnegative-value checks, and positive-denominator guards. A valid zero reading must remain distinguishable from missing data.
-- Preserve each view's intentional sampling window, aggregation scope, thresholds, and filter behavior. Matching formulas do not imply identical values across a latest-node snapshot and a historical cluster chart. Do not copy one view's thresholds or aggregation into another merely for visual consistency.
+- Preserve each view's intentional sampling window, aggregation scope, thresholds, and filter behavior. Matching formulas do not imply identical values across a latest-machine snapshot and a historical instance chart. Do not copy one view's thresholds or aggregation into another merely for visual consistency.
 - Preserve the physical-core denominator for V:P CPU Ratio; logical processors and CPU utilization are different measures. Keep target comparison separate from observed ratios and row filtering.
 - Before changing an established metric's meaning, explain the proposed change and obtain explicit maintainer agreement. Check the nearest implementation, existing tests, and relevant documented rationale. Update the calculation documentation and focused regression coverage with the change.
 
@@ -120,7 +120,7 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
 
 Use these existing sources instead of relying on private agent memory or duplicating long explanations:
 
-- [README](README.md): feature behavior, scope filters, resource-join information, operational knowledge links, and release notes. [Node capacity calculations](README.md#hyper-v-node-capacity) define the node table's metrics and limitations; [previous-version notes](README.md#appendix-previous-versions-change-log) preserve the rationale for earlier fixes. Historical notes provide context, not an override of current source and tests.
+- [README](README.md): feature behavior, scope filters, resource-join information, operational knowledge links, and release notes. [Machine capacity calculations](README.md#hyper-v-node-capacity) define the machine table's metrics and limitations; [previous-version notes](README.md#appendix-previous-versions-change-log) preserve the rationale for earlier fixes. Historical notes provide context, not an override of current source and tests.
 - [Historical v1.1.0 content audit](CONTENT-AUDIT.md): rationale for earlier content, terminology, navigation, and empty-state decisions, plus unverified recommendations from that snapshot. It is not current guidance or release-validation evidence. Run `node scripts/audit-content.js` for fresh measurements; keep active conventions in this guide.
 - [DCR setup and deployment guide](example-dcr-template/README.md): maintained counter lists, prerequisites, collection and association guidance, overlap considerations, validation, and troubleshooting.
 - [Regression tests](scripts/run-tests.js): executable structural and behavioral invariants. Extend nearby assertions when changing an existing feature.
@@ -172,16 +172,16 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 425 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
+All 438 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 
 The structural test suite cannot prove that Log Analytics accepts a query or that
 the configured counters produce rows. Maintainers can run the opt-in Capacity
-integration suite against an approved test environment: 29 exact workbook queries
-plus 24 synthetic KQL checks for storage scope, Top 5 rankings, host aggregation, units, duplicate/partial samples,
-valid zero readings, invalid capacity, snapshot deduplication, volume identity, and same-name cluster forecast isolation.
-Successful query execution alone does not prove that every expected node or storage
+integration suite against an approved test environment: 31 exact workbook queries,
+the live storage-detail machine picker, and 37 synthetic KQL checks for storage scope, per-volume detail, picker isolation, Top 5 rankings, host aggregation, units, duplicate/partial samples,
+valid zero readings, invalid capacity, snapshot deduplication, volume identity, and same-name instance forecast isolation.
+Successful query execution alone does not prove that every expected machine or storage
 I/O path is covered; verify the required counters during known activity.
 
 ```powershell
@@ -203,7 +203,7 @@ row-count report to `test-results/live-integration-nunit.xml`. These tests are
 deliberately excluded from CI because they require Azure authentication, RBAC,
 a DCR, and current telemetry.
 
-For node capacity, use the same confirmation procedure and add `-NodeCapacityOnly`:
+For machine capacity, use the same confirmation procedure and add `-NodeCapacityOnly`:
 
 ```powershell
 ./scripts/run-live-tests.ps1 `
@@ -212,12 +212,14 @@ For node capacity, use the same confirmation procedure and add `-NodeCapacityOnl
    -NodeCapacityOnly
 ```
 
-This mode uses the exact Hyper-V node metadata and table queries, a fixed snapshot
+This mode uses the exact Hyper-V machine metadata and table queries, a fixed snapshot
 time, and synthetic samples executed by Log Analytics. It validates physical-core
 ratios, CPU/memory arithmetic, numeric sorting, ratio/host filtering, duplicate
 samples, migration, ambiguous mappings, stale/missing data, invalid metrics,
 historical host selections by resource ID without widening the metric window,
-same-short-name host isolation, and fully qualified inventory/reported-node names.
+same-short-name host isolation, and fully qualified inventory/reported-machine names.
+Hardware mapping fixtures cover unique compatible matches on both sides, mismatched
+qualified names, duplicate reported entries, and tag filters that must not hide ambiguity.
 It also validates the deployment script's exact discovery query in Resource Graph
 and synthetic qualified-name collisions, ambiguous matches, and nested hosts in Log Analytics.
 It writes sanitized results to `test-results/node-capacity-integration-nunit.xml`.

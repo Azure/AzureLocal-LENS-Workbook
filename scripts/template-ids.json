@@ -40,7 +40,7 @@
           "value": "hyperv",
           "slug": "Capacity-HyperV",
           "groupName": "cap-hyperv-section",
-          "label": "🖥️ Hyper-V VMs",
+          "label": "🖥️ Hyper-V",
           "galleryFolderName": "LENS-Capacity-Hyper-V-VMs"
         }
       ]

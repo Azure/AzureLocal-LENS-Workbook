@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -361,7 +361,7 @@
                     "showAnalytics": true,
                     "queryType": 7,
                     "visualization": "piechart",
-                    "noDataMessage": "No Arc Resource Bridge appliances found for the current Subscription / Resource Group / Cluster Tag filters. Adjust the filters above to see ARB status.",
+                    "noDataMessage": "No Arc Resource Bridge appliances found for the current Subscription / Resource Group / Instance Tag filters. Adjust the filters above to see ARB status.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -577,14 +577,14 @@
                   },
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
                   },
                   {
                     "columnId": "HCIClusterConnectivity",
-                    "label": "HCI Cluster Connectivity"
+                    "label": "HCI Instance Connectivity"
                   },
                   {
                     "columnId": "currentVersion",
@@ -663,7 +663,7 @@
                   "id": "arb-cluster-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "ArbClusterFilter",
-                  "label": "Cluster Name",
+                  "label": "Instance Name",
                   "type": 2,
                   "isRequired": true,
                   "multiSelect": true,
@@ -693,7 +693,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** If the 'Cluster Name' column shows 'Unknown', the ARB may have been orphaned. Check if the cluster resource has been deleted."
+              "json": "💡 **Tip:** If the 'Instance Name' column shows 'Unknown', the ARB may have been orphaned. Check if the instance resource has been deleted."
             },
             "name": "arb-orphaned-tip"
           },
@@ -860,14 +860,14 @@
                   },
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
                   },
                   {
                     "columnId": "HCIClusterConnectivity",
-                    "label": "HCI Cluster Connectivity"
+                    "label": "HCI Instance Connectivity"
                   },
                   {
                     "columnId": "currentVersion",
@@ -1053,7 +1053,7 @@
                         },
                         {
                           "columnId": "ClusterName",
-                          "label": "Associated Cluster"
+                          "label": "Associated Instance"
                         },
                         {
                           "columnId": "DaysOffline",

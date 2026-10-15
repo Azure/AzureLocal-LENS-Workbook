@@ -84,6 +84,8 @@ The monolithic `AzureLocal-LENS-Workbook.json` MUST be committed alongside any s
 
 Capacity owns its shared `MachinesLogAnalyticsWorkspace` selector in `workbooks/Capacity/Capacity.workbook`, immediately after the sub-navigation. Each Capacity section keeps an identical fallback in `items[1]` (`cap-shared-params`), outside its section content group. The monolithic build drops that standalone block; gallery template groups merge matching parameter names into the parent selection. Keep all five definitions identical and do not add another workspace selector inside a section group. The Managed Prometheus `AzureMonitorWorkspace` parameter remains separate.
 
+The same Capacity parameter row owns `ShowDCRSetupSection`, defaulting to `no`, with one shared `dcr-setup-group` below the scope note. Each standalone section keeps an identical toggle in `items[1]` and an identical guide as the first item in `items[2].content.items`. Both workbook builders omit those section-guide copies when embedding sections; gallery parameter merging reuses the parent toggle. Keep the five guide and toggle definitions synchronized rather than adding section-local controls.
+
 ### Working with the Workbook JSON
 
 The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When making changes:

@@ -670,7 +670,9 @@ testSuite('Cross-Component Resources Validation', () => {
         capacityWorkspace.description.includes('Overview capacity table uses Azure Resource Graph and is unaffected') &&
         capacityWorkspace.description.includes('Managed Prometheus uses the separate Azure Monitor Workspace selector') &&
         capacityChildren[navigationIndex + 2]?.name === 'capacity-workspace-scope-note' &&
-        capacityChildren[navigationIndex + 2].content.json === "**'Log Analytics Workspace' filter scope:** This applies across all Capacity views. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected by this filter." &&
+        capacityChildren[navigationIndex + 2].content.json.startsWith("**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.") &&
+        capacityChildren[navigationIndex + 2].content.json.includes('**DCR setup:** Use **Show DCR Setup Guide** beside the filter') &&
+        capacityChildren[navigationIndex + 2].content.json.includes('Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace**') &&
         workspaceParams.some(parameter => parameter.id === 'capacity-la-workspace'),
         'Capacity has one persistent multi-select workspace selector immediately below navigation, defaulting to All');
 
@@ -2091,19 +2093,19 @@ testSuite('DCR Deployment Guidance', () => {
         'dcr-setup-portal-method'
     ];
     const retainedProcedureNames = removedProcedureNames.filter(name => overviewItems.some(item => item.name === name));
-    assert(dcrGroup?.content?.items?.length === 1 && readiness && retainedProcedureNames.length === 0,
-        'Capacity Overview uses one concise DCR checklist with embedded links',
-        'one-item help group with no embedded procedures', JSON.stringify({
+    assert(dcrGroup?.content?.items?.length === 2 && readiness && retainedProcedureNames.length === 0,
+        'Capacity standalone help uses one heading and consolidated DCR checklist with embedded links',
+        'two-item help group with no embedded procedures', JSON.stringify({
             groupItems: dcrGroup?.content?.items?.map(item => item.name),
             retainedProcedureNames
         }));
 
     const readinessText = readiness?.content?.json || '';
     const readinessWordCount = readinessText.replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-    assert(readinessWordCount <= 180 && readinessText.includes('all 26 host and Hyper-V counter paths plus Event 3002') &&
+    assert(readinessWordCount <= 240 && readinessText.includes('all 26 host and Hyper-V counter paths plus Event 3002') &&
         readinessText.includes('remediation task') && readinessText.includes('does not deduplicate'),
         'Capacity DCR checklist stays concise while retaining deployment safeguards',
-        '<=180 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
+        '<=240 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
 
     const requiredDcrLinks = [
         'https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md',
@@ -2116,43 +2118,35 @@ testSuite('DCR Deployment Guidance', () => {
     assert(readinessText.startsWith('### Capacity telemetry checklist and steps') &&
         readinessText.includes('### Knowledge links and instructions') &&
         readinessText.includes('1. [📘 LENS DCR Setup and Deployment Guide]') &&
-        requiredDcrLinks.every(link => readinessText.includes(link)) && numberedDcrLinks.length === 5 &&
+        requiredDcrLinks.every(link => readinessText.includes(link)) && numberedDcrLinks.length === 6 &&
+        readinessText.includes('https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/') &&
         !overviewItems.some(item => item.name === 'dcr-setup-links') &&
         hyperVRaw.includes('example-dcr-template/README.md'),
-        'DCR guidance embeds five large numbered maintained links in the blue checklist',
-        'knowledge heading, LENS guide label, and five level-4 link headings', JSON.stringify(numberedDcrLinks));
+        'DCR guidance embeds six unique numbered maintained links in one blue checklist',
+        'knowledge heading, LENS guide label, and six level-4 link headings', JSON.stringify(numberedDcrLinks));
 
-    const hyperVReadiness = hyperVItems.find(item => item.name === 'hyperv-dcr-readiness');
-    const hyperVDcrGroup = hyperVItems.find(item => item.name === 'hyperv-dcr-setup-group');
-    const removedHyperVProcedureNames = [
-        'hyperv-dcr-prereqs',
-        'hyperv-dcr-counters-table',
-        'hyperv-dcr-portal-limitation',
-        'hyperv-dcr-verify'
-    ];
-    const retainedHyperVProcedureNames = removedHyperVProcedureNames
-        .filter(name => hyperVItems.some(item => item.name === name));
-    const hyperVReadinessText = hyperVReadiness?.content?.json || '';
-    const hyperVReadinessWordCount = hyperVReadinessText
-        .replace(/[`*_#>|-]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-    const numberedHyperVLinks = hyperVReadinessText.match(/^#### \d\. \[[^\]]+\]\([^)]+\)$/gm) || [];
-    assert(hyperVDcrGroup?.content?.items?.length === 1 && hyperVReadiness &&
-        retainedHyperVProcedureNames.length === 0 && hyperVReadinessWordCount <= 150 &&
-        hyperVReadinessText.startsWith('### Hyper-V telemetry checklist and steps') &&
-        hyperVReadinessText.includes('### Knowledge links and instructions') &&
-        hyperVReadinessText.includes('1. [📘 LENS DCR Setup and Deployment Guide]') &&
-        numberedHyperVLinks.length === 4 &&
-        hyperVReadinessText.includes('14 Hyper-V counter paths') &&
-        hyperVReadinessText.includes('Do not associate another DCR') &&
-        !hyperVItems.some(item => item.name === 'hyperv-dcr-links') &&
-        !hyperVRaw.includes('dcr-azurelocal-hyperv.json'),
-        'Hyper-V embeds concise setup guidance and four large numbered links',
-        'one item, <=150 words, knowledge links, complete coverage, and overlap warning', JSON.stringify({
-            groupItems: hyperVDcrGroup?.content?.items?.map(item => item.name),
-            retainedHyperVProcedureNames,
-            hyperVReadinessWordCount,
-            numberedHyperVLinks
-        }));
+    const capacitySource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity/Capacity.workbook'), 'utf8'));
+    const capacityChildren = capacitySource.items[2].content.items;
+    const sharedControls = capacityChildren.find(item => item.name === 'capacity-workspace-params').content.parameters;
+    const sharedToggle = sharedControls.find(parameter => parameter.name === 'ShowDCRSetupSection');
+    const sharedGuide = capacityChildren.find(item => item.name === 'dcr-setup-group');
+    const standaloneSections = ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster', 'Capacity-HyperV']
+        .map(tab => JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8')));
+    assert(sharedControls[0].name === 'MachinesLogAnalyticsWorkspace' && sharedControls[1] === sharedToggle &&
+        sharedToggle?.value === 'no' && sharedGuide?.conditionalVisibility?.parameterName === sharedToggle.name &&
+        sharedGuide.conditionalVisibility.comparison === 'isEqualTo' && sharedGuide.conditionalVisibility.value === 'yes' &&
+        capacityChildren.indexOf(sharedGuide) === capacityChildren.findIndex(item => item.name === 'capacity-workspace-scope-note') + 1 &&
+        allItems.filter(item => item.name === 'dcr-setup-group').length === 1 &&
+        allItems.flatMap(item => item.content?.parameters || []).filter(parameter => parameter.name === 'ShowDCRSetupSection').length === 1 &&
+        standaloneSections.every(section =>
+            JSON.stringify(section.items[1].content.parameters.find(parameter => parameter.name === 'ShowDCRSetupSection')) === JSON.stringify(sharedToggle) &&
+            JSON.stringify(section.items[2].content.items[0]) === JSON.stringify(sharedGuide) &&
+            !JSON.stringify(section).includes('ShowHyperVDCRSetupSection') &&
+            !JSON.stringify(section).includes('Show Hyper-V DCR Setup Guide')) &&
+        readinessText.includes('14 Hyper-V counter paths') && readinessText.includes('every 60 seconds') &&
+        readinessText.includes('Do not associate another DCR') &&
+        !hyperVItems.some(item => item.name === 'hyperv-dcr-setup-group') && !hyperVRaw.includes('dcr-azurelocal-hyperv.json'),
+        'Capacity shares one hidden-by-default guide beside the workspace filter, preserving standalone fallbacks and Hyper-V safeguards');
 
     assert(dcrReadme.includes('Additive does not mean deduplicated') && dcrReadme.includes('Keep current and future hosts associated with Azure Policy'),
         'Detailed DCR README documents duplicate ingestion and Policy enforcement',
@@ -2330,7 +2324,9 @@ testSuite('Split Architecture - Round-Trip Integrity', () => {
                 const sFile = path.resolve(__dirname, '..', 'workbooks', sect.slug, `${sect.slug}.workbook`);
                 if (!fs.existsSync(sFile)) continue;
                 const sSub = JSON.parse(fs.readFileSync(sFile, 'utf8'));
-                contentGroup.content.items.push(JSON.parse(JSON.stringify(sSub.items[2])));
+                const sectionGroup = JSON.parse(JSON.stringify(sSub.items[2]));
+                sectionGroup.content.items = sectionGroup.content.items.filter(item => item.name !== 'dcr-setup-group');
+                contentGroup.content.items.push(sectionGroup);
             }
         }
 

@@ -173,7 +173,9 @@ function main() {
           process.exit(1);
         }
         ensureDir(path.dirname(subDst));
-        fs.copyFileSync(src, subDst);
+        const section = readJson(src);
+        section.items[2].content.items = section.items[2].content.items.filter(item => item.name !== 'dcr-setup-group');
+        writeJson(subDst, section);
         const subKB = (fs.statSync(subDst).size / 1024).toFixed(1);
         console.log(`✅ ${path.relative(ROOT, subDst)} (${subKB} KB sub-section)`);
       }

@@ -243,6 +243,20 @@
             "value": [
               "value::all"
             ]
+          },
+          {
+            "id": "dcr-setup-toggle",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowDCRSetupSection",
+            "label": "Show DCR Setup Guide",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+            "value": "no"
           }
         ],
         "style": "pills",
@@ -258,46 +272,6 @@
         "groupType": "editable",
         "items": [
           {
-            "type": 1,
-            "content": {
-              "json": "## 🖥️ Hyper-V\r\n**Actionable data:** Assess Azure Local machine CPU, memory and VM density, then identify the busiest hypervisor-visible VMs and virtual disks. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, expand **Show Hyper-V DCR Setup Guide** below."
-            },
-            "name": "text-hyperv-header"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "---\r\n## 🔔 Hyper-V Telemetry Readiness\r\nThe charts require Azure Monitor Agent (AMA) and the 14 Hyper-V counter paths included in the all-in-one LENS Capacity DCR. Expand **Show Hyper-V DCR Setup Guide** for readiness checks and maintained deployment links."
-            },
-            "name": "text-hyperv-dcr-setup-header"
-          },
-          {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "hyperv-dcr-setup-toggle",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "ShowHyperVDCRSetupSection",
-                  "label": "Show Hyper-V DCR Setup Guide",
-                  "type": 10,
-                  "isRequired": true,
-                  "typeSettings": {
-                    "additionalResourceOptions": [],
-                    "showDefault": false
-                  },
-                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
-                  "value": "no"
-                }
-              ],
-              "style": "pills",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces"
-            },
-            "name": "hyperv-dcr-setup-toggle-param"
-          },
-          {
             "type": 12,
             "content": {
               "version": "NotebookGroup/1.0",
@@ -306,19 +280,33 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### Hyper-V telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every machine; select its Log Analytics workspace above.\r\n2. Use the **LENS Capacity DCR** with all **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds.\r\n3. Create it in the workspace region and associate every physical machine, excluding guests.\r\n4. Verify the Hyper-V counters in `Perf`. Missing rows indicate a path, association, agent, or propagation issue.\r\n\r\n> ⚠️ **Do not associate another DCR collecting the same Hyper-V paths into this workspace.** AMA does not deduplicate them, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
-                    "style": "warning"
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
-                  "name": "hyperv-dcr-readiness"
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Capacity telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every machine.\r\n2. Select this workbook's Log Analytics workspace. Create the DCR in the same Azure region.\r\n3. Deploy the dedicated **LENS Capacity DCR** with all 26 host and Hyper-V counter paths plus Event 3002. These include **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds. Event 3002 supplies CSV volume capacity and forecasts.\r\n4. Associate the DCR with every physical machine, excluding Arc-enabled guest VMs. Use Azure Policy and run a remediation task for existing machines.\r\n5. Verify machine Heartbeat, Perf, four Cluster CSVFS paths and Hyper-V counters; verify instance Event 3002. Missing Hyper-V rows can indicate a counter-path, association, agent, or propagation issue. Zero samples do not prove workload coverage.\r\n\r\nA dedicated rule is recommended. **Do not associate another DCR collecting the same paths into this workspace.** Multiple DCR associations are additive; AMA does not deduplicate overlapping collection, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🧭 Data Collection Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)\r\n\r\n#### 5. [💾 Cluster Shared Volumes](https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs)\r\n\r\n#### 6. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
+                    "style": "info"
+                  },
+                  "name": "dcr-setup-readiness"
                 }
               ]
             },
             "conditionalVisibility": {
-              "parameterName": "ShowHyperVDCRSetupSection",
+              "parameterName": "ShowDCRSetupSection",
               "comparison": "isEqualTo",
               "value": "yes"
             },
-            "name": "hyperv-dcr-setup-group"
+            "name": "dcr-setup-group"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🖥️ Hyper-V\r\n**Actionable data:** Assess Azure Local machine CPU, memory and VM density, then identify the busiest hypervisor-visible VMs and virtual disks. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, use **Show DCR Setup Guide** beside **Log Analytics Workspace**."
+            },
+            "name": "text-hyperv-header"
           },
           {
             "type": 9,

@@ -2693,6 +2693,21 @@ testSuite('Azure Local Instance Display Naming', () => {
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
 });
 testSuite('Hyper-V VM performance detailed analysis', () => {
+    const single = JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook'), 'utf8'));
+    const inventory = collectAllItems(single.items).find(item =>
+        item.content && item.content.title && item.content.title.startsWith('📋 Hyper-V VM Inventory')).content;
+    const nameLink = inventory.gridSettings.formatters.find(formatter => formatter.columnMatch === 'VM Name');
+    assert(inventory.query.includes('dynamic({ArcMachineMap})') &&
+        inventory.query.includes('resourceIds = make_set(vmArmId) by vmShort') &&
+        inventory.query.includes('where array_length(resourceIds) == 1') &&
+        inventory.query.includes('join kind=leftouter arcMap on vmShort') &&
+        inventory.query.includes("vmLink = iff(isempty(vmArmId), '', strcat('https://portal.azure.com/#@/resource', vmArmId))") &&
+        inventory.query.endsWith("| order by ['Avg CPU %'] desc nulls last") &&
+        nameLink.formatter === 7 && nameLink.formatOptions.linkColumn === 'vmLink' &&
+        inventory.gridSettings.formatters.some(formatter => formatter.columnMatch === 'vmLink' && formatter.formatter === 5),
+        'Single instance VM names link only to unique Arc guest matches without dropping unmatched rows',
+        'deduplicated optional guest links and unchanged CPU sorting', inventory.query);
     const staleCapacityLabel = /\bCapacity (?:tabs?\b|navigation\b|views\b|Hyper-V\b)|\bCapacity\s*(?:→|>|-->)|🏗️ Capacity(?! & Performance)/;
     const staleDisplayReferences = [];
     function checkDisplayReferences(value, location) {

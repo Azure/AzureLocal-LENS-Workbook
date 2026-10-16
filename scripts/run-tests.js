@@ -2693,6 +2693,23 @@ testSuite('Azure Local Instance Display Naming', () => {
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
 });
 testSuite('Hyper-V VM performance detailed analysis', () => {
+    const staleCapacityLabel = /\bCapacity (?:tabs?\b|navigation\b|views\b|Hyper-V\b)|\bCapacity\s*(?:→|>|-->)|🏗️ Capacity(?! & Performance)/;
+    const staleDisplayReferences = [];
+    function checkDisplayReferences(value, location) {
+        if (!value || typeof value !== 'object') return;
+        for (const [key, child] of Object.entries(value)) {
+            if (typeof child === 'string' && ['json', 'title', 'description', 'noDataMessage', 'linkLabel', 'label'].includes(key) &&
+                staleCapacityLabel.test(child)) staleDisplayReferences.push(`${location}.${key}`);
+            else if (child && typeof child === 'object') checkDisplayReferences(child, `${location}.${key}`);
+        }
+    }
+    checkDisplayReferences(workbook, 'root');
+    const activeReadme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8').split('## v1.1.5')[0];
+    const dcrReadme = fs.readFileSync(path.resolve(__dirname, '../example-dcr-template/README.md'), 'utf8');
+    assert(staleDisplayReferences.length === 0 && !staleCapacityLabel.test(activeReadme) &&
+        !staleCapacityLabel.test(dcrReadme),
+        'Current navigation, workbook help and active guides use Capacity & Performance',
+        'no retired Capacity tab references', JSON.stringify(staleDisplayReferences));
     const book = JSON.parse(fs.readFileSync(path.resolve(__dirname,
         '../workbooks/Capacity-HyperV/Capacity-HyperV.workbook'), 'utf8'));
     const items = collectAllItems(book.items);

@@ -220,7 +220,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "MultiClusterRGShared",
             "type": 1,
-            "description": "Hidden: 'yes' when any resource group in the current filter scope contains 2+ HCI clusters (multi-cluster-in-RG). Drives a warning banner above the Capacity Overview / storage / VM / AKS aggregations on the Capacity tab, because the ARG join chain collapses ARB → HCI cluster on resourceGroup and cannot disambiguate sibling clusters that share an RG.",
+            "description": "Hidden: 'yes' when any resource group in the current filter scope contains 2+ HCI clusters (multi-cluster-in-RG). Drives a warning banner above the Capacity Overview / storage / VM / AKS aggregations on the Capacity & Performance tab, because the ARG join chain collapses ARB → HCI cluster on resourceGroup and cannot disambiguate sibling clusters that share an RG.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| summarize cnt = count() by rgKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n| summarize sharedRGCount = countif(cnt > 1)\r\n| extend value = iff(sharedRGCount > 0, 'yes', '')\r\n| project value",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -871,7 +871,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
+              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity & Performance views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
               "style": "upsell"
             },
             "name": "capacity-ama-tip"

@@ -1,10 +1,12 @@
 # Example LENS Data Collection Rule (DCR) — `dcr-azurelocal-lens-capacity-perf`
 
-A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collects every performance counter and Windows event the **Azure Local LENS Workbook** Capacity tab needs to render — host-level **and** per-VM Hyper-V — in a single resource.
+A ready-to-deploy ARM template for an **Azure Monitor data collection rule (DCR)** that collects the host and per-VM Hyper-V performance counters and Windows events used by the **Azure Local LENS Workbook's Capacity & Performance tab**. It does not configure the separate, optional Managed Prometheus collection.
 
 This is the same template referenced by the workbook's **Capacity & Performance → Overview → Show DCR Setup Guide** section. This standalone, source-controllable file is the **recommended deployment path**: deploy it with `az deployment group create --template-file …` (or integrate it into your IaC repository) without copying JSON out of the workbook UI.
 
 > **Example data volume:** A sampled two-machine instance with 20 observed VMs projects to approximately **7.6 GB per machine over 30 days**. This projection from a one-hour ingestion baseline is illustrative, not a universal average or price estimate. [See the example, limitations, and measurement queries](#example-ingestion-volume).
+
+> **Upgrading from an earlier LENS DCR?** Update both the workbook and your existing DCR definition. The revised template replaces five obsolete CSV paths with four CSVFS paths. Review and back up the existing rule before updating; the change affects every associated machine. [See upgrade details and CSV metric definitions](#csv-storage-sources).
 
 ## Contents
 
@@ -20,6 +22,7 @@ This is the same template referenced by the workbook's **Capacity & Performance 
 - [Manual portal fallback](#manual-portal-fallback)
 - [Verify collection](#verify-collection)
 - [Related](#related)
+- [Appendix: CSV storage sources and interpretation](#csv-storage-sources)
 
 ## What it collects
 
@@ -30,25 +33,6 @@ This is the same template referenced by the workbook's **Capacity & Performance 
 | `Microsoft-Event` | `Microsoft-Windows-SDDC-Management/Operational` — `EventID=3002` | 1 XPath | CSV logical volume capacity and forecasts; not physical S2D pool headroom |
 
 **26 performance counter paths sampled every 60 seconds, plus 1 event XPath**, all routed to a single Log Analytics workspace. Wildcard paths expand into separate counter instances. Event 3002 supplies CSV volume capacity and forecasts when emitted; it is not sampled by the 60-second performance-counter setting. Optional Managed Prometheus metrics use separate collection and are not configured by this template.
-
-### CSV storage sources
-
-Version 1.1.2 corrects the five invalid CSV paths reported in [Issue #108](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/108). The `Cluster CSV File System` object can exist without exposing those counter names. The template now uses these four catalog-verified paths:
-
-```text
-\Cluster CSVFS(*)\Avg. sec/Read
-\Cluster CSVFS(*)\Avg. sec/Write
-\Cluster CSVFS(*)\Reads/sec
-\Cluster CSVFS(*)\Writes/sec
-```
-
-CSV latency is the mean of read and write latency, converted from seconds to milliseconds. CSV IOPS is reads/sec plus writes/sec. Queries deduplicate per-instance, per-counter minute samples, require both directions, and exclude aggregate instances. Cluster charts average daily host values; they are not cluster-total IOPS. CSV and logical-disk series remain separate, including when both are present. Logical-disk data may include the OS disk and does not establish CSV coverage.
-
-CSV **capacity** comes from Event 3002 `VolumeList`, not percentage counters. Queries select the latest cluster snapshot per day, deduplicate volume identities, validate size/used values, and exclude `ClusterPerformanceHistory`. Cluster percentages are size-weighted across volumes. These are logical volume capacities, not physical S2D pool headroom or resiliency-adjusted capacity.
-
-Successful counter samples, including zero values, prove that a path can be read, not that it captures the intended VM storage workload. CSVFS file-system counters must not be presented as physical-disk metrics or assumed to cover every direct/redirected I/O path. Check them during known activity. The separate Hyper-V VHD charts measure a different layer and are not substituted for CSV data.
-
-Existing deployments must **update the DCR definition**, not only the workbook. Preview the deployment script, then use its `-UpdateExistingDcr` option after reviewing the existing rule and taking a definition backup. An update affects every machine associated with that rule. The association-only rollback does not restore an earlier rule definition.
 
 ## Prerequisites
 
@@ -362,5 +346,26 @@ If expected data remains absent after configuration refresh and ingestion:
 ## Related
 
 - **Workbook**: Capacity & Performance → Overview → *Show DCR Setup Guide* links here as its recommended ARM / Azure CLI deployment path.
-- **Hyper-V coverage**: this all-in-one DCR already contains all 14 Hyper-V counter paths required by the Capacity Hyper-V views. Do not associate another DCR that collects the same paths into the same workspace.
+- **Hyper-V coverage**: this all-in-one DCR already contains all 14 Hyper-V counter paths required by the Capacity & Performance → Hyper-V views. Do not associate another DCR that collects the same paths into the same workspace.
 - **Portal alternative**: use the [manual portal fallback](#manual-portal-fallback) to merge all 26 counter paths plus Event 3002 into an existing organization-managed DCR.
+
+<a id="csv-storage-sources"></a>
+
+## Appendix: CSV storage sources and interpretation
+
+Version 1.1.2 corrects the five invalid CSV paths reported in [Issue #108](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/108). The `Cluster CSV File System` object can exist without exposing those counter names. The template now uses these four catalog-verified paths:
+
+```text
+\Cluster CSVFS(*)\Avg. sec/Read
+\Cluster CSVFS(*)\Avg. sec/Write
+\Cluster CSVFS(*)\Reads/sec
+\Cluster CSVFS(*)\Writes/sec
+```
+
+CSV latency is the mean of read and write latency, converted from seconds to milliseconds. CSV IOPS is reads/sec plus writes/sec. Queries deduplicate per-instance, per-counter minute samples, require both directions, and exclude aggregate instances. Cluster charts average daily host values; they are not cluster-total IOPS. CSV and logical-disk series remain separate, including when both are present. Logical-disk data may include the OS disk and does not establish CSV coverage.
+
+CSV **capacity** comes from Event 3002 `VolumeList`, not percentage counters. Queries select the latest cluster snapshot per day, deduplicate volume identities, validate size/used values, and exclude `ClusterPerformanceHistory`. Cluster percentages are size-weighted across volumes. These are logical volume capacities, not physical S2D pool headroom or resiliency-adjusted capacity.
+
+Successful counter samples, including zero values, prove that a path can be read, not that it captures the intended VM storage workload. CSVFS file-system counters must not be presented as physical-disk metrics or assumed to cover every direct/redirected I/O path. Check them during known activity. The separate Hyper-V VHD charts measure a different layer and are not substituted for CSV data.
+
+Existing deployments must **update the DCR definition**, not only the workbook. Preview the deployment script, then use its `-UpdateExistingDcr` option after reviewing the existing rule and taking a definition backup. An update affects every machine associated with that rule. The association-only rollback does not restore an earlier rule definition.

@@ -2993,7 +2993,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
+                    "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity & Performance views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
                     "style": "upsell"
                   },
                   "name": "capacity-ama-tip"
@@ -5138,7 +5138,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. The **Log Analytics Workspace** selector is shared across Capacity views; select the workspace(s) receiving this instance's telemetry.",
+                    "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. The **Log Analytics Workspace** selector is shared across Capacity & Performance views; select the workspace(s) receiving this instance's telemetry.",
                     "style": "upsell"
                   },
                   "name": "single-cluster-tip"
@@ -8158,7 +8158,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "**Physical Machine Capacity:** V:P CPU Ratio compares observed guest vCPUs with physical CPU cores, not logical processors (SMT threads). Blank values mean unavailable, not zero. Average CPU free is utilization headroom, not unallocated vCPUs.\r\n\r\n**Memory Used %:** Committed Bytes / (Committed Bytes + Available Bytes) * 100, matching the other Capacity tabs. Memory Used GiB represents Committed Bytes; Memory Free / Available GiB represents Available Bytes. Memory Total GiB is installed physical memory, not the percentage denominator; Used plus Available need not equal Total.\r\n\r\nThe table uses a 15-minute window ending two minutes ago, independent of Historic Time Range. Memory uses counter averages from the latest one-minute bucket and requires both counters. Changing, aggregate-only, or conflicting VM-name snapshots remain unconfirmed. **[Calculations and limitations](https://github.com/Azure/AzureLocal-LENS-Workbook#hyper-v-node-capacity)**",
+                    "json": "**Physical Machine Capacity:** V:P CPU Ratio compares observed guest vCPUs with physical CPU cores, not logical processors (SMT threads). Blank values mean unavailable, not zero. Average CPU free is utilization headroom, not unallocated vCPUs.\r\n\r\n**Memory Used %:** Committed Bytes / (Committed Bytes + Available Bytes) * 100, matching the other Capacity & Performance views. Memory Used GiB represents Committed Bytes; Memory Free / Available GiB represents Available Bytes. Memory Total GiB is installed physical memory, not the percentage denominator; Used plus Available need not equal Total.\r\n\r\nThe table uses a 15-minute window ending two minutes ago, independent of Historic Time Range. Memory uses counter averages from the latest one-minute bucket and requires both counters. Changing, aggregate-only, or conflicting VM-name snapshots remain unconfirmed. **[Calculations and limitations](https://github.com/Azure/AzureLocal-LENS-Workbook#hyper-v-node-capacity)**",
                     "style": "info"
                   },
                   "name": "hyperv-node-capacity-help"

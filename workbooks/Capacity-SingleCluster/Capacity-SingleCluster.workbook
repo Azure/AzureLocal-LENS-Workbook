@@ -311,7 +311,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. The **Log Analytics Workspace** selector is shared across Capacity views; select the workspace(s) receiving this instance's telemetry.",
+              "json": "💡 **Tip:** Select an Azure Local instance using the **'Select Instance'** drop-down below. The **Log Analytics Workspace** selector is shared across Capacity & Performance views; select the workspace(s) receiving this instance's telemetry.",
               "style": "upsell"
             },
             "name": "single-cluster-tip"

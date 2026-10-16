@@ -7800,7 +7800,6 @@
                         "name": "HyperVNodeSelectedHostIds",
                         "type": 1,
                         "isHiddenWhenLocked": true,
-                        "value": "[]",
                         "query": "let hosts = dynamic([{HyperVInvHostFilter}]);\r\nPerf\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| where set_has_element(hosts, Computer)\r\n| extend HostId = tolower(_ResourceId)\r\n| where isnotempty(HostId)\r\n| summarize value = tostring(make_set(HostId))",
                         "queryType": 0,
                         "resourceType": "microsoft.operationalinsights/workspaces",

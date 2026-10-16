@@ -2502,6 +2502,7 @@ testSuite('Hyper-V Node Capacity', () => {
         'Node cluster labels distinguish matching names across resource groups and subscriptions', 'name, resource group and subscription in labels', clusterFilter.query);
     const selectedHosts = ratioParameters.find(parameter => parameter.name === 'HyperVNodeSelectedHostIds');
     assert(selectedHosts?.timeContextFromParameter === 'HyperVTrendsTimeRange' &&
+        !Object.prototype.hasOwnProperty.call(selectedHosts, 'value') &&
         selectedHosts.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
         selectedHosts.query.includes('set_has_element(hosts, Computer)') &&
         selectedHosts.query.includes('HostId = tolower(_ResourceId)') &&
@@ -2509,7 +2510,7 @@ testSuite('Hyper-V Node Capacity', () => {
         query.includes('let selectedHostIds = dynamic({HyperVNodeSelectedHostIds})') &&
         query.includes("(set_has_element(hosts, '*') or set_has_element(hosts, 'value::all')) or set_has_element(selectedHostIds, HostId)") &&
         !query.includes('hostShortNames') && !query.includes('InventoryMatches'),
-        'Node host filtering resolves historical names to resource IDs without short-name fallback', 'historical resource identity and fixed metric window', selectedHosts?.name);
+        'Node host filtering queries historical resource IDs without a static empty value or short-name fallback', 'query-backed historical resource identity and fixed metric window', selectedHosts?.name);
     assert(query.includes('HostId = tolower(_ResourceId)') && query.includes('MappingCount == 1') &&
         query.includes('todouble(ObservedVcpus) / PhysicalCores'),
         'Node density joins by Arc resource ID and rejects ambiguous denominators', 'resource IDs and physical cores', true);

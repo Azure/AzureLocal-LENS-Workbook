@@ -209,6 +209,8 @@ Recommended quick checks on the target workspace:
 
 ### Example ingestion volume
 
+> **TL;DR:** Our sample projects to approximately **7.6 GB per machine over 30 days**, including host and VM performance counters. This is an illustrative projection from a one-hour ingestion baseline, not a universal average. Use the queries below to measure actual ingestion for your instances. **This is not a price estimate:** charges depend on the Log Analytics workspace's Azure region, table plans, pricing tier, currency, retention, and applicable allowances or discounts.
+
 **Illustrative ingestion estimate:** A two-host instance with **20 observed VMs** (12 on one host and 8 on the other, totaling 160 observed vCPUs), using 60-second performance sampling including the CSVFS counters, has an estimated billable ingestion volume of **21.1 MB/hour across both hosts**, or **15.2 GB over 30 days if sustained**. MB and GB use decimal units. This is a data-volume example, not a price estimate.
 
 **Caveat:** This illustrative estimate is based on a one-hour ingestion baseline. Actual data volume varies with the number of machines, VM density, CSV volume count, resulting performance-counter instances, event activity, and overlapping data collection.

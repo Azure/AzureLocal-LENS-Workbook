@@ -4,6 +4,8 @@ A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collect
 
 This is the same template referenced by the workbook's **Capacity & Performance → Overview → Show DCR Setup Guide** section. This standalone, source-controllable file is the **recommended deployment path**: deploy it with `az deployment group create --template-file …` (or integrate it into your IaC repository) without copying JSON out of the workbook UI.
 
+> **Example data volume:** A sampled two-machine instance with 20 observed VMs projects to approximately **7.6 GB per machine over 30 days**. This projection from a one-hour ingestion baseline is illustrative, not a universal average or price estimate. [See the example, limitations, and measurement queries](#example-ingestion-volume).
+
 ## Contents
 
 - [What it collects](#what-it-collects)
@@ -187,6 +189,18 @@ That means you can safely:
 
 This DCR ships **26 performance counter paths sampled every 60 seconds** plus the SDDC `Event 3002` stream, ingested into your Log Analytics workspace (LAW). Ingestion volume and retention policy on that LAW are what drive Azure Monitor cost — **not** the DCR itself — so before associating this DCR to a production fleet, take a few minutes to align the workspace settings with your business monitoring and cost-optimization requirements.
 
+- **Log Analytics data ingestion and retention** — ingestion and retention beyond the included period can incur charges, subject to your pricing tier and applicable allowances. Some table plans also charge for queries; follow the recommended table plans below before changing plans.
+- **Azure Managed Prometheus** (optional, not configured by this DCR) — the AKS performance charts in Capacity & Performance → Overview use separate collection, billed for samples ingested and query samples processed.
+- **Azure Monitor Agent (AMA)** — the agent extension itself has no separate charge. Charges can apply to the data collected and the Azure Monitor services used.
+
+**Official pricing and service references:**
+
+- [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/)
+- [Azure Workbooks overview](https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview)
+- [Azure Monitor Logs cost calculations and options](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs)
+- [Azure Resource Graph overview](https://learn.microsoft.com/azure/governance/resource-graph/overview) — no additional charge for Azure Resource Graph.
+- [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview)
+
 Recommended quick checks on the target workspace:
 
 - **Recommended table plan: Analytics for both `Perf` and `Event`.** Use this configuration for LENS. Check each table's plan under *Log Analytics workspace → Tables*; the DCR template does not set or change table plans. Although Azure supports Basic for `Perf`, LENS has not been validated with that configuration, so Basic is not currently recommended for LENS. `Event` requires Analytics. See Microsoft's table references for [Perf](https://learn.microsoft.com/azure/azure-monitor/reference/tables/perf) and [Event](https://learn.microsoft.com/azure/azure-monitor/reference/tables/event).
@@ -255,9 +269,11 @@ The **Azure Monitor Agent does NOT deduplicate across DCRs**. Overlapping collec
 | `Microsoft-Windows-SDDC-Management/Operational` Event 3002 | ✅ | ✅ | ⚠️ Yes |
 | `Microsoft-Windows-SDDC-Management/Operational` Events 3000 / 3001 / 3003 / 3004 | ❌ | ✅ | — |
 | `microsoft-windows-health/operational!*` | ❌ | ✅ | — |
-| `Cluster CSVFS(*)` latency and IOPS counters | ✅ | Verify existing collection | File-system layer; verify workload coverage |
+| `Cluster CSVFS(*)` latency and IOPS counters | ✅ | Not present in the inspected Cluster Insights-style DCRs; verify your rule | Only if your existing rule also collects these paths |
 | `Hyper-V *` perf counters | ✅ | ❌ (typically) | — |
 | Generic host counters (`Processor`, `Memory`, `LogicalDisk`, `Network Interface`) | ✅ | Partial overlap | ⚠️ Possible duplication on overlapping paths |
+
+The inspected Cluster Insights-style rules did not contain the four CSVFS paths or broad performance-counter wildcards that would include them. This is an observed configuration, not a guarantee for every deployment; definitions and customizations can vary. CSVFS counters measure the file-system layer, not physical-disk performance.
 
 **Recommendations to keep cost in check:**
 

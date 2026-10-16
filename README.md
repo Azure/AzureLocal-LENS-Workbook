@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.2 - Quality and Enhancements
+## Latest Version: v1.1.2
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -460,7 +460,7 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 ## What's New (v1.1.2)
 
-### Quality and Enhancements
+Azure Local LENS v1.1.2 is a quality and enhancements release focused on addressing customer feedback, improving reliability, and refining the workbook experience. It includes the following improvements:
 
 > **TL;DR - Action required for existing LENS DCR deployments:** Redeploy the [revised ARM template](example-dcr-template/dcr-azurelocal-capacity-perf.json) using the **same subscription, resource group, and DCR name** to update your existing rule **in place**. This replaces the counter list, removing the five obsolete CSV counter paths and adding the four `Cluster CSVFS` paths. **A new DCR is not required; existing associations continue to reference the same rule.**
 >

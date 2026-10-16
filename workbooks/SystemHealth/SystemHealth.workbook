@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -216,7 +216,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },
@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 📋 Azure Local System Health\r\n**Actionable data:** Surfaces non-succeeded health checks and update readiness across the fleet, so you can find and act on what needs attention now."
+              "json": "## 📋 Azure Local Instances - System Health\r\n**Actionable data:** Surfaces non-succeeded health checks and update readiness across the fleet, so you can find and act on what needs attention now."
             },
             "name": "text - 0"
           },
@@ -305,7 +305,7 @@
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No update data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessage": "No update data — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -329,7 +329,7 @@
                 "showLegend": true,
                 "legendPosition": "bottom"
               },
-              "noDataMessage": "No solution version data — clusters may not be reporting Update Summaries yet.",
+              "noDataMessage": "No solution version data — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -338,7 +338,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Update Readiness Summary** — Each cluster appears **once** in this matrix. Rows group clusters by their current **Update Status**; the columns break each row down by **Health State**. The **Total** column is the number of clusters in that update status, and summing the Total column gives your total cluster count. Clusters reporting a **Warning** or **Critical** health state are blocked from updating — use the tables below to identify and remove the blockers.",
+              "json": "⚠️ **Update Readiness Summary** — Each instance appears **once** in this matrix. Rows group instances by their current **Update Status**; the columns break each row down by **Health State**. The **Total** column is the number of instances in that update status, and summing the Total column gives your total instance count. Instances reporting a **Warning** or **Critical** health state are blocked from updating — use the tables below to identify and remove the blockers.",
               "style": "warning"
             },
             "name": "update-readiness-table-header"
@@ -425,7 +425,7 @@
                           "operator": "==",
                           "thresholdValue": "All Clusters",
                           "representation": "Blank",
-                          "text": "📊 All clusters (total)"
+                          "text": "📊 All instances (total)"
                         },
                         {
                           "operator": "Default",
@@ -481,7 +481,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No update runs found across the selected Subscription / Resource Group / Cluster Tag filters and time range. Try widening the time range or clearing the filters above.",
+              "noDataMessage": "No update runs found across the selected Subscription / Resource Group / Instance Tag filters and time range. Try widening the time range or clearing the filters above.",
               "noDataMessageStyle": 4
             },
             "name": "update-status-by-health-state-matrix"
@@ -503,14 +503,14 @@
           {
             "type": 1,
             "content": {
-              "json": "This table shows system health failures, sorted by 'Cluster Count', to show you the highest frequency issues at the top of the table, along with the list of 'Affected Clusters'."
+              "json": "This table shows system health failures, sorted by 'Instance Count', to show you the highest frequency issues at the top of the table, along with the list of 'Affected Instances'."
             },
             "name": "text - health failures description"
           },
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Note (large fleets):** These counts are accurate for typical fleets. Azure Resource Graph expands each cluster's health-check array up to **2,000 entries** (the `mv-expand limit`) before the failed-only filter is applied — in the extremely rare case a single cluster reports more than 2,000 *total* check entries, the oldest may be excluded. See the **Detailed Results** table below for full per-check detail.",
+              "json": "ℹ️ **Note (large fleets):** These counts are accurate for typical fleets. Azure Resource Graph expands each instance's health-check array up to **2,000 entries** (the `mv-expand limit`) before the failed-only filter is applied — in the extremely rare case a single instance reports more than 2,000 *total* check entries, some entries may be excluded depending on source array ordering. See the **Detailed Results** table below for full per-check detail.",
               "style": "info"
             },
             "name": "text - health failures 128-cap note"
@@ -524,7 +524,7 @@
                   "id": "f8a2c3d4-e5f6-7890-abcd-ef1234567890",
                   "version": "KqlParameterItem/1.0",
                   "name": "FailureClusterFilter",
-                  "label": "Filter by Cluster",
+                  "label": "Filter by Instance",
                   "type": 2,
                   "isRequired": true,
                   "multiSelect": true,
@@ -645,7 +645,7 @@
                   },
                   {
                     "columnId": "AffectedClusters",
-                    "label": "Affected Clusters"
+                    "label": "Affected Instances"
                   },
                   {
                     "columnId": "LatestOccurrence",
@@ -653,7 +653,7 @@
                   },
                   {
                     "columnId": "ClusterCount",
-                    "label": "Cluster Count"
+                    "label": "Instance Count"
                   }
                 ]
               },
@@ -663,7 +663,7 @@
                   "sortOrder": 2
                 }
               ],
-              "noDataMessage": "No failed health checks across the selected Subscription / Resource Group / Cluster Tag filters within the workbook time range. Try widening the time range, clearing the Cluster / Severity filters above, or confirm clusters are reporting Update Summaries to Azure.",
+              "noDataMessage": "No failed health checks across the selected Subscription / Resource Group / Instance Tag filters within the workbook time range. Try widening the time range, clearing the Instance / Severity filters above, or confirm instances are reporting Update Summaries to Azure.",
               "noDataMessageStyle": 4
             },
             "name": "health-check-failures-by-reason"
@@ -737,7 +737,7 @@
                   "value": [
                     "value::all"
                   ],
-                  "label": "Cluster Name"
+                  "label": "Instance Name"
                 },
                 {
                   "id": "4f902e36-2dbc-4bdf-89aa-44d2bb919cc6",
@@ -773,7 +773,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The 'Age of Health Results' column shows how many days ago the cluster last reported its health check results to Azure. A high value (highlighted in yellow/red) may indicate connectivity issues or that the cluster hasn't performed health checks recently. To troubleshoot: verify the cluster is connected to Azure, check the Azure Arc agent status, and run `Test-EnvironmentReadiness` on the cluster.",
+              "json": "💡 **Tip:** The 'Age of Health Results' column shows how many days ago the instance last reported its health check results to Azure. A high value (highlighted in yellow/red) may indicate connectivity issues or that the instance hasn't performed health checks recently. To troubleshoot: verify the instance is connected to Azure, check the Azure Arc agent status, and run `Test-EnvironmentReadiness` on the instance.",
               "style": "info"
             },
             "name": "health-age-tip"
@@ -951,7 +951,7 @@
                 "labelSettings": [
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
@@ -990,11 +990,11 @@
                   },
                   {
                     "columnId": "nodeCount",
-                    "label": "Node Count"
+                    "label": "Machine Count"
                   }
                 ]
               },
-              "noDataMessage": "No clusters reporting health summary data match the current Subscription / Resource Group / Cluster Tag and Cluster Name / Health Check State filters. Adjust the filters above, or confirm clusters are connected and reporting Update Summaries to Azure.",
+              "noDataMessage": "No instances reporting health summary data match the current Subscription / Resource Group / Instance Tag and Instance Name / Health Check State filters. Adjust the filters above, or confirm instances are connected and reporting Update Summaries to Azure.",
               "noDataMessageStyle": 4
             },
             "name": "system-health-checks-overview"
@@ -1002,7 +1002,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Review the '📦 Clusters with Updates Available' table in the '🔄 Update Progress' tab for more information on available updates, including SBE (Solution Builder Extension) dependency details.",
+              "json": "💡 **Tip:** Review the '📦 Instances with Updates Available' table in the '🔄 Update Progress' tab for more information on available updates, including SBE (Solution Builder Extension) dependency details.",
               "style": "info"
             },
             "name": "health-overview-tip"
@@ -1010,7 +1010,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔍 24 Hour System Health Checks - Detailed Results"
+              "json": "## 🔍 System Health Checks - Detailed Results"
             },
             "name": "detailed-health-check-results-header"
           },
@@ -1053,7 +1053,7 @@
                   "value": [
                     "value::all"
                   ],
-                  "label": "Cluster Name"
+                  "label": "Instance Name"
                 },
                 {
                   "id": "detail-healthstate-001",
@@ -1126,7 +1126,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project clusterName = name, clusterId = tolower(id), resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n    | summarize properties = take_any(properties) by clusterId\r\n    | extend hciClusterName = tostring(split(clusterId, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthStateDisplay = case(\r\n        healthState =~ 'Success', 'Healthy',\r\n        healthState =~ 'Failure', 'Critical',\r\n        healthState =~ 'Warning', 'Warning',\r\n        healthState =~ 'InProgress', 'In progress',\r\n        healthState =~ 'Error', 'Health check failed',\r\n        healthState =~ 'Unknown', 'Unknown',\r\n        healthState\r\n    )\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n    | extend healthCheckResult = iff(\r\n        (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and healthState in (\"Failure\", \"Warning\"),\r\n        pack_array(bag_pack(\r\n            \"status\", \"Failed\",\r\n            \"name\", \"HealthCheckDetailsUnavailable\",\r\n            \"displayName\", strcat(\"Health check details not available - Cluster Health State: \", healthStateDisplay),\r\n            \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run. Navigate to the cluster in Azure portal > Updates to view the full health check details.\",\r\n            \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n            \"severity\", iff(healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n            \"targetResourceName\", hciClusterName,\r\n            \"targetResourceType\", \"Cluster\",\r\n            \"timestamp\", lastChecked\r\n        )),\r\n        healthCheckResult\r\n    )\r\n    | mv-expand healthCheck = healthCheckResult limit 2000\r\n    | where '{detailShowSucceeded}' == 'true' or tostring(healthCheck.status) != \"Succeeded\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project clusterId, hciClusterName, healthState = healthStateDisplay, stepStatus = tostring(healthCheck.status), checkName = tostring(healthCheck.name), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), targetResourceType = tostring(healthCheck.targetResourceType), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on clusterId\r\n| where clusterId in ({detailClustername})\r\n| where healthState in ({detailHealthState})\r\n| where severity in ({detailSeverity})\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| project clusterName, clusterLink, severity, displayName, stepStatus, description, remediation, remediationLink, healthState, targetResourceName, targetResourceType, timestamp, resourceGroup, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project clusterName = name, clusterId = tolower(id), resourceGroup, subscriptionId\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n    | summarize properties = take_any(properties) by clusterId\r\n    | extend hciClusterName = tostring(split(clusterId, '/')[8])\r\n    | extend lastChecked = todatetime(properties.lastChecked)\r\n    | extend healthState = tostring(properties.healthState)\r\n    | extend healthStateDisplay = case(\r\n        healthState =~ 'Success', 'Healthy',\r\n        healthState =~ 'Failure', 'Critical',\r\n        healthState =~ 'Warning', 'Warning',\r\n        healthState =~ 'InProgress', 'In progress',\r\n        healthState =~ 'Error', 'Health check failed',\r\n        healthState =~ 'Unknown', 'Unknown',\r\n        healthState\r\n    )\r\n    | extend provisioningState = tostring(properties.provisioningState)\r\n    | extend healthCheckResult = array_reverse(properties.healthCheckResult)\r\n    | extend healthCheckResult = iff(\r\n        (isnull(healthCheckResult) or array_length(healthCheckResult) == 0) and healthState in (\"Failure\", \"Warning\"),\r\n        pack_array(bag_pack(\r\n            \"status\", \"Failed\",\r\n            \"name\", \"HealthCheckDetailsUnavailable\",\r\n            \"displayName\", strcat(\"Health check details not available - Instance Health State: \", healthStateDisplay),\r\n            \"description\", \"Detailed health check results are not populated in the update summary resource. This can occur when health checks were only triggered during an update run. Navigate to the instance in Azure portal > Updates to view the full health check details.\",\r\n            \"remediation\", \"https://learn.microsoft.com/azure/azure-local/update/update-troubleshooting-23h2\",\r\n            \"severity\", iff(healthState == \"Failure\", \"Critical\", \"Warning\"),\r\n            \"targetResourceName\", hciClusterName,\r\n            \"targetResourceType\", \"Cluster\",\r\n            \"timestamp\", lastChecked\r\n        )),\r\n        healthCheckResult\r\n    )\r\n    | mv-expand healthCheck = healthCheckResult limit 2000\r\n    | where '{detailShowSucceeded}' == 'true' or tostring(healthCheck.status) != \"Succeeded\"\r\n    | extend severityOrder = case(\r\n        tostring(healthCheck.severity) == \"Critical\", 1,\r\n        tostring(healthCheck.severity) == \"Warning\", 2,\r\n        tostring(healthCheck.severity) == \"Informational\", 3,\r\n        4)\r\n    | project clusterId, hciClusterName, healthState = healthStateDisplay, stepStatus = tostring(healthCheck.status), checkName = tostring(healthCheck.name), displayName = tostring(healthCheck.displayName), description = tostring(healthCheck.description), remediation = tostring(healthCheck.remediation), severity = tostring(healthCheck.severity), targetResourceName = tostring(healthCheck.targetResourceName), targetResourceType = tostring(healthCheck.targetResourceType), timestamp = todatetime(healthCheck.timestamp), lastChecked, severityOrder\r\n) on clusterId\r\n| where clusterId in ({detailClustername})\r\n| where healthState in ({detailHealthState})\r\n| where severity in ({detailSeverity})\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend DaysSinceCheck = datetime_diff('day', now(), lastChecked)\r\n| extend remediationLink = iff(remediation startswith 'https://', remediation, '')\r\n| project clusterName, clusterLink, severity, displayName, stepStatus, description, remediation, remediationLink, healthState, targetResourceName, targetResourceType, timestamp, resourceGroup, lastChecked, DaysSinceCheck, severityOrder\r\n| order by severityOrder asc, lastChecked desc",
               "size": 0,
               "showAnalytics": true,
               "showRefreshButton": true,
@@ -1303,14 +1303,14 @@
                 "labelSettings": [
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
                   },
                   {
                     "columnId": "healthState",
-                    "label": "Cluster Health Rollup"
+                    "label": "Instance Health Rollup"
                   },
                   {
                     "columnId": "stepStatus",
@@ -1369,7 +1369,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **How to read this table:** It shows non-succeeded checks by default; set **Show Succeeded Checks > Yes** to include passing checks. **Cluster Health Rollup** is the latest cluster-level update-summary state, while each row is an individual check from that health snapshot. A resolved check remains until the cluster runs and publishes another health evaluation, so compare **Timestamp** and **Days Since Check** before acting.\r\n\r\n⚠️ **Result limits:** The grid displays up to 10,000 rows, and Azure Resource Graph expands up to 2,000 checks per cluster before filtering. If results might be truncated, narrow **Cluster Name**, **Health Check State**, or **Check Severity**.",
+              "json": "💡 **How to read this table:** It shows non-succeeded checks by default; set **Show Succeeded Checks > Yes** to include passing checks. **Instance Health Rollup** is the latest instance-level update-summary state, while each row is an individual check from that health snapshot. A resolved check remains until the instance runs and publishes another health evaluation, so compare **Timestamp** and **Days Since Check** before acting.\r\n\r\n⚠️ **Result limits:** The grid displays up to 10,000 rows, and Azure Resource Graph expands up to 2,000 checks per instance before filtering. If results might be truncated, narrow **Instance Name**, **Health Check State**, or **Check Severity**.",
               "style": "info"
             },
             "name": "detailed-health-check-results-tip"

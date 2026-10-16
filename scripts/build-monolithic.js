@@ -75,6 +75,7 @@ function buildMonolithic() {
           throw new Error(`Sub-section ${sect.slug} has fewer than 3 items`);
         }
         const sectGroup = JSON.parse(JSON.stringify(sectSub.items[2]));
+        sectGroup.content.items = sectGroup.content.items.filter(item => item.name !== 'dcr-setup-group');
         if (sectGroup.name !== sect.groupName) {
           throw new Error(
             `Sub-section ${sect.slug} group name mismatch: ` +

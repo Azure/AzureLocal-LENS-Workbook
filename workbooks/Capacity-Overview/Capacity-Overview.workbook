@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -220,7 +220,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "MultiClusterRGShared",
             "type": 1,
-            "description": "Hidden: 'yes' when any resource group in the current filter scope contains 2+ HCI clusters (multi-cluster-in-RG). Drives a warning banner above the Capacity Overview / storage / VM / AKS aggregations on the Capacity tab, because the ARG join chain collapses ARB → HCI cluster on resourceGroup and cannot disambiguate sibling clusters that share an RG.",
+            "description": "Hidden: 'yes' when any resource group in the current filter scope contains 2+ HCI clusters (multi-cluster-in-RG). Drives a warning banner above the Capacity Overview / storage / VM / AKS aggregations on the Capacity & Performance tab, because the ARG join chain collapses ARB → HCI cluster on resourceGroup and cannot disambiguate sibling clusters that share an RG.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| summarize cnt = count() by rgKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n| summarize sharedRGCount = countif(cnt > 1)\r\n| extend value = iff(sharedRGCount > 0, 'yes', '')\r\n| project value",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -228,6 +228,49 @@
             "isHiddenWhenLocked": true,
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "capacity-la-workspace",
+            "version": "KqlParameterItem/1.0",
+            "name": "MachinesLogAnalyticsWorkspace",
+            "label": "Log Analytics Workspace",
+            "type": 2,
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "includeAll": true,
+            "defaultValue": "value::all",
+            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+            "crossComponentResources": [
+              "{Subscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "dcr-setup-toggle",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowDCRSetupSection",
+            "label": "Show DCR Setup Guide",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+            "value": "no"
           }
         ],
         "style": "pills",
@@ -244,9 +287,39 @@
         "title": "Overview",
         "items": [
           {
+            "type": 12,
+            "content": {
+              "version": "NotebookGroup/1.0",
+              "groupType": "editable",
+              "items": [
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
+                  },
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Capacity telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every machine.\r\n2. Select this workbook's Log Analytics workspace. Create the DCR in the same Azure region.\r\n3. Deploy the dedicated **LENS Capacity DCR** with all 26 host and Hyper-V counter paths plus Event 3002. These include **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds. Event 3002 supplies CSV volume capacity and forecasts.\r\n4. Associate the DCR with every physical machine, excluding Arc-enabled guest VMs. Use Azure Policy and run a remediation task for existing machines.\r\n5. Verify machine Heartbeat, Perf, four Cluster CSVFS paths and Hyper-V counters; verify instance Event 3002. Missing Hyper-V rows can indicate a counter-path, association, agent, or propagation issue. Zero samples do not prove workload coverage.\r\n\r\nA dedicated rule is recommended. **Do not associate another DCR collecting the same paths into this workspace.** Multiple DCR associations are additive; AMA does not deduplicate overlapping collection, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🧭 Data Collection Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)\r\n\r\n#### 5. [💾 Cluster Shared Volumes](https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs)\r\n\r\n#### 6. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
+                    "style": "info"
+                  },
+                  "name": "dcr-setup-readiness"
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "ShowDCRSetupSection",
+              "comparison": "isEqualTo",
+              "value": "yes"
+            },
+            "name": "dcr-setup-group"
+          },
+          {
             "type": 1,
             "content": {
-              "json": "## 🏗️ Cluster Capacity Overview\r\n**Actionable data:** The Top 5 charts below (sourced from Log Analytics) surface the clusters with the highest CPU, memory, storage, latency, IOPS, and network utilisation so you can spot capacity hot-spots.\r\n\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each cluster, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local cluster.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
+              "json": "## 🏗️ Instance Capacity Overview\r\n**Actionable data:** The Top 5 charts below (sourced from Log Analytics) surface the instances with the highest CPU, memory, storage, latency, IOPS, and network utilisation so you can spot capacity hot-spots.\r\n\r\nThe workloads total virtual cores (vCPUs) allocation and the physical cores (pCPUs) of each instance, provide a method to express the virtual to physical CPU ratio, shown as \"V:P CPU Ratio\" per Azure Local instance.\r\n\r\nUse the **'Target vCPU:pCPU Ratio'** drop-down box to input your preferred or target ratio, based on your risk appetite and/or workload performance requirements (default ratio is 4:1)."
             },
             "name": "text-capacity-overview-header"
           },
@@ -276,7 +349,7 @@
                   "name": "RatioFilter",
                   "label": "Filter by Ratio",
                   "type": 2,
-                  "description": "Filter clusters to show only those with a vCPU to pCPU ratio at or above the selected value.",
+                  "description": "Filter instances to show only those with a vCPU to pCPU ratio at or above the selected value.",
                   "isRequired": true,
                   "typeSettings": {
                     "additionalResourceOptions": [],
@@ -295,7 +368,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **How to read memory risk:** This Azure Resource Graph (ARG) table shows **provisioned** workload memory, not runtime committed memory.\r\n\r\n- **Workload Memory %** compares provisioned VM and AKS memory with estimated usable cluster memory.\r\n- **N-1 Memory Risk %** removes one node from usable memory. A value **≥ 100%** means the remaining nodes cannot accommodate all provisioned memory. A single-node cluster shows **No HA resiliency** because it cannot tolerate a node loss.\r\n\r\nThe estimate reserves 10% of physical memory for platform overhead and 8 GiB for the Azure Resource Bridge (ARB) VM. AKS memory uses [documented VM-size defaults](https://learn.microsoft.com/azure/aks/aksarc/scale-requirements#default-values-for-virtual-machine-sizes). For runtime **committed** memory, use the Memory Usage chart below or the **Single cluster** view.",
+              "json": "💡 **How to read memory risk:** This Azure Resource Graph (ARG) table shows **provisioned** workload memory, not runtime committed memory.\r\n\r\n- **Workload Memory %** compares provisioned VM and AKS memory with estimated usable instance memory.\r\n- **N-1 Memory Risk %** removes one machine from usable memory. A value **≥ 100%** means the remaining machines cannot accommodate all provisioned memory. A single-machine instance shows **No HA resiliency** because it cannot tolerate a machine loss.\r\n\r\nThe estimate reserves 10% of physical memory for platform overhead and 8 GiB for the Azure Resource Bridge (ARB) VM. AKS memory uses [documented VM-size defaults](https://learn.microsoft.com/azure/aks/aksarc/scale-requirements#default-values-for-virtual-machine-sizes). For runtime **committed** memory, use the Memory Usage chart below or the **Single instance** view.",
               "style": "upsell"
             },
             "name": "capacity-n1-memory-tip"
@@ -303,7 +376,7 @@
           {
             "type": 1,
             "content": {
-              "json": "⚠️ **Multi-cluster-in-RG attribution warning:** one or more resource groups in scope contain 2+ HCI clusters. Storage (`storageUsedGB` / `storageAvailGB` / `storageUsedPct`), VM (`vmVCPUTotal` / `vmMemoryTotalGB`), and AKS Arc (`aksVCPUTotal`) totals in the table below are aggregated **per resource group**, not per cluster — the ARG chain `storagecontainer / virtualmachineinstance / provisionedclusterinstance → customLocation → ARB → cluster` collapses on `resourceGroup` and cannot deterministically map a specific ARB appliance to a specific HCI cluster when siblings share an RG. Clusters that share an RG will report the **same combined** totals. See the **RG Attribution** column for the sibling clusters affecting each row.",
+              "json": "⚠️ **Multi-instance-in-RG attribution warning:** one or more resource groups in scope contain 2+ HCI instances. Storage (`storageUsedGB` / `storageAvailGB` / `storageUsedPct`), VM (`vmVCPUTotal` / `vmMemoryTotalGB`), and AKS Arc (`aksVCPUTotal`) totals in the table below are aggregated **per resource group**, not per instance — the ARG chain `storagecontainer / virtualmachineinstance / provisionedclusterinstance → customLocation → ARB → cluster` collapses on `resourceGroup` and cannot deterministically map a specific ARB appliance to a specific HCI instance when siblings share an RG. Instances that share an RG will report the **same combined** totals. See the **RG Attribution** column for the sibling instances affecting each row.",
               "style": "warning"
             },
             "conditionalVisibility": {
@@ -320,7 +393,7 @@
               "query": "// Cluster Capacity Overview - no let statements (ARG constraint)\r\nresources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend resourceGroupKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n| extend status = iff(properties.status == \"ConnectedRecently\", \"Connected\", \"Disconnected\")\r\n| extend nodeCount = array_length(properties.reportedProperties.nodes)\r\n| extend physicalCores = toint(properties.reportedProperties.nodes[0].coreCount) * nodeCount\r\n| extend physicalMemoryGB = toint(properties.reportedProperties.nodes[0].memoryInGiB) * nodeCount\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend vmLink = strcat('https://portal.azure.com/#@/resource', id, '/virtualmachines')\r\n| extend aksArcLink = strcat('https://portal.azure.com/#@/resource', id, '/kubernetesClusters')\r\n| extend machinesLink = strcat('https://portal.azure.com/#@/resource', id, '/machines')\r\n| extend storagePathLink = strcat('https://portal.azure.com/#@/resource', id, '/storagePath')\r\n// Join workload aggregation via custom location chain (single extensibilityresources ref)\r\n| join kind=leftouter (\r\n    resources\r\n    | where (type == \"microsoft.hybridcompute/machines\" and kind == \"HCI\")\r\n        or (type == \"microsoft.kubernetes/connectedclusters\" and tostring(properties.infrastructure) == \"azure_stack_hci\")\r\n    | extend isVM = (type == \"microsoft.hybridcompute/machines\")\r\n    | extend vCPUs = iff(isVM, toint(properties.detectedProperties.logicalCoreCount), toint(properties.totalCoreCount))\r\n    | extend memGB = iff(isVM, toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes), 0)\r\n    | extend resourceId = tolower(id)\r\n    | join kind=leftouter (\r\n        extensibilityresources\r\n        | where type in (\"microsoft.azurestackhci/virtualmachineinstances\", \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n        | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n        | extend parentId = tolower(iff(\r\n            type == \"microsoft.azurestackhci/virtualmachineinstances\",\r\n            substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")),\r\n            substring(id, 0, indexof(tolower(id), \"/providers/microsoft.hybridcontainerservice\"))))\r\n        | extend isProvCluster = (type == \"microsoft.hybridcontainerservice/provisionedclusterinstances\")\r\n        | extend cpVmSize = iff(isProvCluster, tostring(properties.controlPlane.vmSize), \"\")\r\n        | extend cpCount = iff(isProvCluster, toint(properties.controlPlane['count']), 0)\r\n        | mv-expand pool = iff(isProvCluster, properties.agentPoolProfiles, dynamic([null]))\r\n        | extend poolVmSize = tostring(pool.vmSize), poolCount = toint(pool['count'])\r\n        | extend poolMemPerVM = case(poolVmSize =~ \"Standard_A2_v2\", 4, poolVmSize =~ \"Standard_K8S3_v1\", 6, poolVmSize =~ \"Standard_A4_v2\", 8, poolVmSize =~ \"Standard_D2s_v3\", 8, poolVmSize =~ \"Standard_D4s_v3\", 16, poolVmSize =~ \"Standard_D8s_v3\", 32, poolVmSize =~ \"Standard_D16s_v3\", 64, poolVmSize =~ \"Standard_D32s_v3\", 128, poolVmSize =~ \"Standard_NC4_A2\", 8, poolVmSize =~ \"Standard_NC8_A2\", 16, poolVmSize =~ \"Standard_NC16_A2\", 64, poolVmSize =~ \"Standard_NC32_A2\", 128, poolVmSize =~ \"Standard_NC4_A16\", 8, poolVmSize =~ \"Standard_NC8_A16\", 16, poolVmSize =~ \"Standard_NC16_A16\", 64, poolVmSize =~ \"Standard_NC32_A16\", 128, poolVmSize =~ \"Standard_NK6\", 8, poolVmSize =~ \"Standard_NK12\", 16, poolVmSize =~ \"Standard_NC16_L4_1\", 64, poolVmSize =~ \"Standard_NC16_L4_2\", 64, poolVmSize =~ \"Standard_NC32_L4_1\", 128, poolVmSize =~ \"Standard_NC32_L4_2\", 128, poolVmSize =~ \"Standard_NC16_L40_1\", 64, poolVmSize =~ \"Standard_NC16_L40_2\", 64, poolVmSize =~ \"Standard_NC32_L40_1\", 128, poolVmSize =~ \"Standard_NC32_L40_2\", 128, poolVmSize =~ \"Standard_NC16_L40S_1\", 64, poolVmSize =~ \"Standard_NC16_L40S_2\", 64, poolVmSize =~ \"Standard_NC32_L40S_1\", 128, poolVmSize =~ \"Standard_NC32_L40S_2\", 128, poolVmSize =~ \"Standard_NC16_RTX6000Pro_1\", 64, poolVmSize =~ \"Standard_NC16_RTX6000Pro_2\", 64, poolVmSize =~ \"Standard_NC32_RTX6000Pro_1\", 128, poolVmSize =~ \"Standard_NC32_RTX6000Pro_2\", 128, 0)\r\n        | extend cpMemPerVM = case(cpVmSize =~ \"Standard_A2_v2\", 4, cpVmSize =~ \"Standard_K8S3_v1\", 6, cpVmSize =~ \"Standard_A4_v2\", 8, cpVmSize =~ \"Standard_D2s_v3\", 8, cpVmSize =~ \"Standard_D4s_v3\", 16, cpVmSize =~ \"Standard_D8s_v3\", 32, cpVmSize =~ \"Standard_D16s_v3\", 64, cpVmSize =~ \"Standard_D32s_v3\", 128, cpVmSize =~ \"Standard_NC4_A2\", 8, cpVmSize =~ \"Standard_NC8_A2\", 16, cpVmSize =~ \"Standard_NC16_A2\", 64, cpVmSize =~ \"Standard_NC32_A2\", 128, cpVmSize =~ \"Standard_NC4_A16\", 8, cpVmSize =~ \"Standard_NC8_A16\", 16, cpVmSize =~ \"Standard_NC16_A16\", 64, cpVmSize =~ \"Standard_NC32_A16\", 128, cpVmSize =~ \"Standard_NK6\", 8, cpVmSize =~ \"Standard_NK12\", 16, cpVmSize =~ \"Standard_NC16_L4_1\", 64, cpVmSize =~ \"Standard_NC16_L4_2\", 64, cpVmSize =~ \"Standard_NC32_L4_1\", 128, cpVmSize =~ \"Standard_NC32_L4_2\", 128, cpVmSize =~ \"Standard_NC16_L40_1\", 64, cpVmSize =~ \"Standard_NC16_L40_2\", 64, cpVmSize =~ \"Standard_NC32_L40_1\", 128, cpVmSize =~ \"Standard_NC32_L40_2\", 128, cpVmSize =~ \"Standard_NC16_L40S_1\", 64, cpVmSize =~ \"Standard_NC16_L40S_2\", 64, cpVmSize =~ \"Standard_NC32_L40S_1\", 128, cpVmSize =~ \"Standard_NC32_L40S_2\", 128, cpVmSize =~ \"Standard_NC16_RTX6000Pro_1\", 64, cpVmSize =~ \"Standard_NC16_RTX6000Pro_2\", 64, cpVmSize =~ \"Standard_NC32_RTX6000Pro_1\", 128, cpVmSize =~ \"Standard_NC32_RTX6000Pro_2\", 128, 0)\r\n        | summarize customLocId = take_any(customLocId), poolMemGB = sum(poolCount * poolMemPerVM), cpCount = take_any(cpCount), cpMemPerVM = take_any(cpMemPerVM) by parentId\r\n        | extend aksMemGB = poolMemGB + (cpCount * cpMemPerVM)\r\n        | project parentId, customLocId, aksMemGB\r\n    ) on $left.resourceId == $right.parentId\r\n    | join kind=leftouter (\r\n        resources\r\n        | where type == \"microsoft.extendedlocation/customlocations\"\r\n        | extend hostResourceId = tolower(tostring(properties.hostResourceId))\r\n        | extend arcBridgeRG = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))\r\n        | project customLocId = tolower(trim_end(\"/\", id)), arcBridgeRG\r\n    ) on customLocId\r\n    | summarize vmVCPUTotal = sumif(vCPUs, isVM), vmMemoryTotalGB = sumif(memGB, isVM), aksVCPUTotal = sumif(vCPUs, not(isVM)), aksMemoryTotalGB = sumif(aksMemGB, not(isVM)) by arcBridgeRG\r\n    // v1.0.4: sibling-cluster names+count per RG, unioned into the workload subquery to avoid a 7th join (ARG hard-caps joins at 6)\r\n    | union (\r\n        resources\r\n        | where type == \"microsoft.azurestackhci/clusters\"\r\n        | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n        | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n        | summarize rgClusterNames = make_set(name), rgClusterCount = count() by arcBridgeRG = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n    )\r\n    | summarize vmVCPUTotal = sum(vmVCPUTotal), vmMemoryTotalGB = sum(vmMemoryTotalGB), aksVCPUTotal = sum(aksVCPUTotal), aksMemoryTotalGB = sum(aksMemoryTotalGB), rgClusterNames = take_any(rgClusterNames), rgClusterCount = max(rgClusterCount) by arcBridgeRG\r\n) on $left.resourceGroupKey == $right.arcBridgeRG\r\n// Fallback for disconnected clusters - get node data from Arc machines\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\" and properties.cloudMetadata.provider == \"AzSHCI\" and kind != \"HCI\"\r\n    | summarize arcNodeCount = count(), arcLogicalCoresPerNode = take_any(toint(properties.detectedProperties.logicalCoreCount)), arcMemGiBPerNode = take_any(toint(properties.detectedProperties.totalPhysicalMemoryInGigabytes)) by arcClusterRG = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n) on $left.resourceGroupKey == $right.arcClusterRG\r\n// Storage volume aggregation\r\n| join kind=leftouter (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/storagecontainers\"\r\n    | extend storageCustomLocKey = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | join kind=inner (\r\n        resources\r\n        | where type == \"microsoft.extendedlocation/customlocations\"\r\n        | extend storageHostResourceId = tolower(tostring(properties.hostResourceId))\r\n        | extend storageArcBridgeRG = strcat(tostring(split(storageHostResourceId, '/')[2]), ':', tostring(split(storageHostResourceId, '/')[4]))\r\n        | project storageCustomLocKey = tolower(trim_end(\"/\", id)), storageArcBridgeRG\r\n    ) on storageCustomLocKey\r\n    | summarize storageTotalMB = sum(toreal(properties.status.containerSizeMB)), storageAvailMB = sum(toreal(properties.status.availableSizeMB)) by storageArcBridgeRG\r\n) on $left.resourceGroupKey == $right.storageArcBridgeRG\r\n| extend rgAttribution = iff(coalesce(rgClusterCount, 1) > 1, strcat('Shared with: ', strcat_array(set_difference(rgClusterNames, pack_array(name)), ', ')), '')\r\n| extend nodeCount = iff(nodeCount > 0, nodeCount, coalesce(arcNodeCount, 0))\r\n| extend physicalCores = iff(physicalCores > 0, physicalCores, coalesce(toint(arcLogicalCoresPerNode / 2) * arcNodeCount, 0))\r\n| extend physicalMemoryGB = iff(physicalMemoryGB > 0, physicalMemoryGB, coalesce(arcMemGiBPerNode * arcNodeCount, 0))\r\n// Compute totals and ratio\r\n| extend vmVCPUTotal = coalesce(vmVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = coalesce(vmMemoryTotalGB, 0)\r\n| extend aksMemoryTotalGB = coalesce(aksMemoryTotalGB, 0)\r\n| extend aksVCPUTotal = coalesce(aksVCPUTotal, 0)\r\n| extend vmMemoryTotalGB = vmMemoryTotalGB + aksMemoryTotalGB\r\n| extend vCPUTotal = vmVCPUTotal + aksVCPUTotal\r\n| extend ratioValue = iff(physicalCores > 0 and vCPUTotal > 0, round(todouble(vCPUTotal) / todouble(physicalCores), 1), 0.0)\r\n| extend pCPUvCPURatio = iff(ratioValue > 0, strcat(tostring(ratioValue), ':1'), 'N/A')\r\n| extend arbMemoryGB = 8.0\r\n| extend usableMemoryGB = max_of(round(todouble(physicalMemoryGB) * 0.9, 0) - arbMemoryGB, 0.0)\r\n| extend effectiveMemoryGB = iff(nodeCount >= 2, usableMemoryGB - (usableMemoryGB / nodeCount), usableMemoryGB)\r\n// Single-node clusters cannot tolerate a node loss (no HA resiliency); flag them with sentinel -1 so the formatter renders a distinct label.\r\n| extend memoryUsagePct = iff(nodeCount == 1, todouble(-1), iff(effectiveMemoryGB > 0 and vmMemoryTotalGB > 0, round(todouble(vmMemoryTotalGB) / todouble(effectiveMemoryGB) * 100.0, 1), 0.0))\r\n| extend workloadMemoryPct = iff(usableMemoryGB > 0 and vmMemoryTotalGB > 0, round(todouble(vmMemoryTotalGB) / todouble(usableMemoryGB) * 100.0, 1), 0.0)\r\n| extend ratioHealthPct = iff(ratioValue > 0 and todouble('{TargetRatio}') > 0, round(ratioValue / todouble('{TargetRatio}') * 100.0, 0), 0.0)\r\n| where '{RatioFilter}' == '0' or ratioValue >= todouble('{RatioFilter}')\r\n// Storage columns\r\n| extend storageUsedGB = iff(isnotempty(storageTotalMB), round((storageTotalMB - storageAvailMB) / 1024, 0), 0.0)\r\n| extend storageAvailGB = iff(isnotempty(storageTotalMB), round(storageAvailMB / 1024, 0), 0.0)\r\n| extend storageTotalGB = storageUsedGB + storageAvailGB\r\n| extend storageUsedPct = iff(storageTotalGB > 0, round(storageUsedGB / storageTotalGB * 100.0, 1), 0.0)\r\n| project ClusterName = name, clusterLink, vmLink, aksArcLink, machinesLink, storagePathLink, status, nodeCount, pCPUvCPURatio, ratioValue, ratioHealthPct, workloadMemoryPct, memoryUsagePct, physicalCores, vCPUTotal, physicalMemoryGB, vmMemoryTotalGB, vmVCPUTotal, aksVCPUTotal, storageUsedPct, storageUsedGB, storageAvailGB, rgAttribution\r\n| order by memoryUsagePct desc, ratioHealthPct desc, ClusterName asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "Cluster Capacity Overview",
+              "title": "Instance Capacity Overview",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,
@@ -517,7 +590,18 @@
                   },
                   {
                     "columnMatch": "physicalCores",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 0,
                       "options": {
@@ -529,7 +613,18 @@
                   },
                   {
                     "columnMatch": "physicalMemoryGB",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 5,
                       "options": {
@@ -557,7 +652,18 @@
                   },
                   {
                     "columnMatch": "vCPUTotal",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 0,
                       "options": {
@@ -569,7 +675,18 @@
                   },
                   {
                     "columnMatch": "vmMemoryTotalGB",
-                    "formatter": 0,
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
                     "numberFormat": {
                       "unit": 5,
                       "options": {
@@ -658,7 +775,7 @@
                 "labelSettings": [
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "status",
@@ -731,7 +848,7 @@
                 ]
               },
               "sortBy": [],
-              "noDataMessage": "No clusters returned by Azure Resource Graph. Verify your subscription filter and that your Azure Local clusters have completed Arc onboarding.",
+              "noDataMessage": "No instances returned by Azure Resource Graph. Verify your subscription filter and that your Azure Local Instances have completed Arc onboarding.",
               "noDataMessageStyle": 4
             },
             "name": "capacity-overview-table"
@@ -747,70 +864,14 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🔔 Capacity Telemetry Readiness\r\nThe ARG capacity table above works without Log Analytics. The performance and forecast charts below require Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. Expand **Show DCR Setup Guide** for a short readiness checklist and maintained deployment links."
-            },
-            "name": "text-dcr-setup-header"
-          },
-          {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "dcr-setup-toggle",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "ShowDCRSetupSection",
-                  "label": "Show DCR Setup Guide",
-                  "type": 10,
-                  "isRequired": true,
-                  "typeSettings": {
-                    "additionalResourceOptions": [],
-                    "showDefault": false
-                  },
-                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
-                  "value": "no"
-                }
-              ],
-              "style": "pills",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces"
-            },
-            "name": "dcr-setup-toggle-param"
-          },
-          {
-            "type": 12,
-            "content": {
-              "version": "NotebookGroup/1.0",
-              "groupType": "editable",
-              "items": [
-                {
-                  "type": 1,
-                  "content": {
-                    "json": "### Capacity telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every node.\r\n2. Select this workbook's Log Analytics workspace. Create the DCR in the same Azure region.\r\n3. Deploy the dedicated **LENS Capacity DCR** with all 27 host and Hyper-V counter paths plus Event 3002. Event 3002 is required only for storage volume-size forecasts.\r\n4. Associate the DCR with every physical host, excluding Arc-enabled guest VMs. Use Azure Policy and run a remediation task for existing nodes.\r\n5. Verify every node sends `Heartbeat`, `Perf`, and, for volume forecasts, Event 3002 data.\r\n\r\nA dedicated rule is recommended. Multiple DCR associations are additive, and AMA does not deduplicate overlapping collection into the same workspace.\r\n\r\n### Knowledge links and instructions\r\n\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🧭 Data Collection Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)\r\n\r\n#### 5. [💾 Cluster Shared Volumes](https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs)",
-                    "style": "info"
-                  },
-                  "name": "dcr-setup-readiness"
-                }
-              ]
-            },
-            "conditionalVisibility": {
-              "parameterName": "ShowDCRSetupSection",
-              "comparison": "isEqualTo",
-              "value": "yes"
-            },
-            "name": "dcr-setup-group"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 clusters with the highest average usage for each resource type over the selected time range."
+              "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 instances with the highest average usage for each resource type over the selected time range."
             },
             "name": "text-top5-charts-header"
           },
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your clusters must have the Azure Monitoring Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nIf the **Log Analytics Workspace** picker (_BELOW_) is set to **All** and your account cannot read one of the workspaces in scope, every graph below returns an access error — narrow the picker to only the workspace(s) you have permissions to access.",
+              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity & Performance views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
               "style": "upsell"
             },
             "name": "capacity-ama-tip"
@@ -823,35 +884,6 @@
                 "{Subscriptions}"
               ],
               "parameters": [
-                {
-                  "id": "machines-log-analytics-workspace-ov",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "MachinesLogAnalyticsWorkspace",
-                  "label": "Log Analytics Workspace",
-                  "type": 2,
-                  "description": "Select one or more Log Analytics workspaces collecting Azure Local node performance data. Defaults to All.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "includeAll": true,
-                    "showDefault": false
-                  },
-                  "defaultValue": "value::all",
-                  "value": [
-                    "value::all"
-                  ],
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
                 {
                   "id": "node-trends-time-range-ov",
                   "version": "KqlParameterItem/1.0",
@@ -906,7 +938,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Each chart below has a small '**Azure Local Machines:**' coverage tile directly beneath it, showing the **number of physical machines** that sent the chart's required Performance Counter(s) to your selected **Log Analytics workspace(s)** over the selected **Node Trends Time Range**. If a chart's coverage tile reports fewer machines than you expect, that DCR is collecting counters from only part of your fleet — expand the **🔔 Performance Counter DCR Configuration** section further up the tab for setup guidance.",
+              "json": "💡 **Tip:** Coverage tiles below the charts count **reporting machines** for performance metrics and **reporting instances** for CSV volume capacity. Counts reflect the selected **Log Analytics workspace(s)** and time range. To investigate missing coverage, check the scope and time filters, then use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify collection.",
               "style": "upsell"
             },
             "name": "capacity-counter-coverage-tip"
@@ -915,11 +947,11 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet top5 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize AvgUsage = avg(CounterValue) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| lookup kind=inner hciNodes on Computer\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(CounterValue), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
               "size": 1,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "CPU Usage (%) — Top 5 Clusters",
+              "title": "CPU Usage (%) — Top 5 Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -946,7 +978,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No CPU metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Processor(_Total)\\% Processor Time` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No CPU metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Processor(_Total)\\% Processor Time` are deployed to the instance machines. Open Show DCR Setup Guide beside Log Analytics Workspace for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -960,11 +992,11 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]))\r\n;\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]))\r\n;\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perCluster = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName in (\"Committed Bytes\", \"Available Bytes\")\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize\r\n    Committed = avgif(todouble(CounterValue), CounterName == \"Committed Bytes\"),\r\n    Available = avgif(todouble(CounterValue), CounterName == \"Available Bytes\"),\r\n    HaveCommitted = countif(CounterName == \"Committed Bytes\"),\r\n    HaveAvailable = countif(CounterName == \"Available Bytes\")\r\n  by bin(TimeGenerated, step), clusterName\r\n| where HaveCommitted > 0 and HaveAvailable > 0\r\n| extend Denom = Committed + Available\r\n| where Denom > 0\r\n| extend [\"Avg Usage %\"] = round(Committed / Denom * 100.0, 1)\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"];\r\nlet top5 = perCluster\r\n| summarize avgUsage = avg([\"Avg Usage %\"]) by clusterName\r\n| top 5 by avgUsage desc\r\n| project clusterName;\r\nperCluster\r\n| lookup kind=inner top5 on clusterName\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"]\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]))\r\n;\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]))\r\n;\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perCluster = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName in (\"Committed Bytes\", \"Available Bytes\")\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize\r\n    Committed = avgif(todouble(CounterValue), CounterName == \"Committed Bytes\"),\r\n    Available = avgif(todouble(CounterValue), CounterName == \"Available Bytes\"),\r\n    HaveCommitted = countif(CounterName == \"Committed Bytes\"),\r\n    HaveAvailable = countif(CounterName == \"Available Bytes\")\r\n  by bin(TimeGenerated, step), clusterName\r\n| where HaveCommitted > 0 and HaveAvailable > 0\r\n| extend Denom = Committed + Available\r\n| where Denom > 0\r\n| extend [\"Avg Usage %\"] = round(Committed / Denom * 100.0, 1)\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"];\r\nlet top5 = perCluster\r\n| summarize avgUsage = avg([\"Avg Usage %\"]) by clusterName\r\n| top 5 by avgUsage desc\r\n| project clusterName;\r\nperCluster\r\n| lookup kind=inner top5 on clusterName\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"]\r\n| order by TimeGenerated asc",
               "size": 1,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Memory Usage (%) — Top 5 Clusters",
+              "title": "Memory Usage (%) — Top 5 Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -991,7 +1023,7 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No memory metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting both `Memory\\Committed Bytes` and `Memory\\Available Bytes` are deployed to the instance machines. Open Show DCR Setup Guide beside Log Analytics Workspace for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1005,11 +1037,11 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet m1 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Cluster CSV File System\", \"Cluster Shared Volume\") and CounterName in (\"% Used Space\", \"% Free Space\")\r\n| where InstanceName != \"_Total\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| extend method = iff(ObjectName == \"Cluster CSV File System\", 1, 2)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step), method;\r\nlet m2 = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpaceMB\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend mountId = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| extend sizeMB = todouble(parse_json(Tags)[\"vm.azm.ms/diskSizeMB\"])\r\n| where isnotempty(mountId) and mountId != \"C:\" and isnotnull(sizeMB) and sizeMB > 0\r\n| summarize FreeMB = avg(Val), TotalMB = max(sizeMB) by Computer, mountId, TimeGenerated = bin(TimeGenerated, step)\r\n| summarize FreeMB = sum(FreeMB), TotalMB = sum(TotalMB) by Computer, TimeGenerated\r\n| where TotalMB > 0\r\n| extend UsedPercent = 100.0 * (1.0 - FreeMB / TotalMB)\r\n| project Computer, TimeGenerated, UsedPercent\r\n| extend method = 3;\r\nlet m3 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName has \"ClusterStorage\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 4;\r\nlet m4 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 5;\r\nlet allStorage = materialize(union m1, m2, m3, m4\r\n| summarize arg_min(method, UsedPercent) by Computer, TimeGenerated\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allStorage\r\n| summarize AvgUsage = avg(UsedPercent) by clusterName\r\n| top 5 by AvgUsage desc\r\n| project clusterName;\r\nallStorage\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Usage %\"] = round(avg(UsedPercent), 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNetRaw = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Network Adapter\", \"Network Interface\") and CounterName == \"Bytes Total/sec\"\r\n| where InstanceName != \"_Total\"\r\n| extend netRank = iff(ObjectName == \"Network Interface\", 1, 2)\r\n| project TimeGenerated, Computer, CounterValue, netRank;\r\nlet bestNetObject = perfNetRaw | summarize bestNetRank = min(netRank) by Computer;\r\nlet perfNet = perfNetRaw\r\n| lookup kind=inner bestNetObject on Computer\r\n| where netRank == bestNetRank\r\n| summarize BytesPerSec = sum(CounterValue) by Computer, TimeGenerated = bin(TimeGenerated, 1m)\r\n| project TimeGenerated, Computer, BytesPerSec, method = 1;\r\nlet insightsNet = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"Network\" and Name in (\"WriteBytesPerSecond\", \"ReadBytesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize BytesPerSec = sum(Val) by Computer, TimeGenerated = bin(TimeGenerated, 1m)\r\n| extend method = 2;\r\nlet netRaw = union perfNet, insightsNet\r\n| summarize BytesPerSec = sum(BytesPerSec) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method\r\n| summarize arg_min(method, BytesPerSec) by Computer, TimeGenerated;\r\nlet allNet = materialize(netRaw\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allNet\r\n| summarize AvgMBps = avg(BytesPerSec) / 1048576.0 by clusterName\r\n| top 5 by AvgMBps desc\r\n| project clusterName;\r\nallNet\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Throughput (MB/s)\"] = round(avg(BytesPerSec) / 1048576.0, 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
               "size": 1,
               "showAnalytics": true,
               "aggregation": 3,
-              "title": "Storage Usage (%) — Top 5 Clusters",
+              "title": "Network Throughput (MB/s) — Top 5 Instances",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -1019,15 +1051,14 @@
               "chartSettings": {
                 "xAxis": "TimeGenerated",
                 "yAxis": [
-                  "Avg Usage %"
+                  "Avg Throughput (MB/s)"
                 ],
                 "group": "clusterName",
                 "showLegend": true,
                 "ySettings": {
                   "min": 0,
-                  "max": 100,
                   "numberFormatSettings": {
-                    "unit": 1,
+                    "unit": 0,
                     "options": {
                       "style": "decimal",
                       "maximumFractionDigits": 1
@@ -1036,11 +1067,11 @@
                 },
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No storage utilisation metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `LogicalDisk(*)`, `Cluster CSV File System(*)` or `Cluster Shared Volume(*)` `% Used Space` / `% Free Space` counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
+              "noDataMessage": "No network throughput metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Network Adapter(*)\\Bytes Total/sec` or `Network Interface(*)\\Bytes Total/sec` (or VM Insights `InsightsMetrics`) are deployed to the instance machines. Open Show DCR Setup Guide beside Log Analytics Workspace for setup guidance.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
-            "name": "node-storage-trend",
+            "name": "node-network-throughput-trend",
             "styleSettings": {
               "margin": "5px",
               "padding": "5px"
@@ -1049,7 +1080,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Per-cluster average of host CPU (`Processor(_Total)`); guest VMs excluded."
+              "json": "Per-instance average of host CPU (`Processor(_Total)`); guest VMs excluded."
             },
             "customWidth": "33",
             "name": "node-cpu-caption",
@@ -1061,7 +1092,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Per-cluster average of Committed / (Committed + Available) memory; physical hosts only."
+              "json": "Per-instance average of Committed / (Committed + Available) memory; physical hosts only."
             },
             "customWidth": "33",
             "name": "node-memory-caption",
@@ -1073,10 +1104,10 @@
           {
             "type": 1,
             "content": {
-              "json": "Per-cluster average of each host's data-volume usage: Cluster Shared Volume / CSV counters where available, else capacity-weighted VM Insights bytes, else non-recovery logical volumes. OS recovery / system partitions excluded."
+              "json": "Per-instance average network throughput: one NIC object per host (Network Interface preferred over Network Adapter); counted once (Perf over VM Insights)."
             },
             "customWidth": "33",
-            "name": "node-storage-usage-caption",
+            "name": "node-network-caption",
             "styleSettings": {
               "margin": "5px",
               "padding": "5px"
@@ -1086,7 +1117,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\" and InstanceName == \"_Total\"\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
               "size": 0,
               "aggregation": 3,
               "title": "Machines sending CPU counters",
@@ -1128,7 +1159,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName in (\"Committed Bytes\", \"Available Bytes\")\r\n| summarize HaveCommitted = countif(CounterName == \"Committed Bytes\"), HaveAvailable = countif(CounterName == \"Available Bytes\") by Computer\r\n| where HaveCommitted > 0 and HaveAvailable > 0\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"Memory\" and CounterName in (\"Committed Bytes\", \"Available Bytes\")\r\n| summarize HaveCommitted = countif(CounterName == \"Committed Bytes\"), HaveAvailable = countif(CounterName == \"Available Bytes\") by Computer\r\n| where HaveCommitted > 0 and HaveAvailable > 0\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
               "size": 0,
               "aggregation": 3,
               "title": "Machines sending memory counters",
@@ -1170,10 +1201,221 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNodes = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"% Used Space\", \"% Free Space\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"% Free Space\", \"% Used Space\"))\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| summarize by Computer;\r\nlet insightsNodes = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpacePercentage\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize by Computer;\r\nunion perfNodes, insightsNodes\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNodes = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Network Adapter\", \"Network Interface\") and CounterName == \"Bytes Total/sec\"\r\n| where InstanceName != \"_Total\"\r\n| summarize by Computer;\r\nlet insightsNodes = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"Network\" and Name in (\"WriteBytesPerSecond\", \"ReadBytesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize by Computer;\r\nunion perfNodes, insightsNodes\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
               "size": 0,
               "aggregation": 3,
-              "title": "Machines sending storage-usage counters",
+              "title": "Machines sending network counters",
+              "noDataMessage": "—",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "turquoise"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "chartSettings": {
+                "showLegend": false,
+                "seriesLabelSettings": []
+              }
+            },
+            "customWidth": "33",
+            "name": "node-network-count",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet csvClusterMap = print mapping = parse_json('{ClusterNodeMap}')\r\n| mv-expand mapping to typeof(string)\r\n| extend parts = split(mapping, ':')\r\n| project ClusterArmId = tolower(tostring(parts[2])), clusterName = tostring(parts[1])\r\n| where isnotempty(ClusterArmId)\r\n| distinct ClusterArmId, clusterName;\r\nlet csvVolumes = Event\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\" and EventID == 3002\r\n| extend ClusterArmId = tolower(tostring(parse_xml(tostring(EventData)).DataItem.UserData.EventData[\"ArmId\"]))\r\n| extend Volumes = parse_json(RenderedDescription).VolumeList\r\n| where isnotempty(ClusterArmId) and array_length(Volumes) > 0\r\n| lookup kind=inner csvClusterMap on ClusterArmId\r\n| summarize arg_max(TimeGenerated, Volumes) by ClusterArmId, clusterName, Day = bin(TimeGenerated, step)\r\n| mv-expand volume = Volumes\r\n| extend VolumeLabel = tostring(volume.m_Label), TotalBytes = todouble(volume.m_Size), UsedBytes = todouble(volume.m_SizeUsed)\r\n| extend VolumeId = coalesce(tostring(volume.m_Id), tostring(volume.m_Path), VolumeLabel)\r\n| where isnotempty(VolumeLabel) and VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n| where TotalBytes > 0 and isnotnull(UsedBytes) and UsedBytes >= 0 and UsedBytes <= TotalBytes\r\n| summarize arg_max(TimeGenerated, TotalBytes, UsedBytes, VolumeLabel) by ClusterArmId, clusterName, VolumeId, Day;\r\nlet m2 = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpaceMB\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend mountId = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| extend sizeMB = todouble(parse_json(Tags)[\"vm.azm.ms/diskSizeMB\"])\r\n| where isnotempty(mountId) and mountId != \"C:\" and isnotnull(sizeMB) and sizeMB > 0\r\n| summarize FreeMB = avg(Val), TotalMB = max(sizeMB) by Computer, mountId, TimeGenerated = bin(TimeGenerated, step)\r\n| summarize FreeMB = sum(FreeMB), TotalMB = sum(TotalMB) by Computer, TimeGenerated\r\n| where TotalMB > 0\r\n| extend UsedPercent = 100.0 * (1.0 - FreeMB / TotalMB)\r\n| project Computer, TimeGenerated, UsedPercent\r\n| extend method = 3;\r\nlet m3 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName has \"ClusterStorage\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 4;\r\nlet m4 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 5;\r\nlet logicalCapacity = union m2, m3, m4\r\n| summarize arg_min(method, UsedPercent) by Computer, TimeGenerated\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize UsedPercent = avg(UsedPercent) by clusterName, TimeGenerated\r\n| extend StorageScope = \"Logical disks\";\r\nlet csvCapacity = csvVolumes\r\n| summarize TotalBytes = sum(TotalBytes), UsedBytes = sum(UsedBytes) by ClusterArmId, clusterName, TimeGenerated = Day\r\n| extend UsedPercent = 100.0 * UsedBytes / TotalBytes, StorageScope = \"CSV\";\r\nlet allCapacity = union csvCapacity, logicalCapacity;\r\nlet top5 = allCapacity\r\n| where StorageScope == \"CSV\"\r\n| summarize Average = avg(UsedPercent) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\nallCapacity\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"] = round(UsedPercent, 1)\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "CSV Volume Usage (%) - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No CSV volume capacity snapshots in the selected scope. Collect Event 3002 VolumeList data using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Avg. sec/Read\", \"Avg. sec/Write\")) or (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), LatencyMs = avg(CounterValue) * 1000.0 by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, LatencyMs, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), LatencyMs = avg(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", LatencyMs, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostLatencyMs) by Computer, TimeGenerated, StorageScope;\r\nlet dailySamples = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step);\r\nlet top5 = dailySamples\r\n| where StorageScope == \"CSV\"\r\n| summarize Average = avg(HostLatencyMs) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\ndailySamples\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| summarize [\"Avg Latency (ms)\"] = round(avg(HostLatencyMs), 2) by TimeGenerated, clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg Latency (ms)\"]\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "CSV Latency (ms) - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Latency (ms)"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No complete CSV Latency (ms) samples in the selected scope. Collect both required Cluster CSVFS read/write counters using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-latency-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Reads/sec\", \"Writes/sec\")) or (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), IOPS = sum(CounterValue) by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == iff(StorageScope == \"CSV\", 2, 1)\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, IOPS, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), IOPS = sum(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", IOPS, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostIOPS) by Computer, TimeGenerated, StorageScope;\r\nlet dailySamples = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostIOPS = avg(HostIOPS) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step);\r\nlet top5 = dailySamples\r\n| where StorageScope == \"CSV\"\r\n| summarize Average = avg(HostIOPS) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\ndailySamples\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| summarize [\"Avg IOPS\"] = round(avg(HostIOPS), 0) by TimeGenerated, clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg IOPS\"]\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "CSV IOPS - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg IOPS"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No complete CSV IOPS samples in the selected scope. Collect both required Cluster CSVFS read/write counters using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-storage-iops-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Size-weighted logical CSV volume usage from the latest Event 3002 snapshot per instance/day. This is not physical S2D pool headroom."
+            },
+            "customWidth": "33",
+            "name": "node-storage-usage-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "CSV file-system read/write latency averaged per host, then across hosts; seconds are converted to ms. This is not physical-disk latency."
+            },
+            "customWidth": "33",
+            "name": "node-storage-latency-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "CSV reads/sec plus writes/sec, summed per host and averaged across hosts. This is not a instance-total IOPS chart."
+            },
+            "customWidth": "33",
+            "name": "node-storage-iops-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet csvClusterMap = print mapping = parse_json('{ClusterNodeMap}')\r\n| mv-expand mapping to typeof(string)\r\n| extend parts = split(mapping, ':')\r\n| project ClusterArmId = tolower(tostring(parts[2])), clusterName = tostring(parts[1])\r\n| where isnotempty(ClusterArmId)\r\n| distinct ClusterArmId, clusterName;\r\nlet csvVolumes = Event\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\" and EventID == 3002\r\n| extend ClusterArmId = tolower(tostring(parse_xml(tostring(EventData)).DataItem.UserData.EventData[\"ArmId\"]))\r\n| extend Volumes = parse_json(RenderedDescription).VolumeList\r\n| where isnotempty(ClusterArmId) and array_length(Volumes) > 0\r\n| lookup kind=inner csvClusterMap on ClusterArmId\r\n| summarize arg_max(TimeGenerated, Volumes) by ClusterArmId, clusterName, Day = bin(TimeGenerated, step)\r\n| mv-expand volume = Volumes\r\n| extend VolumeLabel = tostring(volume.m_Label), TotalBytes = todouble(volume.m_Size), UsedBytes = todouble(volume.m_SizeUsed)\r\n| extend VolumeId = coalesce(tostring(volume.m_Id), tostring(volume.m_Path), VolumeLabel)\r\n| where isnotempty(VolumeLabel) and VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n| where TotalBytes > 0 and isnotnull(UsedBytes) and UsedBytes >= 0 and UsedBytes <= TotalBytes\r\n| summarize arg_max(TimeGenerated, TotalBytes, UsedBytes, VolumeLabel) by ClusterArmId, clusterName, VolumeId, Day;\r\nlet m2 = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpaceMB\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend mountId = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| extend sizeMB = todouble(parse_json(Tags)[\"vm.azm.ms/diskSizeMB\"])\r\n| where isnotempty(mountId) and mountId != \"C:\" and isnotnull(sizeMB) and sizeMB > 0\r\n| summarize FreeMB = avg(Val), TotalMB = max(sizeMB) by Computer, mountId, TimeGenerated = bin(TimeGenerated, step)\r\n| summarize FreeMB = sum(FreeMB), TotalMB = sum(TotalMB) by Computer, TimeGenerated\r\n| where TotalMB > 0\r\n| extend UsedPercent = 100.0 * (1.0 - FreeMB / TotalMB)\r\n| project Computer, TimeGenerated, UsedPercent\r\n| extend method = 3;\r\nlet m3 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName has \"ClusterStorage\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 4;\r\nlet m4 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 5;\r\nlet logicalCoverage = union m2, m3, m4\r\n| summarize arg_min(method, UsedPercent) by Computer, TimeGenerated\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer)\r\n| extend Label = \"Logical-disk machines:\";\r\nlet csvCoverage = csvVolumes\r\n| summarize Nodes = dcount(ClusterArmId)\r\n| extend Label = \"CSV instances:\";\r\nunion csvCoverage, logicalCoverage\r\n| where Label == \"CSV instances:\"",
+              "size": 0,
+              "aggregation": 3,
+              "title": "Instances reporting CSV volume capacity",
               "noDataMessage": "—",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1212,178 +1454,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfLatency = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\") and ObjectName in (\"Cluster CSV File System\", \"Cluster Shared Volume\", \"LogicalDisk\")\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend method = case(ObjectName == \"Cluster CSV File System\", 1, ObjectName == \"Cluster Shared Volume\", 2, 3)\r\n| extend LatencyMs = CounterValue * 1000.0\r\n| project TimeGenerated, Computer, LatencyMs, method;\r\nlet insightsLatency = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend LatencyMs = Val\r\n| project TimeGenerated, Computer, LatencyMs, method = 4;\r\nlet latRaw = union perfLatency, insightsLatency\r\n| summarize HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method\r\n| summarize arg_min(method, HostLatencyMs) by Computer, TimeGenerated;\r\nlet allLatency = materialize(latRaw\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step));\r\nlet top5 = allLatency\r\n| summarize AvgLatency = avg(HostLatencyMs) by clusterName\r\n| top 5 by AvgLatency desc\r\n| project clusterName;\r\nallLatency\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Latency (ms)\"] = round(avg(HostLatencyMs), 2) by TimeGenerated, clusterName\r\n| order by TimeGenerated asc",
-              "size": 1,
-              "showAnalytics": true,
-              "aggregation": 3,
-              "title": "Storage Latency (ms) — Top 5 Clusters",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "crossComponentResources": [
-                "{MachinesLogAnalyticsWorkspace}"
-              ],
-              "visualization": "linechart",
-              "chartSettings": {
-                "xAxis": "TimeGenerated",
-                "yAxis": [
-                  "Avg Latency (ms)"
-                ],
-                "group": "clusterName",
-                "showLegend": true,
-                "ySettings": {
-                  "min": 0,
-                  "numberFormatSettings": {
-                    "unit": 0,
-                    "options": {
-                      "style": "decimal",
-                      "maximumFractionDigits": 2
-                    }
-                  }
-                },
-                "seriesLabelSettings": []
-              },
-              "noDataMessage": "No storage latency metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `LogicalDisk(*)`, `Cluster CSV File System(*)` or `Cluster Shared Volume(*)` `Avg. Disk sec/Read` + `Avg. Disk sec/Write` counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
-              "noDataMessageStyle": 4
-            },
-            "customWidth": "33",
-            "name": "node-storage-latency-trend",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfIOPS = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where CounterName == \"Disk Transfers/sec\" and ObjectName in (\"Cluster CSV File System\", \"Cluster Shared Volume\", \"LogicalDisk\")\r\n| where InstanceName != \"_Total\" and InstanceName != \"HarddiskVolume1\"\r\n| extend method = case(ObjectName == \"Cluster CSV File System\", 1, ObjectName == \"Cluster Shared Volume\", 2, 3)\r\n| project TimeGenerated, Computer, IOPS = CounterValue, method;\r\nlet insightsIOPS = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| project TimeGenerated, Computer, IOPS = Val, method = 4;\r\nlet iopsRaw = union perfIOPS, insightsIOPS\r\n| summarize HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method\r\n| summarize arg_min(method, HostIOPS) by Computer, TimeGenerated;\r\nlet allIOPS = materialize(iopsRaw\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostIOPS = avg(HostIOPS) by Computer, clusterName, TimeGenerated = bin(TimeGenerated, step));\r\nlet top5 = allIOPS\r\n| summarize AvgIOPS = avg(HostIOPS) by clusterName\r\n| top 5 by AvgIOPS desc\r\n| project clusterName;\r\nallIOPS\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg IOPS\"] = round(avg(HostIOPS), 0) by TimeGenerated, clusterName\r\n| order by TimeGenerated asc",
-              "size": 1,
-              "showAnalytics": true,
-              "aggregation": 3,
-              "title": "Storage IOPS — Top 5 Clusters",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "crossComponentResources": [
-                "{MachinesLogAnalyticsWorkspace}"
-              ],
-              "visualization": "linechart",
-              "chartSettings": {
-                "xAxis": "TimeGenerated",
-                "yAxis": [
-                  "Avg IOPS"
-                ],
-                "group": "clusterName",
-                "showLegend": true,
-                "ySettings": {
-                  "min": 0,
-                  "numberFormatSettings": {
-                    "unit": 0,
-                    "options": {
-                      "style": "decimal",
-                      "maximumFractionDigits": 0
-                    }
-                  }
-                },
-                "seriesLabelSettings": []
-              },
-              "noDataMessage": "No storage IOPS metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `LogicalDisk(*)`, `Cluster CSV File System(*)` or `Cluster Shared Volume(*)` `Disk Transfers/sec` counters (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
-              "noDataMessageStyle": 4
-            },
-            "customWidth": "33",
-            "name": "node-storage-iops-trend",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNetRaw = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Network Adapter\", \"Network Interface\") and CounterName == \"Bytes Total/sec\"\r\n| where InstanceName != \"_Total\"\r\n| extend netRank = iff(ObjectName == \"Network Interface\", 1, 2)\r\n| project TimeGenerated, Computer, CounterValue, netRank;\r\nlet bestNetObject = perfNetRaw | summarize bestNetRank = min(netRank) by Computer;\r\nlet perfNet = perfNetRaw\r\n| lookup kind=inner bestNetObject on Computer\r\n| where netRank == bestNetRank\r\n| summarize BytesPerSec = sum(CounterValue) by Computer, TimeGenerated = bin(TimeGenerated, 1m)\r\n| project TimeGenerated, Computer, BytesPerSec, method = 1;\r\nlet insightsNet = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"Network\" and Name in (\"WriteBytesPerSecond\", \"ReadBytesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize BytesPerSec = sum(Val) by Computer, TimeGenerated = bin(TimeGenerated, 1m)\r\n| extend method = 2;\r\nlet netRaw = union perfNet, insightsNet\r\n| summarize BytesPerSec = sum(BytesPerSec) by Computer, TimeGenerated = bin(TimeGenerated, 1m), method\r\n| summarize arg_min(method, BytesPerSec) by Computer, TimeGenerated;\r\nlet allNet = materialize(netRaw\r\n| lookup kind=inner hciNodes on Computer);\r\nlet top5 = allNet\r\n| summarize AvgMBps = avg(BytesPerSec) / 1048576.0 by clusterName\r\n| top 5 by AvgMBps desc\r\n| project clusterName;\r\nallNet\r\n| lookup kind=inner top5 on clusterName\r\n| summarize [\"Avg Throughput (MB/s)\"] = round(avg(BytesPerSec) / 1048576.0, 1) by bin(TimeGenerated, step), clusterName\r\n| order by TimeGenerated asc",
-              "size": 1,
-              "showAnalytics": true,
-              "aggregation": 3,
-              "title": "Network Throughput (MB/s) — Top 5 Clusters",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces",
-              "crossComponentResources": [
-                "{MachinesLogAnalyticsWorkspace}"
-              ],
-              "visualization": "linechart",
-              "chartSettings": {
-                "xAxis": "TimeGenerated",
-                "yAxis": [
-                  "Avg Throughput (MB/s)"
-                ],
-                "group": "clusterName",
-                "showLegend": true,
-                "ySettings": {
-                  "min": 0,
-                  "numberFormatSettings": {
-                    "unit": 0,
-                    "options": {
-                      "style": "decimal",
-                      "maximumFractionDigits": 1
-                    }
-                  }
-                },
-                "seriesLabelSettings": []
-              },
-              "noDataMessage": "No network throughput metrics. Confirm Azure Monitor Agent (AMA) and a Data Collection Rule (DCR) collecting `Network Adapter(*)\\Bytes Total/sec` or `Network Interface(*)\\Bytes Total/sec` (or VM Insights `InsightsMetrics`) are deployed to the cluster nodes — expand the Performance Counter DCR Configuration section above for setup guidance.",
-              "noDataMessageStyle": 4
-            },
-            "customWidth": "33",
-            "name": "node-network-throughput-trend",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "Per-cluster average storage latency: one counter family per host (Cluster Shared Volume / CSV preferred, else LogicalDisk); OS / system disks included."
-            },
-            "customWidth": "33",
-            "name": "node-storage-latency-caption",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "Per-cluster average storage IOPS: one counter family per host (Cluster Shared Volume / CSV preferred, else LogicalDisk); OS / system disks included."
-            },
-            "customWidth": "33",
-            "name": "node-storage-iops-caption",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "Per-cluster average network throughput: one NIC object per host (Network Interface preferred over Network Adapter); counted once (Perf over VM Insights)."
-            },
-            "customWidth": "33",
-            "name": "node-network-caption",
-            "styleSettings": {
-              "margin": "5px",
-              "padding": "5px"
-            }
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNodes = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| summarize by Computer;\r\nlet insightsNodes = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize by Computer;\r\nunion perfNodes, insightsNodes\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Avg. sec/Read\", \"Avg. sec/Write\")) or (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), LatencyMs = avg(CounterValue) * 1000.0 by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, LatencyMs, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), LatencyMs = avg(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", LatencyMs, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostLatencyMs) by Computer, TimeGenerated, StorageScope;\r\nlet coverage = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer) by StorageScope;\r\ndatatable(StorageScope:string)[\"CSV\", \"Logical disks\"]\r\n| join kind=leftouter coverage on StorageScope\r\n| project Nodes = coalesce(Nodes, 0), Label = strcat(StorageScope, \" machines:\")\r\n| where Label == \"CSV machines:\"",
               "size": 0,
               "aggregation": 3,
-              "title": "Machines sending storage-latency counters",
+              "title": "Machines reporting CSV latency (ms)",
               "noDataMessage": "—",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1422,10 +1496,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNodes = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n    or (ObjectName == \"Cluster CSV File System\" and CounterName == \"Disk Transfers/sec\")\r\n    or (ObjectName == \"Cluster Shared Volume\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| summarize by Computer;\r\nlet insightsNodes = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize by Computer;\r\nunion perfNodes, insightsNodes\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Reads/sec\", \"Writes/sec\")) or (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), IOPS = sum(CounterValue) by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == iff(StorageScope == \"CSV\", 2, 1)\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, IOPS, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), IOPS = sum(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", IOPS, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostIOPS) by Computer, TimeGenerated, StorageScope;\r\nlet coverage = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer) by StorageScope;\r\ndatatable(StorageScope:string)[\"CSV\", \"Logical disks\"]\r\n| join kind=leftouter coverage on StorageScope\r\n| project Nodes = coalesce(Nodes, 0), Label = strcat(StorageScope, \" machines:\")\r\n| where Label == \"CSV machines:\"",
               "size": 0,
               "aggregation": 3,
-              "title": "Machines sending storage-IOPS counters",
+              "title": "Machines reporting CSV IOPS",
               "noDataMessage": "—",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1464,10 +1538,179 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfNodes = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName in (\"Network Adapter\", \"Network Interface\") and CounterName == \"Bytes Total/sec\"\r\n| where InstanceName != \"_Total\"\r\n| summarize by Computer;\r\nlet insightsNodes = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"Network\" and Name in (\"WriteBytesPerSecond\", \"ReadBytesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| summarize by Computer;\r\nunion perfNodes, insightsNodes\r\n| summarize by Computer\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = count()\r\n| extend Label = 'Azure Local Machines:'",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet csvClusterMap = print mapping = parse_json('{ClusterNodeMap}')\r\n| mv-expand mapping to typeof(string)\r\n| extend parts = split(mapping, ':')\r\n| project ClusterArmId = tolower(tostring(parts[2])), clusterName = tostring(parts[1])\r\n| where isnotempty(ClusterArmId)\r\n| distinct ClusterArmId, clusterName;\r\nlet csvVolumes = Event\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\" and EventID == 3002\r\n| extend ClusterArmId = tolower(tostring(parse_xml(tostring(EventData)).DataItem.UserData.EventData[\"ArmId\"]))\r\n| extend Volumes = parse_json(RenderedDescription).VolumeList\r\n| where isnotempty(ClusterArmId) and array_length(Volumes) > 0\r\n| lookup kind=inner csvClusterMap on ClusterArmId\r\n| summarize arg_max(TimeGenerated, Volumes) by ClusterArmId, clusterName, Day = bin(TimeGenerated, step)\r\n| mv-expand volume = Volumes\r\n| extend VolumeLabel = tostring(volume.m_Label), TotalBytes = todouble(volume.m_Size), UsedBytes = todouble(volume.m_SizeUsed)\r\n| extend VolumeId = coalesce(tostring(volume.m_Id), tostring(volume.m_Path), VolumeLabel)\r\n| where isnotempty(VolumeLabel) and VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n| where TotalBytes > 0 and isnotnull(UsedBytes) and UsedBytes >= 0 and UsedBytes <= TotalBytes\r\n| summarize arg_max(TimeGenerated, TotalBytes, UsedBytes, VolumeLabel) by ClusterArmId, clusterName, VolumeId, Day;\r\nlet m2 = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpaceMB\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend mountId = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| extend sizeMB = todouble(parse_json(Tags)[\"vm.azm.ms/diskSizeMB\"])\r\n| where isnotempty(mountId) and mountId != \"C:\" and isnotnull(sizeMB) and sizeMB > 0\r\n| summarize FreeMB = avg(Val), TotalMB = max(sizeMB) by Computer, mountId, TimeGenerated = bin(TimeGenerated, step)\r\n| summarize FreeMB = sum(FreeMB), TotalMB = sum(TotalMB) by Computer, TimeGenerated\r\n| where TotalMB > 0\r\n| extend UsedPercent = 100.0 * (1.0 - FreeMB / TotalMB)\r\n| project Computer, TimeGenerated, UsedPercent\r\n| extend method = 3;\r\nlet m3 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName has \"ClusterStorage\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 4;\r\nlet m4 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 5;\r\nlet logicalCapacity = union m2, m3, m4\r\n| summarize arg_min(method, UsedPercent) by Computer, TimeGenerated\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize UsedPercent = avg(UsedPercent) by clusterName, TimeGenerated\r\n| extend StorageScope = \"Logical disks\";\r\nlet csvCapacity = csvVolumes\r\n| summarize TotalBytes = sum(TotalBytes), UsedBytes = sum(UsedBytes) by ClusterArmId, clusterName, TimeGenerated = Day\r\n| extend UsedPercent = 100.0 * UsedBytes / TotalBytes, StorageScope = \"CSV\";\r\nlet allCapacity = union csvCapacity, logicalCapacity;\r\nlet top5 = allCapacity\r\n| where StorageScope == \"Logical disks\"\r\n| summarize Average = avg(UsedPercent) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\nallCapacity\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg Usage %\"] = round(UsedPercent, 1)\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "Logical Disk Usage (%) - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Usage %"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "max": 100,
+                  "numberFormatSettings": {
+                    "unit": 1,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 1
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No logical-disk Usage (%) samples in the selected scope. Check LogicalDisk collection using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Avg. sec/Read\", \"Avg. sec/Write\")) or (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), LatencyMs = avg(CounterValue) * 1000.0 by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, LatencyMs, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), LatencyMs = avg(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", LatencyMs, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostLatencyMs) by Computer, TimeGenerated, StorageScope;\r\nlet dailySamples = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostLatencyMs = avg(HostLatencyMs) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step);\r\nlet top5 = dailySamples\r\n| where StorageScope == \"Logical disks\"\r\n| summarize Average = avg(HostLatencyMs) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\ndailySamples\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| summarize [\"Avg Latency (ms)\"] = round(avg(HostLatencyMs), 2) by TimeGenerated, clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg Latency (ms)\"]\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "Logical Disk Latency (ms) - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg Latency (ms)"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No logical-disk Latency (ms) samples in the selected scope. Check LogicalDisk collection using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-latency-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Reads/sec\", \"Writes/sec\")) or (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), IOPS = sum(CounterValue) by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == iff(StorageScope == \"CSV\", 2, 1)\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, IOPS, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), IOPS = sum(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", IOPS, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostIOPS) by Computer, TimeGenerated, StorageScope;\r\nlet dailySamples = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize HostIOPS = avg(HostIOPS) by Computer, clusterName, StorageScope, TimeGenerated = bin(TimeGenerated, step);\r\nlet top5 = dailySamples\r\n| where StorageScope == \"Logical disks\"\r\n| summarize Average = avg(HostIOPS) by clusterName, StorageScope\r\n| order by Average desc, clusterName asc\r\n| take 5\r\n| project clusterName, StorageScope;\r\ndailySamples\r\n| lookup kind=inner top5 on clusterName, StorageScope\r\n| summarize [\"Avg IOPS\"] = round(avg(HostIOPS), 0) by TimeGenerated, clusterName, StorageScope\r\n| project TimeGenerated, clusterName, [\"Avg IOPS\"]\r\n| order by TimeGenerated asc",
+              "size": 1,
+              "showAnalytics": true,
+              "aggregation": 3,
+              "title": "Logical Disk IOPS - Top 5 Instances",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Avg IOPS"
+                ],
+                "group": "clusterName",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 0
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              },
+              "noDataMessage": "No logical-disk IOPS samples in the selected scope. Check LogicalDisk collection using the DCR setup guide.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-iops-trend",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Logical-disk usage averaged across hosts. Includes OS disks."
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-usage-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Logical-disk read/write latency averaged per host, then across hosts. Includes OS disks."
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-latency-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "Logical-disk IOPS summed per host and averaged across hosts, not a instance total. Includes OS disks."
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-iops-caption",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet csvClusterMap = print mapping = parse_json('{ClusterNodeMap}')\r\n| mv-expand mapping to typeof(string)\r\n| extend parts = split(mapping, ':')\r\n| project ClusterArmId = tolower(tostring(parts[2])), clusterName = tostring(parts[1])\r\n| where isnotempty(ClusterArmId)\r\n| distinct ClusterArmId, clusterName;\r\nlet csvVolumes = Event\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where EventLog =~ \"Microsoft-Windows-SDDC-Management/Operational\" and EventID == 3002\r\n| extend ClusterArmId = tolower(tostring(parse_xml(tostring(EventData)).DataItem.UserData.EventData[\"ArmId\"]))\r\n| extend Volumes = parse_json(RenderedDescription).VolumeList\r\n| where isnotempty(ClusterArmId) and array_length(Volumes) > 0\r\n| lookup kind=inner csvClusterMap on ClusterArmId\r\n| summarize arg_max(TimeGenerated, Volumes) by ClusterArmId, clusterName, Day = bin(TimeGenerated, step)\r\n| mv-expand volume = Volumes\r\n| extend VolumeLabel = tostring(volume.m_Label), TotalBytes = todouble(volume.m_Size), UsedBytes = todouble(volume.m_SizeUsed)\r\n| extend VolumeId = coalesce(tostring(volume.m_Id), tostring(volume.m_Path), VolumeLabel)\r\n| where isnotempty(VolumeLabel) and VolumeLabel !contains \"ClusterPerformanceHistory\"\r\n| where TotalBytes > 0 and isnotnull(UsedBytes) and UsedBytes >= 0 and UsedBytes <= TotalBytes\r\n| summarize arg_max(TimeGenerated, TotalBytes, UsedBytes, VolumeLabel) by ClusterArmId, clusterName, VolumeId, Day;\r\nlet m2 = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name == \"FreeSpaceMB\"\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend mountId = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| extend sizeMB = todouble(parse_json(Tags)[\"vm.azm.ms/diskSizeMB\"])\r\n| where isnotempty(mountId) and mountId != \"C:\" and isnotnull(sizeMB) and sizeMB > 0\r\n| summarize FreeMB = avg(Val), TotalMB = max(sizeMB) by Computer, mountId, TimeGenerated = bin(TimeGenerated, step)\r\n| summarize FreeMB = sum(FreeMB), TotalMB = sum(TotalMB) by Computer, TimeGenerated\r\n| where TotalMB > 0\r\n| extend UsedPercent = 100.0 * (1.0 - FreeMB / TotalMB)\r\n| project Computer, TimeGenerated, UsedPercent\r\n| extend method = 3;\r\nlet m3 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName has \"ClusterStorage\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 4;\r\nlet m4 = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == \"LogicalDisk\" and CounterName in (\"% Free Space\", \"% Used Space\", \"% Disk Space Used\")\r\n| where InstanceName != \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| extend UsedPercent = iff(CounterName == \"% Free Space\", 100.0 - CounterValue, CounterValue)\r\n| summarize UsedPercent = avg(UsedPercent) by Computer, TimeGenerated = bin(TimeGenerated, step)\r\n| extend method = 5;\r\nlet logicalCoverage = union m2, m3, m4\r\n| summarize arg_min(method, UsedPercent) by Computer, TimeGenerated\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer)\r\n| extend Label = \"Logical-disk machines:\";\r\nlet csvCoverage = csvVolumes\r\n| summarize Nodes = dcount(ClusterArmId)\r\n| extend Label = \"CSV instances:\";\r\nunion csvCoverage, logicalCoverage\r\n| where Label == \"Logical-disk machines:\"",
               "size": 0,
               "aggregation": 3,
-              "title": "Machines sending network counters",
+              "title": "Machines reporting logical disk usage (%)",
               "noDataMessage": "—",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1484,7 +1727,7 @@
                   "columnMatch": "Nodes",
                   "formatter": 12,
                   "formatOptions": {
-                    "palette": "turquoise"
+                    "palette": "purple"
                   }
                 },
                 "showBorder": true,
@@ -1496,7 +1739,91 @@
               }
             },
             "customWidth": "33",
-            "name": "node-network-count",
+            "name": "node-logical-storage-usage-count",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Avg. sec/Read\", \"Avg. sec/Write\")) or (ObjectName == \"LogicalDisk\" and CounterName in (\"Avg. Disk sec/Read\", \"Avg. Disk sec/Write\"))\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), LatencyMs = avg(CounterValue) * 1000.0 by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, LatencyMs, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadLatencyMs\", \"WriteLatencyMs\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), LatencyMs = avg(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", LatencyMs, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostLatencyMs = avg(LatencyMs) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostLatencyMs) by Computer, TimeGenerated, StorageScope;\r\nlet coverage = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer) by StorageScope;\r\ndatatable(StorageScope:string)[\"CSV\", \"Logical disks\"]\r\n| join kind=leftouter coverage on StorageScope\r\n| project Nodes = coalesce(Nodes, 0), Label = strcat(StorageScope, \" machines:\")\r\n| where Label == \"Logical disks machines:\"",
+              "size": 0,
+              "aggregation": 3,
+              "title": "Machines reporting logical disk latency (ms)",
+              "noDataMessage": "—",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "orange"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "chartSettings": {
+                "showLegend": false,
+                "seriesLabelSettings": []
+              }
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-latency-count",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let trendStart = {NodeTrendsTimeRange:start};\r\nlet trendEnd = {NodeTrendsTimeRange:end};\r\nlet step = 1d;\r\nlet clusterMap = materialize(\r\n    print mapping = parse_json('{ClusterRGMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet nodeMap = materialize(\r\n    print mapping = parse_json('{ClusterNodeMap}')\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterName = tostring(parts[1]));\r\nlet clustersWithNodeMap = nodeMap | distinct clusterName;\r\nlet hciNodes = materialize(Heartbeat\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where OSType == \"Windows\"\r\n| summarize arg_max(TimeGenerated, *) by Computer\r\n| project Computer, nodeRG = tolower(ResourceGroup), nodeShort = tolower(tostring(split(Computer, '.')[0]))\r\n| lookup kind=inner clusterMap on nodeRG\r\n| extend hasNodeMap = clusterName in (clustersWithNodeMap)\r\n| join kind=leftouter (nodeMap | project nodeShort, nmCluster=clusterName) on nodeShort\r\n| where hasNodeMap == false or nmCluster == clusterName\r\n| project Computer, clusterName);\r\nlet perfSamples = Perf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where (ObjectName == \"Cluster CSVFS\" and CounterName in (\"Reads/sec\", \"Writes/sec\")) or (ObjectName == \"LogicalDisk\" and CounterName == \"Disk Transfers/sec\")\r\n| where InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| extend StorageScope = iff(ObjectName == \"Cluster CSVFS\", \"CSV\", \"Logical disks\")\r\n| summarize arg_max(TimeGenerated, CounterValue) by Computer, InstanceName, CounterName, StorageScope, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(CounterName), IOPS = sum(CounterValue) by Computer, InstanceName, StorageScope, Minute\r\n| where Directions == iff(StorageScope == \"CSV\", 2, 1)\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope, IOPS, method = 1;\r\nlet insightsSamples = InsightsMetrics\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where Namespace == \"LogicalDisk\" and Name in (\"ReadsPerSecond\", \"WritesPerSecond\")\r\n| extend Computer = tostring(split(_ResourceId, \"/\")[8])\r\n| extend InstanceName = tostring(parse_json(Tags)[\"vm.azm.ms/mountId\"])\r\n| where isnotempty(InstanceName) and InstanceName !~ \"_Total\" and InstanceName !startswith \"HarddiskVolume\"\r\n| where isnotnull(Val) and Val >= 0\r\n| summarize arg_max(TimeGenerated, Val) by Computer, InstanceName, Name, Minute = bin(TimeGenerated, 1m)\r\n| summarize Directions = dcount(Name), IOPS = sum(Val) by Computer, InstanceName, Minute\r\n| where Directions == 2\r\n| project TimeGenerated = Minute, Computer, InstanceName, StorageScope = \"Logical disks\", IOPS, method = 2;\r\nlet hostSamples = union perfSamples, insightsSamples\r\n| summarize HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method\r\n| summarize arg_min(method, HostIOPS) by Computer, TimeGenerated, StorageScope;\r\nlet coverage = hostSamples\r\n| lookup kind=inner hciNodes on Computer\r\n| summarize Nodes = dcount(Computer) by StorageScope;\r\ndatatable(StorageScope:string)[\"CSV\", \"Logical disks\"]\r\n| join kind=leftouter coverage on StorageScope\r\n| project Nodes = coalesce(Nodes, 0), Label = strcat(StorageScope, \" machines:\")\r\n| where Label == \"Logical disks machines:\"",
+              "size": 0,
+              "aggregation": 3,
+              "title": "Machines reporting logical disk IOPS",
+              "noDataMessage": "—",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 1
+                },
+                "leftContent": {
+                  "columnMatch": "Nodes",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "redBright"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "chartSettings": {
+                "showLegend": false,
+                "seriesLabelSettings": []
+              }
+            },
+            "customWidth": "33",
+            "name": "node-logical-storage-iops-count",
             "styleSettings": {
               "margin": "5px",
               "padding": "5px"

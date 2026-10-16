@@ -392,12 +392,16 @@ function Test-HyperVDetail {
     $template = ($items | Where-Object name -EQ 'hyperv-detail-chart').content.query
 
     function Invoke-DetailQuery {
-        param([string]$Query, [string]$Metadata, [string]$VM = '', [string]$Metric = 'cpu', [string]$Disk = '', [string]$Source)
+        param([string]$Query, [string]$Metadata, [string]$VM = '', [string]$Metric = 'cpu', [string[]]$Disk = @(), [string]$Source)
+        $diskValues = ($Disk | Where-Object { $_ } | ForEach-Object {
+            if ($_ -notmatch '^[A-Za-z0-9+/]*={0,2}$') { throw 'Expected a base64-encoded disk selection.' }
+            "'$_'"
+        }) -join ','
         $query = $Query.Replace('{HyperVNodeCapacityMap}', $Metadata).
             Replace('{HyperVDetailTimeRange:start}', 'datetime(2026-01-01)').
             Replace('{HyperVDetailTimeRange:end}', 'datetime(2026-01-02)').
             Replace('{HyperVDetailVM}', $VM).Replace('{HyperVDetailMetric}', $Metric).
-            Replace('{HyperVDetailDisk}', $Disk)
+            Replace('{HyperVDetailDisk}', $diskValues)
         if ($Source) {
             $query = $query.Replace('Perf', $Source)
         } else {

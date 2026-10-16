@@ -56,7 +56,7 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (456 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, VM detail controls, DCR deployment guidance, instance naming, content style, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (457 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, VM detail controls, DCR deployment guidance, instance naming, content style, and accessibility. |
 | `scripts/test-dcr-deployment.ps1` | Offline PowerShell tests for DCR discovery, deployment, preview, and rollback safety. Shadows Azure CLI with a mock; never contacts Azure. |
 | `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 51 exact Capacity performance/coverage/forecast/VM queries, 102 unset/empty-map cases, the live machine picker, 49 synthetic storage cases, and 33 VM-detail checks (236 total), or 65 machine-capacity/discovery checks with `-NodeCapacityOnly`. VM-detail checks execute the pickers and all six metrics plus identity, counter pairing, null gaps, units, deduplication, and time-resolution fixtures. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
@@ -176,7 +176,7 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 456 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
+All 457 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 

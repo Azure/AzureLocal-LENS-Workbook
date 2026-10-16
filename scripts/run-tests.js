@@ -2735,6 +2735,16 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
     const range = parameters.find(parameter => parameter.name === 'HyperVDetailTimeRange');
     const chart = items.find(item => item.name === 'hyperv-detail-chart');
     const query = chart.content.query;
+    const summary = items.find(item => item.name === 'hyperv-detail-summary');
+    assert(summary.content.query === query +
+        "\r\n| summarize Average=avg(Value), Min=min(Value), Max=max(Value) by Series\r\n| where isnotnull(Average)\r\n| order by Series asc" &&
+        JSON.stringify(summary.conditionalVisibility) === JSON.stringify(chart.conditionalVisibility) &&
+        summary.content.timeContextFromParameter === range.name &&
+        JSON.stringify(summary.content.crossComponentResources) === JSON.stringify(chart.content.crossComponentResources) &&
+        summary.content.gridSettings.formatters.every(formatter => formatter.formatter === 0) &&
+        items.indexOf(summary) === items.indexOf(chart) + 1 &&
+        items.find(item => item.name === 'hyperv-detail-help').content.json.includes('not instantaneous extremes'),
+        'VM detail summary reports Average, Min and Max of the exact plotted buckets with identical scope');
     assert(vm.value === '' && !vm.isRequired && !vm.multiSelect && !vm.typeSettings.showDefault &&
         chart.conditionalVisibility.parameterName === vm.name && chart.conditionalVisibility.comparison === 'isNotEqualTo' &&
         chart.conditionalVisibility.value === '' &&
@@ -2744,7 +2754,10 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
     assert(vm.query.includes('pack_array(HostId, VMName)') && vm.query.includes('lookup kind=inner hosts on HostId') &&
         query.includes('tolower(_ResourceId) == selectedHost') && query.includes('parse_json(\'{HyperVNodeCapacityMap}\')') &&
         disk.query.includes('tolower(_ResourceId) == selectedHost') && disk.value === '' &&
-        query.includes('InstanceName == selectedDisk') && query.includes('ReadCount > 0 and WriteCount > 0'),
+        disk.multiSelect && disk.quote === "'" && disk.delimiter === ',' &&
+        query.includes('let selectedDisks = dynamic([{HyperVDetailDisk}]);') &&
+        query.includes('set_has_element(selectedDisks, base64_encode_tostring(InstanceName))') &&
+        query.includes('ReadCount > 0 and WriteCount > 0'),
         'VM and disk identities are scoped by machine resource ID and disk ownership is selected explicitly');
     assert(query.includes('CounterValue=avg(CounterValue) by TimeGenerated, ObjectName, CounterName, InstanceName') &&
         query.includes('SampleValue=avg(CounterValue) by TimeGenerated') &&
@@ -2753,10 +2766,13 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
         query.includes('top 1 by NameLength desc') && query.includes('where isnotnull(SampleValue)') &&
         query.includes('make-series Value=avg(SampleValue) default=double(null)') && !query.includes('top 5') &&
         chart.content.timeContextFromParameter === range.name &&
+        chart.content.aggregation === 3 &&
         chart.content.title.includes('{HyperVDetailMetric:label}'),
-        'VM detail preserves metric units, per-sample averages, pair completeness, NIC precedence and missing-data gaps');
+        'VM detail uses an Average summary and preserves metric units, per-sample averages, pair completeness, NIC precedence and missing-data gaps');
     assert(items.find(item => item.name === 'hyperv-detail-header').content.json.includes('disk ownership is selected by you') &&
         items.find(item => item.name === 'hyperv-detail-help').content.json.includes('1,048,576 bytes') &&
+        items.find(item => item.name === 'hyperv-detail-help').content.json.includes('120% means reported demand is approximately 1.2 times assigned memory') &&
+        items.find(item => item.name === 'hyperv-detail-help').content.json.includes('does not prove guest paging or host memory exhaustion') &&
         book.items[2].content.items.at(-1).name === 'hyperv-detail-help' &&
         items.filter(item => item.name.startsWith('hyperv-chart-')).length === 6 &&
         items.find(item => item.name === 'hyperv-detail-metric-info').content.links.every(link =>

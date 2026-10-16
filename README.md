@@ -174,6 +174,7 @@ Fleet-wide capacity trending and forecasting:
 - **💾 Storage & Network Performance — For Selected Instances**:
   - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected instance set
 - Forecast disclaimer banners are shown alongside each forecast chart
+- Forecast and performance charts have independent historic time-range controls. Storage percentage forecasts retain 12-hour sampling while interpreting the forecast horizon in days.
 
 #### 🔍 Single instance sub-tab
 Drill into a single instance (selected via the `SingleCluster` picker):
@@ -501,7 +502,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **446 unit tests across 41 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **450 unit tests across 42 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|

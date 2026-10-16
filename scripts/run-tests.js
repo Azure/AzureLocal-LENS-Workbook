@@ -2119,7 +2119,7 @@ testSuite('DCR Deployment Guidance', () => {
         readinessText.includes('### Knowledge links and instructions') &&
         readinessText.includes('1. [📘 LENS DCR Setup and Deployment Guide]') &&
         requiredDcrLinks.every(link => readinessText.includes(link)) && numberedDcrLinks.length === 6 &&
-        readinessText.includes('https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/') &&
+        numberedDcrLinks.some(link => /\]\(([^)]+)\)$/.exec(link)?.[1] === 'https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/') &&
         !overviewItems.some(item => item.name === 'dcr-setup-links') &&
         hyperVRaw.includes('example-dcr-template/README.md'),
         'DCR guidance embeds six unique numbered maintained links in one blue checklist',
@@ -2691,6 +2691,36 @@ testSuite('Azure Local Instance Display Naming', () => {
         dcrGuide.includes('<a id="measure-one-node"></a>') && dcrGuide.includes('### Measure one machine') &&
         dcrGuide.includes('14 **Hyper-V VM** counter paths'),
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
+});
+testSuite('Reviewed time ranges and health snapshot wording', () => {
+    const multi = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook'), 'utf8')).items);
+    const parameters = multi.flatMap(item => item.content?.parameters || []);
+    const names = parameters.map(parameter => parameter.name);
+    assert(new Set(names).size === names.length &&
+        names.includes('McForecastTimeRange') && names.includes('McPerformanceTimeRange'),
+        'Multi-instance time pickers have unique names including the global time range');
+    const chartQueries = multi.filter(item => item.name?.startsWith('mc-') && item.content?.query);
+    assert(chartQueries.length === 9 && chartQueries.every(item => {
+        const parameter = item.name.endsWith('-forecast') ? 'McForecastTimeRange' : 'McPerformanceTimeRange';
+        return item.content.query.includes(`{${parameter}:start}`) &&
+            item.content.query.includes(`{${parameter}:end}`) &&
+            !item.content.query.includes('{NodeTrendsTimeRange:');
+    }), 'Multi-instance forecast and performance queries use their own time pickers');
+    const percentageForecast = multi.find(item => item.name === 'mc-stor-pct-forecast').content.query;
+    assert(percentageForecast.includes('let step        = 12h;') &&
+        percentageForecast.includes('let horizonPoints = horizonDays * 2;') &&
+        percentageForecast.includes('trendEnd + horizonPoints*step') &&
+        percentageForecast.includes('series_decompose_forecast(Smooth, horizonPoints,') &&
+        [7, 30, 90].every(days => days * 2 * 12 === days * 24),
+        'Storage percentage forecast converts selected days to 12-hour forecast points');
+    const health = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/SystemHealth/SystemHealth.workbook'), 'utf8')).items);
+    assert(health.find(item => item.name === 'detailed-health-check-results-header').content.json ===
+        '## 🔍 System Health Checks - Detailed Results' &&
+        health.find(item => item.name === 'text - health failures 128-cap note').content.json.includes(
+            'some entries may be excluded depending on source array ordering.'),
+        'Health snapshot help does not promise 24-hour filtering or chronological truncation');
 });
 testSuite('Capacity shared-map parameter expansion', () => {
     const liveQueries = new Set(JSON.parse(fs.readFileSync(path.resolve(__dirname, 'live-test-queries.json'), 'utf8')).queries.map(spec => `${spec.file}:${spec.name}`));

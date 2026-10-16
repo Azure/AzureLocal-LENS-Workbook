@@ -819,6 +819,10 @@ resources
         $query = [string]$item.content.query
         $query = $query.Replace('{NodeTrendsTimeRange:start}', "ago($($Days)d)")
         $query = $query.Replace('{NodeTrendsTimeRange:end}', 'now()')
+        foreach ($timeParameter in @('McForecastTimeRange', 'McPerformanceTimeRange')) {
+            $query = $query.Replace("{$($timeParameter):start}", "ago($($Days)d)")
+            $query = $query.Replace("{$($timeParameter):end}", 'now()')
+        }
         $query = $query.Replace('{ClusterRGMap}', $clusterRGJson)
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")

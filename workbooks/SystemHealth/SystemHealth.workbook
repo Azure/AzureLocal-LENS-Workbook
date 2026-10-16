@@ -510,7 +510,7 @@
           {
             "type": 1,
             "content": {
-              "json": "ℹ️ **Note (large fleets):** These counts are accurate for typical fleets. Azure Resource Graph expands each instance's health-check array up to **2,000 entries** (the `mv-expand limit`) before the failed-only filter is applied — in the extremely rare case a single instance reports more than 2,000 *total* check entries, the oldest may be excluded. See the **Detailed Results** table below for full per-check detail.",
+              "json": "ℹ️ **Note (large fleets):** These counts are accurate for typical fleets. Azure Resource Graph expands each instance's health-check array up to **2,000 entries** (the `mv-expand limit`) before the failed-only filter is applied — in the extremely rare case a single instance reports more than 2,000 *total* check entries, some entries may be excluded depending on source array ordering. See the **Detailed Results** table below for full per-check detail.",
               "style": "info"
             },
             "name": "text - health failures 128-cap note"
@@ -1010,7 +1010,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔍 24 Hour System Health Checks - Detailed Results"
+              "json": "## 🔍 System Health Checks - Detailed Results"
             },
             "name": "detailed-health-check-results-header"
           },

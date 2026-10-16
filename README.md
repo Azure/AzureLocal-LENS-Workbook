@@ -27,7 +27,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
 - [What's New (v1.1.2)](#whats-new-v112)
-- [v1.1.5 — Planned (post-gallery merge)](#v115--planned-post-gallery-merge)
+- [v1.1.5 — Planned (subject to managed gallery availability)](#v115--planned-subject-to-managed-gallery-availability)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
@@ -489,9 +489,9 @@ Overview storage charts occupy two separate three-column rows: **CSV Volume Usag
 
 **Single instance** uses the same three-column arrangement, with CSV usage **By Volume** and the other storage metrics **By Machine**, without a Top 5 limit. **Multi-instance** separates CSV and logical-disk latency/IOPS into two-column rows, followed by a full-width network chart; these charts retain all selected instances. Its storage forecast titles identify **CSV Volume Free Space**. Forecast calculations and Hyper-V VHD queries are unchanged by the layout split.
 
-## v1.1.5 — Planned (post-gallery merge)
+## v1.1.5 — Planned (subject to managed gallery availability)
 
-Not yet released. The following changes are queued for v1.1.5 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Workbooks/Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
+Not yet released. The following changes are planned for v1.1.5, subject to acceptance of the upstream `microsoft/Application-Insights-Workbooks` contribution and availability of the `community-Workbooks/Azure Local/LENS-*` templates in the Azure Monitor gallery. Release scope and timing may change:
 
 - **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
 - **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.

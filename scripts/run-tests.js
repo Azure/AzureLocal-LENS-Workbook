@@ -1581,9 +1581,16 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
     assert(unsupportedVersion?.query.includes('monthsSinceRelease > 6'),
         'Unsupported release tile includes only releases definitely beyond six months',
         'monthsSinceRelease > 6', unsupportedVersion ? unsupportedVersion.query : 'query missing');
-    assert(unknownVersion?.query.includes('not(hasValidYymm) or monthsSinceRelease < 0 or monthsSinceRelease == 6'),
-        'Unknown version tile includes invalid, future, and date-sensitive boundary releases',
-        'invalid, future, or six-month-boundary release', unknownVersion ? unknownVersion.query : 'query missing');
+    const boundaryVersion = allQueries.find(query => query.name === 'tile-nearing-end-of-support');
+    assert(unknownVersion?.query.includes('not(hasValidYymm) or monthsSinceRelease < 0') &&
+        !unknownVersion.query.includes('monthsSinceRelease == 6') &&
+        boundaryVersion?.query.includes('hasValidYymm and monthsSinceRelease == 6') &&
+        boundaryVersion.query.includes("Label = 'Nearing end of support'") &&
+        boundaryVersion.query.includes('summarize NearingEndOfSupport = count()') &&
+        boundaryVersion.query.includes('summarize properties = take_any(properties) by clusterId') &&
+        boundaryVersion.query.includes(') on clusterId'),
+        'Boundary releases have a separate Nearing end of support tile; Unknown includes only invalid or future release months',
+        'disjoint boundary and unknown classifications', unknownVersion ? unknownVersion.query : 'query missing');
 
     ['pie-arb-status', 'tile-arb-offline', 'tile-total-vms', 'tile-total-aks-arc'].forEach(queryName => {
         const item = allQueries.find(query => query.name === queryName);

@@ -1124,7 +1124,7 @@
           {
             "type": 1,
             "content": {
-              "json": "_Azure Local updates are supported for six months from each update's actual release date. Azure Resource Graph reports the `YYMM` release month but not the official release day, so LENS marks the current and previous five months as Supported, the six-month boundary as Unknown, and only older months as Unsupported. Confirm boundary-month versions using the Latest Releases link below._"
+              "json": "_Azure Local updates are supported for six months from each update's actual release date. Azure Resource Graph reports the `YYMM` release month but not the official release day. LENS marks the current and previous five months as Supported, the six-month boundary as Nearing end of support, and older months as Unsupported. Boundary-month releases may already be unsupported; confirm their exact status using the Latest Releases link below. Unknown version covers missing, invalid, or future-dated release months in reported Update Summaries._"
             },
             "name": "update-compliance-info"
           },
@@ -1196,7 +1196,7 @@
               "noDataMessage": "No solution version data — instances may not be reporting Update Summaries yet.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-supported-version",
             "styleSettings": {
               "margin": "5px",
@@ -1247,7 +1247,7 @@
               "noDataMessage": "No instances on unsupported versions (or no version data available).",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-unsupported-version",
             "styleSettings": {
               "margin": "5px",
@@ -1258,7 +1258,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where not(hasValidYymm) or monthsSinceRelease < 0 or monthsSinceRelease == 6\r\n| summarize Unknown = count()\r\n| extend Label = 'Unknown version'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease == 6\r\n| summarize NearingEndOfSupport = count()\r\n| extend Label = 'Nearing end of support'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1282,7 +1282,58 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Instances with missing, invalid, future, or six-month-boundary versions whose exact support status requires the official release date"
+                    "tooltip": "Instances in the six-month release boundary. Some may already be unsupported; verify the official release date and plan an update."
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "NearingEndOfSupport",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "palette": "yellow"
+                  }
+                },
+                "showBorder": true,
+                "size": "auto"
+              },
+              "noDataMessage": "No release-boundary results returned. Check Update Summary collection and the selected scope.",
+              "noDataMessageStyle": 4
+            },
+            "customWidth": "14",
+            "name": "tile-nearing-end-of-support",
+            "styleSettings": {
+              "margin": "5px",
+              "padding": "5px"
+            }
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where not(hasValidYymm) or monthsSinceRelease < 0\r\n| summarize Unknown = count()\r\n| extend Label = 'Unknown version'",
+              "size": 4,
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "{Subscriptions}"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "Label",
+                  "formatter": 18,
+                  "formatOptions": {
+                    "thresholdsOptions": "colors",
+                    "thresholdsGrid": [
+                      {
+                        "operator": "Default",
+                        "thresholdValue": null,
+                        "representation": "yellow",
+                        "text": "{0}{1}"
+                      }
+                    ]
+                  },
+                  "tooltipFormat": {
+                    "tooltip": "Instances with a missing, invalid, or future-dated release month in their reported Update Summary; support status cannot be inferred."
                   }
                 },
                 "leftContent": {
@@ -1295,10 +1346,10 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "All instances report a recognisable version string.",
+              "noDataMessage": "No unknown-version results returned. Check Update Summary collection and the selected scope.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-unknown-version",
             "styleSettings": {
               "margin": "5px",
@@ -1335,7 +1386,7 @@
               "noDataMessage": "No instances report an available update at this time.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-update-available",
             "styleSettings": {
               "margin": "5px",
@@ -1372,7 +1423,7 @@
               "noDataMessage": "No update runs currently in progress.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-update-in-progress",
             "styleSettings": {
               "margin": "5px",
@@ -1409,7 +1460,7 @@
               "noDataMessage": "No instances in a Failed update state.",
               "noDataMessageStyle": 4
             },
-            "customWidth": "16",
+            "customWidth": "14",
             "name": "tile-update-failed",
             "styleSettings": {
               "margin": "5px",

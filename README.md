@@ -186,7 +186,7 @@ Drill into a single instance (selected via the `SingleCluster` picker):
 - **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected instance
 - **📦 Workloads on Instance** section:
   - 🖥️ Azure Local VMs running on the instance
-  - 🪟 **Hyper-V VMs on the instance** — Perf-derived view scoped to the selected instance's physical hosts (reuses the same **Log Analytics Workspace** and **Historic Data Time Range** pickers as the per-machine charts above). Includes the inventory table plus six Top-5 trend charts: VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — same counters and queries as the **🖥️ Hyper-V** sub-tab, but filtered to this instance only. A dedicated **Hyper-V - Virtual Machine and Virtual Disk Performance** heading and six native Info tooltips distinguish VM, VHD/VHDX and virtual-adapter metrics from physical-machine and CSV metrics.
+  - 🪟 **Hyper-V VMs on the instance** — Perf-derived view scoped to the selected instance's physical hosts, using the shared **Log Analytics Workspace**. The inventory retains **Historic Data Time Range**; the six Top-5 trend charts have their own **Hyper-V Performance Time Range** picker directly below the performance heading, offering 1/3/7/14/30 days and defaulting to **7 days**. Charts cover VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — the same counters as the **🖥️ Hyper-V** sub-tab, filtered to this instance only. A dedicated **Hyper-V - Virtual Machine and Virtual Disk Performance** heading and six native Info tooltips distinguish VM, VHD/VHDX and virtual-adapter metrics from physical-machine and CSV metrics; hover over the metric labels for help.
   - ☸️ AKS Arc Clusters running on the instance (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local instance label, so a single AKS performance view applies fleet-wide)
 
 #### 🖥️ Hyper-V sub-tab
@@ -507,7 +507,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **457 unit tests across 43 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **458 unit tests across 43 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|

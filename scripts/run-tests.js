@@ -2782,6 +2782,21 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
         'Final VM detail section documents operator-selected disks and retains the six Top 5 charts');
 });
 testSuite('Reviewed time ranges and health snapshot wording', () => {
+    const single = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook'), 'utf8')).items);
+    const localRange = single.find(item => item.name === 'sc-hyperv-performance-time');
+    const localParameter = localRange.content.parameters[0];
+    const hypervCharts = single.filter(item => item.name?.startsWith('sc-hyperv-chart-'));
+    assert(localParameter.name === 'SCHyperVPerformanceTimeRange' &&
+        localParameter.value.durationMs === 604800000 &&
+        single.indexOf(localRange) === single.findIndex(item => item.name === 'sc-hyperv-performance-header') + 1 &&
+        hypervCharts.length === 6 && hypervCharts.every(item =>
+            item.content.timeContextFromParameter === localParameter.name &&
+            item.content.query.includes('{SCHyperVPerformanceTimeRange:start}') &&
+            item.content.query.includes('{SCHyperVPerformanceTimeRange:end}') &&
+            !item.content.query.includes('{NodeTrendsTimeRange:')) &&
+        single.find(item => item.name === 'sc-hyperv-inventory').content.timeContextFromParameter === 'NodeTrendsTimeRange',
+        'Single instance Hyper-V charts have a local seven-day picker below their title without changing inventory scope');
     const multi = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname,
         '../workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook'), 'utf8')).items);
     const parameters = multi.flatMap(item => item.content?.parameters || []);

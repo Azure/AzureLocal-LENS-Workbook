@@ -221,7 +221,7 @@
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
@@ -280,7 +280,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
                   "name": "text-dcr-setup-header"
                 },
@@ -710,7 +710,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-machine CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+              "noDataMessage": "No per-machine CPU telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -755,7 +755,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-machine memory telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+              "noDataMessage": "No per-machine memory telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -800,7 +800,7 @@
                   }
                 }
               },
-              "noDataMessage": "No per-machine network throughput telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+              "noDataMessage": "No per-machine network throughput telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4
             },
             "customWidth": "33",
@@ -1253,7 +1253,7 @@
                 "locInfo": "AzureResource",
                 "locInfoColumn": "ArmId"
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1548,7 +1548,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection."
+              "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify collection."
             },
             "name": "sc-compute-forecast-source-tip"
           },
@@ -1580,7 +1580,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No CPU trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
+              "noDataMessage": "No CPU trend telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1618,7 +1618,7 @@
                   "min": 0
                 }
               },
-              "noDataMessage": "No memory trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
+              "noDataMessage": "No memory trend telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -2001,7 +2001,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V** view, scoped to the Azure Local machines in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
+              "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V** view, scoped to the Azure Local machines in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity & Performance > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
               "style": "upsell"
             },
             "conditionalVisibility": {
@@ -2021,7 +2021,7 @@
               "showExportToExcel": true,
               "timeContextFromParameter": "NodeTrendsTimeRange",
               "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
-              "noDataMessage": "No Hyper-V CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+              "noDataMessage": "No Hyper-V CPU telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
               "noDataMessageStyle": 4,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
@@ -2683,7 +2683,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local instance metadata, so the same Prometheus charts cannot be filtered to a single Azure Local instance. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
+              "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity & Performance → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local instance metadata, so the same Prometheus charts cannot be filtered to a single Azure Local instance. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
               "style": "info"
             },
             "conditionalVisibility": {

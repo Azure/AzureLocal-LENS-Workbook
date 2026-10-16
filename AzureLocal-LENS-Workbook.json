@@ -314,7 +314,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },
@@ -2350,7 +2350,7 @@
                   "name": "MachinesLogAnalyticsWorkspace",
                   "label": "Log Analytics Workspace",
                   "type": 2,
-                  "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+                  "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -2397,7 +2397,7 @@
           {
             "type": 1,
             "content": {
-              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links. Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
+              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity & Performance views. The first table in Capacity & Performance --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity & Performance use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links. Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
             },
             "name": "capacity-workspace-scope-note"
           },
@@ -2410,7 +2410,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
                   "name": "text-dcr-setup-header"
                 },
@@ -4409,7 +4409,7 @@
                     "showExportToExcel": true,
                     "aggregation": 3,
                     "title": "Predictive Resource Exhaustion Forecast by Instance",
-                    "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
+                    "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify collection.",
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
                     "crossComponentResources": [
@@ -4772,7 +4772,7 @@
                         "max": 100
                       }
                     },
-                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -4819,7 +4819,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "48",
@@ -5103,7 +5103,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No network-throughput telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
+                    "noDataMessage": "No network-throughput telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "100",
@@ -5537,7 +5537,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-machine CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+                    "noDataMessage": "No per-machine CPU telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5582,7 +5582,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-machine memory telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+                    "noDataMessage": "No per-machine memory telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -5627,7 +5627,7 @@
                         }
                       }
                     },
-                    "noDataMessage": "No per-machine network throughput telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+                    "noDataMessage": "No per-machine network throughput telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "33",
@@ -6080,7 +6080,7 @@
                       "locInfo": "AzureResource",
                       "locInfoColumn": "ArmId"
                     },
-                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+                    "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -6375,7 +6375,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection."
+                    "json": "💡 **Source:** Compute forecasts use `Processor(_Total)\\% Processor Time`, `Memory\\Committed Bytes`, and `Memory\\Available Bytes` from the selected workspace. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify collection."
                   },
                   "name": "sc-compute-forecast-source-tip"
                 },
@@ -6407,7 +6407,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No CPU trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
+                    "noDataMessage": "No CPU trend telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify `Processor(_Total)\\% Processor Time` collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -6445,7 +6445,7 @@
                         "min": 0
                       }
                     },
-                    "noDataMessage": "No memory trend telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
+                    "noDataMessage": "No memory trend telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify `Memory\\Committed Bytes` and `Memory\\Available Bytes` collection.",
                     "noDataMessageStyle": 4
                   },
                   "customWidth": "50",
@@ -6828,7 +6828,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V** view, scoped to the Azure Local machines in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
+                    "json": "💡 **Tip:** These charts use the same Hyper-V counters as the **Hyper-V** view, scoped to the Azure Local machines in {SingleCluster:label} and the selected workspace and time range. If telemetry is missing, open **Capacity & Performance > Overview > Show DCR Setup Guide**. Memory Pressure appears only for VMs with Dynamic Memory enabled.",
                     "style": "upsell"
                   },
                   "conditionalVisibility": {
@@ -6848,7 +6848,7 @@
                     "showExportToExcel": true,
                     "timeContextFromParameter": "NodeTrendsTimeRange",
                     "title": "📋 Hyper-V VM Inventory (Perf-derived) — on {SingleCluster:label}",
-                    "noDataMessage": "No Hyper-V CPU telemetry was returned for this instance and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
+                    "noDataMessage": "No Hyper-V CPU telemetry was returned for this instance and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify the required counter is collected from every machine.",
                     "noDataMessageStyle": 4,
                     "queryType": 0,
                     "resourceType": "microsoft.operationalinsights/workspaces",
@@ -7510,7 +7510,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local instance metadata, so the same Prometheus charts cannot be filtered to a single Azure Local instance. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
+                    "json": "💡 **For per-node CPU, Memory, Disk I/O and Network throughput of these AKS clusters**, see the **📈 AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **📋 Capacity & Performance → Overview** sub-tab. Prometheus metrics carry only the AKS cluster name and pod/node `instance` label — they do **not** contain Azure Local instance metadata, so the same Prometheus charts cannot be filtered to a single Azure Local instance. The Overview sub-tab is the authoritative AKS performance view; this duplicated section was removed in v1.0.1.",
                     "style": "info"
                   },
                   "conditionalVisibility": {
@@ -8443,7 +8443,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
+                    "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity & Performance > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
                     "style": "upsell"
                   },
                   "name": "hyperv-perf-tip"
@@ -8713,6 +8713,244 @@
                     "style": "warning"
                   },
                   "name": "hyperv-limitations-note"
+                },
+                {
+                  "type": 1,
+                  "name": "hyperv-detail-header",
+                  "content": {
+                    "json": "---\r\n## 🔎 Hyper-V VM Performance — Detailed Analysis\r\nSelect a VM, time range and metric to investigate performance beyond the Top 5. These controls affect only this section. VM choices include the reporting machine; migrated observations remain separate. For disk metrics, explicitly select a VHD/VHDX reported by that machine: **disk ownership is selected by you, not inferred from the VM name**."
+                  }
+                },
+                {
+                  "type": 9,
+                  "name": "hyperv-detail-params",
+                  "content": {
+                    "version": "KqlParameterItem/1.0",
+                    "style": "pills",
+                    "parameters": [
+                      {
+                        "id": "hyperv-detail-time",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "HyperVDetailTimeRange",
+                        "label": "Time Range",
+                        "type": 4,
+                        "isRequired": true,
+                        "typeSettings": {
+                          "selectableValues": [
+                            {
+                              "durationMs": 86400000
+                            },
+                            {
+                              "durationMs": 259200000
+                            },
+                            {
+                              "durationMs": 604800000
+                            },
+                            {
+                              "durationMs": 1209600000
+                            },
+                            {
+                              "durationMs": 2592000000
+                            }
+                          ],
+                          "allowCustom": false
+                        },
+                        "value": {
+                          "durationMs": 86400000
+                        }
+                      },
+                      {
+                        "version": "KqlParameterItem/1.0",
+                        "type": 2,
+                        "isRequired": false,
+                        "multiSelect": false,
+                        "quote": "",
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "queryType": 0,
+                        "resourceType": "microsoft.operationalinsights/workspaces",
+                        "crossComponentResources": [
+                          "{MachinesLogAnalyticsWorkspace}"
+                        ],
+                        "id": "hyperv-detail-vm",
+                        "name": "HyperVDetailVM",
+                        "label": "VM",
+                        "value": "",
+                        "timeContextFromParameter": "HyperVDetailTimeRange",
+                        "query": "let trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet hosts = materialize(print mapping = parse_json('{HyperVNodeCapacityMap}')\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| extend VMName=extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName), HostId=tolower(_ResourceId)\r\n| where isnotempty(VMName) and VMName != '_Total'\r\n| summarize by HostId, VMName\r\n| lookup kind=inner hosts on HostId\r\n| project value=base64_encode_tostring(tostring(pack_array(HostId, VMName))), label=strcat(VMName, ' — ', Machine, ' (', Instance, ')')\r\n| order by label asc",
+                        "description": "Select a VM observed on an in-scope physical machine. No VM is selected by default; identical names on different machines remain distinct."
+                      },
+                      {
+                        "version": "KqlParameterItem/1.0",
+                        "type": 2,
+                        "isRequired": true,
+                        "multiSelect": false,
+                        "quote": "",
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "queryType": 0,
+                        "resourceType": "microsoft.operationalinsights/workspaces",
+                        "crossComponentResources": [
+                          "{MachinesLogAnalyticsWorkspace}"
+                        ],
+                        "id": "hyperv-detail-metric",
+                        "name": "HyperVDetailMetric",
+                        "label": "Metric",
+                        "value": "cpu",
+                        "jsonData": "[{\"value\":\"cpu\",\"label\":\"VM CPU (%)\"},{\"value\":\"memory\",\"label\":\"Memory Pressure (%)\"},{\"value\":\"disk-throughput\",\"label\":\"Disk Throughput (MB/s)\"},{\"value\":\"disk-iops\",\"label\":\"Disk IOPS (operations/sec)\"},{\"value\":\"disk-latency\",\"label\":\"Disk Latency (ms)\"},{\"value\":\"network\",\"label\":\"Network Throughput (MB/s)\"}]"
+                      },
+                      {
+                        "version": "KqlParameterItem/1.0",
+                        "type": 2,
+                        "isRequired": false,
+                        "multiSelect": false,
+                        "quote": "",
+                        "typeSettings": {
+                          "additionalResourceOptions": [],
+                          "showDefault": false
+                        },
+                        "queryType": 0,
+                        "resourceType": "microsoft.operationalinsights/workspaces",
+                        "crossComponentResources": [
+                          "{MachinesLogAnalyticsWorkspace}"
+                        ],
+                        "id": "hyperv-detail-disk",
+                        "name": "HyperVDetailDisk",
+                        "label": "Virtual Disk (disk metrics only)",
+                        "value": "",
+                        "timeContextFromParameter": "HyperVDetailTimeRange",
+                        "query": "let trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet selection = parse_json(base64_decode_tostring('{HyperVDetailVM}'));\r\nlet selectedHost = tostring(selection[0]);\r\nlet selectedVM = tostring(selection[1]);\r\nlet hosts = materialize(print mapping = parse_json('{HyperVNodeCapacityMap}')\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nPerf\r\n| where isnotempty(selectedHost) and isnotempty(selectedVM)\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where tolower(_ResourceId) == selectedHost\r\n| extend HostId=tolower(_ResourceId)\r\n| lookup kind=inner hosts on HostId\r\n| where ObjectName == 'Hyper-V Virtual Storage Device'\r\n| where InstanceName !contains '_Total'\r\n| where tolower(InstanceName) endswith '.vhd' or tolower(InstanceName) endswith '.vhdx' or tolower(InstanceName) endswith '.avhd' or tolower(InstanceName) endswith '.avhdx'\r\n| summarize by InstanceName\r\n| project value=base64_encode_tostring(InstanceName), label=InstanceName\r\n| order by label asc",
+                        "description": "Select a disk from the selected VM reporting machine. This list does not establish which VM owns a disk; confirm ownership before interpreting its data."
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": 1,
+                  "name": "hyperv-detail-select-prompt",
+                  "conditionalVisibility": {
+                    "parameterName": "HyperVDetailVM",
+                    "comparison": "isEqualTo",
+                    "value": ""
+                  },
+                  "content": {
+                    "json": "Select a VM to view performance. No detail chart query runs until a VM is selected.",
+                    "style": "info"
+                  }
+                },
+                {
+                  "type": 11,
+                  "name": "hyperv-detail-metric-info",
+                  "content": {
+                    "version": "LinkItem/1.0",
+                    "style": "toolbar",
+                    "links": [
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "VM CPU",
+                        "postText": "Average % Guest Run Time across observed vCPUs, not host CPU utilization. High guest CPU usage does not by itself prove host contention.",
+                        "icon": "Info",
+                        "style": "link"
+                      },
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "Memory pressure",
+                        "postText": "Dynamic Memory requested / assigned memory x 100. Inventory icons use below 80%, 80 to below 100%, and 100% or above. Static-memory VMs do not report this counter.",
+                        "icon": "Info",
+                        "style": "link"
+                      },
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "Disk throughput",
+                        "postText": "Read + write byte rates divided by 1048576 for the explicitly selected disk. Confirm VM ownership yourself; the machine-scoped picker does not infer ownership.",
+                        "icon": "Info",
+                        "style": "link"
+                      },
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "Disk IOPS",
+                        "postText": "Read + write operations/second for the explicitly selected disk. Both counters must be present at the same sample time. Interpret alongside latency.",
+                        "icon": "Info",
+                        "style": "link"
+                      },
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "Disk latency",
+                        "postText": "Milliseconds under the existing Hyper-V latency convention. The 10/20 ms guidance is workload dependent, not an automatic health verdict.",
+                        "icon": "Info",
+                        "style": "link"
+                      },
+                      {
+                        "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                        "linkTarget": "Url",
+                        "linkLabel": "Network",
+                        "postText": "One series per matched guest virtual NIC. Prefer total byte rate; otherwise require both sent and received rates. Binary MB/s x 8.388608 gives decimal Mb/s.",
+                        "icon": "Info",
+                        "style": "link"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": 3,
+                  "name": "hyperv-detail-chart",
+                  "customWidth": "100",
+                  "conditionalVisibility": {
+                    "parameterName": "HyperVDetailVM",
+                    "comparison": "isNotEqualTo",
+                    "value": ""
+                  },
+                  "content": {
+                    "version": "KqlItem/1.0",
+                    "query": "let trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet selection = parse_json(base64_decode_tostring('{HyperVDetailVM}'));\r\nlet selectedHost = tostring(selection[0]);\r\nlet selectedVM = tostring(selection[1]);\r\nlet metric = '{HyperVDetailMetric}';\r\nlet selectedDisk = base64_decode_tostring('{HyperVDetailDisk}');\r\nlet step = case(trendEnd-trendStart <= 1d, 5m, trendEnd-trendStart <= 7d, 30m, trendEnd-trendStart <= 14d, 1h, 2h);\r\nlet hosts = materialize(print mapping = parse_json('{HyperVNodeCapacityMap}')\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nlet raw = materialize(Perf\r\n| where isnotempty(selectedHost) and isnotempty(selectedVM)\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where tolower(_ResourceId) == selectedHost\r\n| extend HostId=tolower(_ResourceId)\r\n| lookup kind=inner hosts on HostId\r\n| where (metric == 'cpu' and ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time')\r\n    or (metric == 'memory' and ObjectName == 'Hyper-V Dynamic Memory VM' and CounterName == 'Current Pressure')\r\n    or (metric startswith 'disk' and isnotempty(selectedDisk) and ObjectName == 'Hyper-V Virtual Storage Device' and InstanceName == selectedDisk)\r\n    or (metric == 'network' and ObjectName in ('Hyper-V Virtual Network Adapter', 'Hyper-V Hypervisor Virtual Processor'))\r\n| where InstanceName !contains '_Total' and isnotempty(InstanceName)\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| summarize CounterValue=avg(CounterValue) by TimeGenerated, ObjectName, CounterName, InstanceName);\r\nlet cpu = raw\r\n| where metric == 'cpu'\r\n| where extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName) == selectedVM and CounterValue <= 100\r\n| summarize SampleValue=avg(CounterValue) by TimeGenerated\r\n| project TimeGenerated, Series=selectedVM, SampleValue;\r\nlet memory = raw\r\n| where metric == 'memory' and InstanceName == selectedVM\r\n| project TimeGenerated, Series=selectedVM, SampleValue=CounterValue;\r\nlet disk = raw\r\n| where metric startswith 'disk'\r\n| where (metric == 'disk-throughput' and CounterName in ('Read Bytes/sec', 'Write Bytes/sec'))\r\n    or (metric == 'disk-iops' and CounterName in ('Read Operations/Sec', 'Write Operations/Sec'))\r\n    or (metric == 'disk-latency' and CounterName in ('Latency', 'Average Latency', 'Read Latency', 'Write Latency'))\r\n| summarize ReadValue=sumif(CounterValue, CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteValue=sumif(CounterValue, CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    ReadCount=countif(CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteCount=countif(CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    CombinedCount=countif(CounterName in ('Latency', 'Average Latency')),\r\n    LatencyReadCount=countif(CounterName == 'Read Latency'), LatencyWriteCount=countif(CounterName == 'Write Latency'),\r\n    CombinedLatency=avgif(CounterValue, CounterName in ('Latency', 'Average Latency')),\r\n    ReadLatency=avgif(CounterValue, CounterName == 'Read Latency'),\r\n    WriteLatency=avgif(CounterValue, CounterName == 'Write Latency')\r\n    by TimeGenerated, InstanceName\r\n| extend SampleValue=case(metric == 'disk-latency' and CombinedCount > 0, CombinedLatency,\r\n    metric == 'disk-latency' and LatencyReadCount > 0 and LatencyWriteCount > 0, (ReadLatency+WriteLatency)/2.0,\r\n    ReadCount > 0 and WriteCount > 0, (ReadValue+WriteValue)/iff(metric == 'disk-throughput', 1048576.0, 1.0), real(null))\r\n| project TimeGenerated, Series=InstanceName, SampleValue;\r\nlet vmNames = toscalar(raw\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| extend VMName=extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName)\r\n| where isnotempty(VMName) and VMName != '_Total'\r\n| summarize make_set(VMName));\r\nlet network = raw\r\n| where metric == 'network' and ObjectName == 'Hyper-V Virtual Network Adapter'\r\n| where CounterName in ('Bytes/sec', 'Bytes Sent/sec', 'Bytes Received/sec')\r\n| mv-apply candidate=vmNames to typeof(string) on (\r\n    where InstanceName startswith strcat(candidate, '_')\r\n    | extend NameLength=strlen(candidate)\r\n    | top 1 by NameLength desc)\r\n| where candidate == selectedVM\r\n| summarize TotalCount=countif(CounterName == 'Bytes/sec'), SentCount=countif(CounterName == 'Bytes Sent/sec'), ReceivedCount=countif(CounterName == 'Bytes Received/sec'),\r\n    Total=avgif(CounterValue, CounterName == 'Bytes/sec'),\r\n    Sent=avgif(CounterValue, CounterName == 'Bytes Sent/sec'),\r\n    Received=avgif(CounterValue, CounterName == 'Bytes Received/sec') by TimeGenerated, InstanceName\r\n| project TimeGenerated, Series=InstanceName, SampleValue=case(TotalCount > 0, Total, SentCount > 0 and ReceivedCount > 0, Sent+Received, real(null))/1048576.0;\r\nunion cpu, memory, disk, network\r\n| where isnotnull(SampleValue)\r\n| make-series Value=avg(SampleValue) default=double(null) on TimeGenerated from trendStart to trendEnd step step by Series\r\n| mv-expand TimeGenerated to typeof(datetime), Value to typeof(double)\r\n| order by TimeGenerated asc",
+                    "queryType": 0,
+                    "resourceType": "microsoft.operationalinsights/workspaces",
+                    "crossComponentResources": [
+                      "{MachinesLogAnalyticsWorkspace}"
+                    ],
+                    "timeContextFromParameter": "HyperVDetailTimeRange",
+                    "size": 0,
+                    "showAnalytics": true,
+                    "visualization": "linechart",
+                    "title": "{HyperVDetailMetric:label} — {HyperVDetailVM:label}",
+                    "noDataMessage": "No matching samples for this metric in the selected time range. For disk metrics, explicitly select a virtual disk. Dynamic Memory pressure requires Dynamic Memory telemetry. Verify the required counter pairs in Show DCR Setup Guide.",
+                    "noDataMessageStyle": 4,
+                    "chartSettings": {
+                      "xAxis": "TimeGenerated",
+                      "yAxis": [
+                        "Value"
+                      ],
+                      "group": "Series",
+                      "showLegend": true,
+                      "ySettings": {
+                        "min": 0,
+                        "numberFormatSettings": {
+                          "unit": 0,
+                          "options": {
+                            "style": "decimal",
+                            "maximumFractionDigits": 2
+                          }
+                        }
+                      },
+                      "seriesLabelSettings": []
+                    }
+                  }
+                },
+                {
+                  "type": 1,
+                  "name": "hyperv-detail-help",
+                  "content": {
+                    "json": "💡 **Metric interpretation:** CPU is % Guest Run Time averaged across observed vCPUs; high guest utilization does not alone establish host contention. Memory Pressure is requested ÷ assigned memory × 100 (Dynamic Memory only): below 80% is green, 80–<100% yellow, and ≥100% red in inventory. Disk throughput and IOPS combine complete read/write pairs for the explicitly selected disk; latency follows the existing Hyper-V counter convention in milliseconds. The 10/20 ms bands are workload-dependent guidance, not universal health thresholds. Network shows each matched guest virtual NIC, preferring total bytes/sec over sent+received to avoid double counting. MB/s retains the existing binary divisor (1,048,576 bytes); decimal Mb/s = MB/s × 8.388608.\r\n\r\n**Sampling:** 5-minute averages for one day, 30-minute averages through seven days, hourly through fourteen days, and two-hour averages for thirty days. Missing samples are not zero-filled. VM identity here is the reporting machine resource ID plus the VM name; renames and migration are not silently merged. A disk selection is a machine-scoped correlation chosen by the operator, not verified VM ownership."
+                  }
                 }
               ]
             },

@@ -216,7 +216,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },

@@ -2,7 +2,7 @@
 
 A ready-to-deploy **Azure Data Collection Rule (DCR)** ARM template that collects every performance counter and Windows event the **Azure Local LENS Workbook** Capacity tab needs to render — host-level **and** per-VM Hyper-V — in a single resource.
 
-This is the same template referenced by the workbook's **Capacity → Overview → Show DCR Setup Guide** section. This standalone, source-controllable file is the **recommended deployment path**: deploy it with `az deployment group create --template-file …` (or integrate it into your IaC repository) without copying JSON out of the workbook UI.
+This is the same template referenced by the workbook's **Capacity & Performance → Overview → Show DCR Setup Guide** section. This standalone, source-controllable file is the **recommended deployment path**: deploy it with `az deployment group create --template-file …` (or integrate it into your IaC repository) without copying JSON out of the workbook UI.
 
 ## Contents
 
@@ -345,6 +345,6 @@ If expected data remains absent after configuration refresh and ingestion:
 
 ## Related
 
-- **Workbook**: Capacity → Overview → *Show DCR Setup Guide* links here as its recommended ARM / Azure CLI deployment path.
+- **Workbook**: Capacity & Performance → Overview → *Show DCR Setup Guide* links here as its recommended ARM / Azure CLI deployment path.
 - **Hyper-V coverage**: this all-in-one DCR already contains all 14 Hyper-V counter paths required by the Capacity Hyper-V views. Do not associate another DCR that collects the same paths into the same workspace.
 - **Portal alternative**: use the [manual portal fallback](#manual-portal-fallback) to merge all 26 counter paths plus Event 3002 into an existing organization-managed DCR.

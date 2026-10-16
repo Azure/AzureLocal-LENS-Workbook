@@ -381,6 +381,166 @@ function Test-StorageSources {
     }
 }
 
+function Test-HyperVDetail {
+    param([string]$WorkspaceId, [string]$AccessToken)
+
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
+    $items = @(Get-WorkbookItems -Items $book.items)
+    $parameters = ($items | Where-Object name -EQ 'hyperv-detail-params').content.parameters
+    $vmPicker = ($parameters | Where-Object name -EQ 'HyperVDetailVM').query
+    $diskPicker = ($parameters | Where-Object name -EQ 'HyperVDetailDisk').query
+    $template = ($items | Where-Object name -EQ 'hyperv-detail-chart').content.query
+
+    function Invoke-DetailQuery {
+        param([string]$Query, [string]$Metadata, [string]$VM = '', [string]$Metric = 'cpu', [string]$Disk = '', [string]$Source)
+        $query = $Query.Replace('{HyperVNodeCapacityMap}', $Metadata).
+            Replace('{HyperVDetailTimeRange:start}', 'datetime(2026-01-01)').
+            Replace('{HyperVDetailTimeRange:end}', 'datetime(2026-01-02)').
+            Replace('{HyperVDetailVM}', $VM).Replace('{HyperVDetailMetric}', $Metric).
+            Replace('{HyperVDetailDisk}', $Disk)
+        if ($Source) {
+            $query = $query.Replace('Perf', $Source)
+        } else {
+            $query = $query.Replace('datetime(2026-01-01)', "ago($($Days)d)").Replace('datetime(2026-01-02)', 'now()')
+        }
+        $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
+            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
+            -Body (@{ query = $query } | ConvertTo-Json -Depth 10)
+        if ($response.error) { throw 'VM detail query returned a partial error.' }
+        $table = $response.tables[0]
+        foreach ($row in $table.rows) {
+            $record = [ordered]@{}
+            for ($index = 0; $index -lt $table.columns.Count; $index++) {
+                $record[$table.columns[$index].name] = $row[$index]
+            }
+            [pscustomobject]$record
+        }
+    }
+
+    function Encode-DetailValue([string]$Value) {
+        [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Value))
+    }
+
+    $mapTemplate = ($items | Where-Object name -EQ 'hyperv-node-capacity-params').content.parameters[0].query
+    $mapQuery = $mapTemplate.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', '').Replace('{ClusterTagValue}', '') -replace '\r?\n', ' '
+    $mapResponse = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
+        --graph-query $mapQuery --output json --only-show-errors
+    if ($LASTEXITCODE -ne 0) { throw 'VM detail machine metadata query failed.' }
+    $metadata = ($mapResponse -join [Environment]::NewLine | ConvertFrom-Json).data[0].value
+    $choices = @(Invoke-DetailQuery -Query $vmPicker -Metadata $metadata)
+    if ($choices.Count -eq 0) { throw 'VM detail live picker returned no observations.' }
+    [pscustomobject]@{ Query = 'hyperv-detail-vm-picker-live'; Rows = $choices.Count; Result = 'Passed' }
+    $selectedVM = [string]$choices[0].value
+    $disks = @(Invoke-DetailQuery -Query $diskPicker -Metadata $metadata -VM $selectedVM)
+    [pscustomobject]@{ Query = 'hyperv-detail-disk-picker-live'; Rows = $disks.Count; Result = 'Passed' }
+    $disk = if ($disks.Count) { [string]$disks[0].value } else { '' }
+    foreach ($metric in @('cpu', 'memory', 'disk-throughput', 'disk-iops', 'disk-latency', 'network')) {
+        $rows = @(Invoke-DetailQuery -Query $template -Metadata $metadata -VM $selectedVM -Metric $metric -Disk $disk)
+        [pscustomobject]@{ Query = "hyperv-detail-$metric-live"; Rows = $rows.Count; Result = 'Passed' }
+    }
+
+    $metadata = '[{"hostId":"host-a","machine":"machine-a","cluster":"instance-a"},{"hostId":"host-b","machine":"machine-b","cluster":"instance-b"}]'
+    $selectedVM = Encode-DetailValue '["host-a","vm"]'
+    $selectedDisk = Encode-DetailValue 'disk-one.vhdx'
+    $samples = [Collections.Generic.List[object]]::new()
+    function Add-DetailSample([string]$HostId, [string]$ObjectName, [string]$CounterName, [string]$InstanceName, [double]$Value, [string]$Time = '2026-01-01T00:01:00Z') {
+        $samples.Add(@{ HostId=$HostId; ObjectName=$ObjectName; CounterName=$CounterName; InstanceName=$InstanceName; CounterValue=$Value; TimeGenerated=$Time })
+    }
+    Add-DetailSample 'host-a' 'Hyper-V Hypervisor Virtual Processor' '% Guest Run Time' 'vm:Hv VP 0' 20
+    Add-DetailSample 'host-a' 'Hyper-V Hypervisor Virtual Processor' '% Guest Run Time' 'vm:Hv VP 1' 40
+    Add-DetailSample 'host-a' 'Hyper-V Hypervisor Virtual Processor' '% Guest Run Time' 'vm_other:Hv VP 0' 100
+    Add-DetailSample 'host-b' 'Hyper-V Hypervisor Virtual Processor' '% Guest Run Time' 'vm:Hv VP 0' 90
+    Add-DetailSample 'host-a' 'Hyper-V Dynamic Memory VM' 'Current Pressure' 'vm' 125
+    foreach ($counter in @('Read Bytes/sec', 'Write Bytes/sec', 'Read Operations/Sec', 'Write Operations/Sec', 'Latency')) {
+        $value = switch ($counter) { 'Read Bytes/sec' { 1048576 }; 'Write Bytes/sec' { 2097152 }; 'Read Operations/Sec' { 10 }; 'Write Operations/Sec' { 20 }; 'Latency' { 4 } }
+        Add-DetailSample 'host-a' 'Hyper-V Virtual Storage Device' $counter 'disk-one.vhdx' $value
+        Add-DetailSample 'host-a' 'Hyper-V Virtual Storage Device' $counter 'disk-two.vhdx' ($value*10)
+        Add-DetailSample 'host-b' 'Hyper-V Virtual Storage Device' $counter 'disk-one.vhdx' ($value*20)
+    }
+    foreach ($counter in @('Bytes/sec', 'Bytes Sent/sec', 'Bytes Received/sec')) {
+        $value = if ($counter -eq 'Bytes/sec') { 3145728 } else { 1048576 }
+        Add-DetailSample 'host-a' 'Hyper-V Virtual Network Adapter' $counter 'vm_nic-one' $value
+        Add-DetailSample 'host-a' 'Hyper-V Virtual Network Adapter' $counter 'vm_other_nic' 9999999
+    }
+    function Get-DetailSource([object[]]$Samples) {
+        $json = ConvertTo-Json -InputObject @($Samples) -Depth 10 -Compress
+        "(print row=dynamic($json) | mv-expand row | project TimeGenerated=todatetime(row.TimeGenerated), _ResourceId=tostring(row.HostId), ObjectName=tostring(row.ObjectName), CounterName=tostring(row.CounterName), InstanceName=tostring(row.InstanceName), CounterValue=todouble(row.CounterValue))"
+    }
+    $source = Get-DetailSource $samples.ToArray()
+    $expected = @{ cpu=30; memory=125; 'disk-throughput'=3; 'disk-iops'=30; 'disk-latency'=4; network=3 }
+    foreach ($metric in $expected.Keys) {
+        $rows = @(Invoke-DetailQuery -Query $template -Metadata $metadata -VM $selectedVM -Metric $metric -Disk $selectedDisk -Source $source)
+        if (@($rows | Where-Object { $null -eq $_.Value }).Count -eq 0) { throw "VM detail $metric did not preserve missing buckets." }
+        $rows = @($rows | Where-Object { $null -ne $_.Value })
+        if ($rows.Count -ne 1 -or [math]::Abs($rows[0].Value-$expected[$metric]) -gt 0.00001) { throw "VM detail $metric isolation/units fixture failed." }
+        [pscustomobject]@{ Query = "hyperv-detail-$metric-fixture"; Rows = $rows.Count; Result = 'Passed' }
+    }
+    foreach ($case in @('zero', 'duplicates', 'partial', 'invalid', 'other-host', 'blank-vm', 'blank-disk', 'time-average')) {
+        $caseSamples = @($samples.ToArray())
+        $vm = $selectedVM
+        $disk = $selectedDisk
+        $expectedValue = 30
+        $expectedRows = 1
+        switch ($case) {
+            'zero' { $caseSamples = @($caseSamples | ForEach-Object { $copy=$_.Clone(); $copy.CounterValue=0; $copy }); $expectedValue=0 }
+            'duplicates' { $caseSamples = @($caseSamples) + @($caseSamples) }
+            'partial' { $caseSamples = @($caseSamples | Where-Object CounterName -NE 'Write Operations/Sec'); $expectedRows=0 }
+            'invalid' { $caseSamples = @($caseSamples | ForEach-Object { $copy=$_.Clone(); if ($copy.CounterName -eq 'Write Operations/Sec') {$copy.CounterValue=-1}; $copy }); $expectedRows=0 }
+            'other-host' { $vm=Encode-DetailValue '["host-c","vm"]'; $expectedRows=0 }
+            'blank-vm' { $vm=''; $expectedRows=0 }
+            'blank-disk' { $disk=''; $expectedRows=0 }
+            'time-average' {
+                $caseSamples = @($caseSamples) + @($caseSamples | ForEach-Object { $copy=$_.Clone(); $copy.TimeGenerated='2026-01-01T00:02:00Z'; $copy.CounterValue=[double]$copy.CounterValue*3; $copy })
+                $expectedValue=60
+            }
+        }
+        $rows = @(Invoke-DetailQuery -Query $template -Metadata $metadata -VM $vm -Metric 'disk-iops' -Disk $disk -Source (Get-DetailSource $caseSamples))
+        $rows = @($rows | Where-Object { $null -ne $_.Value })
+        if ($rows.Count -ne $expectedRows -or ($expectedRows -gt 0 -and [math]::Abs($rows[0].Value-$expectedValue) -gt 0.00001)) { throw "VM detail $case fixture failed." }
+        [pscustomobject]@{ Query = "hyperv-detail-$case-fixture"; Rows = $rows.Count; Result = 'Passed' }
+    }
+    $choices = @(Invoke-DetailQuery -Query $vmPicker -Metadata $metadata -Source $source)
+    if ($choices.Count -ne 3 -or @($choices | Where-Object value -EQ $selectedVM).Count -ne 1) { throw 'VM detail picker merged same-name machines.' }
+    [pscustomobject]@{ Query = 'hyperv-detail-picker-identity-fixture'; Rows = $choices.Count; Result = 'Passed' }
+    $disks = @(Invoke-DetailQuery -Query $diskPicker -Metadata $metadata -VM $selectedVM -Source $source)
+    if ($disks.Count -ne 2) { throw 'VM detail disk picker did not retain separate disks.' }
+    [pscustomobject]@{ Query = 'hyperv-detail-disk-picker-fixture'; Rows = $disks.Count; Result = 'Passed' }
+    foreach ($duration in @(1, 3, 7, 14, 30)) {
+        $end = ([datetime]'2026-01-01').AddDays($duration).ToString('yyyy-MM-dd')
+        $rangeTemplate = $template.Replace('{HyperVDetailTimeRange:end}', "datetime($end)")
+        $rows = @(Invoke-DetailQuery -Query $rangeTemplate -Metadata $metadata -VM $selectedVM -Metric 'cpu' -Source $source)
+        $stepMinutes = if ($duration -eq 1) { 5 } elseif ($duration -le 7) { 30 } elseif ($duration -le 14) { 60 } else { 120 }
+        if ($rows.Count -ne $duration*1440/$stepMinutes -or
+            @($rows | Where-Object { $null -ne $_.Value }).Count -ne 1) { throw "VM detail $duration-day resolution fixture failed." }
+        [pscustomobject]@{ Query = "hyperv-detail-$duration-day-resolution-fixture"; Rows = $rows.Count; Result = 'Passed' }
+    }
+    foreach ($case in @('network-pair', 'network-partial', 'latency-pair', 'latency-partial')) {
+        $caseSamples = @($samples.ToArray())
+        $expectedValue = 2
+        $expectedRows = 1
+        $metric = 'network'
+        if ($case -like 'network-*') {
+            $caseSamples = @($caseSamples | Where-Object CounterName -NE 'Bytes/sec')
+            if ($case -eq 'network-partial') {
+                $caseSamples = @($caseSamples | Where-Object CounterName -NE 'Bytes Received/sec')
+                $expectedRows = 0
+            }
+        } else {
+            $metric = 'disk-latency'
+            $expectedValue = 4
+            $caseSamples = @($caseSamples | Where-Object CounterName -NE 'Latency')
+            $caseSamples += @{ HostId='host-a'; ObjectName='Hyper-V Virtual Storage Device'; CounterName='Read Latency'; InstanceName='disk-one.vhdx'; CounterValue=2; TimeGenerated='2026-01-01T00:01:00Z' }
+            if ($case -eq 'latency-pair') {
+                $caseSamples += @{ HostId='host-a'; ObjectName='Hyper-V Virtual Storage Device'; CounterName='Write Latency'; InstanceName='disk-one.vhdx'; CounterValue=6; TimeGenerated='2026-01-01T00:01:00Z' }
+            } else { $expectedRows=0 }
+        }
+        $rows = @(Invoke-DetailQuery -Query $template -Metadata $metadata -VM $selectedVM -Metric $metric -Disk $selectedDisk -Source (Get-DetailSource $caseSamples))
+        $rows = @($rows | Where-Object { $null -ne $_.Value })
+        if ($rows.Count -ne $expectedRows -or ($expectedRows -gt 0 -and [math]::Abs($rows[0].Value-$expectedValue) -gt 0.00001)) { throw "VM detail $case fallback fixture failed." }
+        [pscustomobject]@{ Query = "hyperv-detail-$case-fixture"; Rows = $rows.Count; Result = 'Passed' }
+    }
+}
+
 function Test-NodeCapacity {
     param([string]$TenantId, [string]$WorkspaceId)
 
@@ -872,7 +1032,7 @@ resources
             }
         }
     }
-    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken)
+    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId -AccessToken $accessToken)
     }
 
     $results | Format-Table -AutoSize

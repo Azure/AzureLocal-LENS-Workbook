@@ -216,7 +216,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },
@@ -368,7 +368,7 @@
                   "name": "MachinesLogAnalyticsWorkspace",
                   "label": "Log Analytics Workspace",
                   "type": 2,
-                  "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+                  "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -415,7 +415,7 @@
           {
             "type": 1,
             "content": {
-              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links. Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
+              "json": "**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity & Performance views. The first table in Capacity & Performance --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity & Performance use this LAW filter.\r\n\r\n**DCR setup:** Use **Show DCR Setup Guide** beside the filter for AMA prerequisites, required counters and events, and maintained deployment links. Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace** selector and collection setup."
             },
             "name": "capacity-workspace-scope-note"
           },
@@ -428,7 +428,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
                   "name": "text-dcr-setup-header"
                 },

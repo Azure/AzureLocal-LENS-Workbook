@@ -670,7 +670,7 @@ testSuite('Cross-Component Resources Validation', () => {
         capacityWorkspace.description.includes('Overview capacity table uses Azure Resource Graph and is unaffected') &&
         capacityWorkspace.description.includes('Managed Prometheus uses the separate Azure Monitor Workspace selector') &&
         capacityChildren[navigationIndex + 2]?.name === 'capacity-workspace-scope-note' &&
-        capacityChildren[navigationIndex + 2].content.json.startsWith("**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity views. The first table in Capacity --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity use this LAW filter.") &&
+        capacityChildren[navigationIndex + 2].content.json.startsWith("**'Log Analytics Workspace'** filter scope: The filter above applies across all Capacity & Performance views. The first table in Capacity & Performance --> Overview tab uses Azure Resource Graph (ARG) only, so is unaffected by this filter, all other tabs in Capacity & Performance use this LAW filter.") &&
         capacityChildren[navigationIndex + 2].content.json.includes('**DCR setup:** Use **Show DCR Setup Guide** beside the filter') &&
         capacityChildren[navigationIndex + 2].content.json.includes('Managed Prometheus charts in Overview use the separate **Azure Monitor Workspace**') &&
         workspaceParams.some(parameter => parameter.id === 'capacity-la-workspace'),
@@ -2691,6 +2691,45 @@ testSuite('Azure Local Instance Display Naming', () => {
         dcrGuide.includes('<a id="measure-one-node"></a>') && dcrGuide.includes('### Measure one machine') &&
         dcrGuide.includes('14 **Hyper-V VM** counter paths'),
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
+});
+testSuite('Hyper-V VM performance detailed analysis', () => {
+    const book = JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/Capacity-HyperV/Capacity-HyperV.workbook'), 'utf8'));
+    const items = collectAllItems(book.items);
+    const parameters = items.find(item => item.name === 'hyperv-detail-params').content.parameters;
+    const vm = parameters.find(parameter => parameter.name === 'HyperVDetailVM');
+    const disk = parameters.find(parameter => parameter.name === 'HyperVDetailDisk');
+    const metric = parameters.find(parameter => parameter.name === 'HyperVDetailMetric');
+    const range = parameters.find(parameter => parameter.name === 'HyperVDetailTimeRange');
+    const chart = items.find(item => item.name === 'hyperv-detail-chart');
+    const query = chart.content.query;
+    assert(vm.value === '' && !vm.isRequired && !vm.multiSelect && !vm.typeSettings.showDefault &&
+        chart.conditionalVisibility.parameterName === vm.name && chart.conditionalVisibility.comparison === 'isNotEqualTo' &&
+        chart.conditionalVisibility.value === '' &&
+        JSON.stringify(range.typeSettings.selectableValues.map(value => value.durationMs / 86400000)) === '[1,3,7,14,30]' &&
+        JSON.parse(metric.jsonData).length === 6,
+        'VM detail starts unselected and offers independent 1/3/7/14/30-day and six-metric controls');
+    assert(vm.query.includes('pack_array(HostId, VMName)') && vm.query.includes('lookup kind=inner hosts on HostId') &&
+        query.includes('tolower(_ResourceId) == selectedHost') && query.includes('parse_json(\'{HyperVNodeCapacityMap}\')') &&
+        disk.query.includes('tolower(_ResourceId) == selectedHost') && disk.value === '' &&
+        query.includes('InstanceName == selectedDisk') && query.includes('ReadCount > 0 and WriteCount > 0'),
+        'VM and disk identities are scoped by machine resource ID and disk ownership is selected explicitly');
+    assert(query.includes('CounterValue=avg(CounterValue) by TimeGenerated, ObjectName, CounterName, InstanceName') &&
+        query.includes('SampleValue=avg(CounterValue) by TimeGenerated') &&
+        query.includes('LatencyReadCount > 0 and LatencyWriteCount > 0') &&
+        query.includes('SentCount > 0 and ReceivedCount > 0') && query.includes('case(TotalCount > 0, Total,') &&
+        query.includes('top 1 by NameLength desc') && query.includes('where isnotnull(SampleValue)') &&
+        query.includes('make-series Value=avg(SampleValue) default=double(null)') && !query.includes('top 5') &&
+        chart.content.timeContextFromParameter === range.name &&
+        chart.content.title.includes('{HyperVDetailMetric:label}'),
+        'VM detail preserves metric units, per-sample averages, pair completeness, NIC precedence and missing-data gaps');
+    assert(items.find(item => item.name === 'hyperv-detail-header').content.json.includes('disk ownership is selected by you') &&
+        items.find(item => item.name === 'hyperv-detail-help').content.json.includes('1,048,576 bytes') &&
+        book.items[2].content.items.at(-1).name === 'hyperv-detail-help' &&
+        items.filter(item => item.name.startsWith('hyperv-chart-')).length === 6 &&
+        items.find(item => item.name === 'hyperv-detail-metric-info').content.links.every(link =>
+            link.icon === 'Info' && link.postText.length > 30),
+        'Final VM detail section documents operator-selected disks and retains the six Top 5 charts');
 });
 testSuite('Reviewed time ranges and health snapshot wording', () => {
     const multi = collectAllItems(JSON.parse(fs.readFileSync(path.resolve(__dirname,

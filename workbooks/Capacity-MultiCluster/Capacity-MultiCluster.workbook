@@ -221,7 +221,7 @@
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
@@ -280,7 +280,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
                   "name": "text-dcr-setup-header"
                 },
@@ -469,7 +469,7 @@
               "showExportToExcel": true,
               "aggregation": 3,
               "title": "Predictive Resource Exhaustion Forecast by Instance",
-              "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify collection.",
+              "noDataMessage": "No Heartbeat and Perf telemetry was available to calculate a instance forecast for the selected scope and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify collection.",
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
@@ -832,7 +832,7 @@
                   "max": 100
                 }
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -879,7 +879,7 @@
                   }
                 }
               },
-              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify event collection.",
+              "noDataMessage": "No Event ID 3002 storage-capacity telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify event collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "48",
@@ -1163,7 +1163,7 @@
                   }
                 }
               },
-              "noDataMessage": "No network-throughput telemetry was returned for the selected instances and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
+              "noDataMessage": "No network-throughput telemetry was returned for the selected instances and time range. Open **Capacity & Performance > Overview > Show DCR Setup Guide** to verify Network Interface Bytes Total/sec collection.",
               "noDataMessageStyle": 4
             },
             "customWidth": "100",

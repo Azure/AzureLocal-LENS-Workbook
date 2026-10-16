@@ -2812,6 +2812,7 @@ testSuite('Reviewed time ranges and health snapshot wording', () => {
         'Health snapshot help does not promise 24-hour filtering or chronological truncation');
 });
 testSuite('Capacity shared-map parameter expansion', () => {
+    const liveHarness = fs.readFileSync(path.resolve(__dirname, 'run-live-tests.ps1'), 'utf8');
     const liveQueries = new Set(JSON.parse(fs.readFileSync(path.resolve(__dirname, 'live-test-queries.json'), 'utf8')).queries.map(spec => `${spec.file}:${spec.name}`));
     for (const tab of ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster']) {
         const book = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
@@ -2820,7 +2821,9 @@ testSuite('Capacity shared-map parameter expansion', () => {
         const safe = queries.length >= 6 && queries.every(item => {
             const query = item.content.query;
             const empty = query.replaceAll('{ClusterRGMap}', '').replaceAll('{ClusterNodeMap}', '');
-            return liveQueries.has(`workbooks/${tab}/${tab}.workbook:${item.name}`) && !/dynamic\(\s*\)/.test(empty) && ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
+            return liveQueries.has(`workbooks/${tab}/${tab}.workbook:${item.name}`) && !/dynamic\(\s*\)/.test(empty) &&
+                (!query.includes('{ArcMachineMap}') || liveHarness.includes("$query = $query.Replace('{ArcMachineMap}', '[]')")) &&
+                ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
                 !query.includes(`{${parameter}}`) || query.includes(`parse_json('{${parameter}}')`));
         });
         assert(safe, `${tab} safely parses shared maps without emitting dynamic() for unset values`);

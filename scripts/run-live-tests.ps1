@@ -989,6 +989,8 @@ resources
         }
         $query = $query.Replace('{ClusterRGMap}', $clusterRGJson)
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
+        # Guest resource links are outside this suite's inventory/metric coverage.
+        $query = $query.Replace('{ArcMachineMap}', '[]')
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
         $query = $query.Replace('{SingleCluster}', [string]$selectedCluster.armId)
         $query = $query.Replace('{SCStorageDetailMachine}', $detailMachine)

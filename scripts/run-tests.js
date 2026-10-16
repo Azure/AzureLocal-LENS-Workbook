@@ -2750,6 +2750,7 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
         chart.conditionalVisibility.parameterName === vm.name && chart.conditionalVisibility.comparison === 'isNotEqualTo' &&
         chart.conditionalVisibility.value === '' &&
         JSON.stringify(range.typeSettings.selectableValues.map(value => value.durationMs / 86400000)) === '[1,3,7,14,30]' &&
+        range.value.durationMs === 604800000 &&
         JSON.parse(metric.jsonData).length === 6,
         'VM detail starts unselected and offers independent 1/3/7/14/30-day and six-metric controls');
     assert(vm.query.includes('pack_array(HostId, VMName)') && vm.query.includes('lookup kind=inner hosts on HostId') &&

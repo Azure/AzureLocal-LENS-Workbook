@@ -1521,7 +1521,7 @@
                     "allowCustom": false
                   },
                   "value": {
-                    "durationMs": 86400000
+                    "durationMs": 604800000
                   }
                 },
                 {

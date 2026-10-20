@@ -381,6 +381,97 @@ function Test-StorageSources {
     }
 }
 
+function Test-HyperVInventory {
+    param([string]$WorkspaceId, [string]$AccessToken)
+
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
+    $template = (@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'hyperv-vm-inventory').content.query
+    $fixtureNow = [datetime]'2026-01-04T12:00:00Z'
+    $samples = @(
+        @{ VM = 'vm-a'; Host = 'host-a'; Minutes = 10; VP = '0'; Value = 10 },
+        @{ VM = 'vm-a'; Host = 'host-a'; Minutes = 10; VP = '1'; Value = 30 },
+        @{ VM = 'vm-a'; Host = 'host-a'; Minutes = 10; VP = '1'; Value = 30 },
+        @{ VM = 'vm-a'; Host = 'host-a'; Minutes = 9; VP = '0'; Value = 60 },
+        @{ VM = 'vm-b'; Host = 'host-a'; Minutes = 5; VP = '0'; Value = 0 },
+        @{ VM = 'vm-stale'; Host = 'host-b'; Minutes = 2880; VP = '0'; Value = 20 },
+        @{ VM = 'vm-total'; Host = 'host-a'; Minutes = 8; VP = '_Total'; Value = 99 },
+        @{ VM = 'vm-migrated'; Host = 'host-a'; Minutes = 20; VP = '0'; Value = 10 },
+        @{ VM = 'vm-migrated'; Host = 'host-a'; Minutes = 20; VP = '1'; Value = 10 },
+        @{ VM = 'vm-migrated'; Host = 'host-b'; Minutes = 5; VP = '0'; Value = 30 }
+    ) | ForEach-Object {
+        @{ TimeGenerated = $fixtureNow.AddMinutes(-$_.Minutes).ToString('o'); Computer = $_.Host
+            ObjectName = 'Hyper-V Hypervisor Virtual Processor'; CounterName = '% Guest Run Time'
+            InstanceName = "$($_.VM):Hv VP $($_.VP)"; CounterValue = $_.Value }
+    }
+    $samples += @(
+        @{ TimeGenerated = $fixtureNow.AddMinutes(-5).ToString('o'); Computer = 'host-a'; ObjectName = 'Hyper-V Dynamic Memory VM'; CounterName = 'Current Pressure'; InstanceName = 'vm-a'; CounterValue = 50 },
+        @{ TimeGenerated = $fixtureNow.AddMinutes(-5).ToString('o'); Computer = 'outside-host'; ObjectName = 'Hyper-V Dynamic Memory VM'; CounterName = 'Current Pressure'; InstanceName = 'vm-a'; CounterValue = 150 },
+        @{ TimeGenerated = $fixtureNow.AddMinutes(-5).ToString('o'); Computer = 'outside-host'; ObjectName = 'Hyper-V Dynamic Memory VM'; CounterName = 'Current Pressure'; InstanceName = 'outside-vm'; CounterValue = 999 }
+    )
+    $sampleJson = ConvertTo-Json -InputObject $samples -Depth 10 -Compress
+    $perfSource = "(print fixtureRow=dynamic($sampleJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
+    $heartbeatSource = "(datatable(TimeGenerated:datetime, Computer:string, OSType:string, ResourceGroup:string)[datetime(2026-01-04T11:55:00Z),'host-a','Windows','example-rg',datetime(2026-01-04T11:55:00Z),'host-b','Windows','example-rg',datetime(2026-01-04T11:55:00Z),'outside-host','Windows','outside-rg'])"
+    $nodeMap = '["host-a:example-instance:example-instance-id"]'
+    $rgMap = '["example-rg:example-instance"]'
+    $guestMap = '["vm-a:example-guest-id"]'
+    $results = [Collections.Generic.List[object]]::new()
+
+    function Invoke-InventoryFixture {
+        param([string]$Hosts = "'value::all'", [string]$VM = '', [string]$Activity = 'all', [string]$Cpu = '0', [string]$Memory = '0', [switch]$EmptyMaps)
+
+        $query = $template.Replace('Perf', $perfSource).Replace('Heartbeat', $heartbeatSource).
+            Replace('now()', "datetime($($fixtureNow.ToString('o')))").
+            Replace('{HyperVInvHostFilter}', $Hosts).Replace('{HyperVInvVMFilter}', $VM).
+            Replace('{HyperVInvActivity}', $Activity).Replace('{HyperVInvMinCpu}', $Cpu).
+            Replace('{HyperVInvMinMemory}', $Memory).
+            Replace('{ClusterNodeMap}', $(if ($EmptyMaps) { '[]' } else { $nodeMap })).
+            Replace('{ClusterRGMap}', $(if ($EmptyMaps) { '[]' } else { $rgMap })).
+            Replace('{ArcMachineMap}', $(if ($EmptyMaps) { '[]' } else { $guestMap }))
+        $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
+            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
+            -Body (@{ query = $query } | ConvertTo-Json -Depth 10)
+        if ($response.error) { throw 'VM inventory fixture returned a partial query error.' }
+        $table = $response.tables[0]
+        foreach ($row in $table.rows) {
+            $record = [ordered]@{}
+            for ($index = 0; $index -lt $table.columns.Count; $index++) {
+                $record[$table.columns[$index].name] = $row[$index]
+            }
+            [pscustomobject]$record
+        }
+    }
+
+    function Assert-InventoryFixture {
+        param([bool]$Condition, [string]$Name, [int]$Rows)
+        if (-not $Condition) { throw "VM inventory fixture failed: $Name" }
+        $results.Add([pscustomobject]@{ Query = "hyperv-inventory-$Name"; Rows = $Rows; Result = 'Passed' })
+    }
+
+    $all = @(Invoke-InventoryFixture)
+    $vmA = $all | Where-Object 'VM Name' -EQ 'vm-a'
+    $missing = $all | Where-Object 'VM Name' -EQ 'vm-b'
+    $migrated = $all | Where-Object 'VM Name' -EQ 'vm-migrated'
+    $total = $all | Where-Object 'VM Name' -EQ 'vm-total'
+    Assert-InventoryFixture ($all.Count -eq 5) 'all-retains-vms' $all.Count
+    Assert-InventoryFixture ($vmA.'Avg CPU %' -eq 41.7 -and $vmA.'vCPUs (observed)' -eq 2) 'minute-weighted-cpu-and-duplicate-samples' $all.Count
+    Assert-InventoryFixture ($vmA.'Avg Memory %' -eq 100 -and $vmA.clusterLink -eq 'https://portal.azure.com/#@/resource/example-instance-id' -and $vmA.vmLink -eq 'https://portal.azure.com/#@/resource/example-guest-id') 'memory-and-resource-links' $all.Count
+    Assert-InventoryFixture ($migrated.'Physical Host' -eq 'host-b' -and $migrated.'vCPUs (observed)' -eq 2 -and [datetime]$migrated.'First Seen (UTC)' -eq $fixtureNow.AddMinutes(-20) -and [datetime]$migrated.'Last Seen (UTC)' -eq $fixtureNow.AddMinutes(-5) -and $migrated.'Cluster Name' -eq 'example-instance') 'migration-and-rg-fallback' $all.Count
+    Assert-InventoryFixture ($missing.'Avg CPU %' -eq 0 -and $null -eq $missing.'Avg Memory %' -and $null -eq $total.'Avg CPU %' -and $total.'vCPUs (observed)' -eq 0) 'zero-and-unavailable-metrics' $all.Count
+    $hostRows = @(Invoke-InventoryFixture -Hosts "'host-a'")
+    Assert-InventoryFixture ($hostRows.Count -eq 4 -and ($hostRows | Where-Object 'VM Name' -EQ 'vm-a').'Avg Memory %' -eq 100) 'host-filter-preserves-memory-scope' $hostRows.Count
+    $nameRows = @(Invoke-InventoryFixture -VM 'VM-A')
+    Assert-InventoryFixture ($nameRows.Count -eq 1 -and $nameRows[0].'VM Name' -eq 'vm-a') 'vm-name-filter' $nameRows.Count
+    $recentRows = @(Invoke-InventoryFixture -Activity 'recent')
+    Assert-InventoryFixture ($recentRows.Count -eq 4 -and @($recentRows | Where-Object 'VM Name' -EQ 'vm-stale').Count -eq 0) 'activity-filter' $recentRows.Count
+    $cpuRows = @(Invoke-InventoryFixture -Cpu '40')
+    Assert-InventoryFixture ($cpuRows.Count -eq 1 -and $cpuRows[0].'VM Name' -eq 'vm-a') 'cpu-threshold' $cpuRows.Count
+    $memoryRows = @(Invoke-InventoryFixture -Memory '100')
+    Assert-InventoryFixture ($memoryRows.Count -eq 1 -and $memoryRows[0].'VM Name' -eq 'vm-a') 'memory-threshold' $memoryRows.Count
+    $unmapped = @(Invoke-InventoryFixture -EmptyMaps)
+    Assert-InventoryFixture ($unmapped.Count -eq 5 -and @($unmapped | Where-Object { $_.clusterLink -or $_.vmLink -or $_.'Cluster Name' }).Count -eq 0) 'empty-maps-retain-rows' $unmapped.Count
+    $results
+}
+
 function Test-HyperVDetail {
     param([string]$WorkspaceId, [string]$AccessToken)
 
@@ -1038,7 +1129,7 @@ resources
             }
         }
     }
-    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId -AccessToken $accessToken)
+    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId -AccessToken $accessToken)
     }
 
     $results | Format-Table -AutoSize

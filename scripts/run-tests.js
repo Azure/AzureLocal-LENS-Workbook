@@ -646,7 +646,7 @@ testSuite('Cross-Component Resources Validation', () => {
         'Workbook has items with crossComponentResources', '>0', itemsWithCCR.length);
 
     // All crossComponentResources should reference {Subscriptions} or a valid workspace parameter
-    const validCCR = ['{Subscriptions}', '{MachinesLogAnalyticsWorkspace}', '{ForecastWorkspace}', '{AzureMonitorWorkspace}'];
+    const validCCR = ['{Subscriptions}', '{CapacityWorkspaceSubscriptions}', '{MachinesLogAnalyticsWorkspace}', '{ForecastWorkspace}', '{AzureMonitorWorkspace}'];
     const itemsRefValid = itemsWithCCR.filter(i =>
         i.content.crossComponentResources.some(r => validCCR.includes(r))
     );
@@ -661,6 +661,7 @@ testSuite('Cross-Component Resources Validation', () => {
     const navigationIndex = capacityChildren.findIndex(item => item.name === 'cap-section-tabs');
     const workspaceSelector = capacityChildren[navigationIndex + 1];
     const capacityWorkspace = workspaceSelector?.content.parameters?.find(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
+    const workspaceSubscriptions = workspaceSelector?.content.parameters?.find(parameter => parameter.name === 'CapacityWorkspaceSubscriptions');
     const embeddedWorkspaceParams = collectAllItems([capacityGroup]).flatMap(item => item.content?.parameters || [])
         .filter(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
     assert(workspaceSelector?.name === 'capacity-workspace-params' && !workspaceSelector.conditionalVisibility &&
@@ -682,11 +683,29 @@ testSuite('Cross-Component Resources Validation', () => {
         'Workspace discovery does not require workspaces to carry cluster tags (issue #103)',
         '0 tag-filtered selectors', taggedWorkspaceParams.map(param => param.id).join(', '));
 
-    assert(workspaceParams.every(param =>
+    assert(workspaceSubscriptions?.type === 6 && workspaceSubscriptions.isHiddenWhenLocked === true &&
+        workspaceSubscriptions.multiSelect === true && workspaceSubscriptions.defaultValue === 'value::all' &&
+        JSON.stringify(workspaceSubscriptions.value) === '["value::all"]' &&
+        workspaceSubscriptions.typeSettings.includeAll === true &&
+        workspaceSubscriptions.typeSettings.additionalResourceOptions.includes('value::all') &&
+        !workspaceSubscriptions.query &&
+        workspaceSelector.content.parameters.indexOf(workspaceSubscriptions) < workspaceSelector.content.parameters.indexOf(capacityWorkspace) &&
+        allParams.filter(parameter => parameter.name === 'CapacityWorkspaceSubscriptions').length === 1,
+        'Capacity workspace discovery has one independent hidden all-subscriptions scope before its picker');
+
+    assert(capacityWorkspace.crossComponentResources?.length === 1 &&
+        capacityWorkspace.crossComponentResources[0] === '{CapacityWorkspaceSubscriptions}' &&
+        !/\{(?:Subscriptions|ResourceGroupFilter|ClusterTagName|ClusterTagValue)\}/.test(JSON.stringify(capacityWorkspace)) &&
+        capacityWorkspace.query.includes('microsoft.operationalinsights/workspaces') &&
+        capacityWorkspace.description.includes('separate monitoring subscription') &&
+        capacityChildren[navigationIndex + 2].content.json.includes('Workspace discovery is independent'),
+        'Capacity workspace discovery ignores inventory subscription, resource-group and tag filters');
+
+    const otherWorkspaceParams = workspaceParams.filter(parameter => parameter !== capacityWorkspace);
+    assert(otherWorkspaceParams.every(param =>
         param.crossComponentResources?.includes('{Subscriptions}') &&
         param.query.includes('{ResourceGroupFilter}')),
-        'Workspace discovery retains subscription and resource-group scope',
-        'existing scope retained', workspaceParams.map(param => param.id).join(', '));
+        'Unrelated workspace selectors retain their existing scope');
 
     const forecastClusterParam = allParams.find(param => param.id === 'forecast-cluster-filter-param');
     assert(forecastClusterParam?.query.includes('{ClusterTagName}') &&
@@ -698,10 +717,13 @@ testSuite('Cross-Component Resources Validation', () => {
     assert(capacitySections.every(tab => {
         const section = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
         const fallback = section.items[1].content.parameters.filter(parameter => parameter.name === 'MachinesLogAnalyticsWorkspace');
+        const subscriptionFallback = section.items[1].content.parameters.filter(parameter => parameter.name === 'CapacityWorkspaceSubscriptions');
         const sectionItems = collectAllItems([section.items[2]]);
         const logQueries = sectionItems.filter(item => typeof item.content?.query === 'string' &&
             item.content.queryType === 0 && item.content.resourceType === 'microsoft.operationalinsights/workspaces');
         return fallback.length === 1 && JSON.stringify(fallback[0]) === JSON.stringify(capacityWorkspace) &&
+            subscriptionFallback.length === 1 && JSON.stringify(subscriptionFallback[0]) === JSON.stringify(workspaceSubscriptions) &&
+            section.items[1].content.parameters.indexOf(subscriptionFallback[0]) < section.items[1].content.parameters.indexOf(fallback[0]) &&
             sectionItems.every(item => !(item.content?.parameters || []).some(parameter => /^(Machines|HyperV)LogAnalyticsWorkspace$/.test(parameter.name))) &&
             logQueries.length > 0 && logQueries.every(item => item.content.crossComponentResources?.includes('{MachinesLogAnalyticsWorkspace}')) &&
             !JSON.stringify(section).includes('_BELOW_') &&
@@ -2139,7 +2161,8 @@ testSuite('DCR Deployment Guidance', () => {
     const sharedGuide = capacityChildren.find(item => item.name === 'dcr-setup-group');
     const standaloneSections = ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster', 'Capacity-HyperV']
         .map(tab => JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8')));
-    assert(sharedControls[0].name === 'MachinesLogAnalyticsWorkspace' && sharedControls[1] === sharedToggle &&
+    const visibleSharedControls = sharedControls.filter(parameter => !parameter.isHiddenWhenLocked);
+    assert(visibleSharedControls[0].name === 'MachinesLogAnalyticsWorkspace' && visibleSharedControls[1] === sharedToggle &&
         sharedToggle?.value === 'no' && sharedGuide?.conditionalVisibility?.parameterName === sharedToggle.name &&
         sharedGuide.conditionalVisibility.comparison === 'isEqualTo' && sharedGuide.conditionalVisibility.value === 'yes' &&
         capacityChildren.indexOf(sharedGuide) === capacityChildren.findIndex(item => item.name === 'capacity-workspace-scope-note') + 1 &&
@@ -2499,10 +2522,17 @@ testSuite('Hyper-V Node Capacity', () => {
         clusterFilter.query.includes('label = tostring(mapping.cluster)') &&
         query.includes('let clusters = dynamic([{HyperVNodeClusterFilter}])') &&
         query.includes("| where (set_has_element(clusters, '*') or set_has_element(clusters, 'value::all')) or set_has_element(clusters, tolower(ClusterId))") &&
-        query.indexOf("| where (set_has_element(clusters, '*')") > query.indexOf('let collisions =') &&
+        query.indexOf("| where (set_has_element(clusters, '*')") < query.indexOf('let raw = materialize(Perf') &&
         items.filter(item => item.type === 3 && item.name !== 'hyperv-node-capacity')
             .every(item => !item.content.query?.includes('{HyperVNodeClusterFilter}')),
         'Node hardware lookup excludes guests and independently filters scoped cluster IDs', 'physical hosts and node-only cluster selection', metadata.name);
+    const rawCapacityQuery = query.split('let raw = materialize(Perf')[1]?.split('let hostNames =')[0];
+    assert(rawCapacityQuery?.includes('HostId in (nodeMap | project HostId)') &&
+        rawCapacityQuery.includes('| project HostId, TimeGenerated, Computer, ObjectName, CounterName, InstanceName, CounterValue') &&
+        !rawCapacityQuery.includes('selectedHostIds') && !rawCapacityQuery.includes('set_has_element(hosts') &&
+        query.indexOf('summarize MappingCount = count()') < query.indexOf("| where (set_has_element(clusters, '*')") &&
+        query.includes('nodeMap\r\n| join kind=leftouter hostNames on HostId'),
+        'Machine capacity caches only scoped inventory telemetry while retaining every peer needed for collision checks');
     assert(clusterFilter.query.includes("clusterResourceGroup = tostring(split(value, '/')[4])") &&
         clusterFilter.query.includes("clusterSubscription = tostring(split(value, '/')[2])") &&
         clusterFilter.query.includes("strcat(label, ' (', clusterResourceGroup, ' / ', clusterSubscription, ')')"),
@@ -2574,8 +2604,34 @@ testSuite('Hyper-V Node Capacity', () => {
         vmInventory.query.includes("let minimumMemory = todouble('{HyperVInvMinMemory}');") &&
         vmInventory.query.includes(cpuThresholdClause + '\r\n' + memoryThresholdClause) &&
         vmInventory.query.indexOf(cpuThresholdClause) > vmInventory.query.indexOf('| join kind=leftouter memStats on VMName') &&
-        vmInventory.query.indexOf(memoryThresholdClause) < vmInventory.query.indexOf('| join kind=leftouter nodeMap on nodeShort'),
+        vmInventory.query.indexOf(memoryThresholdClause) < vmInventory.query.indexOf('| join kind=leftouter hostMetadata'),
         'VM thresholds combine with AND after averaging and preserve nulls only under All', 'inclusive separate predicates after metric joins', vmInventory.query.includes(cpuThresholdClause + '\r\n' + memoryThresholdClause));
+    const inventoryQuery = vmInventory.query;
+    const cachedInventory = inventoryQuery.split('let inventory = materialize(perfRaw')[1]?.split('let cpuStats =')[0];
+    const hostLookup = inventoryQuery.split('let hostRG = Heartbeat')[1]?.split('let hostMetadata =')[0];
+    const hostMetadata = inventoryQuery.split('let hostMetadata = inventory')[1]?.split('let arcMap =')[0];
+    assert(cachedInventory?.includes("['First Seen (UTC)'] = min(TimeGenerated)") &&
+        cachedInventory.includes('dcountif(vCpuId, vCpuId != "_Total" and isnotempty(vCpuId))') &&
+        cachedInventory.includes('arg_max(TimeGenerated, Computer) by VMName') &&
+        cachedInventory.includes("or (activityMode == 'stale' and AgeMinutes > 60)") &&
+        !cachedInventory.includes('join ') && !inventoryQuery.includes('materialize(Perf') &&
+        inventoryQuery.includes('where VMName in (inventory | project VMName)') &&
+        inventoryQuery.includes('summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)') &&
+        inventoryQuery.includes("summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName"),
+        'VM inventory caches only per-VM summaries and filters activity before unchanged minute-weighted CPU averages');
+    assert(hostLookup?.includes("where Computer in (inventory | project ['Physical Host'])") &&
+        hostLookup.includes('project TimeGenerated, Computer, ResourceGroup') &&
+        hostLookup.includes('summarize arg_max(TimeGenerated, ResourceGroup) by Computer') &&
+        !hostLookup.includes('arg_max(TimeGenerated, *)') &&
+        hostMetadata?.trimStart().startsWith("| distinct ['Physical Host']") &&
+        hostMetadata.includes('join kind=leftouter nodeMap on nodeShort') &&
+        hostMetadata.includes('join kind=leftouter clusterMap on nodeRG') &&
+        hostMetadata.includes("clusterLink = iff(isempty(armId), '', strcat('https://portal.azure.com/#@/resource', armId))") &&
+        inventoryQuery.includes("| join kind=leftouter hostMetadata on ['Physical Host']") &&
+        inventoryQuery.includes("vmLink = iff(isempty(vmArmId), '', strcat('https://portal.azure.com/#@/resource', vmArmId))") &&
+        vmInventory.timeContextFromParameter === 'HyperVTrendsTimeRange' &&
+        vmInventory.gridSettings.formatters.some(formatter => formatter.columnMatch === 'Cluster Name' && formatter.formatOptions?.linkColumn === 'clusterLink'),
+        'VM metadata is resolved per host with narrow Heartbeat records while preserving instance and guest links');
     assert(items.findIndex(item => item.name === 'hyperv-node-ratio-params') >= 0 &&
         items.findIndex(item => item.name === 'hyperv-node-ratio-params') < items.findIndex(item => item.name === 'hyperv-node-capacity') &&
         ratioParameters.filter(parameter => !parameter.isHiddenWhenLocked).map(parameter => parameter.name).join(',') === 'HyperVInvHostFilter,HyperVNodeClusterFilter,HyperVNodeTargetRatio,HyperVNodeRatioFilter' &&
@@ -2597,6 +2653,7 @@ testSuite('Hyper-V Node Capacity', () => {
             'Perf',
             '    | where ObjectName == "Hyper-V Dynamic Memory VM" and CounterName == "Current Pressure"',
             '    | where InstanceName != "_Total" and isnotempty(InstanceName)',
+            '    | where InstanceName in (inventory | project VMName)',
             "    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName"
         ].join('\r\n') &&
         vmInventoryHelp?.includes('demand / assigned memory * 100') && vmInventoryHelp.includes('not pagefile usage or paging I/O') &&

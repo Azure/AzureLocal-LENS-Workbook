@@ -230,21 +230,42 @@
             "resourceType": "microsoft.resourcegraph/resources"
           },
           {
+            "id": "capacity-workspace-subscriptions",
+            "version": "KqlParameterItem/1.0",
+            "name": "CapacityWorkspaceSubscriptions",
+            "type": 6,
+            "isHiddenWhenLocked": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
             "id": "capacity-la-workspace",
             "version": "KqlParameterItem/1.0",
             "name": "MachinesLogAnalyticsWorkspace",
             "label": "Log Analytics Workspace",
             "type": 2,
-            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Choose All to query every workspace in the selected subscription and resource-group scope. Narrow the selection to accessible workspaces receiving the required telemetry if queries fail.",
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Workspace discovery uses all accessible subscriptions independently of the top-level subscription, resource-group and instance-tag filters, including workspaces in a separate monitoring subscription. All queries every discovered workspace; select only the workspaces receiving the required telemetry to limit query scope and avoid access or resource-count errors.",
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
             "includeAll": true,
             "defaultValue": "value::all",
-            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
+            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| project value = id, label = name\r\n| order by label asc",
             "crossComponentResources": [
-              "{Subscriptions}"
+              "{CapacityWorkspaceSubscriptions}"
             ],
             "typeSettings": {
               "additionalResourceOptions": [

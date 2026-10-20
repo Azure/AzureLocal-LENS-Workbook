@@ -7,6 +7,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+const zlib = require('zlib');
 
 // ============================================================================
 // TEST FRAMEWORK
@@ -2517,7 +2518,7 @@ testSuite('Hyper-V Node Capacity', () => {
         metadata.query.includes("'{ClusterTagName}' == '' or isnotempty(clusterId)") &&
         clusterFilter?.label === 'Instance Name' && clusterFilter.multiSelect === true &&
         clusterFilter.defaultValue === 'value::all' && clusterFilter.typeSettings.additionalResourceOptions.includes('value::all') &&
-        clusterFilter.query.includes('dynamic({HyperVNodeCapacityMap})') &&
+        clusterFilter.query.includes("gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}')") &&
         clusterFilter.query.includes('value = tolower(tostring(mapping.clusterId))') &&
         clusterFilter.query.includes('label = tostring(mapping.cluster)') &&
         query.includes('let clusters = dynamic([{HyperVNodeClusterFilter}])') &&
@@ -2533,6 +2534,60 @@ testSuite('Hyper-V Node Capacity', () => {
         query.indexOf('summarize MappingCount = count()') < query.indexOf("| where (set_has_element(clusters, '*')") &&
         query.includes('nodeMap\r\n| join kind=leftouter hostNames on HostId'),
         'Machine capacity caches only scoped inventory telemetry while retaining every peer needed for collision checks');
+    const metadataDecoder = "parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'))";
+    const metadataConsumers = items.flatMap(item => [
+        { name: item.name, query: item.content?.query },
+        ...(item.content?.parameters || [])
+    ]).filter(candidate => candidate.query?.includes('{HyperVNodeCapacityMap}'));
+    assert(metadata.query.endsWith('| project value = gzip_compress_to_base64_string(tostring(mappings))') &&
+        metadata.query.includes('mappings = make_list(bag_pack('),
+        'ARG compresses the complete canonical hardware map before workbook parameter substitution');
+    assert(metadataConsumers.map(candidate => candidate.name).sort().join(',') ===
+        ['HyperVNodeClusterFilter', 'hyperv-node-capacity', 'HyperVDetailVM', 'HyperVDetailDisk', 'hyperv-detail-chart', 'hyperv-detail-summary'].sort().join(',') &&
+        metadataConsumers.every(candidate => candidate.query.startsWith(`let decodedNodeMetadata = ${metadataDecoder};`) &&
+            candidate.query.split('{HyperVNodeCapacityMap}').length === 2 &&
+            !candidate.query.includes('dynamic({HyperVNodeCapacityMap})')),
+        'All six Hyper-V metadata consumers decode one compressed parameter rather than embedding raw JSON');
+    assert(metadataConsumers.every(candidate =>
+        candidate.query.includes("assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.')") &&
+        candidate.query.includes('print mapping = decodedNodeMetadata | where nodeMetadataValid')),
+        'Invalid metadata fails explicitly instead of silently returning an empty inventory');
+
+    const transportFixtures = [
+        [],
+        [{ hostId: "machine-'quoted'", machine: 'machine.example.invalid', cluster: '', clusterId: '', physicalCores: null, memoryGiB: 0 }],
+        [{ hostId: 'ambiguous', physicalCores: 48, memoryGiB: 256 }, { hostId: 'ambiguous', physicalCores: null, memoryGiB: null }]
+    ];
+    assert(transportFixtures.every(fixture => {
+        const json = JSON.stringify(fixture);
+        const encoded = zlib.gzipSync(Buffer.from(json, 'utf8')).toString('base64');
+        return /^[A-Za-z0-9+/]+=*$/.test(encoded) &&
+            zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8') === json;
+    }), 'Metadata gzip transport preserves empty arrays, quotes, nulls, zeroes and ambiguous entries losslessly');
+
+    const largeMetadata = Array.from({ length: 5000 }, (_, index) => {
+        const scope = `/subscriptions/00000000-0000-0000-0000-${String(index % 20).padStart(12, '0')}/resourcegroups/example-monitoring-workload-group-${index % 100}`;
+        const machine = `physical-machine-${String(index).padStart(6, '0')}.example.invalid`;
+        const cluster = `example-instance-${Math.floor(index / 4)}`;
+        return {
+            hostId: `${scope}/providers/microsoft.hybridcompute/machines/${machine}`,
+            machine, cluster, clusterId: `${scope}/providers/microsoft.azurestackhci/clusters/${cluster}`,
+            physicalCores: 48, logicalProcessors: 96, memoryGiB: 256
+        };
+    });
+    const largeMetadataJson = JSON.stringify(largeMetadata);
+    const compressedMetadata = zlib.gzipSync(Buffer.from(largeMetadataJson, 'utf8')).toString('base64');
+    assert(Buffer.byteLength(largeMetadataJson, 'utf8') > 1024 * 1024 &&
+        zlib.gunzipSync(Buffer.from(compressedMetadata, 'base64')).toString('utf8') === largeMetadataJson,
+        'A 5000-machine inventory exceeding 1 MiB round-trips without truncating metadata');
+    const requestSizes = metadataConsumers.map(candidate => {
+        const expandedQuery = candidate.query.replace('{HyperVNodeCapacityMap}', compressedMetadata);
+        return Math.max(Buffer.byteLength(JSON.stringify({ query: expandedQuery, timespan: 'P30D' }), 'utf8'),
+            Buffer.byteLength(encodeURIComponent(expandedQuery), 'utf8'));
+    });
+    assert(requestSizes.length === 6 && requestSizes.every(bytes => bytes < 256 * 1024),
+        'Every metadata-consuming request stays below the 256 KiB regression budget for 5000 machines',
+        '< 262144 bytes including JSON or URL encoding', Math.max(...requestSizes));
     assert(clusterFilter.query.includes("clusterResourceGroup = tostring(split(value, '/')[4])") &&
         clusterFilter.query.includes("clusterSubscription = tostring(split(value, '/')[2])") &&
         clusterFilter.query.includes("strcat(label, ' (', clusterResourceGroup, ' / ', clusterSubscription, ')')"),
@@ -2818,7 +2873,7 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
         JSON.parse(metric.jsonData).length === 6,
         'VM detail starts unselected and offers independent 1/3/7/14/30-day and six-metric controls');
     assert(vm.query.includes('pack_array(HostId, VMName)') && vm.query.includes('lookup kind=inner hosts on HostId') &&
-        query.includes('tolower(_ResourceId) == selectedHost') && query.includes('parse_json(\'{HyperVNodeCapacityMap}\')') &&
+        query.includes('tolower(_ResourceId) == selectedHost') && query.includes("gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}')") &&
         disk.query.includes('tolower(_ResourceId) == selectedHost') && disk.value === '' &&
         disk.multiSelect && disk.quote === "'" && disk.delimiter === ',' &&
         query.includes('let selectedDisks = dynamic([{HyperVDetailDisk}]);') &&

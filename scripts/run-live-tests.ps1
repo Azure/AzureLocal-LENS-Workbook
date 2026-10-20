@@ -64,6 +64,45 @@ function Get-WorkbookItems {
     }
 }
 
+function ConvertTo-CompressedNodeMetadata {
+    param([Parameter(Mandatory)][string]$Json)
+
+    $output = [IO.MemoryStream]::new()
+    try {
+        $gzip = [IO.Compression.GZipStream]::new($output, [IO.Compression.CompressionLevel]::Optimal, $true)
+        try {
+            $bytes = [Text.Encoding]::UTF8.GetBytes($Json)
+            $gzip.Write($bytes, 0, $bytes.Length)
+        } finally {
+            $gzip.Dispose()
+        }
+        [Convert]::ToBase64String($output.ToArray())
+    } finally {
+        $output.Dispose()
+    }
+}
+
+function ConvertFrom-CompressedNodeMetadata {
+    param([Parameter(Mandatory)][string]$Encoded)
+
+    $inputStream = [IO.MemoryStream]::new([Convert]::FromBase64String($Encoded))
+    try {
+        $gzip = [IO.Compression.GZipStream]::new($inputStream, [IO.Compression.CompressionMode]::Decompress)
+        try {
+            $reader = [IO.StreamReader]::new($gzip, [Text.Encoding]::UTF8)
+            try {
+                $reader.ReadToEnd()
+            } finally {
+                $reader.Dispose()
+            }
+        } finally {
+            $gzip.Dispose()
+        }
+    } finally {
+        $inputStream.Dispose()
+    }
+}
+
 function Test-StorageSources {
     param([string]$WorkspaceId, [string]$AccessToken)
 
@@ -534,7 +573,7 @@ function Test-HyperVDetail {
         [pscustomobject]@{ Query = "hyperv-detail-$metric-live"; Rows = $rows.Count; Result = 'Passed' }
     }
 
-    $metadata = '[{"hostId":"host-a","machine":"machine-a","cluster":"instance-a"},{"hostId":"host-b","machine":"machine-b","cluster":"instance-b"}]'
+    $metadata = ConvertTo-CompressedNodeMetadata '[{"hostId":"host-a","machine":"machine-a","cluster":"instance-a"},{"hostId":"host-b","machine":"machine-b","cluster":"instance-b"}]'
     $selectedVM = Encode-DetailValue '["host-a","vm"]'
     $selectedDisk = Encode-DetailValue 'disk-one.vhdx'
     $samples = [Collections.Generic.List[object]]::new()
@@ -647,7 +686,7 @@ function Test-NodeCapacity {
     $mappingResponse = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
         --graph-query $mapQuery --output json --only-show-errors
     if ($LASTEXITCODE -ne 0) { throw 'Node capacity metadata query failed.' }
-    $metadata = (($mappingResponse -join [Environment]::NewLine | ConvertFrom-Json).data[0].value | ConvertFrom-Json)
+    $metadata = (ConvertFrom-CompressedNodeMetadata (($mappingResponse -join [Environment]::NewLine | ConvertFrom-Json).data[0].value)) | ConvertFrom-Json
     if (@($metadata).Count -eq 0) { throw 'No Arc node hardware metadata returned.' }
     $template = ($items | Where-Object name -EQ 'hyperv-node-capacity').content.query
     $hostIdentityTemplate = ($items | Where-Object name -EQ 'hyperv-node-ratio-params').content.parameters |
@@ -673,7 +712,7 @@ function Test-NodeCapacity {
     function Invoke-CapacityQuery {
         param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples, [object[]]$HistoricalSamples, [switch]$Discovery, [string]$TagName = '', [string]$TagValue = '')
 
-        $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress))
+        $query = $template.Replace('{HyperVNodeCapacityMap}', (ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $NodeMetadata -Depth 10 -Compress)))
         $query = $query.Replace('{HyperVInvHostFilter}', $HostFilter).Replace('{HyperVNodeRatioFilter}', $MinimumRatio)
         $query = $query.Replace('{HyperVNodeTargetRatio}', $TargetRatio)
         $query = $query.Replace('{HyperVNodeClusterFilter}', $ClusterFilter)
@@ -887,7 +926,7 @@ function Test-NodeCapacity {
             @{ id = 'cluster-a'; name = 'cluster-a'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'example'; resourceGroup = 'group-a'; tags = @{}; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'node1'; coreCount = 8 }, @{ name = 'node2.example.test'; coreCount = 16 }) } } }
         )
         $metadataRows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $resourceSamples)
-        $metadataFixture = @($metadataRows[0].value | ConvertFrom-Json)
+        $metadataFixture = @((ConvertFrom-CompressedNodeMetadata $metadataRows[0].value) | ConvertFrom-Json)
         Assert-Capacity ($metadataFixture.Count -eq 2 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-fqdn' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 8 }).Count -eq 1 -and @($metadataFixture | Where-Object { $_.hostId -eq 'host-short' -and $_.clusterId -eq 'cluster-a' -and $_.physicalCores -eq 16 }).Count -eq 1) 'node-capacity-metadata-normalizes-both-name-forms'
 
         function Test-HardwareMapping {
@@ -905,7 +944,7 @@ function Test-NodeCapacity {
             }
             $tag = if ($TagFiltered) { @{ TagName = 'purpose'; TagValue = 'selected' } } else { @{} }
             $rows = @(Invoke-CapacityQuery -NodeMetadata @() -ResourceSamples $resources @tag)
-            $mappings = @($rows[0].value | ConvertFrom-Json)
+            $mappings = @((ConvertFrom-CompressedNodeMetadata $rows[0].value) | ConvertFrom-Json)
             $matched = @($mappings | Where-Object { $_.clusterId })
             $unmatched = @($mappings | Where-Object { -not $_.clusterId })
             $expectedRows = if ($TagFiltered) { $ExpectedNames.Count } else { $ArcNames.Count }

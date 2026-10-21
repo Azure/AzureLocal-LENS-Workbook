@@ -40,6 +40,30 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $tempFiles = [System.Collections.Generic.List[string]]::new()
 
+function Invoke-LogAnalyticsQuery {
+    param([Parameter(Mandatory)][string]$WorkspaceId, [Parameter(Mandatory)][hashtable]$Body)
+
+    $token = az account get-access-token --subscription $SubscriptionId `
+        --resource 'https://api.loganalytics.io' --output json --only-show-errors | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($token.accessToken)) {
+        throw 'Could not authenticate to the confirmed tenant for the next Log Analytics query.'
+    }
+    if ($token.tenant -ine $account.tenantId -or $token.subscription -ine $SubscriptionId) {
+        throw 'Azure CLI returned a token outside the confirmed subscription and tenant.'
+    }
+    $accessToken = $token.accessToken
+    try {
+        $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
+            -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
+            -Body ($Body | ConvertTo-Json -Depth 10)
+        if ($response.error) { throw 'Log Analytics returned a partial query error.' }
+        $response
+    } finally {
+        $accessToken = $null
+        $token = $null
+    }
+}
+
 function New-TemporaryJsonFile {
     param([Parameter(Mandatory)][object]$Value)
 
@@ -104,7 +128,7 @@ function ConvertFrom-CompressedNodeMetadata {
 }
 
 function Test-StorageSources {
-    param([string]$WorkspaceId, [string]$AccessToken)
+    param([string]$WorkspaceId)
 
     function Get-NodeMapPrelude {
         param([string]$Query)
@@ -115,10 +139,7 @@ function Test-StorageSources {
 
     function Invoke-StorageFixture {
         param([string]$Query)
-        $response = Invoke-RestMethod -Method Post `
-            -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
-            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
-            -Body (@{ query = $Query } | ConvertTo-Json -Depth 10)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $Query }
         if ($response.error) { throw 'Storage fixture returned a partial query error.' }
         $table = $response.tables[0]
         foreach ($row in $table.rows) {
@@ -428,7 +449,7 @@ function Test-StorageSources {
 }
 
 function Test-HyperVInventory {
-    param([string]$WorkspaceId, [string]$AccessToken)
+    param([string]$WorkspaceId)
 
     $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
     $template = (@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'hyperv-vm-inventory').content.query
@@ -474,9 +495,7 @@ function Test-HyperVInventory {
             Replace('{ClusterNodeMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $nodeMap }))).
             Replace('{ClusterRGMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $rgMap }))).
             Replace('{ArcMachineMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $guestMap })))
-        $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
-            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
-            -Body (@{ query = $query } | ConvertTo-Json -Depth 10)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $query }
         if ($response.error) { throw 'VM inventory fixture returned a partial query error.' }
         $table = $response.tables[0]
         foreach ($row in $table.rows) {
@@ -520,7 +539,7 @@ function Test-HyperVInventory {
 }
 
 function Test-HyperVDetail {
-    param([string]$WorkspaceId, [string]$AccessToken)
+    param([string]$WorkspaceId)
 
     $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
     $items = @(Get-WorkbookItems -Items $book.items)
@@ -545,9 +564,7 @@ function Test-HyperVDetail {
         } else {
             $query = $query.Replace('datetime(2026-01-01)', "ago($($Days)d)").Replace('datetime(2026-01-02)', 'now()')
         }
-        $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
-            -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
-            -Body (@{ query = $query } | ConvertTo-Json -Depth 10)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $query }
         if ($response.error) { throw 'VM detail query returned a partial error.' }
         $table = $response.tables[0]
         foreach ($row in $table.rows) {
@@ -684,7 +701,7 @@ function Test-HyperVDetail {
 }
 
 function Test-NodeCapacity {
-    param([string]$TenantId, [string]$WorkspaceId)
+    param([string]$WorkspaceId)
 
     $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-HyperV/Capacity-HyperV.workbook') | ConvertFrom-Json
     $items = @(Get-WorkbookItems -Items $book.items)
@@ -713,10 +730,6 @@ function Test-NodeCapacity {
     if ($LASTEXITCODE -ne 0) { throw 'DCR discovery query failed.' }
     $snapshotEnd = [DateTime]::UtcNow.AddMinutes(-2)
     $template = $template.Replace('now() - 2m', "datetime($($snapshotEnd.ToString('o')))")
-    $accessToken = az account get-access-token --tenant $TenantId --resource 'https://api.loganalytics.io' `
-        --query accessToken --output tsv --only-show-errors
-    if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
-
     function Invoke-CapacityQuery {
         param([object[]]$NodeMetadata, [string]$MinimumRatio = '0', [string]$HostFilter = "'*'", [object[]]$Samples, [string]$TargetRatio = '4', [string]$ClusterFilter = "'*'", [object[]]$ResourceSamples, [object[]]$HistoricalSamples, [switch]$Discovery, [string]$TagName = '', [string]$TagValue = '')
 
@@ -738,10 +751,7 @@ function Test-NodeCapacity {
                 $historySource = "(print fixtureRow = dynamic($historyJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), _ResourceId=tostring(fixtureRow.HostId), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName))"
                 $identityQuery = $identityQuery.Replace('Perf', $historySource)
             }
-            $identityResponse = Invoke-RestMethod -Method Post `
-                -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
-                -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
-                -Body (@{ query = $identityQuery; timespan = 'P1D' } | ConvertTo-Json -Depth 10)
+            $identityResponse = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $identityQuery; timespan = 'P1D' }
             if ($identityResponse.error) { throw 'Historical host identity returned a partial query error.' }
             $selectedHostIds = [string]$identityResponse.tables[0].rows[0][0]
         }
@@ -752,10 +762,7 @@ function Test-NodeCapacity {
             $resourceTemplate = if ($Discovery) { $discoveryTemplate.Replace('$SubId', 'example') } else { $mapTemplate.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', $TagName).Replace('{ClusterTagValue}', $TagValue) }
             $query = $resourceTemplate.Replace('resources', $source)
         }
-        $response = Invoke-RestMethod -Method Post `
-            -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
-            -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
-            -Body (@{ query = $query; timespan = 'PT1H' } | ConvertTo-Json -Depth 10)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $query; timespan = 'PT1H' }
         if ($response.error) { throw 'Node capacity returned a partial query error.' }
         $table = $response.tables[0]
         foreach ($row in $table.rows) {
@@ -1050,7 +1057,7 @@ try {
     }
 
     if ($NodeCapacityOnly) {
-        $results = @(Test-NodeCapacity -TenantId $account.tenantId -WorkspaceId $workspace.customerId)
+        $results = @(Test-NodeCapacity -WorkspaceId $workspace.customerId)
     } else {
     $mappingQuery = @'
 resources
@@ -1095,16 +1102,11 @@ resources
         throw 'The live integration query manifest is empty.'
     }
 
-    $accessToken = az account get-access-token --tenant $account.tenantId --resource 'https://api.loganalytics.io' `
-        --query accessToken --output tsv --only-show-errors
-    if ($LASTEXITCODE -ne 0) { throw 'Could not authenticate to the confirmed tenant.' }
-
     $detailBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
     $picker = (@(Get-WorkbookItems -Items $detailBook.items) | Where-Object name -EQ 'sc-storage-detail-filters').content.parameters | Where-Object name -EQ 'SCStorageDetailMachine'
     $pickerQuery = $picker.query.Replace('{NodeTrendsTimeRange:start}', "ago($($Days)d)").Replace('{NodeTrendsTimeRange:end}', 'now()')
     $pickerQuery = $pickerQuery.Replace('{SingleCluster}', [string]$selectedCluster.armId).Replace('{ClusterRGMap}', $clusterRGValue).Replace('{ClusterNodeMap}', $clusterNodeValue)
-    $pickerResponse = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
-        -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' -Body (@{ query = $pickerQuery; timespan = "P$($Days)D" } | ConvertTo-Json)
+    $pickerResponse = Invoke-LogAnalyticsQuery -WorkspaceId $workspace.customerId -Body @{ query = $pickerQuery; timespan = "P$($Days)D" }
     if ($pickerResponse.error -or @($pickerResponse.tables[0].rows).Count -eq 0) { throw 'Storage detail machine picker returned no eligible machines.' }
     $detailMachine = [string]$pickerResponse.tables[0].rows[0][0]
 
@@ -1148,10 +1150,7 @@ resources
             query = $query
             timespan = "P$($Days)D"
         }
-        $response = Invoke-RestMethod -Method Post `
-            -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
-            -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
-            -Body ($logBody | ConvertTo-Json -Depth 10)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $workspace.customerId -Body $logBody
         if ($response.error) {
             throw "Live Log Analytics query returned a partial error: $($spec.name)"
         }
@@ -1167,17 +1166,14 @@ resources
                 $mapValue = if ($mapJson -eq '') { '' } else { ConvertTo-CompressedNodeMetadata $mapJson }
                 $emptyQuery = $query.Replace("let clusterRGMapPayload = '$clusterRGValue';", "let clusterRGMapPayload = '$mapValue';").Replace("let clusterNodeMapPayload = '$clusterNodeValue';", "let clusterNodeMapPayload = '$mapValue';")
                 if ($emptyQuery -eq $query) { throw "Empty-map fixture did not replace a mapping: $($spec.name)" }
-                $emptyResponse = Invoke-RestMethod -Method Post `
-                    -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
-                    -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
-                    -Body (@{ query = $emptyQuery; timespan = "P$($Days)D" } | ConvertTo-Json -Depth 10)
+                $emptyResponse = Invoke-LogAnalyticsQuery -WorkspaceId $workspace.customerId -Body @{ query = $emptyQuery; timespan = "P$($Days)D" }
                 if ($emptyResponse.error) { throw "Empty-map query returned a partial error: $($spec.name)" }
                 $suffix = if ($mapJson -eq '') { 'unset-maps' } else { 'empty-array-maps' }
                 [pscustomobject]@{ Query = "$($spec.name)-$suffix"; Rows = @($emptyResponse.tables[0].rows).Count; Result = 'Passed' }
             }
         }
     }
-    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId -AccessToken $accessToken) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId -AccessToken $accessToken)
+    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId)
     }
 
     $results | Format-Table -AutoSize

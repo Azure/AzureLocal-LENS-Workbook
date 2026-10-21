@@ -9,6 +9,12 @@ Read [CONTRIBUTING.md](../CONTRIBUTING.md) before making changes. Its developmen
 - Preserve unrelated working-tree changes. Do not commit, push, publish, or change Azure resources unless explicitly requested.
 - Offline tests check structure and regressions, not live KQL execution or portal rendering. Report which checks actually ran. Live integration tests require an explicitly confirmed subscription and workspace; follow "Optional live Azure integration tests" in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Release Readiness
+
+- For release preparation, version changes, release-readiness reviews or promotion to `main`, use the [release-validation skill](skills/release-validation/SKILL.md) and follow "Release validation and approval" in [CONTRIBUTING.md](../CONTRIBUTING.md).
+- Every new LENS version requires maintainer-confirmed manual friendly-customer testing of the release candidate's development-branch JSON before release to `main`. Missing or unsuccessful confirmation blocks release; automated tests and historical customer validation do not replace it.
+- Keep evidence version/commit/artifact-specific and sanitized. Do not copy private memory into release guidance, invent customer sign-off or authorize Azure writes, commits, merges or publishing on a user's behalf.
+
 ## Consistency
 
 - Follow "Column and metric consistency" in [CONTRIBUTING.md](../CONTRIBUTING.md). Reuse established display names, units, formatters, and nearby query patterns; do not independently redefine a metric.

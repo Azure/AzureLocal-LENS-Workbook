@@ -63,6 +63,8 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
+| `.github/skills/release-validation/SKILL.md` | On-demand release workflow for coding agents; references this guide rather than private session memory. |
+| `.github/pull_request_template.md` | Validation evidence and the mandatory friendly-customer preview gate for new LENS versions. |
 
 ### Editing workflow
 
@@ -162,6 +164,97 @@ When preparing a release:
 3. Update the `## What's New (vX.Y.Z)` section heading and TOC link in [README.md](README.md) with the changelog
 4. Move the previous version's changes to the `## Appendix: Previous Versions Change Log` section
 5. Run `node scripts/build-monolithic.js` to regenerate `AzureLocal-LENS-Workbook.json`
+
+### Release validation and approval
+
+Use this workflow for every new LENS version before merging the release candidate
+from the development branch into `main`. The
+[release-validation skill](.github/skills/release-validation/SKILL.md) helps agents
+follow it, but this guide remains authoritative. Skills and instructions guide
+behavior; existing CI checks enforce automated invariants, and maintainers must
+verify the manual evidence. Private agent memory and historical test results are
+not substitutes for current release evidence.
+
+1. **Define the candidate and test scope.** Identify the version, development
+   branch and commit, changed features, affected query/parameter consumers and
+   acceptance expectations. Preserve established metric semantics, time windows,
+   filtering and missing-data behavior. Discuss intentional changes before
+   implementing them.
+2. **Build from authoritative sources.** Follow the [editing workflow](#editing-workflow)
+   and [version-bumping procedure](#version-bumping). Synchronize shared parameters
+   when changed, regenerate the root JSON and review the resulting scope.
+3. **Pass the automated checks.** Run the commands used by
+   [CI](.github/workflows/test.yml): shared-parameter validation, gallery build and
+   validation, monolithic consistency, accessibility lint, Node.js regressions,
+   mocked DCR deployment safety and mocked live-query authentication. Record
+   actual results, not expected counts. Review changed text, fixtures, logs and
+   images for [public-repository privacy](#public-repository-privacy) before publishing.
+4. **Validate applicable live behavior.** Follow the
+   [live-test confirmation procedure](#optional-live-azure-integration-tests).
+   For Capacity/Hyper-V query, discovery or map-transport changes, run both full
+   live cohorts; targeted checks help debugging but do not replace these release
+   cohorts. Record the tested commit, scope and results. Keep query acceptance,
+   telemetry coverage, DCR lifecycle testing and portal rendering as separate
+   claims. Check counter applicability during known workload activity; absent
+   data is not zero, and shared-workspace overlap does not prove unique DCR attribution.
+5. **Review DCR changes safely, when applicable.** For deployment-script or
+   template changes, agree an end-to-end lifecycle plan with the environment
+   owner: deployment, replacement guard, intentional update/restoration,
+   idempotency, rollback and verified cleanup. Confirm the exact host scope,
+   workspace, existing collection overlap, agent readiness and inherited locks
+   before writes. Read-only test approval does not authorize Azure changes,
+   agent installation or lock removal. Obtain separate explicit authorization
+   for writes and any lock changes; preserve unrelated configuration and verify
+   restoration/cleanup. If a required check cannot run safely, report it as
+   blocked rather than substituting a mocked result.
+6. **Complete the mandatory friendly-customer preview below.**
+7. **Obtain maintainer release approval.** Review current CI results, the
+   commit-specific evidence, manual customer confirmation and unresolved issues.
+   Do not describe cancelled, failed, skipped or historical checks as current
+   passes. Do not merge or publish with missing mandatory validation or unresolved
+   release-blocking regressions. Commit, push, merge, tag and publish only when
+   explicitly authorized. The [release workflow](.github/workflows/release.yml)
+   can tag and publish a new version after it reaches `main`, so approval must
+   happen **before** that merge, not afterwards.
+
+#### Mandatory friendly-customer preview
+
+**Every new LENS version must be manually tested by at least one consenting
+friendly customer using that release candidate's generated
+`AzureLocal-LENS-Workbook.json` from the development branch, before release to
+`main`.** Maintainers should use existing trusted customer relationships to
+arrange this preview and agree an appropriate test environment and scope.
+Agents must not contact customers or make changes in their environments without
+explicit authorization.
+
+- Provide the development-branch JSON, its version, source commit and SHA-256
+  hash so the tested artifact is identifiable even if the branch moves. Do not
+  substitute the current `main` JSON, an older release or an untracked local edit.
+- Ask the customer to import/open the JSON in their approved environment and
+  manually exercise representative tabs, changed features, scope filters,
+  selectors and operational links. Check expected data and unavailable states,
+  query errors and observed loading/rendering times at their real environment
+  scale. Include affected Capacity/Hyper-V views when those features change.
+- A maintainer must confirm the customer-reported result. Record the version,
+  development commit, JSON hash, test date, sanitized test scope, outcomes,
+  limitations and maintainer confirmation in the release PR. Keep customer
+  identities, private correspondence, environment identifiers and raw telemetry
+  out of repository content and public discussions.
+- Fix failures and repeat the affected preview checks on the updated development
+  JSON. Workbook, parameter, query or setup changes after sign-off require a new
+  scope review and renewed customer confirmation for the changed candidate.
+  For documentation/test-only changes with identical JSON, record that the
+  artifact hash is unchanged and have a maintainer confirm whether the existing
+  preview evidence still applies; do not invent a new customer test.
+- **Pending, unavailable or unsuccessful customer validation blocks release.**
+  CI, lab integration tests, request-size fixtures, agent assertions and customer
+  validation of a previous version do not satisfy this manual gate. If no
+  friendly customer can participate, keep the candidate on the development
+  branch until the mandatory preview can be completed.
+
+Use the [PR template](.github/pull_request_template.md) to summarize evidence.
+Non-release PRs may mark the release-specific preview gate not applicable only
+with a reason; a PR introducing a new LENS version may not use that exemption.
 
 ### Running Tests
 

@@ -56,7 +56,7 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (469 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, VM detail controls, DCR deployment guidance, instance naming, content style, and accessibility. |
+| `scripts/run-tests.js` | Unit tests (493 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, VM detail controls, DCR deployment guidance, instance naming, content style, and accessibility. |
 | `scripts/test-dcr-deployment.ps1` | Offline PowerShell tests for DCR discovery, deployment, preview, and rollback safety. Shadows Azure CLI with a mock; never contacts Azure. |
 | `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 51 exact Capacity performance/coverage/forecast/VM queries, 102 unset/empty-map cases, the live machine picker, 49 synthetic storage cases, 33 VM-detail checks and 11 VM-inventory checks (247 total), or 65 machine-capacity/discovery checks with `-NodeCapacityOnly`. VM-detail checks execute the pickers and all six metrics plus identity, counter pairing, null gaps, units, deduplication, and time-resolution fixtures. Inventory checks execute the exact optimized query against fixtures for CPU weighting, memory scope, migration, missing values, filters and links. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
@@ -87,6 +87,8 @@ Capacity owns its shared `MachinesLogAnalyticsWorkspace` selector in `workbooks/
 The same Capacity parameter row owns `ShowDCRSetupSection`, defaulting to `no`, with one shared `dcr-setup-group` below the scope note. Each standalone section keeps an identical toggle in `items[1]` and an identical guide as the first item in `items[2].content.items`. Both workbook builders omit those section-guide copies when embedding sections; gallery parameter merging reuses the parent toggle. Keep the five guide and toggle definitions synchronized rather than adding section-local controls.
 
 Hyper-V's hidden `HyperVNodeCapacityMap` carries gzip-compressed, base64-encoded JSON, not a raw JSON array. Its ARG producer uses `gzip_compress_to_base64_string`; all six consumers decode and validate the array before expanding it. Preserve the canonical metadata fields and inventory completeness. Keep the live harness's PowerShell fixture codec aligned with this transport, and retain the offline 5,000-machine request-size regression (256 KiB budget per consumer including JSON or URL encoding). That budget is a regression safeguard, not a claim about an Azure service limit or portal-rendering performance.
+
+The canonical shared `ClusterRGMap`, `ClusterNodeMap` and `ArcMachineMap` producers also return gzip-compressed, base64-encoded JSON arrays. Edit their definitions in `shared/parameters.json` and synchronize every sub-template. All 53 Capacity consumers, including the storage-detail machine picker and both VM inventories, bind each required encoded parameter once, decode it once, and validate its array type before expansion. Preserve empty/unset scope behavior, duplicate/ambiguous entries, existing producer filters, identities and metric semantics; reject malformed nonempty payloads explicitly rather than treating them as empty inventory. Reuse the live harness's gzip fixture helpers and keep real-data, synthetic and unset/empty substitutions aligned. Retain the combined 5,000-host/10,000-VM regression and the 256 KiB JSON/URL-encoded request budget for every consumer. A decoded map is query-local, not a shared server-side cache across Workbook charts.
 
 ### Working with the Workbook JSON
 
@@ -178,7 +180,7 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 469 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
+All 493 Node.js tests and the offline DCR deployment checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs both automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 

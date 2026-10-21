@@ -152,6 +152,8 @@ Centralized view of Azure Local instance utilization, capacity forecasting, and 
 
 One **Log Analytics Workspace** selector directly below the Capacity & Performance navigation scopes telemetry across all four views. Select one or more workspaces once; the selection stays in effect when switching views. Workspace discovery uses all accessible subscriptions independently of the top-level subscription, resource-group and instance-tag filters, so a central telemetry workspace can be selected even when it is in a different subscription or resource group from the Azure Local resources. **All** queries every discovered workspace; select the specific telemetry workspaces to limit query scope and avoid access or resource-count errors. Inventory views retain their existing filters. Instance, machine, time-range and forecast controls remain local to each view. The **Azure Monitor Workspace** selector for Managed Prometheus remains separate. Independently opened Capacity sub-templates retain the same independent workspace discovery.
 
+Capacity telemetry queries retain their existing ARG-derived instance/host scope and resource links. The hidden `ClusterRGMap`, `ClusterNodeMap` and `ArcMachineMap` parameters now transport their complete JSON arrays as gzip-compressed base64; each query embeds and decodes each needed map once, even when several branches reuse it. This reduces repeated inline request payloads without truncating inventory, removing subscription/resource-group/tag filters, or changing metric calculations. Unset maps remain a valid empty scope; a nonempty payload that cannot be decoded fails explicitly and asks for a refresh. Compression addresses request-size risk, not a guaranteed improvement in telemetry-query or portal-rendering latency.
+
 **Show DCR Setup Guide**, beside the workspace selector, opens one shared Capacity Telemetry Readiness guide across all four views. Hidden by default, it covers AMA prerequisites, all 26 host and Hyper-V counter paths (including the 14 Hyper-V paths), Event 3002, association and overlap safeguards, and maintained deployment links. The first Overview capacity table is ARG-only; Managed Prometheus has separate collection setup. Independently opened Capacity sub-templates retain the same guide and control.
 
 #### 📋 Overview sub-tab
@@ -510,7 +512,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **469 unit tests across 43 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **493 unit tests across 43 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|

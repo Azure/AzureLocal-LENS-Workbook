@@ -2818,7 +2818,7 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
     const inventory = collectAllItems(single.items).find(item =>
         item.content && item.content.title && item.content.title.startsWith('📋 Hyper-V VM Inventory')).content;
     const nameLink = inventory.gridSettings.formatters.find(formatter => formatter.columnMatch === 'VM Name');
-    assert(inventory.query.includes('dynamic({ArcMachineMap})') &&
+    assert(inventory.query.includes('let arcMachineMapPayload = \'{ArcMachineMap}\';') &&
         inventory.query.includes('resourceIds = make_set(vmArmId) by vmShort') &&
         inventory.query.includes('where array_length(resourceIds) == 1') &&
         inventory.query.includes('join kind=leftouter arcMap on vmShort') &&
@@ -2956,9 +2956,90 @@ testSuite('Capacity shared-map parameter expansion', () => {
             const query = item.content.query;
             const empty = query.replaceAll('{ClusterRGMap}', '').replaceAll('{ClusterNodeMap}', '');
             return liveQueries.has(`workbooks/${tab}/${tab}.workbook:${item.name}`) && !/dynamic\(\s*\)/.test(empty) &&
-                (!query.includes('{ArcMachineMap}') || liveHarness.includes("$query = $query.Replace('{ArcMachineMap}', '[]')")) &&
+                (!query.includes('{ArcMachineMap}') || liveHarness.includes("$query = $query.Replace('{ArcMachineMap}', (ConvertTo-CompressedNodeMetadata '[]'))")) &&
                 ['ClusterRGMap', 'ClusterNodeMap'].every(parameter =>
-                !query.includes(`{${parameter}}`) || query.includes(`parse_json('{${parameter}}')`));
+                !query.includes(`{${parameter}}`) || query.includes(`let decoded${parameter} = parse_json(iff(isempty(`));
+        });
+        testSuite('Capacity compact inventory-map transport', () => {
+            const maps = ['ClusterRGMap', 'ClusterNodeMap', 'ArcMachineMap'];
+            const shared = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../shared/parameters.json'), 'utf8'));
+            const producers = shared.content.parameters.filter(parameter => maps.includes(parameter.name));
+            assert(producers.length === 3 && producers.every(parameter =>
+                parameter.query.endsWith('| project value = gzip_compress_to_base64_string(tostring(result))') &&
+                parameter.query.includes('| summarize result = make_list(value)') &&
+                JSON.stringify(parameter.crossComponentResources) === JSON.stringify(['{Subscriptions}'])),
+                'All three canonical inventory maps compress their complete arrays without changing subscription scope or multiplicity');
+            assert(producers.filter(parameter => parameter.name !== 'ArcMachineMap').every(parameter =>
+                parameter.query.includes("'{ResourceGroupFilter}' == ''") &&
+                parameter.query.includes("'{ClusterTagName}' == ''") &&
+                parameter.query.includes("tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}'")) &&
+                producers.find(parameter => parameter.name === 'ArcMachineMap').query.includes(
+                    "tostring(properties.detectedProperties.model) =~ 'Virtual Machine'"),
+                'Map compression preserves existing RG/tag filters and the separate Arc guest-link inventory scope');
+            const queries = [];
+            for (const tab of ['Capacity-Overview', 'Capacity-MultiCluster', 'Capacity-SingleCluster', 'Capacity-HyperV']) {
+                const book = JSON.parse(fs.readFileSync(path.resolve(__dirname, `../workbooks/${tab}/${tab}.workbook`), 'utf8'));
+                for (const item of collectAllItems(book.items)) {
+                    for (const candidate of [item.content, ...(item.content?.parameters || [])]) {
+                        if (typeof candidate?.query === 'string' && maps.some(map => candidate.query.includes(`{${map}}`))) {
+                            queries.push(candidate.query);
+                        }
+                    }
+                }
+            }
+            assert(queries.length === 53 && queries.every(query => maps.every(map => {
+                if (!query.includes(`{${map}}`)) return true;
+                const prefix = map[0].toLowerCase() + map.slice(1);
+                return query.split(`{${map}}`).length === 2 &&
+                    query.includes(`let ${prefix}Payload = '{${map}}';`) &&
+                    query.includes(`let decoded${map} = parse_json(iff(isempty(${prefix}Payload), '[]', gzip_decompress_from_base64_string(${prefix}Payload)));`) &&
+                    query.includes(`assert(gettype(decoded${map}) == 'array', 'Capacity inventory metadata could not be decoded. Refresh the workbook and retry.')`) &&
+                    query.includes(`print mapping = decoded${map} | where ${prefix}Valid`) &&
+                    !query.includes(`dynamic({${map}})`) && !query.includes(`parse_json('{${map}}')`);
+            })), 'Every chart, inventory and hidden-picker consumer embeds each compressed map once, accepts unset scope and rejects invalid payloads explicitly');
+            const fixtures = [[], ['node:Instance:id', 'node:Instance:id'], ["quoted-'name:Instance:id", 'ambiguous:First:first-id', 'ambiguous:Second:second-id']];
+            assert(fixtures.every(fixture => {
+                const json = JSON.stringify(fixture);
+                const encoded = zlib.gzipSync(Buffer.from(json, 'utf8')).toString('base64');
+                return zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8') === json;
+            }), 'Shared-map transport preserves empty arrays, quotes, duplicates and ambiguous memberships losslessly');
+            const rg = [], nodes = [], guests = [];
+            for (let index = 0; index < 5000; index++) {
+                const instance = Math.floor(index / 4);
+                const group = `example-workload-resource-group-${instance}`;
+                const subscription = `00000000-0000-0000-0000-${String(instance % 20).padStart(12, '0')}`;
+                const clusterId = `/subscriptions/${subscription}/resourceGroups/${group}/providers/Microsoft.AzureStackHCI/clusters/example-instance-${instance}`;
+                if (index % 4 === 0) rg.push(`${group}:example-instance-${instance}`);
+                nodes.push(`physical-machine-${index}:example-instance-${instance}:${clusterId}`);
+                for (let vm = 0; vm < 2; vm++) {
+                    const name = `virtual-machine-${index}-${vm}`;
+                    guests.push(`${name}:/subscriptions/${subscription}/resourceGroups/${group}/providers/Microsoft.HybridCompute/machines/${name}`);
+                }
+            }
+            const values = { ClusterRGMap: rg, ClusterNodeMap: nodes, ArcMachineMap: guests };
+            const encoded = Object.fromEntries(maps.map(map => [map, zlib.gzipSync(Buffer.from(JSON.stringify(values[map]), 'utf8')).toString('base64')]));
+            assert(maps.reduce((sum, map) => sum + Buffer.byteLength(JSON.stringify(values[map]), 'utf8'), 0) > 1024 * 1024 &&
+                maps.every(map => JSON.parse(zlib.gunzipSync(Buffer.from(encoded[map], 'base64')).toString('utf8')).length === values[map].length),
+                'A 5000-host and 10000-VM map fixture exceeding 1 MiB retains every inventory entry');
+            const sizes = queries.map(query => {
+                let expanded = query;
+                for (const map of maps) expanded = expanded.replaceAll(`{${map}}`, encoded[map]);
+                return Math.max(Buffer.byteLength(JSON.stringify({ query: expanded, timespan: 'P30D' }), 'utf8'),
+                    Buffer.byteLength(encodeURIComponent(expanded), 'utf8'));
+            });
+            assert(sizes.every(size => size < 256 * 1024),
+                'All 53 shared-map requests stay within the 256 KiB JSON/URL-encoded regression budget',
+                '< 262144 bytes', Math.max(...sizes));
+            const liveHarness = fs.readFileSync(path.resolve(__dirname, 'run-live-tests.ps1'), 'utf8');
+            assert(liveHarness.includes('$vpInstance = if ($_.VP -eq \'_Total\') { \'_Total\' } else { "Hv VP $($_.VP)" }') &&
+                liveHarness.includes('$nodeMap = \'["host-a:example-instance:/example-instance-id"]\'') &&
+                liveHarness.includes('$guestMap = \'["vm-a:/example-guest-id"]\''),
+                'VM inventory fixtures use leading-slash resource IDs and the actual aggregate VP sentinel');
+            assert(liveHarness.includes("$clusterRGValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterRGMap -Compress)") &&
+                liveHarness.includes("$clusterNodeValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterNodeMap -Compress)") &&
+                liveHarness.includes('let clusterRGMapPayload =') && liveHarness.includes('let clusterNodeMapPayload =') &&
+                liveHarness.includes("$mapValue = if ($mapJson -eq '') { '' } else { ConvertTo-CompressedNodeMetadata $mapJson }"),
+                'Live real-data, picker and unset/empty fixtures use the production compressed map transport');
         });
         assert(safe, `${tab} safely parses shared maps without emitting dynamic() for unset values`);
     }

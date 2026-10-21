@@ -106,6 +106,13 @@ function ConvertFrom-CompressedNodeMetadata {
 function Test-StorageSources {
     param([string]$WorkspaceId, [string]$AccessToken)
 
+    function Get-NodeMapPrelude {
+        param([string]$Query)
+        $lines = @($Query -split '\r?\n' | Where-Object { $_ -match '^let (clusterNodeMapPayload|decodedClusterNodeMap|clusterNodeMapValid) =' })
+        if ($lines.Count -ne 3) { throw 'Storage fixture inventory-map decoder boundary missing.' }
+        ($lines -join [Environment]::NewLine) + [Environment]::NewLine
+    }
+
     function Invoke-StorageFixture {
         param([string]$Query)
         $response = Invoke-RestMethod -Method Post `
@@ -221,8 +228,8 @@ function Test-StorageSources {
     }
     $picker = ($detailItems | Where-Object name -EQ 'sc-storage-detail-filters').content.parameters | Where-Object name -EQ 'SCStorageDetailMachine'
     $pickerQuery = $picker.query.Replace('{NodeTrendsTimeRange:start}', 'datetime(2026-01-01)').Replace('{NodeTrendsTimeRange:end}', 'datetime(2026-01-02)')
-    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterRGMap}', '["group-a:Cluster A","group-b:Cluster B"]')
-    $pickerQuery = $pickerQuery.Replace('{ClusterNodeMap}', '["both:Cluster A:cluster-a","outside:Cluster B:cluster-b"]')
+    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterRGMap}', (ConvertTo-CompressedNodeMetadata '["group-a:Cluster A","group-b:Cluster B"]'))
+    $pickerQuery = $pickerQuery.Replace('{ClusterNodeMap}', (ConvertTo-CompressedNodeMetadata '["both:Cluster A:cluster-a","outside:Cluster B:cluster-b"]'))
     $pickerQuery = $pickerQuery.Replace('Heartbeat', "(datatable(TimeGenerated:datetime, Computer:string, ResourceGroup:string, OSType:string)[datetime(2026-01-01T00:01:00Z),'both','group-a','Windows',datetime(2026-01-01T00:01:00Z),'outside','group-b','Windows'])")
     $pickerRows = @(Invoke-StorageFixture -Query $pickerQuery)
     if ($pickerRows.Count -ne 1 -or $pickerRows[0].value -ne 'both' -or -not $pickerRows[0].selected) { throw 'Storage detail picker did not scope or default to the selected cluster.' }
@@ -287,8 +294,8 @@ function Test-StorageSources {
     $template = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'node-storage-trend').content.query
     $start = $template.IndexOf('let csvClusterMap =')
     $end = $template.IndexOf('let m2 = InsightsMetrics')
-    $query = $fixtureHeader + $template.Substring($start, $end - $start)
-    $query = $query.Replace('{ClusterNodeMap}', '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a","node-c:Cluster B:cluster-b"]')
+    $query = $fixtureHeader + (Get-NodeMapPrelude $template) + $template.Substring($start, $end - $start)
+    $query = $query.Replace('{ClusterNodeMap}', (ConvertTo-CompressedNodeMetadata '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a","node-c:Cluster B:cluster-b"]'))
     $query = $query.Replace('let csvVolumes = Event', "let csvVolumes = $eventSource")
     $rows = @(Invoke-StorageFixture -Query ($query + 'csvVolumes | summarize TotalBytes=sum(TotalBytes), UsedBytes=sum(UsedBytes), Volumes=count() by ClusterArmId'))
     $clusterA = @($rows | Where-Object ClusterArmId -EQ 'cluster-a')
@@ -302,8 +309,8 @@ function Test-StorageSources {
     $template = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'single-cluster-volume-usage').content.query
     $start = $template.IndexOf('let csvClusterMap =')
     $end = $template.IndexOf('// 2)')
-    $query = $fixtureHeader + $template.Substring($start, $end - $start)
-    $query = $query.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterNodeMap}', '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a"]')
+    $query = $fixtureHeader + (Get-NodeMapPrelude $template) + $template.Substring($start, $end - $start)
+    $query = $query.Replace('{SingleCluster}', 'cluster-a').Replace('{ClusterNodeMap}', (ConvertTo-CompressedNodeMetadata '["node-a:Cluster A:cluster-a","node-b:Cluster A:cluster-a"]'))
     $query = $query.Replace('let csvVolumes = Event', "let csvVolumes = $eventSource")
     $rows = @(Invoke-StorageFixture -Query ($query + 'perVolumePerDay'))
     if ($rows.Count -ne 2 -or @($rows.VolumeLabel | Sort-Object -Unique).Count -ne 2 -or
@@ -438,9 +445,10 @@ function Test-HyperVInventory {
         @{ VM = 'vm-migrated'; Host = 'host-a'; Minutes = 20; VP = '1'; Value = 10 },
         @{ VM = 'vm-migrated'; Host = 'host-b'; Minutes = 5; VP = '0'; Value = 30 }
     ) | ForEach-Object {
+        $vpInstance = if ($_.VP -eq '_Total') { '_Total' } else { "Hv VP $($_.VP)" }
         @{ TimeGenerated = $fixtureNow.AddMinutes(-$_.Minutes).ToString('o'); Computer = $_.Host
             ObjectName = 'Hyper-V Hypervisor Virtual Processor'; CounterName = '% Guest Run Time'
-            InstanceName = "$($_.VM):Hv VP $($_.VP)"; CounterValue = $_.Value }
+            InstanceName = "$($_.VM):$vpInstance"; CounterValue = $_.Value }
     }
     $samples += @(
         @{ TimeGenerated = $fixtureNow.AddMinutes(-5).ToString('o'); Computer = 'host-a'; ObjectName = 'Hyper-V Dynamic Memory VM'; CounterName = 'Current Pressure'; InstanceName = 'vm-a'; CounterValue = 50 },
@@ -450,9 +458,9 @@ function Test-HyperVInventory {
     $sampleJson = ConvertTo-Json -InputObject $samples -Depth 10 -Compress
     $perfSource = "(print fixtureRow=dynamic($sampleJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), Computer=tostring(fixtureRow.Computer), ObjectName=tostring(fixtureRow.ObjectName), CounterName=tostring(fixtureRow.CounterName), InstanceName=tostring(fixtureRow.InstanceName), CounterValue=todouble(fixtureRow.CounterValue))"
     $heartbeatSource = "(datatable(TimeGenerated:datetime, Computer:string, OSType:string, ResourceGroup:string)[datetime(2026-01-04T11:55:00Z),'host-a','Windows','example-rg',datetime(2026-01-04T11:55:00Z),'host-b','Windows','example-rg',datetime(2026-01-04T11:55:00Z),'outside-host','Windows','outside-rg'])"
-    $nodeMap = '["host-a:example-instance:example-instance-id"]'
+    $nodeMap = '["host-a:example-instance:/example-instance-id"]'
     $rgMap = '["example-rg:example-instance"]'
-    $guestMap = '["vm-a:example-guest-id"]'
+    $guestMap = '["vm-a:/example-guest-id"]'
     $results = [Collections.Generic.List[object]]::new()
 
     function Invoke-InventoryFixture {
@@ -463,9 +471,9 @@ function Test-HyperVInventory {
             Replace('{HyperVInvHostFilter}', $Hosts).Replace('{HyperVInvVMFilter}', $VM).
             Replace('{HyperVInvActivity}', $Activity).Replace('{HyperVInvMinCpu}', $Cpu).
             Replace('{HyperVInvMinMemory}', $Memory).
-            Replace('{ClusterNodeMap}', $(if ($EmptyMaps) { '[]' } else { $nodeMap })).
-            Replace('{ClusterRGMap}', $(if ($EmptyMaps) { '[]' } else { $rgMap })).
-            Replace('{ArcMachineMap}', $(if ($EmptyMaps) { '[]' } else { $guestMap }))
+            Replace('{ClusterNodeMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $nodeMap }))).
+            Replace('{ClusterRGMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $rgMap }))).
+            Replace('{ArcMachineMap}', (ConvertTo-CompressedNodeMetadata $(if ($EmptyMaps) { '[]' } else { $guestMap })))
         $response = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$WorkspaceId/query" `
             -Headers @{ Authorization = "Bearer $AccessToken" } -ContentType 'application/json' `
             -Body (@{ query = $query } | ConvertTo-Json -Depth 10)
@@ -1078,8 +1086,8 @@ resources
     $clusterNodeMap = @($mappingRows |
         ForEach-Object { '{0}:{1}:{2}' -f $_.nodeShort, $_.clusterName, $_.armId } |
         Sort-Object -Unique)
-    $clusterRGJson = ConvertTo-Json -InputObject $clusterRGMap -Compress
-    $clusterNodeJson = ConvertTo-Json -InputObject $clusterNodeMap -Compress
+    $clusterRGValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterRGMap -Compress)
+    $clusterNodeValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterNodeMap -Compress)
 
     $manifestPath = Join-Path $PSScriptRoot 'live-test-queries.json'
     $querySpecs = @((Get-Content -Raw $manifestPath | ConvertFrom-Json).queries)
@@ -1094,7 +1102,7 @@ resources
     $detailBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook') | ConvertFrom-Json
     $picker = (@(Get-WorkbookItems -Items $detailBook.items) | Where-Object name -EQ 'sc-storage-detail-filters').content.parameters | Where-Object name -EQ 'SCStorageDetailMachine'
     $pickerQuery = $picker.query.Replace('{NodeTrendsTimeRange:start}', "ago($($Days)d)").Replace('{NodeTrendsTimeRange:end}', 'now()')
-    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', [string]$selectedCluster.armId).Replace('{ClusterRGMap}', $clusterRGJson).Replace('{ClusterNodeMap}', $clusterNodeJson)
+    $pickerQuery = $pickerQuery.Replace('{SingleCluster}', [string]$selectedCluster.armId).Replace('{ClusterRGMap}', $clusterRGValue).Replace('{ClusterNodeMap}', $clusterNodeValue)
     $pickerResponse = Invoke-RestMethod -Method Post -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
         -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' -Body (@{ query = $pickerQuery; timespan = "P$($Days)D" } | ConvertTo-Json)
     if ($pickerResponse.error -or @($pickerResponse.tables[0].rows).Count -eq 0) { throw 'Storage detail machine picker returned no eligible machines.' }
@@ -1117,10 +1125,10 @@ resources
             $query = $query.Replace("{$($timeParameter):start}", "ago($($Days)d)")
             $query = $query.Replace("{$($timeParameter):end}", 'now()')
         }
-        $query = $query.Replace('{ClusterRGMap}', $clusterRGJson)
-        $query = $query.Replace('{ClusterNodeMap}', $clusterNodeJson)
+        $query = $query.Replace('{ClusterRGMap}', $clusterRGValue)
+        $query = $query.Replace('{ClusterNodeMap}', $clusterNodeValue)
         # Guest resource links are outside this suite's inventory/metric coverage.
-        $query = $query.Replace('{ArcMachineMap}', '[]')
+        $query = $query.Replace('{ArcMachineMap}', (ConvertTo-CompressedNodeMetadata '[]'))
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
         $query = $query.Replace('{SingleCluster}', [string]$selectedCluster.armId)
         $query = $query.Replace('{SCStorageDetailMachine}', $detailMachine)
@@ -1155,15 +1163,16 @@ resources
 
         [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed' }
         if ($item.content.query -match '\{Cluster(?:RG|Node)Map\}') {
-            foreach ($mapValue in @('', '[]')) {
-                $emptyQuery = $query.Replace("parse_json('$clusterRGJson')", "parse_json('$mapValue')").Replace("parse_json('$clusterNodeJson')", "parse_json('$mapValue')")
+            foreach ($mapJson in @('', '[]')) {
+                $mapValue = if ($mapJson -eq '') { '' } else { ConvertTo-CompressedNodeMetadata $mapJson }
+                $emptyQuery = $query.Replace("let clusterRGMapPayload = '$clusterRGValue';", "let clusterRGMapPayload = '$mapValue';").Replace("let clusterNodeMapPayload = '$clusterNodeValue';", "let clusterNodeMapPayload = '$mapValue';")
                 if ($emptyQuery -eq $query) { throw "Empty-map fixture did not replace a mapping: $($spec.name)" }
                 $emptyResponse = Invoke-RestMethod -Method Post `
                     -Uri "https://api.loganalytics.io/v1/workspaces/$($workspace.customerId)/query" `
                     -Headers @{ Authorization = "Bearer $accessToken" } -ContentType 'application/json' `
                     -Body (@{ query = $emptyQuery; timespan = "P$($Days)D" } | ConvertTo-Json -Depth 10)
                 if ($emptyResponse.error) { throw "Empty-map query returned a partial error: $($spec.name)" }
-                $suffix = if ($mapValue -eq '') { 'unset-maps' } else { 'empty-array-maps' }
+                $suffix = if ($mapJson -eq '') { 'unset-maps' } else { 'empty-array-maps' }
                 [pscustomobject]@{ Query = "$($spec.name)-$suffix"; Rows = @($emptyResponse.tables[0].rows).Count; Result = 'Passed' }
             }
         }

@@ -148,6 +148,17 @@ try {
     Assert-Check (@(Get-Writes).Count -eq 0) 'Truncated discovery must prevent writes.'
 
     Reset-Scenario
+    $global:DcrTestState.Nodes[2] = $global:DcrTestState.Nodes[0].Clone()
+    $null = Invoke-Scenario -ExpectedError 'duplicate machine IDs'
+    Assert-Check (@(Get-Writes).Count -eq 0) 'Duplicate discovery IDs must be reported separately from truncation and prevent writes.'
+
+    Reset-Scenario
+    $global:DcrTestState.Nodes[2] = $global:DcrTestState.Nodes[0].Clone()
+    $global:DcrTestState.Nodes[2].membershipCount = 0
+    $null = Invoke-Scenario -ExpectedError 'duplicate machine IDs'
+    Assert-Check (@(Get-Writes).Count -eq 0) 'Conflicting duplicate membership must not be silently deduplicated.'
+
+    Reset-Scenario
     $global:DcrTestState.WrongIdentity = $true
     $null = Invoke-Scenario -ExpectedError 'Association verification failed'
     Assert-Check (@(Get-Writes).Count -eq 2) 'Verification failure must stop after the first association.'

@@ -16,7 +16,7 @@ This is the same template referenced by the workbook's **Capacity & Performance 
 - [Keep current and future hosts associated with Azure Policy](#keep-current-and-future-hosts-associated-with-azure-policy)
 - [Multiple DCRs per machine](#multiple-dcrs-per-machine)
 - [Review retention and costs](#review-retention-and-costs)
-- [Measure one machine](#measure-one-node)
+- [Measure one machine](#measure-one-machine)
 - [Cluster Insights overlap](#cluster-insights-overlap)
 - [Optional broader event scope](#optional-broader-event-scope)
 - [Manual portal fallback](#manual-portal-fallback)
@@ -91,6 +91,8 @@ $Settings = @{
 ```
 
 **Review the discovered machine list BEFORE proceeding.** The script matches `AzSHCI` Arc machines to `properties.reportedProperties.nodes` within the same subscription and resource group. Fully qualified names must agree when both sides provide them; short-name matching is allowed when one side reports only a short name. Each reported machine must match exactly one Arc resource, each Arc resource must resolve to exactly one reported machine, and exactly one instance membership is required. These checks protect both deployment and rollback. Nested lab machines can legitimately report model `Virtual Machine`; the model alone is not a membership test. Missing or ambiguous matches are displayed for review and excluded, not assumed to be guests. Cross-resource-group registrations or stale instance metadata may require investigation before those machines can be included. Discovery follows all Resource Graph pages.
+
+Discovery checks the raw collected row count for truncation and separately rejects duplicate machine resource IDs before any writes. Duplicate rows are not silently deduplicated because their reported membership may conflict; investigate the discovery result before retrying.
 
 `-WhatIf` performs read-only discovery and checks, then previews the proposed operation. It does not deploy or associate anything. If the DCR already exists, preview an intentional update with `@Settings -UpdateExistingDcr -WhatIf`; without that switch, the existing-DCR guard stops the script.
 

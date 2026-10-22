@@ -1295,7 +1295,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No release-boundary results returned. Check Update Summary collection and the selected scope.",
+              "noDataMessage": "The release-boundary count was not returned. Refresh this tile to retry; no count is available.",
               "noDataMessageStyle": 4
             },
             "customWidth": "14",
@@ -1346,7 +1346,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No unknown-version results returned. Check Update Summary collection and the selected scope.",
+              "noDataMessage": "The unknown-version count was not returned. Refresh this tile to retry; no count is available.",
               "noDataMessageStyle": 4
             },
             "customWidth": "14",

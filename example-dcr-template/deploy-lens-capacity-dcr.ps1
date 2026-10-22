@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Deploys the LENS Capacity DCR and associates reported Azure Local nodes.
+Deploys the LENS Capacity DCR and associates reported Azure Local machines.
 .DESCRIPTION
 Replace the placeholders or supply parameters. Requires Azure CLI, resource-graph
 and monitor-control-service extensions, an existing workspace, and AMA on hosts.
@@ -84,8 +84,11 @@ do {
     foreach ($machine in @($page.data)) { $machineList.Add($machine) }
     $skipToken = $page.skip_token
 } while ($skipToken)
-$candidates = @($machineList.ToArray() | Sort-Object id -Unique)
-if ($candidates.Count -lt $page.total_records) { throw 'Host discovery was truncated; no resources changed.' }
+if ($machineList.Count -lt $page.total_records) { throw 'Host discovery was truncated; no resources changed.' }
+if (@($machineList | Group-Object id | Where-Object Count -GT 1).Count -gt 0) {
+    throw 'Host discovery returned duplicate machine IDs; review discovery results before retrying. No resources changed.'
+}
+$candidates = @($machineList.ToArray() | Sort-Object id)
 $review = @($candidates | Where-Object membershipCount -NE 1)
 if ($review.Count -gt 0) {
     Write-Warning "$($review.Count) machines have missing or ambiguous reported membership and will not be changed. Review their registration and cluster node metadata."

@@ -1605,6 +1605,13 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
         'Unsupported release tile includes only releases definitely beyond six months',
         'monthsSinceRelease > 6', unsupportedVersion ? unsupportedVersion.query : 'query missing');
     const boundaryVersion = allQueries.find(query => query.name === 'tile-nearing-end-of-support');
+    const overviewSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Overview/Overview.workbook'), 'utf8'));
+    assert(['tile-nearing-end-of-support', 'tile-unknown-version'].every(name => {
+        const content = collectAllItems(overviewSource.items).find(item => item.name === name)?.content;
+        return content?.query.includes('= count()') &&
+            content.noDataMessage.includes('count was not returned') &&
+            !/collection|ingestion|no matching instances/i.test(content.noDataMessage);
+    }), 'Compliance count tiles distinguish a missing result from a valid zero without diagnosing ingestion');
     assert(unknownVersion?.query.includes('not(hasValidYymm) or monthsSinceRelease < 0') &&
         !unknownVersion.query.includes('monthsSinceRelease == 6') &&
         boundaryVersion?.query.includes('hasValidYymm and monthsSinceRelease == 6') &&
@@ -2229,6 +2236,21 @@ testSuite('Documentation File Validation', () => {
 
 // --- Split Architecture: Sub-Template Existence ---
 testSuite('Split Architecture - Sub-Template Existence', () => {
+    const { removeSectionDcrGuide } = require('./build-gallery');
+    const kept = { name: 'example-chart', content: { query: 'print value=1' } };
+    const section = { items: [{}, {}, { content: { items: [{ name: 'dcr-setup-group' }, kept] } }] };
+    removeSectionDcrGuide(section, 'example.workbook');
+    assert(section.items[2].content.items.length === 1 && section.items[2].content.items[0] === kept,
+        'Gallery guide removal preserves unrelated section items');
+    assert([null, {}, { items: [] }, { items: [{}, {}, { content: { items: {} } }] },
+        { items: [{}, {}, { content: { items: [null] } }] }].every(invalid => {
+        try {
+            removeSectionDcrGuide(invalid, 'example.workbook');
+            return false;
+        } catch (error) {
+            return error.message.includes('example.workbook') && error.message.includes('items[2].content.items');
+        }
+    }), 'Malformed gallery sections fail with the source file and expected item path');
     const tabMap = require('./template-ids.json');
     const workbooksDir = path.resolve(__dirname, '..', 'workbooks');
     const sharedParams = path.resolve(__dirname, '..', 'shared', 'parameters.json');
@@ -2809,6 +2831,7 @@ testSuite('Azure Local Instance Display Naming', () => {
         contributing.includes('Node.js test runner') && !contributing.includes('Machine.js') &&
         readme.includes('<a id="hyper-v-node-capacity"></a>') && readme.includes('#### Hyper-V Machine Capacity') &&
         dcrGuide.includes('<a id="measure-one-node"></a>') && dcrGuide.includes('### Measure one machine') &&
+        dcrGuide.includes('[Measure one machine](#measure-one-machine)') &&
         dcrGuide.includes('14 **Hyper-V VM** counter paths'),
         'Active documentation uses the Hyper-V tab name while preserving VM counters, Node.js and existing anchors');
 });

@@ -35,6 +35,14 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function removeSectionDcrGuide(section, src) {
+  if (!Array.isArray(section?.items?.[2]?.content?.items) ||
+      section.items[2].content.items.some(item => !item || typeof item !== 'object' || Array.isArray(item))) {
+    throw new Error(`Invalid gallery source ${src}: expected items[2].content.items to be an array of workbook items.`);
+  }
+  section.items[2].content.items = section.items[2].content.items.filter(item => item.name !== 'dcr-setup-group');
+}
+
 function ensureDir(d) {
   fs.mkdirSync(d, { recursive: true });
 }
@@ -174,7 +182,7 @@ function main() {
         }
         ensureDir(path.dirname(subDst));
         const section = readJson(src);
-        section.items[2].content.items = section.items[2].content.items.filter(item => item.name !== 'dcr-setup-group');
+        removeSectionDcrGuide(section, src);
         writeJson(subDst, section);
         const subKB = (fs.statSync(subDst).size / 1024).toFixed(1);
         console.log(`✅ ${path.relative(ROOT, subDst)} (${subKB} KB sub-section)`);
@@ -197,4 +205,6 @@ function main() {
   console.log(`\nGallery artifacts written to ${path.relative(ROOT, DIST)}/`);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { removeSectionDcrGuide };

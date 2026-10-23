@@ -5,11 +5,11 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.1
+## Latest Version: v1.1.2
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
-Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings together the signals you need to understand your Azure Local estate through a fleet lens. Instead of jumping between individual resources, you can use a consistent set of views to compare instances, spot outliers, and drill into the focus areas that need attention. LENS workbook provides comprehensive visibility into cluster health, update readiness, and workload status across your entire Azure Local fleet.
+Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings together the signals you need to understand your Azure Local estate through a fleet lens. Instead of jumping between individual resources, you can use a consistent set of views to compare instances, spot outliers, and drill into the focus areas that need attention. LENS workbook provides comprehensive visibility into instance health, update readiness, and workload status across your entire Azure Local fleet.
 
 **Important:** This is a community-driven / open-source project (not officially supported by Microsoft). For any issues, requests or feedback, please [raise an Issue](https://aka.ms/AzureLocalLENS/issues) (note: no time scales or guarantees can be provided for responses to issues).
 
@@ -26,8 +26,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.1.1)](#whats-new-v111)
-- [v1.1.5 — Planned (post-gallery merge)](#v115--planned-post-gallery-merge)
+- [What's New (v1.1.2)](#whats-new-v112)
+- [v1.1.5 — Planned (subject to managed gallery availability)](#v115--planned-subject-to-managed-gallery-availability)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
@@ -37,15 +37,15 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 
 ## Overview
 
-This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall cluster health across multiple clusters and subscriptions.
+This workbook uses Azure Resource Graph queries to aggregate and display real-time information about your Azure Local infrastructure. It's designed to help administrators and operations teams quickly identify issues, track update progress, and maintain overall instance health across multiple instances and subscriptions.
 
 The workbook is organized into eight tabs:
 
-📊 Azure Local Instances | 🏗️ Capacity | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🗄️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
+📊 Azure Local Instances | 🏗️ Capacity & Performance | 📋 System Health | 🔄 Update Progress | 🔗 ARB Status | 🗄️ Azure Local Machines | 💻 Azure Local VMs | ☸️ AKS Arc Clusters
 
 ## Prerequisites
 
-- Access to Azure subscriptions containing Azure Local clusters
+- Access to Azure subscriptions containing Azure Local instances
 - **Reader permissions** on the resources you want to monitor
   - The workbook automatically queries across **all subscriptions you have access to** within your Microsoft Entra tenant
   - You will only see data for resources where you have at least Reader access
@@ -55,7 +55,7 @@ The workbook is organized into eight tabs:
 
 ## Cost and Pricing
 
-**TL;DR — The LENS workbook itself is free, and using it incurs zero additional cost — with one exception: the Log Analytics–sourced charts on the Capacity tab.**
+**LENS itself is FREE.** Its Azure Resource Graph (ARG) views require no additional monitoring data collection. Within **Capacity & Performance → Overview**, only the first table, **Instance Capacity Overview**, is ARG-based; the remaining visuals inside the Capacity & Performance tab require **Log Analytics data** or optional Managed Prometheus metrics for AKS. The Capacity & Performance views that use Log Analytics data, including the **Multi-instance**, **Single instance** and **Hyper-V** sub-tabs, require an Azure Monitor data collection rule (DCR), that configures Azure Monitor Agent (AMA) to send performance counters to a Log Analytics (LA) workspace. Depending on the volume of data collected and the size of your environment, this can incur ingestion and potentially retention charges. Optional Managed Prometheus metrics have separate charges. If the required data is already collected in a LA workspace, LENS can reuse it without duplicate collection.
 
 The workbook is just a JSON template you import into Azure Monitor Workbooks. It is not a billable resource, and the vast majority of its views run on data sources that cost nothing to query.
 
@@ -65,24 +65,26 @@ The workbook is just a JSON template you import into Azure Monitor Workbooks. It
 |---|---|---|
 | **Azure Monitor Workbooks** (the workbook itself) | **Free** | [Azure Workbooks](https://learn.microsoft.com/azure/azure-monitor/visualize/workbooks-overview) carry no charge. You only pay for the underlying data the workbook queries. |
 | **Azure Resource Graph (ARG) queries** | **Free** | Nearly every tab — 📊 Instances, 📋 System Health, 🔄 Update Progress, 🔗 ARB Status, 🗄️ Machines, 💻 VMs, ☸️ AKS Arc — is powered entirely by [Azure Resource Graph](https://learn.microsoft.com/azure/governance/resource-graph/overview), which is included with Azure Resource Manager at no additional charge. |
-| **🏗️ Capacity → 📋 Overview** (the *Cluster Capacity Overview* table at the top) | **Free** | The per-cluster capacity table (Physical Cores/Memory, vCPUs, V:P ratio, etc.) is computed live via ARG sub-joins — no Log Analytics required. |
+| **🏗️ Capacity & Performance → 📋 Overview** (the *Instance Capacity Overview* table at the top) | **Free** | The per-instance capacity table (Physical Cores/Memory, vCPUs, V:P ratio, etc.) is computed live via ARG sub-joins — no Log Analytics required. |
 
 ### What can incur cost (_optional_)
 
-The **Log Analytics–sourced charts on the 🏗️ Capacity tab** are the only part of the workbook that requires you to ingest and store data, which is billable:
+The following Capacity & Performance tables and charts use **Log Analytics data**. Collecting and retaining this data can incur charges:
 
-- **Capacity → 📋 Overview** — the *Top 5 Azure Local Instances by Resource Capacity Usage* charts (CPU/Memory/Storage/Latency/IOPS/Network)
-- **Capacity → 🔍 Single cluster** — all per-node performance and storage/compute forecast charts
-- **Capacity → 🌍 Multi-cluster** — all fleet trending and forecast charts
-- **Capacity → 🖥️ Hyper-V VMs** — the entire sub-tab
+- **Capacity & Performance → 📋 Overview** — the *Top 5 Azure Local Instances by Resource Capacity Usage* charts (CPU/Memory/Storage/Latency/IOPS/Network)
+- **Capacity & Performance → 🔍 Single instance** — all per-machine performance and storage/compute forecast charts
+- **Capacity & Performance → 🌍 Multi-instance** — all fleet trending and forecast charts
+- **Capacity & Performance → 🖥️ Hyper-V** — the entire sub-tab
 
 These views read performance counters and events that you collect into a **[Log Analytics workspace](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs)** via a Data Collection Rule (see [`example-dcr-template/`](example-dcr-template/README.md)). Billing applies to:
 
-- **Log Analytics data ingestion and retention** — you pay per GB ingested and for retention beyond the free period. See [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/) and [Analyze and optimize Log Analytics costs](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
-- **Azure Managed Prometheus** (optional) — the *AKS Node usage* charts on the Capacity → Overview sub-tab read from [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview), which is billed per metric sample ingested.
+- **Log Analytics data ingestion and retention** — you pay per GB ingested and for retention beyond the included period, subject to applicable allowances. Some table plans also charge for queries; review [table plan compatibility](example-dcr-template/README.md#review-retention-and-costs) before changing plans. See [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/) and [Analyze and optimize Log Analytics costs](https://learn.microsoft.com/azure/azure-monitor/logs/cost-logs).
+- **Azure Managed Prometheus** (optional) — the *AKS Node usage* charts on the Capacity & Performance → Overview sub-tab read from [Azure Monitor managed Prometheus](https://learn.microsoft.com/azure/azure-monitor/essentials/prometheus-metrics-overview), which is billed for data samples ingested and query samples processed.
 - **Azure Monitor Agent (AMA)** — the agent extension itself is free; you only pay for the data it sends to your workspace.
 
-> 💡 **Bottom line:** If you skip the Capacity tab's Log Analytics charts (or only use the free ARG-based *Cluster Capacity Overview* table), the LENS workbook costs you nothing beyond what you already pay for Azure Local and Arc. Cost is fully under your control — you decide which counters to collect, how long to retain them, and whether to enable Managed Prometheus for AKS metrics.
+Use the DCR guide's [single-machine measurement query](example-dcr-template/README.md#measure-one-node) to assess observed Log Analytics data and its [cost guidance](example-dcr-template/README.md#review-retention-and-costs) to estimate charges for your environment. Machine count alone is not a reliable cost estimate; 26 counter paths do not mean 26 records per machine per minute.
+
+> 💡 **Bottom line:** Using LENS's ARG-based views adds no monitoring collection charges. Optional data costs depend on what you collect and retain, not whether you open the charts: an associated DCR continues collecting even when LENS is closed. Reuse existing data where possible and review overlapping DCRs before enabling additional collection.
 
 **Official pricing references:**
 - [Azure Monitor pricing](https://azure.microsoft.com/pricing/details/monitor/)
@@ -123,69 +125,87 @@ These views read performance counters and events that you collect into a **[Log 
 
 ### 📊 Azure Local Instances
 A high-level overview of your entire Azure Local estate, including:
-- **Visual Summary Charts**: Pie charts showing cluster connectivity, health status, and Azure Resource Bridge (ARB) status
-- **Azure Local Totals and Connectivity**: Tile metrics for total clusters, connected/disconnected clusters, connection percentage, total machines, and offline ARBs
-- **Health and Patching Status**: Healthy clusters, health warnings, failed prechecks, failed extensions, and health percentage
+- **Visual Summary Charts**: Pie charts showing instance connectivity, health status, and Azure Resource Bridge (ARB) status
+- **Azure Local Totals and Connectivity**: Tile metrics for total instances, connected/disconnected instances, connection percentage, total machines, and offline ARBs
+- **Health and Patching Status**: Healthy instances, health warnings, failed prechecks, failed extensions, and health percentage
 - **Update Compliance**: 
-  - Tiles showing clusters on supported release (green), unsupported release (red), updates available, updates in progress, and update failures
-  - Version compliance estimated from the YYMM release month (e.g., `xx.2512.x.x` = December 2025), independently of which updates are currently offered to the cluster. The official release date governs the six-month support window; because ARG does not expose the release day, LENS marks the current and previous five months as Supported, the six-month boundary as Unknown, and only older months as Unsupported
+  - Tiles showing instances on supported release (green), unsupported release (red), updates available, updates in progress, and update failures
+  - Version compliance estimated from the YYMM release month (e.g., `xx.2512.x.x` = December 2025), independently of which updates are currently offered to the instance. The official release date governs the six-month support window; because ARG does not expose the release day, LENS marks the current and previous five months as Supported, the six-month boundary as **Nearing end of support**, and older months as Unsupported. Boundary-month releases may already be unsupported; verify their official release dates. A separate **Unknown version** tile covers missing, invalid, or future-dated release months in reported Update Summaries.
   - Links to Lifecycle cadence and Latest releases documentation
-  - Solution Version Distribution bar chart showing cluster counts by version
+  - Solution Version Distribution bar chart showing instance counts by version
 - **Workload Summary**: Total Azure Local VMs and AKS Arc clusters
-- **Cluster Details Charts**: 
+- **Instance Details Charts**:
   - OS version distribution (e.g., 24H2, 23H2)
   - Hardware class distribution (Small, Medium, Large)
   - Billing model breakdown
   - Hardware vendor/model distribution
-- **All Clusters Table**: Comprehensive list with solution version, node count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, registration date, Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
-- **Licensing & Verification Charts**: Pie charts showing Enabled/Disabled distribution across clusters for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
-- **Clusters Not Synced Recently**: Table showing clusters that haven't synced in 24+ hours with color-coded severity
+- **All Instances Table**: Comprehensive list with solution version, machine count, total cores, total memory, OS version, hardware class, manufacturer, model, last sync, registration date, Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
+- **Licensing & Verification Charts**: Pie charts showing Enabled/Disabled distribution across instances for Azure Hybrid Benefit, Windows Server Subscription, and Azure Verification for VMs
+- **Instances Not Synced Recently**: Table showing instances that haven't synced in 24+ hours with color-coded severity
 
 ![Azure Local Instances](images/summary-dashboard-screenshot.png)
 
-![Azure Local Instances - Clusters](images/summary-dashboard-2-screenshot.png)
+![Azure Local Instances - Instances](images/summary-dashboard-2-screenshot.png)
 
-### 🏗️ Capacity
-Centralized view of cluster resource utilization, capacity forecasting, and workload allocation. The tab is split into four sub-tabs (selectable via the **CapacitySection** picker): **📋 Overview**, **🔍 Single cluster**, **🌍 Multi-cluster**, and **🖥️ Hyper-V VMs**.
+### 🏗️ Capacity & Performance
+Centralized view of Azure Local instance utilization, capacity forecasting, and workload allocation. The four sub-tabs flow from **📋 Overview** to **🌍 Multi-instance**, **🔍 Single instance**, then **🖥️ Hyper-V**. Azure Local display headings use **Instance Name**, **Instance Count**, and **Affected Instances**; AKS retains cluster terminology. Internal query fields and resource identities are unchanged.
+
+One **Log Analytics Workspace** selector directly below the Capacity & Performance navigation scopes telemetry across all four views. Select one or more workspaces once; the selection stays in effect when switching views. Workspace discovery uses all accessible subscriptions independently of the top-level subscription, resource-group and instance-tag filters, so a central telemetry workspace can be selected even when it is in a different subscription or resource group from the Azure Local resources. **All** queries every discovered workspace; select the specific telemetry workspaces to limit query scope and avoid access or resource-count errors. Inventory views retain their existing filters. Instance, machine, time-range and forecast controls remain local to each view. The **Azure Monitor Workspace** selector for Managed Prometheus remains separate. Independently opened Capacity sub-templates retain the same independent workspace discovery.
+
+Capacity telemetry queries retain their existing ARG-derived instance/host scope and resource links. The hidden `ClusterRGMap`, `ClusterNodeMap` and `ArcMachineMap` parameters now transport their complete JSON arrays as gzip-compressed base64; each query embeds and decodes each needed map once, even when several branches reuse it. This reduces repeated inline request payloads without truncating inventory, removing subscription/resource-group/tag filters, or changing metric calculations. Unset maps remain a valid empty scope; a nonempty payload that cannot be decoded fails explicitly and asks for a refresh. Compression addresses request-size risk, not a guaranteed improvement in telemetry-query or portal-rendering latency.
+
+**Show DCR Setup Guide**, beside the workspace selector, opens one shared Capacity Telemetry Readiness guide across all four views. Hidden by default, it covers AMA prerequisites, all 26 host and Hyper-V counter paths (including the 14 Hyper-V paths), Event 3002, association and overlap safeguards, and maintained deployment links. The first Overview capacity table is ARG-only; Managed Prometheus has separate collection setup. Independently opened Capacity sub-templates retain the same guide and control.
+
+**Large environments:** CSV and logical-disk latency/IOPS queries select their own counter source and eligible hosts before per-minute grouping; per-volume detail also filters the selected machine early. High-cardinality host/VM time-series aggregations use shuffle keys, and Overview storage Top 5 charts reuse reduced daily host results rather than caching raw telemetry. Heartbeat mappings retain only the columns needed for identity. These changes preserve counter pairing, deduplication, source precedence, host weighting, units, missing-data behavior, and existing time windows; they do not sample or truncate the fleet. Top 5 still ranks the full eligible scope. A query resource error is not evidence that DCR counters are missing: inspect the error in **Open last query** and compare a shorter time window. Lab regression/scale checks do not guarantee customer-scale latency or portal rendering performance.
+
+**Recommended starting window for very large fleets:** In **Capacity & Performance > Overview**, set **Historic Data Time Range** to **Last 24 hours**. If a longer window is slow or produces a query resource/partial-result warning, return to 24 hours and rerun the affected queries; shorten it further if needed. Widen the window gradually only after confirming that the charts and their separate reporting-machine tiles complete successfully. This is operational guidance, not a new default, a hard limit, or a guarantee that 24 hours will succeed in every environment. A successful 24-hour view does not establish that multi-day windows work at the same fleet size. Shorter windows change the period represented by averages, rankings, and coverage counts, and daily-binned charts may show only one or two points. Forecast views have separate history controls and require sufficient history; do not shorten their windows solely to match the Overview.
 
 #### 📋 Overview sub-tab
-- **Cluster Capacity Overview** table — one row per cluster:
+- **Instance Capacity Overview** table — one row per instance:
   - Physical Cores and Physical Memory (GB)
   - VM vCPUs and AKS vCPUs (from provisioned workloads)
   - vCPU Total (combined VM + AKS) and VM Memory Total (GB)
   - V:P CPU Ratio (e.g., `4.2:1`) — computed inline via Azure Resource Graph sub-joins
-  - **Target vCPU:pCPU Ratio** drop-down (default `4:1`) lets you flag clusters whose actual ratio exceeds your target
-- **Capacity Telemetry Readiness** (collapsible) — a concise checklist for Azure Monitor Agent, workspace region, complete counter and Event 3002 coverage, node association, verification, and duplicate-ingestion safeguards. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains the exact counter paths, deployment commands, verification queries, Azure Policy guidance, and manual merge procedure; the source-controlled [`dcr-azurelocal-capacity-perf.json`](example-dcr-template/dcr-azurelocal-capacity-perf.json) remains the recommended all-in-one template
+  - **Target vCPU:pCPU Ratio** drop-down (default `4:1`) lets you flag instances whose actual ratio exceeds your target
+- **Capacity Telemetry Readiness** (collapsible) — a concise checklist for Azure Monitor Agent, workspace region, complete counter and Event 3002 coverage, machine association, verification, and duplicate-ingestion safeguards. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains the exact counter paths, deployment commands, verification queries, Azure Policy guidance, and manual merge procedure; the source-controlled [`dcr-azurelocal-capacity-perf.json`](example-dcr-template/dcr-azurelocal-capacity-perf.json) remains the recommended all-in-one template
 - **Top 5 Azure Local Instances by Resource Capacity Usage** — Top-5 line/area charts (size: large) sourced from Log Analytics:
   - CPU Usage (%) · Memory Usage (%) · Storage Usage (%) · Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s)
 - **AKS Node usage** — Prometheus-sourced timecharts of Top AKS Nodes by CPU, Memory, Disk I/O (bytes/sec), and Network Throughput (bytes/sec)
 
-#### 🔍 Single cluster sub-tab
-Drill into a single cluster (selected via the `SingleCluster` picker):
-- **🏗️ Cluster Capacity** tiles — Clusters, Nodes, Node Hardware Summary
-- **Capacity & Performance of Physical Machines** — per-node timecharts: CPU Usage (%), Memory Usage (%), Storage Usage (%), Storage Latency (ms), Storage IOPS, Network Throughput (MB/s) — all "By Machine"
+#### 🌍 Multi-instance sub-tab
+Fleet-wide capacity trending and forecasting:
+- **Predictive Resource Exhaustion Forecast by Instance** — projected days until each instance crosses warning / critical utilisation thresholds (computed with `series_fit_line` linear trend analysis); shows current average %, trend direction, and 🟢/🟡/🔴 status
+- **Instance-wise CPU Forecast** and **Instance-wise Memory Forecast** — Actual-vs-forecast lines per instance
+- **Storage Remaining (%) — Instance Forecast** and **Storage Available (TB) — Instance Forecast**
+- **💾 Storage & Network Performance — For Selected Instances**:
+  - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected instance set
+- Forecast disclaimer banners are shown alongside each forecast chart
+- Forecast and performance charts have independent historic time-range controls. Storage percentage forecasts retain 12-hour sampling while interpreting the forecast horizon in days.
+
+#### 🔍 Single instance sub-tab
+Drill into a single instance (selected via the `SingleCluster` picker):
+- **🏗️ Instance Capacity** tiles — Instances, Machines, Machine Hardware Summary
+- **Capacity & Performance of Physical Machines** — per-machine timecharts: CPU Usage (%), Memory Usage (%), Storage Usage (%), Storage Latency (ms), Storage IOPS, Network Throughput (MB/s) — all "By Machine"
 - **💾 Storage Volume Usage and Forecast** — Storage Volume Usage (GB) and Volume Usage (%) charts per cluster volume
 - **📊 Storage Pool Trends & Forecast** — Storage Pool Remaining (%) and Storage Pool Remaining (TB) Actual-vs-Forecast charts
-- **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected cluster
-- **📦 Workloads on Cluster** section:
-  - 🖥️ Azure Local VMs running on the cluster
-  - 🪟 **Hyper-V VMs on the cluster** — Perf-derived view scoped to the selected cluster's physical hosts (reuses the same **Log Analytics Workspace** and **Historic Time Range** pickers as the per-machine charts above). Includes the inventory table plus six Top-5 trend charts: VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — same counters and queries as the **🪟 Hyper-V VMs** sub-tab, but filtered to this cluster only
-  - ☸️ AKS Arc Clusters running on the cluster (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local cluster label, so a single AKS performance view applies fleet-wide)
+- **Cluster Shared Volumes - Per Machine Detailed Analysis** and **Logical Disk - Per Machine Detailed Analysis** — four charts show daily latency (ms) and IOPS for individual counter/volume instances in separate fixed-source rows. One shared **Machine** selector controls both rows; there is no Storage selector, and existing comparison charts remain independent. Both read/write counters must be present for paired metrics; valid zeroes remain zero and incomplete samples are excluded.
+- **⚙️ Compute Trends & Forecast** — CPU Usage (%) and Memory Usage (%) Actual-vs-Forecast for the selected instance
+- **📦 Workloads on Instance** section:
+  - 🖥️ Azure Local VMs running on the instance
+  - 🪟 **Hyper-V VMs on the instance** — Perf-derived view scoped to the selected instance's physical hosts, using the shared **Log Analytics Workspace**. The inventory retains **Historic Data Time Range**; the six Top-5 trend charts have their own **Hyper-V Performance Time Range** picker directly below the performance heading, offering 1/3/7/14/30 days and defaulting to **7 days**. Charts cover VM CPU (`% Guest Run Time`), VM Memory Pressure (Dynamic Memory `Current Pressure`), VHD Storage Throughput (MB/s), VHD Storage IOPS, VHD Storage Latency (ms), and VM Network Throughput (MB/s) — the same counters as the **🖥️ Hyper-V** sub-tab, filtered to this instance only. A dedicated **Hyper-V - Virtual Machine and Virtual Disk Performance** heading and six native Info tooltips distinguish VM, VHD/VHDX and virtual-adapter metrics from physical-machine and CSV metrics; hover over the metric labels for help.
+  - ☸️ AKS Arc Clusters running on the instance (for per-node AKS performance, see the **AKS Node Performance (Azure Managed Prometheus)** section at the bottom of the **Overview** sub-tab — Prometheus metrics carry no Azure Local instance label, so a single AKS performance view applies fleet-wide)
 
-#### 🌍 Multi-cluster sub-tab
-Fleet-wide capacity trending and forecasting:
-- **Predictive Resource Exhaustion Forecast by Cluster** — projected days until each cluster crosses warning / critical utilisation thresholds (computed with `series_fit_line` linear trend analysis); shows current average %, trend direction, and 🟢/🟡/🔴 status
-- **Cluster-wise CPU Forecast** and **Cluster-wise Memory Forecast** — Actual-vs-forecast lines per cluster
-- **Storage Remaining (%) — Cluster Forecast** and **Storage Available (TB) — Cluster Forecast**
-- **💾 Storage & Network Performance — For Selected Clusters**:
-  - Storage Latency (ms) · Storage IOPS · Network Throughput (MB/s) timecharts for the selected cluster set
-- Forecast disclaimer banners are shown alongside each forecast chart
+#### 🖥️ Hyper-V sub-tab
+Hyper-V performance from Log Analytics (including VMs not onboarded to Arc), with Arc and instance hardware metadata for machine capacity:
 
-#### 🖥️ Hyper-V VMs sub-tab
-Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervisor-visible VMs, including VMs not onboarded to Arc):
-- **Hyper-V Telemetry Readiness** (collapsible) — a concise checklist for AMA, the 14 Hyper-V counter paths, DCR association, and `Perf` verification. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains exact paths, merge procedures, verification queries, and troubleshooting. No second Hyper-V DCR is required when the all-in-one template is deployed
+> **VM-level performance deep dive — no guest AMA required.** Investigate CPU, Dynamic Memory pressure, virtual-disk I/O, and network throughput using Hyper-V counters collected by Azure Monitor Agent (AMA) on the Azure Local physical hosts. **No AMA installation inside the guest VM or guest Arc onboarding is required for these performance views.** Host AMA and the required DCR counter collection are still needed. These are host-observed VM metrics, not guest application or process telemetry; verify VM-to-disk ownership when selecting virtual disks.
+
+- **Shared Capacity DCR setup guide** (collapsible beside the Log Analytics Workspace selector) — a concise checklist for AMA, the 14 Hyper-V counter paths, DCR association, and `Perf` verification. The maintained [DCR setup and deployment guide](example-dcr-template/README.md) contains exact paths, merge procedures, verification queries, and troubleshooting. No second Hyper-V DCR is required when the all-in-one template is deployed
 - **📊 Active VMs (from Log Analytics)** summary
+- **Physical Machine Capacity - CPU, Memory and VM Density** - Machine and Instance Name links first, followed by physical cores, observed VM vCPUs, V:P CPU Ratio, percentage of target, average CPU usage/free capacity, and memory usage with physical total, committed, and available GiB. Numeric columns support sorting; V:P CPU Ratio defaults highest first and displays values such as `4:1` or `2.5:1`. **Target vCPU:pCPU Ratio** defaults to 4:1 for the target-percentage bar; **Filter by Ratio** offers All and minimum thresholds from 1:1 through 6:1. Both controls are independent of Overview
 - **📋 Hyper-V VM Inventory (Perf-derived)** — filterable by VM Name (contains), Physical Host (multi-select), and Activity (All / Currently active in last 15 min / Active in last hour / Stale)
+- **VM inventory metric filters** - Min Avg CPU % offers All or minimum thresholds of 25%, 50%, 75%, and 90%; Min Avg Memory % offers All or 50%, 80%, and 100%. Both default to All and sit beside VM Name and Activity immediately above the inventory table. Thresholds apply to the displayed averages over Historic Time Range, combine with AND, and exclude unavailable values only when selected. They do not filter Physical Machine Capacity or trend charts. Memory measures Dynamic Memory pressure and can exceed 100%.
+- **VM inventory query scope** - Activity filtering is applied to a cached per-VM summary before CPU, memory and metadata lookups. CPU retains its average of one-minute averages; memory retains its average of Dynamic Memory pressure samples for matching VM names across the selected workspaces. Heartbeat reads only the matching reporting hosts and required resource-group fields, and instance metadata is resolved once per distinct reporting host before rejoining the VM rows. Resource links, the three-day Historic Time Range default, exports and independent filter scopes are unchanged. These query-shape improvements are not a measured customer-scale speed guarantee.
 - **Top VMs / Top Virtual Disks** charts:
   - 📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)
   - 📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)
@@ -193,33 +213,88 @@ Hyper-V VM performance, sourced entirely from Log Analytics (covers all hypervis
   - 📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)
   - 📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)
   - 📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only)
+- **Hyper-V VM Performance — Detailed Analysis** — one chart at the bottom of Hyper-V with independent VM, Time Range (1, 3, 7, 14 or 30 days), and Metric selectors. No VM is selected initially. Select CPU, Dynamic Memory pressure, virtual-disk throughput/IOPS/latency, or network throughput; the title identifies the metric and units. VM choices include the reporting physical machine and instance, with machine resource IDs preventing same-name collisions. Migration observations remain separate.
+- Detailed Analysis defaults to **7 days**, using 30-minute average buckets.
+- Disk metrics require explicit **Virtual Disks** selections from that reporting physical machine, not the entire Azure Local instance. Select one or more disks; each has a separate chart series and Average / Min / Max summary row, without summing latency across disks. The picker does **not** establish VM-to-disk ownership and can include other VMs' disks; verify ownership before interpreting a VHD/VHDX or checkpoint disk. Network uses individual matched guest vNIC series. Samples are deduplicated before time averaging; complete read/write pairs are required for throughput/IOPS, and missing buckets remain null. Resolution ranges from five minutes for one day to two hours for thirty days. The existing Top 5 charts and their controls are unchanged.
+
+**VM inventory Avg Memory %** averages `Hyper-V Dynamic Memory VM\Current Pressure` samples over the selected time range: memory demand / currently assigned memory * 100. It is a demand-to-allocation ratio, not resident RAM utilization or the host **Memory Used %** formula. Hyper-V uses guest committed-memory information to assess demand, which can include requirements backed by the guest pagefile. A hypothetical 250% means demand averages 2.5 times assigned memory across the sampled ratios; it does not mean 250% of physical RAM is resident or quantify pagefile usage or paging I/O. Check guest memory and paging counters to establish actual paging. See Microsoft's [memory-pressure definition](https://learn.microsoft.com/windows-server/storage/storage-spaces/performance-history-for-vms#how-to-interpret) and [Dynamic Memory guidance](https://learn.microsoft.com/windows-server/virtualization/hyper-v/dynamic-memory). The column keeps compact icons: green tick below 80%, warning from 80% to below 100%, and red cross at 100% and above. These VM-pressure thresholds intentionally differ from the host table's 80/90 thresholds. Static-memory VMs or missing counter samples show unavailable, not zero; values above 100% are not capped.
+
+<a id="hyper-v-node-capacity"></a>
+
+Avg CPU % in VM inventory and Avg CPU % (15 min) in machine capacity use compact icons: green below 80%, warning from 80% to below 90%, and red at 90% and above. These are visual guides, not health alerts. Observed vCPU counts are neutral numbers, not colour-coded health indicators; CPU free headroom remains neutral.
+
+#### Hyper-V Machine Capacity
+
+**Prerequisite:** Performance columns require Azure Monitor Agent on the Azure Local machines and an associated DCR collecting the required host CPU, memory, and Hyper-V counters into the selected Log Analytics workspace(s). Creating the DCR alone is insufficient: counters must be arriving in the workspace. Follow the existing [DCR setup, association, and verification guide](example-dcr-template/README.md). Inventory-backed rows can still appear without telemetry, but performance values and telemetry-dependent ratios remain unavailable.
+
+The machine table combines current Arc hardware inventory with a **15-minute telemetry window ending two minutes ago**. This fixed window is independent of Historic Time Range; the delay allows ingestion to settle. It is an observed capacity view, not authoritative VM power-state inventory or a synchronized instance-wide snapshot.
+
+| Column | Calculation |
+|---|---|
+| Machine / Instance Name | Arc machine and resolved Azure Local instance, linked to their portal resources |
+| Physical CPU Cores | Each machine's reported `coreCount`; excludes SMT threads and is the denominator for V:P CPU Ratio |
+| Observed VM vCPUs / V:P CPU Ratio | Distinct guest virtual-processor instances in the latest confirmed host sample / physical CPU cores. Ratio displays as `4:1` or `2.5:1`, with at most one decimal place; underlying values remain numeric for sorting and filtering |
+| % of V:P Target | Observed ratio divided by the selected target, multiplied by 100; matches Overview's green-to-red bar. Default target is 4:1. Unavailable ratios remain blank. This is a planning benchmark, not CPU utilization or a platform limit |
+| Avg CPU % (15 min) / Avg CPU Free % | Mean host `Processor(_Total)\% Processor Time` / 100 minus that mean; free CPU is utilization headroom, not unallocated vCPUs. Displayed with a `%` suffix and at most one decimal place (for example, `35.2%` / `64.8%`), retaining numeric 0-100 values |
+| Memory Used % | First memory column: `Committed Bytes / (Committed Bytes + Available Bytes) * 100`, matching the other Capacity & Performance views. Compact green tick below 80%, warning from 80% to below 90%, and red cross at 90% and above; visual guides, not health alerts |
+| Memory Total GiB | Installed physical memory: machine `memoryInGiB`, falling back to Arc physical-memory metadata. This is not the percentage denominator; Used plus Available need not equal Total |
+| Memory Free / Available GiB | Mean `Memory\Available Bytes` in the latest one-minute memory bucket, divided by 1,073,741,824; available memory includes reclaimable memory, not only the OS free-page list |
+| Memory Used GiB | Mean `Memory\Committed Bytes` in that same bucket, divided by 1,073,741,824; committed memory can exceed installed physical memory |
+
+Memory uses the latest one-minute bucket within the settled window. Both counters must be present, all samples must be nonnegative, and their averaged sum must be positive; otherwise the telemetry-derived memory values remain unavailable. The sample timestamp is the bucket start. The formula matches the existing Capacity memory charts, but values can differ because those charts aggregate different time ranges or instance scopes.
+
+- **Scope:** Subscription, Resource Group, and Instance Tag filters scope machine inventory. **Instance Name** is a multi-select dropdown drawn from that inventory and filters only Physical Machine Capacity by instance resource ID, keeping identically named instances distinct. Labels include resource group and subscription ID to distinguish matching names. It defaults to All, which includes unresolved instance membership; selecting specific instances excludes unresolved machines. Selected Log Analytics workspaces provide the metrics. Machines in inventory but without metrics in those workspaces remain visible with unavailable values. Physical Host scopes both tables; machine capacity resolves selected telemetry names to Arc resource IDs over Historic Time Range, without short-name fallback or changing its settled 15-minute metric window. Selected machines without recent metrics remain visible with unavailable values, provided their historical resource IDs match inventory. VM Name and Activity affect only VM inventory. All in Filter by Ratio retains unavailable ratios; minimum thresholds exclude them. Instance Name, Physical Host, and minimum-ratio filters combine. Changing the target affects only the target percentage, not row filtering or observed ratios.
+- **Query processing:** Instance selection and inventory membership restrict the settled Perf rows before caching and snapshot calculations, rather than processing every reporting host in a central workspace. All peer machines within the selected instances remain included until duplicate-VM-name checks finish; the Physical Host filter is applied afterward so it cannot hide a conflicting VM on another machine. ARG gzip-compresses the complete inventory map before passing it through the hidden workbook parameter; Physical Machine Capacity, its Instance Name picker, and all VM Detailed Analysis consumers decode it in Log Analytics. This reduces request size without truncating inventory, changing resource identities, or removing links. Invalid metadata produces an explicit query error rather than an empty inventory. Compression is not encryption, does not remove Azure service limits, and does not establish customer-scale query execution time.
+- **Identity:** Telemetry joins by Arc resource ID. Instance membership resolves within the same subscription and resource group. Qualified names must agree when both sides provide them; short-name fallback requires a unique compatible match on both the Arc inventory and reported-machine sides. Ambiguity is checked before Instance Tag filtering, including duplicate reported entries. Missing or ambiguous membership does not borrow another machine's cores or reported memory, or infer physical cores from logical processors; its ratio remains unavailable. Arc physical-memory metadata remains the fallback for installed memory. Machines registered outside the instance resource group may not resolve.
+- **Snapshot checks:** Two consecutive host samples, no more than two minutes apart, must have matching guest-vCPU instance sets and the aggregate counter. Duplicate samples and `_Total` do not inflate vCPU counts. Changing, single-sample, malformed, and aggregate-only snapshots are unconfirmed rather than assumed to represent zero workloads.
+- **Migration and names:** A VM name appearing on multiple machines in the same instance suppresses those ratios. Matching names in different instances remain independent. Migration and vCPU resizing can temporarily make a ratio unavailable until samples stabilize. Perf has no immutable VM identifier here; same-host duplicate names and consistently incomplete collection cannot be conclusively detected. Sample timestamps indicate the observation time, not a guarantee of current placement.
+- **Telemetry:** The existing all-in-one LENS DCR already includes the guest-vCPU, host CPU, Committed Bytes, and Available Bytes counters. A Hyper-V-only DCR must also collect the host CPU and both memory paths for those columns. Missing, stale, or invalid metrics remain blank with a status message; no automatic balancing or resource changes occur.
+
+##### Accepted memory calculation and rationale
+
+The **Memory Used %** formula documented above is an intentional compatibility decision aligned with Cluster Insights and the existing Capacity memory charts. The new Hyper-V machine table follows that established convention; it is not introducing a different definition of host memory usage.
+
+- [Issue #79](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/79), resolved by [PR #78](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/78), addressed discrepancies with Cluster Insights. The PR replaced the Overview memory chart's `% Committed Bytes In Use` counter with **Committed Bytes** and **Available Bytes**, using the formula already used by the Capacity memory forecast. It also corrected machine membership and missing-machine aggregation; changing the formula alone was not sufficient.
+- [Issue #77](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/77), resolved by [PR #76](https://github.com/Azure/AzureLocal-LENS-Workbook/pull/76), established that the Instance Capacity Overview table remains **ARG-only**, without an Azure Monitor dependency. Its memory values describe provisioned workload allocation, not measured host usage. That resolution improved allocation accounting and naming rather than replacing the table with Perf data.
+
+These are three distinct metrics, not interchangeable percentages:
+
+| Metric | Meaning |
+|---|---|
+| Memory Used % | Perf-based host memory: committed divided by committed plus available, multiplied by 100 |
+| Workload Memory % | ARG-provisioned workload memory divided by usable physical capacity, including the documented platform reservations |
+| N-1 Memory Risk % | ARG-provisioned workload memory compared with the documented capacity remaining after a single-machine loss; single-machine instances have no HA resiliency |
+
+**How to interpret the host formula:** Committed Bytes is memory Windows has promised to back with RAM or the page file; Available Bytes is physical RAM available for use. Their sum is not necessarily installed RAM. For a hypothetical machine with 64 GiB installed, 32 GiB committed, and 16 GiB available, the agreed formula reports `32 / (32 + 16) * 100 = 66.7%`, not the `75%` obtained from physical total minus available. These calculations measure different things. Windows `% Committed Bytes In Use` is different again: its denominator is **Commit Limit**, which includes page-file capacity.
+
+This distinction belongs in explanatory help, not in an unrequested formula or heading change. Retain **Memory Used %** and the agreed paired-counter calculation. When comparing results, first check both counters' coverage, authoritative machine membership, missing samples, aggregation scope, and matching time windows. A machine snapshot, a historical instance chart, and ARG workload allocation need not agree. Changes to this decision require reproducible evidence and explicit maintainer agreement, with tests and documentation updated together.
 
 ### 📋 System Health
-Detailed view of cluster system health and update readiness:
+Detailed view of instance system health and update readiness:
 - **Health State Distribution** chart and **Update Readiness Summary** matrix (Update Status × Overall Health State)
-- **System Health Check Filters** — narrow checks by Cluster, Overall Health State, and Check Severity (defaults exclude Informational)
-- **System Health Checks Overview** table — one row per failure reason, sorted by cluster count (highest first), with friendly health-state vocabulary (Healthy / Critical / Warning / In progress / Health check failed / Unknown)
+- **System Health Check Filters** — narrow checks by Instance, Overall Health State, and Check Severity (defaults exclude Informational)
+- **System Health Checks Overview** table — one row per failure reason, sorted by instance count (highest first), with friendly health-state vocabulary (Healthy / Critical / Warning / In progress / Health check failed / Unknown)
 - **🔍 24 Hour System Health Checks - Detailed Results** — per-check breakdown for the most recent 24 hours, including `Health Check - Name / Description / Remediation` columns
 - Tip banner with link to Microsoft documentation for troubleshooting Azure Local updates
 
 ![System Health](images/update-readiness-and-system-health-screenshot.png)
 
 ### 🔄 Update Progress
-Track ongoing and historical updates across your clusters:
+Track ongoing and historical updates across your instances:
 - **Update State Summary** tiles and **Update State Distribution** pie chart
 - **Update Attempts by Day** stacked bar chart (Succeeded / Failed / InProgress per day)
 - **Update Duration Statistics by Solution Update** — min/avg/max duration per solution version
-- **Updates - First Time Success Analysis** — first-time success rate per cluster/solution version
+- **Updates - First Time Success Analysis** — first-time success rate per instance/solution version
 - **Update Outcomes Distribution** and **Update Attempts by Status Percentages** charts
-- **Update Attempts Details** table with cluster, update name, state, status, and link to the run
-- **⏳ Clusters Currently Updating** — live status with current step description
-- **📦 Clusters with Updates Available** table with:
+- **Update Attempts Details** table with instance, update name, state, status, and link to the run
+- **⏳ Instances Currently Updating** — live status with current step description
+- **📦 Instances with Updates Available** table with:
   - Direct link to apply One Time Update in Azure Update Manager
   - Link to Azure Local Known Issues documentation
   - SBE (Solution Builder Extension) dependency details
-- **🔄 All Cluster Update Status** table with information about the 6-month support window
+- **🔄 All Instance Update Status** table with information about the 6-month support window
 - **📜 Update Run History and Error Details** table:
-  - Default filter: `Update State = Failed` (unresolved failures are surfaced regardless of Time Range; once a later Succeeded run exists for the same cluster, the older Failed run is hidden)
+  - Default filter: `Update State = Failed` (unresolved failures are surfaced regardless of Time Range; once a later Succeeded run exists for the same instance, the older Failed run is hidden)
   - Direct link to view the update run in Azure portal
   - Current step description and extracted error details for failed updates
   - Human-readable duration (e.g., `1h 7m 15s`)
@@ -227,7 +302,7 @@ Track ongoing and historical updates across your clusters:
 ![Update Progress](images/update-progress-screenshot.png)
 
 ### 🗄️ Azure Local Machines
-Comprehensive view of physical server machines in Azure Local clusters:
+Comprehensive view of physical server machines in Azure Local instances:
 - **Last Refreshed timestamp** and documentation links
 - **Machine Overview**:
   - Connection status summary tiles (Total, Connected, Disconnected)
@@ -237,16 +312,16 @@ Comprehensive view of physical server machines in Azure Local clusters:
   - Arc Agent version distribution pie chart
   - License type distribution pie chart
 - **All Machines Table** (sorted with Connected first) with details including:
-  - Machine name and cluster association
+  - Machine name and instance association
   - Connection status with icons
   - vCPUs (logical core count) and memory (GB)
   - Hardware vendor, model, and processor
   - Solution version, IP address, and OS version
   - Last status change
 - **Disconnected Machines** warning table showing:
-  - Disconnected nodes with OS version information
+  - Disconnected machines with OS version information
   - Time since disconnection
-  - Associated cluster and resource group details
+  - Associated instance and resource group details
 - **Machine Extensions**:
   - Filter by extension status (Succeeded, Failed, Creating, Updating, Deleting)
   - Filter by extension name
@@ -254,11 +329,11 @@ Comprehensive view of physical server machines in Azure Local clusters:
   - Failed extensions table with error details
 - **Network Adapter Details**:
   - Filter by Machine Name and NIC Status (Up/Down)
-  - **Note**: Cluster Tag filtering is not supported for this section due to Azure Resource Graph query limitations
+  - **Note**: Instance Tag filtering is not supported for this section due to Azure Resource Graph query limitations
   - NIC Status Distribution pie chart showing Up/Down/Disconnected counts (respects filters)
   - NIC information from edge devices including adapter name, type, status, and interface description
   - Machine Name column showing actual host names (joined from hybrid compute machines)
-  - Cluster column with link to the Azure Local cluster resource in Azure portal
+  - Instance column with link to the Azure Local instance resource in Azure portal
   - NIC Type (Virtual or Physical) derived from interface description
   - Status with icons (Up = green, Down = red)
   - Driver version for each network adapter
@@ -273,17 +348,17 @@ Comprehensive view of physical server machines in Azure Local clusters:
 Monitor the status of Azure Resource Bridge appliances:
 - Warning banner about 45-day offline limit (displayed below Offline ARBs section) with link to troubleshooting documentation
 - ARB status summary per Azure Local instance with pie chart
-  - Shows all ARBs including orphaned ones (where cluster has been deleted)
-  - "Unknown" displayed for HCIClusterConnectivity when cluster is missing
+  - Shows all ARBs including orphaned ones (where instance has been deleted)
+  - "Unknown" displayed for HCIClusterConnectivity when instance is missing
   - Sorted with Running status first
-- Offline ARB appliances table showing ALL offline ARBs regardless of cluster connection status
+- Offline ARB appliances table showing ALL offline ARBs regardless of instance connection status
 - **Last Modified** timestamp and **Days Since Last Modified** with color coding:
   - Green: 0 days
   - Yellow: 1-14 days
   - Red: More than 14 days
-- All ARB appliances table with filters for ARB Status and Cluster Name
+- All ARB appliances table with filters for ARB Status and Instance Name
 - Shows "Connected" (green) for Running ARBs or days since last modified (yellow) for Offline ARBs
-- Direct links to open ARB and cluster resources in the Azure portal
+- Direct links to open ARB and instance resources in the Azure portal
 - **ARB Alert Rules Configuration** (toggle to show/hide):
   - Table with direct links to create Resource Health and Activity Log alerts for each ARB
   - Recommended alert types with severity guidance
@@ -293,7 +368,7 @@ Monitor the status of Azure Resource Bridge appliances:
 ![Azure Resource Bridges Status](images/arb-offline-screenshot.png)
 
 ### 💻 Azure Local VMs
-Monitor virtual machines running on Azure Local clusters:
+Monitor virtual machines running on Azure Local instances:
 - VM status summary tiles showing total VMs and connection status
 - VM connection status distribution pie chart
 - OS distribution pie chart showing operating system breakdown
@@ -306,12 +381,12 @@ Monitor virtual machines running on Azure Local clusters:
   - Domain name
   - Agent version
   - OS install date and last status change
-- VMs grouped by hosting Azure Local cluster with hardware specs
-- VM distribution bar chart by cluster
+- VMs grouped by hosting Azure Local instance with hardware specs
+- VM distribution bar chart by instance
 
 ![Azure Local VMs](images/azure-local-vms-screenshot.png)
 
-![Azure Local VMs - By Cluster](images/azure-local-vms-2-screenshot.png)
+![Azure Local VMs - By Instance](images/azure-local-vms-2-screenshot.png)
 
 ### ☸️ AKS Arc Clusters
 Monitor AKS Arc clusters running on Azure Local:
@@ -331,7 +406,7 @@ Monitor AKS Arc clusters running on Azure Local:
 - **AKS Arc Cluster Extensions**:
   - Filter by extension status (Succeeded, Failed, Creating, Updating, Deleting)
   - Filter by extension name
-  - Extension status summary table and bar chart (similar to Node Extensions)
+  - Extension status summary table and bar chart (similar to Machine Extensions)
   - Failed extensions table with error details
 - **Flux Configurations**:
   - **📋 All Flux Configurations** — full inventory across AKS Arc clusters
@@ -361,15 +436,15 @@ The workbook provides several filtering options to help you focus on specific re
 - **Resource Group Filter**: Optional wildcard filter for resource group names
   - Use `*` as a wildcard character to match any sequence of characters
   - Examples:
-    - `*-prod-*` matches resource groups containing "-prod-" (e.g., "rg-hci-prod-01", "azure-prod-cluster")
+    - `*-prod-*` matches resource groups containing "-prod-" (e.g., "rg-hci-prod-01", "azure-prod-instance")
     - `*hci*` matches any resource group containing "hci"
     - `rg-*` matches resource groups starting with "rg-"
   - Leave empty to show all resource groups
 
-### Cluster Tag Filter
-- **Cluster Tag Name**: The name of the tag to filter by (e.g., "Environment", "Team", "CostCenter")
-- **Cluster Tag Value**: The value of the tag to match (e.g., "Production", "IT-Ops")
-- **Note**: Tag filtering is applied to Azure Local clusters. AKS Arc clusters and Azure Local VMs in the same resource group as matching clusters are also filtered via resource group association
+### Instance Tag Filter
+- **Instance Tag Name**: The name of the tag to filter by (e.g., "Environment", "Team", "CostCenter")
+- **Instance Tag Value**: The value of the tag to match (e.g., "Production", "IT-Ops")
+- **Note**: Tag filtering is applied to Azure Local instances. AKS Arc clusters and Azure Local VMs in the same resource group as matching instances are also filtered via resource group association
 - Both Tag Name and Tag Value must be provided for the filter to take effect
 
 ### Time Range
@@ -385,29 +460,51 @@ The workbook provides several filtering options to help you focus on specific re
 
 ## Azure Resource Graph | Azure Local Resource Joins | Useful Information
 
-Understanding how Azure Local resources are linked across Azure Resource Graph (ARG) is essential for building accurate queries. The workbook uses the following join chains to associate workload resources with their parent HCI cluster:
+Understanding how Azure Local resources are linked across Azure Resource Graph (ARG) is essential for building accurate queries. The workbook uses the following join chains to associate workload resources with their parent HCI instance:
 
-- **Azure Local VMs:** `machine.id` → `microsoft.azurestackhci/virtualmachineinstances` (extensibility, joined by extracting machineId before `/providers/Microsoft.AzureStackHCI`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI cluster
+- **Azure Local VMs:** `machine.id` → `microsoft.azurestackhci/virtualmachineinstances` (extensibility, joined by extracting machineId before `/providers/Microsoft.AzureStackHCI`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI instance
 
-- **AKS Arc Clusters:** `connectedcluster.id` → `microsoft.hybridcontainerservice/provisionedclusterinstances` (extensibility, joined by extracting aksId before `/providers/Microsoft.HybridContainerService`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI cluster
+- **AKS Arc Clusters:** `connectedcluster.id` → `microsoft.hybridcontainerservice/provisionedclusterinstances` (extensibility, joined by extracting aksId before `/providers/Microsoft.HybridContainerService`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI instance
 
-- **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location (joined by extracting `arcBridgeRG` from `hostResourceId`) → HCI cluster (joined by `resourceGroup`)
+- **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location (joined by extracting `arcBridgeRG` from `hostResourceId`) → HCI instance (joined by `resourceGroup`)
 
-> **Key concept:** The Arc Resource Bridge appliance and the HCI cluster are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI cluster.
+> **Key concept:** The Arc Resource Bridge appliance and the HCI instance are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI instance.
 
-## What's New (v1.1.1)
+## What's New (v1.1.2)
 
-A patch release addressing [Issue #103](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/103), reported by [@arunkumar-dhanapal](https://github.com/arunkumar-dhanapal).
+Azure Local LENS v1.1.2 is a quality and enhancements release focused on addressing customer feedback, improving reliability, and refining the workbook experience. It includes the following improvements:
 
-1. **Multi-cluster workspace selection works with cluster tag filters.** The Log Analytics Workspace dropdown no longer requires workspace resources to carry the selected cluster tags. Cluster tags still filter the clusters, so workspace selection and tag-based cluster filtering can be used together. Existing subscription and resource-group scoping is unchanged.
+> **TL;DR - Action required for existing LENS DCR deployments:** Redeploy the [revised ARM template](example-dcr-template/dcr-azurelocal-capacity-perf.json) using the **same subscription, resource group, and DCR name** to update your existing rule **in place**. This replaces the counter list, removing the five obsolete CSV counter paths and adding the four `Cluster CSVFS` paths. **A new DCR is not required; existing associations continue to reference the same rule.**
+>
+> Update the workbook too; updating it alone does not change data collection. Back up and review any customized DCR before replacement, because settings absent from the template can be removed. See the [DCR upgrade guidance](example-dcr-template/README.md#csv-storage-sources) for preview, update, and collection verification steps.
 
-2. **Regression coverage protects workspace discovery.** Tests check that all four Capacity workspace selectors remain independent of cluster tags, preserve existing scope, and retain tag filtering on the Multi-cluster cluster selector.
+Adds machine-level capacity visibility for [Issue #102](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/102), requested by [@riemi92](https://github.com/riemi92).
 
-The workbook header banner bumps from `v1.1.0` to `v1.1.1`.
+1. **Physical Machine Capacity under Capacity & Performance > Hyper-V.** Machine and Instance Name columns link to Azure resources; Instance Capacity Overview also uses the Instance Name heading. Physical cores, observed guest vCPUs, V:P CPU Ratio, and % of V:P Target sit together beside average host CPU usage and free utilization capacity, both displayed with `%` suffixes. Memory Used % uses the established `Committed Bytes / (Committed Bytes + Available Bytes) * 100` formula, with a compact green tick below 80%, warning from 80% to below 90%, and red cross at 90% and above. Physical total, used (committed), and free/available GiB follow; the help text explains their meanings. These icons are visual guides, not health alerts.
+2. **Sortable numeric metrics, target comparison, and instance/ratio filtering.** Highest V:P ratios appear first, displayed as `4:1` or `2.5:1` while retaining numeric sorting and filtering. Target vCPU:pCPU Ratio defaults to 4:1 and drives the colour-coded % of V:P Target bar; Filter by Ratio offers All and thresholds from 1:1 through 6:1. Both match Overview's controls without sharing its state. A machine-only Instance Name multi-select defaults to All and filters by instance resource ID without affecting VM inventory.
+3. **Conservative telemetry handling.** Settled, matching snapshots reduce stale allocation counts. Missing data, changing or conflicting VM placements, ambiguous hardware mappings, and invalid memory values stay unavailable rather than becoming zero. Hardware lookup requires compatible qualified names and a unique match on both the Arc-machine and reported-machine sides before Instance Tag filtering, preventing same-short-name collisions from assigning another machine's physical cores or reported memory. Historic host selections resolve to Arc resource IDs without widening the settled metric window. The instance-level Capacity Overview table remains ARG-only.
+4. **Regression and live query coverage.** Offline checks protect column order, filtering, identity, and formulas. The opt-in machine-capacity suite executes the exact workbook queries against live data and synthetic KQL cases for migration, duplicate samples, missing data, and sorting/filtering.
+5. **Consistent VM memory styling.** Hyper-V VM Inventory's Avg Memory % now uses compact status icons instead of full-cell backgrounds, retaining its 80/100 thresholds. Help distinguishes Dynamic Memory demand/assigned-memory pressure, which can exceed 100%, from host memory usage and actual paging activity.
+6. **Corrected CSV storage sources ([Issue #108](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/108)).** The DCR replaces five invalid CSV paths with four `Cluster CSVFS` latency/read/write paths: 26 paths in total. CSV and logical-disk performance series and coverage counts are separate, so OS-disk data cannot imply CSV coverage. CSV volume capacity uses validated, deduplicated Event 3002 snapshots rather than nonexistent percentage counters. Volume free-space forecasts describe logical CSV capacity, not physical S2D pool headroom. Existing deployments need both the workbook and DCR updated; see [CSV storage sources](example-dcr-template/README.md#csv-storage-sources) for measurement scope and verification. Valid all-zero counter samples alone do not prove workload coverage.
+7. **Per-machine storage drill-down.** Capacity & Performance > Single instance adds **Cluster Shared Volumes - Per Machine Detailed Analysis** and **Logical Disk - Per Machine Detailed Analysis**. Separate latency and IOPS charts for each source share one Machine selector, with no Storage filter. This selector does not change the existing comparison charts.
+8. **Clearer navigation and terminology ([Issue #110](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/110)).** Capacity & Performance sections now appear as **Overview, Multi-instance, Single instance, Hyper-V**, matching the navigation help. Azure Local display headings and filters consistently use Instance Name, Instance Count, Affected Instances, and machine terminology. CSV cluster wording, AKS clusters/nodes, technical identifiers, and historical release notes retain their appropriate terminology. Active workbook help and documentation follow the same conventions.
+9. **VM inventory controls.** Hyper-V VM Inventory defaults to descending Avg CPU % with unavailable values last. Independent minimum CPU and memory filters sit directly above the table; All retains unavailable values. These filters do not change Physical Machine Capacity or the trend charts. Single instance inventory VM names now link to the Azure portal when the existing guest-resource map has one unique matching Arc-enabled VM resource; missing or ambiguous matches remain unlinked without removing inventory rows.
+10. **Reviewed DCR deployment and upgrade workflow.** The downloadable [PowerShell deployment script](example-dcr-template/deploy-lens-capacity-dcr.ps1) provides explicit subscription selection, paginated reported-machine discovery, compatible-name and uniqueness checks, `-WhatIf` preview, conflict checks, intentional in-place replacement with `-UpdateExistingDcr`, and association rollback. Ambiguous short-name matches and duplicate reported rows remain ineligible for deployment and rollback. It does not install AMA or delete the DCR during rollback; follow the [deployment guidance](example-dcr-template/README.md) and review overlapping collection rules.
+11. **Capacity parameter and presentation fixes.** Overview, Multi-instance, and Single instance safely parse unset shared maps instead of emitting invalid `dynamic()` expressions, including CPU/memory and storage forecasts. Hyper-V accepts both wildcard and literal All selections without dropping inventory rows. The forecast heading displays **Current Avg %**, percentage tables use compact icons instead of solid backgrounds, and observed vCPU counts remain neutral. Forecast icons follow the selected warning/critical thresholds; CPU and VM-memory icons retain their distinct thresholds. The six Single instance Hyper-V charts have a shared VM/virtual-disk heading and individual metric information tooltips.
+12. **Shared Capacity workspace selection and DCR setup guide ([Issue #111](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/111)).** One **Log Analytics Workspace** selector applies across all four Capacity & Performance views, with **Show DCR Setup Guide** beside it. Workspace discovery is independent of the inventory subscription, resource-group and instance-tag filters, allowing telemetry workspaces in separate monitoring subscriptions. The guide is hidden by default and consolidates AMA prerequisites, host and Hyper-V counters, Event 3002, association safeguards, and maintained deployment links instead of repeating setup sections in Overview and Hyper-V. The scope note explains that the first Overview table is ARG-only and Managed Prometheus uses its separate Azure Monitor Workspace selector. Independently opened Capacity sub-templates retain the same guide and controls.
+13. **VM-level performance deep dive — no guest AMA required.** **Hyper-V VM Performance — Detailed Analysis** uses Hyper-V counters collected by AMA on the Azure Local physical hosts, without requiring AMA inside the guest VM or guest Arc onboarding. These are host-observed performance metrics, not guest application or process telemetry. This final Hyper-V section adds one metric-selectable chart with independent VM and 1/3/7/14/30-day controls, defaulting to **7 days** with 30-minute average buckets, metric information tooltips, and no VM selected by default. The chart defaults to an Average summary rather than summing percentages, rates, or latency across time buckets. A compact table beneath it shows Average, Min, and Max of the non-missing plotted bucket averages per series, in the selected metric units; these are not instantaneous extremes within each bucket. Investigate CPU, Dynamic Memory pressure, virtual-disk throughput/IOPS/latency, or individual guest virtual NICs without changing the Top 5 charts. Disk metrics support explicit selection of **one or more virtual disks** from the reporting physical machine, with a separate chart series and summary row per disk; disk ownership is operator-verified, not inferred. Machine-resource identity, complete counter pairs, sample deduplication, and null gaps protect the detail view.
+14. **Capacity & Performance tab.** The main tab is renamed **🏗️ Capacity & Performance** to reflect its capacity planning, forecasts, and performance drill-downs. Current navigation, setup paths, and documentation use the new name; internal IDs and gallery paths remain unchanged.
+15. **Clearer release support categories.** Overview separates six-month-boundary releases into **Nearing end of support**, leaving missing, invalid, or future-dated release months in **Unknown version**. Boundary-month releases may already be unsupported depending on their official release date; the help and tooltip direct operators to verify that date. Supported and Unsupported age thresholds are unchanged.
 
-## v1.1.5 — Planned (post-gallery merge)
+The workbook header banner bumps from `v1.1.1` to `v1.1.2`.
 
-Not yet released. The following changes are queued for v1.1.5 and will ship once the upstream `microsoft/Application-Insights-Workbooks` PR has merged and the `community-Workbooks/Azure Local/LENS-*` templates are live in the Azure Monitor gallery:
+Overview storage charts occupy two separate three-column rows: **CSV Volume Usage / CSV Latency / CSV IOPS**, then **Logical Disk Usage / Logical Disk Latency / Logical Disk IOPS**. Every chart ranks only its named source and shows at most five instances, with matching coverage counts below it. CPU, memory and network share the preceding row.
+
+**Single instance** uses the same three-column arrangement, with CSV usage **By Volume** and the other storage metrics **By Machine**, without a Top 5 limit. **Multi-instance** separates CSV and logical-disk latency/IOPS into two-column rows, followed by a full-width network chart; these charts retain all selected instances. Its storage forecast titles identify **CSV Volume Free Space**. Forecast calculations and Hyper-V VHD queries are unchanged by the layout split.
+
+## v1.1.5 — Planned (subject to managed gallery availability)
+
+Not yet released. The following changes are planned for v1.1.5, subject to acceptance of the upstream `microsoft/Application-Insights-Workbooks` contribution and availability of the `community-Workbooks/Azure Local/LENS-*` templates in the Azure Monitor gallery. Release scope and timing may change:
 
 - **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
 - **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
@@ -422,7 +519,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## CI/CD Validation
 
-All pull requests are automatically validated by a GitHub Actions workflow that runs **390 unit tests across 36 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
+All pull requests are automatically validated by a GitHub Actions workflow that runs **496 unit tests across 43 test suites**. These tests ensure workbook integrity without requiring an Azure environment.
 
 | Test Suite | What It Validates |
 |---|---|
@@ -455,6 +552,7 @@ All pull requests are automatically validated by a GitHub Actions workflow that 
 | **Split Architecture - Round-Trip Integrity** | `AzureLocal-LENS-Workbook.json` is in sync with split sources (run `scripts/build-monolithic.js` if this fails) |
 | **Split Architecture - Sub-Template Size Recommendations** | Each sub-template is under the 350 KB hard limit (warns at the 200 KB gallery recommendation) |
 | **Accessibility - No Inline-Style HTML** | No `<div style=...>`, `<span style=...>`, `<font color=...>` etc. in markdown items |
+| Hyper-V Machine Capacity | Column order, numeric sorting and ratio filtering, machine identity, settled vCPU snapshots, CPU and memory calculations, missing telemetry, and resource links |
 
 Test results are published as a **Check Run** on each PR with per-test annotations, and a summary table is written to the GitHub Actions **Job Summary**.
 
@@ -463,13 +561,15 @@ Run tests locally:
 node scripts/run-tests.js
 ```
 
-Maintainers can also run the opt-in 11-query live Capacity suite against an approved Azure environment. It uses the exact KQL stored in the split workbooks and requires explicit subscription/workspace confirmation:
+Maintainers can also run the opt-in live Capacity suite against an approved Azure environment. It executes 29 exact workbook queries and 24 synthetic KQL scenarios covering storage source separation, source-specific Top 5 rankings, machine/instance scope and aggregation, units, duplicate/partial samples, zero versus missing data, volume identity, and resource-scoped history and forecasts for identically named instances. It requires explicit subscription/workspace confirmation:
 
 ```powershell
 ./scripts/run-live-tests.ps1 `
   -SubscriptionId '<confirmed-subscription-id>' `
   -WorkspaceResourceId '<log-analytics-workspace-resource-id>'
 ```
+
+For the machine-capacity live and synthetic KQL suite, add `-NodeCapacityOnly` to the command above. This mode validates the exact machine-capacity queries, including hardware mapping, CPU and memory calculations, migration, duplicate samples, missing data, and sorting/filtering. Hardware fixtures cover compatible and incompatible qualified names, collisions on both sides, duplicate reported entries, and tag filtering that must not hide ambiguity. It requires the same explicit subscription/workspace confirmation and does not run in CI.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#optional-live-azure-integration-tests) for prerequisites, privacy safeguards, and expected output.
 
@@ -480,6 +580,16 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.1.1
+
+A patch release addressing [Issue #103](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/103), reported by [@arunkumar-dhanapal](https://github.com/arunkumar-dhanapal).
+
+1. **Multi-cluster workspace selection works with cluster tag filters.** The Log Analytics Workspace dropdown no longer requires workspace resources to carry the selected cluster tags. Cluster tags still filter the clusters, so workspace selection and tag-based cluster filtering can be used together. Existing subscription and resource-group scoping is unchanged.
+
+2. **Regression coverage protects workspace discovery.** Tests check that all four Capacity workspace selectors remain independent of cluster tags, preserve existing scope, and retain tag filtering on the Multi-cluster cluster selector.
+
+The workbook header banner bumps from `v1.1.0` to `v1.1.1`.
 
 ### v1.1.0
 
@@ -836,7 +946,7 @@ The workbook is now authored as **per-tab source files** under [workbooks/](work
 | &nbsp;&nbsp;↳ [workbooks/Capacity-Overview/Capacity-Overview.workbook](workbooks/Capacity-Overview/Capacity-Overview.workbook) |   ↳ 📋 Capacity — Overview | 83 KB |
 | &nbsp;&nbsp;↳ [workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook](workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook) |   ↳ 🌍 Capacity — Multi-cluster | 60 KB |
 | &nbsp;&nbsp;↳ [workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook](workbooks/Capacity-SingleCluster/Capacity-SingleCluster.workbook) |   ↳ 🔍 Capacity — Single cluster | 93 KB |
-| &nbsp;&nbsp;↳ [workbooks/Capacity-HyperV/Capacity-HyperV.workbook](workbooks/Capacity-HyperV/Capacity-HyperV.workbook) |   ↳ 🖥️ Capacity — Hyper-V VMs | 70 KB |
+| &nbsp;&nbsp;↳ [workbooks/Capacity-HyperV/Capacity-HyperV.workbook](workbooks/Capacity-HyperV/Capacity-HyperV.workbook) |   ↳ 🖥️ Capacity — Hyper-V | 70 KB |
 | [workbooks/ArbStatus/ArbStatus.workbook](workbooks/ArbStatus/ArbStatus.workbook) | 🔗 ARB Status | 58 KB |
 | [workbooks/Machines/Machines.workbook](workbooks/Machines/Machines.workbook) | 🗄️ Azure Local Machines | 86 KB |
 | [workbooks/VMs/VMs.workbook](workbooks/VMs/VMs.workbook) | 💻 Azure Local VMs | 44 KB |
@@ -844,7 +954,7 @@ The workbook is now authored as **per-tab source files** under [workbooks/](work
 | [workbooks/SystemHealth/SystemHealth.workbook](workbooks/SystemHealth/SystemHealth.workbook) | 📋 System Health | 69 KB |
 | [workbooks/UpdateProgress/UpdateProgress.workbook](workbooks/UpdateProgress/UpdateProgress.workbook) | 🔄 Update Progress | 121 KB |
 
-Each per-tab file is a self-contained workbook (own parameters + main-tabs nav + content group) so it can be opened standalone in Azure Monitor Workbooks → Advanced Editor for editing, debugging, or future gallery submission. The Capacity tab is split a level deeper into four section sub-templates (Overview / Multi-cluster / Single cluster / Hyper-V VMs), so every gallery sub-template stays comfortably under the 200 KB recommendation. At build time `scripts/build-monolithic.js` merges the four section groups back into the Capacity tab so the assembled monolithic JSON remains identical in structure to v0.8.9.
+Each per-tab file is a self-contained workbook (own parameters + main-tabs nav + content group) so it can be opened standalone in Azure Monitor Workbooks → Advanced Editor for editing, debugging, or future gallery submission. The Capacity tab is split a level deeper into four section sub-templates (Overview / Multi-cluster / Single cluster / Hyper-V), so every gallery sub-template stays comfortably under the 200 KB recommendation. At build time `scripts/build-monolithic.js` merges the four section groups back into the Capacity tab so the assembled monolithic JSON remains identical in structure to v0.8.9.
 
 #### Gallery readiness
 

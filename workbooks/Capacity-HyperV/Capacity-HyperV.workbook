@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -153,7 +153,7 @@
             "name": "ClusterRGMap",
             "type": 1,
             "description": "Hidden: maps resource group to cluster name for HCI clusters",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -167,7 +167,7 @@
             "name": "ClusterNodeMap",
             "type": 1,
             "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeShort:clusterName:armId per entry). nodeShort is the lowercased NetBIOS hostname (FQDN suffix stripped) so it matches tolower(split(Computer, '.')[0]) emitted by Heartbeat / Perf. Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -181,7 +181,7 @@
             "name": "ArcMachineMap",
             "type": 1,
             "description": "Hidden: maps Hyper-V guest VM short names to their Arc-enabled-server resource (microsoft.hybridcompute/machines). Format: vmShort:armId per entry. Used by the Hyper-V VM Inventory table to make the VM Name cell link to its Azure Local VM / AVD / Arc-onboarded VM control-plane resource when one exists. Filtered to detectedProperties.model =~ 'Virtual Machine' to bound parameter size to actual guest VMs (excludes physical hosts).",
-            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -214,6 +214,70 @@
               "additionalResourceOptions": []
             },
             "value": "overview"
+          },
+          {
+            "id": "capacity-workspace-subscriptions",
+            "version": "KqlParameterItem/1.0",
+            "name": "CapacityWorkspaceSubscriptions",
+            "type": 6,
+            "isHiddenWhenLocked": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "includeAll": true,
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "capacity-la-workspace",
+            "version": "KqlParameterItem/1.0",
+            "name": "MachinesLogAnalyticsWorkspace",
+            "label": "Log Analytics Workspace",
+            "type": 2,
+            "description": "Select one or more Log Analytics workspaces for telemetry across all Capacity & Performance views. The Overview capacity table uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector. Workspace discovery uses all accessible subscriptions independently of the top-level subscription, resource-group and instance-tag filters, including workspaces in a separate monitoring subscription. All queries every discovered workspace; select only the workspaces receiving the required telemetry to limit query scope and avoid access or resource-count errors.",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "includeAll": true,
+            "defaultValue": "value::all",
+            "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| project value = id, label = name\r\n| order by label asc",
+            "crossComponentResources": [
+              "{CapacityWorkspaceSubscriptions}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ],
+              "showDefault": false
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "dcr-setup-toggle",
+            "version": "KqlParameterItem/1.0",
+            "name": "ShowDCRSetupSection",
+            "label": "Show DCR Setup Guide",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "showDefault": false
+            },
+            "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
+            "value": "no"
           }
         ],
         "style": "pills",
@@ -229,46 +293,6 @@
         "groupType": "editable",
         "items": [
           {
-            "type": 1,
-            "content": {
-              "json": "## 🖥️ Hyper-V VMs\r\n**Actionable data:** Identify the busiest hypervisor-visible VMs and virtual disks by CPU, memory pressure, storage, and network activity. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, expand **Show Hyper-V DCR Setup Guide** below."
-            },
-            "name": "text-hyperv-header"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "---\r\n## 🔔 Hyper-V Telemetry Readiness\r\nThe charts require Azure Monitor Agent (AMA) and the 14 Hyper-V counter paths included in the all-in-one LENS Capacity DCR. Expand **Show Hyper-V DCR Setup Guide** for readiness checks and maintained deployment links."
-            },
-            "name": "text-hyperv-dcr-setup-header"
-          },
-          {
-            "type": 9,
-            "content": {
-              "version": "KqlParameterItem/1.0",
-              "parameters": [
-                {
-                  "id": "hyperv-dcr-setup-toggle",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "ShowHyperVDCRSetupSection",
-                  "label": "Show Hyper-V DCR Setup Guide",
-                  "type": 10,
-                  "isRequired": true,
-                  "typeSettings": {
-                    "additionalResourceOptions": [],
-                    "showDefault": false
-                  },
-                  "jsonData": "[{\"value\": \"yes\", \"label\": \"Yes - Show DCR Setup\"}, {\"value\": \"no\", \"label\": \"No - Hide DCR Setup\"}]",
-                  "value": "no"
-                }
-              ],
-              "style": "pills",
-              "queryType": 0,
-              "resourceType": "microsoft.operationalinsights/workspaces"
-            },
-            "name": "hyperv-dcr-setup-toggle-param"
-          },
-          {
             "type": 12,
             "content": {
               "version": "NotebookGroup/1.0",
@@ -277,19 +301,33 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "### Hyper-V telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every node; select its Log Analytics workspace above.\r\n2. Use the **LENS Capacity DCR** with all **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds.\r\n3. Create it in the workspace region and associate every physical machine, excluding guests.\r\n4. Verify the Hyper-V counters in `Perf`. Missing rows indicate a path, association, agent, or propagation issue.\r\n\r\n> ⚠️ **Do not associate another DCR collecting the same Hyper-V paths into this workspace.** AMA does not deduplicate them, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
-                    "style": "warning"
+                    "json": "## 🔔 Capacity Telemetry Readiness\r\nPerformance and forecast telemetry across Capacity requires Azure Monitor Agent (AMA), the selected Log Analytics workspace, and the LENS Capacity data sources. The first table in Capacity & Performance --> Overview uses Azure Resource Graph and is unaffected. Managed Prometheus uses the separate Azure Monitor Workspace selector and collection setup."
                   },
-                  "name": "hyperv-dcr-readiness"
+                  "name": "text-dcr-setup-header"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Capacity telemetry checklist and steps\r\n\r\n1. Install **Azure Monitor Agent (AMA)** on every machine.\r\n2. Select this workbook's Log Analytics workspace. Create the DCR in the same Azure region.\r\n3. Deploy the dedicated **LENS Capacity DCR** with all 26 host and Hyper-V counter paths plus Event 3002. These include **14 Hyper-V counter paths**, sent to `Perf` every 60 seconds. Event 3002 supplies CSV volume capacity and forecasts.\r\n4. Associate the DCR with every physical machine, excluding Arc-enabled guest VMs. Use Azure Policy and run a remediation task for existing machines.\r\n5. Verify machine Heartbeat, Perf, four Cluster CSVFS paths and Hyper-V counters; verify instance Event 3002. Missing Hyper-V rows can indicate a counter-path, association, agent, or propagation issue. Zero samples do not prove workload coverage.\r\n\r\nA dedicated rule is recommended. **Do not associate another DCR collecting the same paths into this workspace.** Multiple DCR associations are additive; AMA does not deduplicate overlapping collection, causing duplicate rows and ingestion cost.\r\n\r\n### Knowledge links and instructions\r\n\r\n#### 1. [📘 LENS DCR Setup and Deployment Guide](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md)\r\n\r\n#### 2. [📄 LENS Capacity DCR Template](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/dcr-azurelocal-capacity-perf.json)\r\n\r\n#### 3. [🔗 DCR Associations](https://learn.microsoft.com/azure/azure-monitor/data-collection/data-collection-rule-associations)\r\n\r\n#### 4. [🧭 Data Collection Rules](https://portal.azure.com/#view/Microsoft_Azure_Monitoring/DataCollectionRulesBlade)\r\n\r\n#### 5. [💾 Cluster Shared Volumes](https://learn.microsoft.com/windows-server/failover-clustering/failover-cluster-csvs)\r\n\r\n#### 6. [🖥️ Hyper-V Performance Tuning](https://learn.microsoft.com/windows-server/administration/performance-tuning/role/hyper-v-server/)",
+                    "style": "info"
+                  },
+                  "name": "dcr-setup-readiness"
                 }
               ]
             },
             "conditionalVisibility": {
-              "parameterName": "ShowHyperVDCRSetupSection",
+              "parameterName": "ShowDCRSetupSection",
               "comparison": "isEqualTo",
               "value": "yes"
             },
-            "name": "hyperv-dcr-setup-group"
+            "name": "dcr-setup-group"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "## 🖥️ Hyper-V\r\n**Actionable data:** Assess Azure Local machine CPU, memory and VM density, then identify the busiest hypervisor-visible VMs and virtual disks. The inventory and charts use Hyper-V counters in Log Analytics and include VMs that are not onboarded to Azure Arc.\r\n\r\nPerformance data does not provide VM operating system, resource group, or reliable power state. Use **Azure Local VMs** for Arc-enabled inventory details. If telemetry is missing, use **Show DCR Setup Guide** beside **Log Analytics Workspace**."
+            },
+            "name": "text-hyperv-header"
           },
           {
             "type": 9,
@@ -299,32 +337,6 @@
                 "{Subscriptions}"
               ],
               "parameters": [
-                {
-                  "id": "hyperv-la-workspace",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "HyperVLogAnalyticsWorkspace",
-                  "label": "Log Analytics Workspace",
-                  "type": 2,
-                  "description": "Select one or more Log Analytics workspaces that receive Hyper-V performance counters from your Azure Local nodes. Choose **All** to query every workspace in the selected subscriptions; if queries fail, narrow the selection to accessible workspaces that receive Hyper-V counters.",
-                  "isRequired": true,
-                  "multiSelect": true,
-                  "quote": "'",
-                  "delimiter": ",",
-                  "includeAll": true,
-                  "defaultValue": "value::all",
-                  "query": "resources\r\n| where type == \"microsoft.operationalinsights/workspaces\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project value = id, label = name\r\n| order by label asc",
-                  "crossComponentResources": [
-                    "{Subscriptions}"
-                  ],
-                  "typeSettings": {
-                    "additionalResourceOptions": [
-                      "value::all"
-                    ],
-                    "showDefault": false
-                  },
-                  "queryType": 1,
-                  "resourceType": "microsoft.resourcegraph/resources"
-                },
                 {
                   "id": "hyperv-time-range",
                   "version": "KqlParameterItem/1.0",
@@ -374,9 +386,34 @@
             "name": "hyperv-perf-params"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "hyperv-node-capacity-map",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeCapacityMap",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "query": "resources\r\n| where type =~ 'microsoft.hybridcompute/machines'\r\n| where properties.cloudMetadata.provider =~ 'AzSHCI'\r\n| where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| project hostId = tolower(id), machine = name, logicalProcessors = toint(properties.detectedProperties.logicalCoreCount), arcMemoryGiB = todouble(properties.detectedProperties.totalPhysicalMemoryInGigabytes)\r\n| join kind=leftouter (\r\n    resources\r\n    | where type =~ 'microsoft.azurestackhci/clusters'\r\n    | mv-expand node = properties.reportedProperties.nodes limit 2000\r\n    | extend reportedName = tolower(tostring(node.name))\r\n    | extend matchKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(tostring(node.name), '.')[0])))\r\n    | project matchKey, reportedName, cluster = name, clusterId = tolower(id), physicalCores = toint(node.coreCount), nodeMemoryGiB = todouble(node.memoryInGiB), tagMatch = ('{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}'))\r\n    | join kind=inner (\r\n        resources\r\n        | where type =~ 'microsoft.hybridcompute/machines'\r\n        | where properties.cloudMetadata.provider =~ 'AzSHCI'\r\n        | where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'\r\n        | extend arcName = tolower(name)\r\n        | extend matchKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(name, '.')[0])))\r\n        | project candidateHostId = tolower(id), arcName, matchKey\r\n    ) on matchKey\r\n    | where arcName == reportedName or indexof(arcName, '.') < 0 or indexof(reportedName, '.') < 0\r\n    | summarize matchingHostIds = make_set(candidateHostId), reportedMatches = count(), metadata = take_any(bag_pack('cluster', cluster, 'clusterId', clusterId, 'physicalCores', physicalCores, 'nodeMemoryGiB', nodeMemoryGiB, 'tagMatch', tagMatch)) by matchKey, reportedName\r\n    | extend matchingHostCount = array_length(matchingHostIds)\r\n    | mv-expand hostId = matchingHostIds to typeof(string)\r\n    | summarize reportedNodeCount = count(), matchingHostCount = max(matchingHostCount), reportedMatches = max(reportedMatches), metadata = take_any(metadata) by hostId\r\n    | where reportedNodeCount == 1 and matchingHostCount == 1 and reportedMatches == 1\r\n    | where tobool(metadata.tagMatch)\r\n    | project hostId, cluster = tostring(metadata.cluster), clusterId = tostring(metadata.clusterId), physicalCores = toint(metadata.physicalCores), nodeMemoryGiB = todouble(metadata.nodeMemoryGiB)\r\n) on hostId\r\n| where '{ClusterTagName}' == '' or isnotempty(clusterId)\r\n| extend memoryGiB = iff(nodeMemoryGiB > 0, nodeMemoryGiB, arcMemoryGiB)\r\n| summarize mappings = make_list(bag_pack('hostId', hostId, 'machine', machine, 'cluster', cluster, 'clusterId', clusterId, 'physicalCores', physicalCores, 'logicalProcessors', logicalProcessors, 'memoryGiB', memoryGiB))\r\n| project value = gzip_compress_to_base64_string(tostring(mappings))",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": [
+                    "{Subscriptions}"
+                  ]
+                }
+              ],
+              "style": "pills",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources"
+            },
+            "name": "hyperv-node-capacity-params"
+          },
+          {
             "type": 1,
             "content": {
-              "json": "> ℹ️ **Note — global filters do not apply on this tab:** The page-level **Resource Group** and **Cluster Tag Name / Value** filters at the top of the workbook scope ARG queries against `microsoft.azurestackhci/clusters`. This tab does **not** query ARG — every tile, chart and the inventory table read directly from the **`Perf`** table in the selected **Log Analytics Workspace(s)**, which has no concept of resource group or cluster tag. Use the **Log Analytics Workspace** picker (above) and the **Physical Host** filter (below the tiles) to scope this tab.",
+              "json": "> **Scope:** Physical Machine Capacity uses Arc machine inventory and instance metadata from the selected subscriptions, Resource Group, and Instance Tag filters. Instance Name further scopes only Physical Machine Capacity. Metrics come from the selected Log Analytics workspaces; machines without matching telemetry remain visible as unavailable. VM inventory, tiles, and trends use workspace telemetry rather than global instance filters. Physical Host scopes both tables; VM Name and Activity apply only to VM inventory.",
               "style": "info"
             },
             "name": "hyperv-global-filters-note"
@@ -401,7 +438,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -418,7 +455,7 @@
                 },
                 "showBorder": false
               },
-              "noDataMessage": "No active Hyper-V VMs found. Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+              "noDataMessage": "No active Hyper-V VMs found. Confirm AMA + a DCR with Hyper-V performance counters is configured on the machines.",
               "noDataMessageStyle": 4
             },
             "name": "hyperv-tile-active-vms",
@@ -437,7 +474,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -454,7 +491,7 @@
                 },
                 "showBorder": false
               },
-              "noDataMessage": "No Hyper-V hosts found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the nodes.",
+              "noDataMessage": "No Hyper-V hosts found in the selected workspace(s). Confirm AMA + a DCR with Hyper-V performance counters is configured on the machines.",
               "noDataMessageStyle": 4
             },
             "name": "hyperv-tile-hosts",
@@ -473,7 +510,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "tiles",
               "tileSettings": {
@@ -505,25 +542,16 @@
             "content": {
               "version": "KqlParameterItem/1.0",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "parameters": [
-                {
-                  "id": "hyperv-inv-vm-filter",
-                  "version": "KqlParameterItem/1.0",
-                  "name": "HyperVInvVMFilter",
-                  "label": "VM Name (contains)",
-                  "type": 1,
-                  "description": "Filter the inventory table to VM names containing this text. Leave blank for all VMs.",
-                  "value": ""
-                },
                 {
                   "id": "hyperv-inv-host-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "HyperVInvHostFilter",
                   "label": "Physical Host",
                   "type": 2,
-                  "description": "Filter the inventory table to one or more physical Hyper-V hosts.",
+                  "description": "Filter Physical Machine Capacity and VM inventory to physical Hyper-V hosts. All includes machines without VM CPU telemetry.",
                   "multiSelect": true,
                   "quote": "'",
                   "delimiter": ",",
@@ -538,12 +566,405 @@
                   "queryType": 0,
                   "resourceType": "microsoft.operationalinsights/workspaces",
                   "crossComponentResources": [
-                    "{HyperVLogAnalyticsWorkspace}"
+                    "{MachinesLogAnalyticsWorkspace}"
                   ],
                   "timeContext": {
                     "durationMs": 0
                   },
                   "timeContextFromParameter": "HyperVTrendsTimeRange"
+                },
+                {
+                  "id": "hyperv-node-selected-host-ids",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeSelectedHostIds",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "query": "let hosts = dynamic([{HyperVInvHostFilter}]);\r\nPerf\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| where set_has_element(hosts, Computer)\r\n| extend HostId = tolower(_ResourceId)\r\n| where isnotempty(HostId)\r\n| summarize value = tostring(make_set(HostId))",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ],
+                  "timeContext": {
+                    "durationMs": 0
+                  },
+                  "timeContextFromParameter": "HyperVTrendsTimeRange"
+                },
+                {
+                  "id": "hyperv-node-cluster-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeClusterFilter",
+                  "label": "Instance Name",
+                  "type": 2,
+                  "description": "Filter Physical Machine Capacity to selected instances. All includes machines with unresolved instance membership. Does not filter VM inventory.",
+                  "isRequired": true,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "delimiter": ",",
+                  "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nprint mapping = decodedNodeMetadata | where nodeMetadataValid\r\n| mv-expand mapping\r\n| project value = tolower(tostring(mapping.clusterId)), label = tostring(mapping.cluster)\r\n| where isnotempty(value) and isnotempty(label)\r\n| extend clusterResourceGroup = tostring(split(value, '/')[4]), clusterSubscription = tostring(split(value, '/')[2])\r\n| project value, label = strcat(label, ' (', clusterResourceGroup, ' / ', clusterSubscription, ')')\r\n| distinct value, label\r\n| order by label asc, value asc",
+                  "typeSettings": {
+                    "additionalResourceOptions": [
+                      "value::all"
+                    ],
+                    "showDefault": false
+                  },
+                  "defaultValue": "value::all",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ]
+                },
+                {
+                  "id": "hyperv-node-target-ratio",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeTargetRatio",
+                  "label": "Target vCPU:pCPU Ratio",
+                  "type": 2,
+                  "description": "Select the target vCPU to physical core ratio for Physical Machine Capacity. Used for color-coding the target percentage, not filtering machines or measuring CPU utilization.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"1\",\"label\":\"1:1\"},{\"value\":\"2\",\"label\":\"2:1\"},{\"value\":\"3\",\"label\":\"3:1\"},{\"value\":\"4\",\"label\":\"4:1\"},{\"value\":\"5\",\"label\":\"5:1\"},{\"value\":\"6\",\"label\":\"6:1\"}]",
+                  "value": "4"
+                },
+                {
+                  "id": "hyperv-node-ratio-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVNodeRatioFilter",
+                  "label": "Filter by Ratio",
+                  "type": 2,
+                  "description": "Show machines at or above the selected observed vCPU to physical core ratio. All also includes unavailable ratios.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"1\",\"label\":\"≥ 1:1\"},{\"value\":\"2\",\"label\":\"≥ 2:1\"},{\"value\":\"3\",\"label\":\"≥ 3:1\"},{\"value\":\"4\",\"label\":\"≥ 4:1\"},{\"value\":\"5\",\"label\":\"≥ 5:1\"},{\"value\":\"6\",\"label\":\"≥ 6:1\"}]",
+                  "value": "0"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "hyperv-node-ratio-params"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet snapshotEnd = now() - 2m;\r\nlet windowStart = snapshotEnd - 15m;\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet selectedHostIds = dynamic({HyperVNodeSelectedHostIds});\r\nlet clusters = dynamic([{HyperVNodeClusterFilter}]);\r\nlet minimumRatio = todouble('{HyperVNodeRatioFilter}');\r\nlet targetRatio = todouble('{HyperVNodeTargetRatio}');\r\nlet nodeMap = materialize(print mapping = decodedNodeMetadata | where nodeMetadataValid\r\n    | mv-expand mapping\r\n    | extend HostId = tolower(tostring(mapping.hostId))\r\n    | summarize MappingCount = count(), Metadata = take_any(mapping) by HostId\r\n    | project HostId, Machine = tostring(Metadata.machine), Cluster = iff(MappingCount == 1, tostring(Metadata.cluster), ''), ClusterId = iff(MappingCount == 1, tostring(Metadata.clusterId), ''), PhysicalCores = iff(MappingCount == 1, toint(Metadata.physicalCores), int(null)), TotalMemoryGiB = iff(MappingCount == 1, todouble(Metadata.memoryGiB), real(null)), MappingCount\r\n    | where (set_has_element(clusters, '*') or set_has_element(clusters, 'value::all')) or set_has_element(clusters, tolower(ClusterId)));\r\nlet raw = materialize(Perf\r\n    | where TimeGenerated between (windowStart .. snapshotEnd)\r\n    | where (ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time')\r\n        or (ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total')\r\n        or (ObjectName == 'Memory' and CounterName in ('Committed Bytes', 'Available Bytes'))\r\n    | extend HostId = tolower(_ResourceId)\r\n    | where isnotempty(HostId) and HostId in (nodeMap | project HostId)\r\n    | project HostId, TimeGenerated, Computer, ObjectName, CounterName, InstanceName, CounterValue);\r\nlet hostNames = raw | summarize arg_max(TimeGenerated, Computer) by HostId;\r\nlet snapshots = materialize(raw\r\n    | where ObjectName == 'Hyper-V Hypervisor Virtual Processor'\r\n    | extend VMName = extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName)\r\n    | summarize by HostId, TimeGenerated, InstanceName, VMName\r\n    | summarize hint.shufflekey=HostId VcpuSet = make_set_if(InstanceName, isnotempty(VMName) and VMName != '_Total'), VMNames = make_set_if(VMName, isnotempty(VMName) and VMName != '_Total'), AggregateCount = countif(InstanceName == '_Total'), UnknownCount = countif(isempty(VMName) and InstanceName != '_Total') by HostId, TimeGenerated);\r\nlet newest = snapshots | summarize hint.shufflekey=HostId arg_max(TimeGenerated, *) by HostId | project HostId, CpuSampleTime = TimeGenerated, VcpuSet, VMNames, AggregateCount, UnknownCount;\r\nlet previous = snapshots\r\n    | join kind=inner (newest | project HostId, CpuSampleTime) on HostId\r\n    | where TimeGenerated < CpuSampleTime\r\n    | summarize arg_max(TimeGenerated, *) by HostId\r\n    | project HostId, PreviousTime = TimeGenerated, PreviousSet = VcpuSet, PreviousAggregate = AggregateCount, PreviousUnknown = UnknownCount;\r\nlet collisions = newest\r\n    | join kind=inner nodeMap on HostId\r\n    | where isnotempty(ClusterId)\r\n    | mv-expand VMName = VMNames to typeof(string)\r\n    | summarize HostIds = make_set(HostId) by ClusterId, VMName\r\n    | where array_length(HostIds) > 1\r\n    | mv-expand HostId = HostIds to typeof(string)\r\n    | summarize ConflictingNames = count() by HostId;\r\nlet hostCpu = raw\r\n    | where ObjectName == 'Processor' and CounterValue between (0.0 .. 100.0)\r\n    | summarize hint.shufflekey=HostId SampleCpu = avg(CounterValue) by HostId, TimeGenerated\r\n    | summarize AvgCpu = avg(SampleCpu) by HostId;\r\nlet memory = raw\r\n    | where ObjectName == 'Memory'\r\n    | summarize hint.shufflekey=HostId CommittedBytes = avgif(CounterValue, CounterName == 'Committed Bytes'), AvailableBytes = avgif(CounterValue, CounterName == 'Available Bytes'), HaveCommitted = countif(CounterName == 'Committed Bytes'), HaveAvailable = countif(CounterName == 'Available Bytes'), InvalidMemorySamples = countif(isnull(CounterValue) or CounterValue < 0) by HostId, MemorySampleTime = bin(TimeGenerated, 1m)\r\n    | summarize arg_max(MemorySampleTime, *) by HostId\r\n    | extend MemoryDenominator = CommittedBytes + AvailableBytes;\r\nnodeMap\r\n| join kind=leftouter hostNames on HostId\r\n| where (set_has_element(hosts, '*') or set_has_element(hosts, 'value::all')) or set_has_element(selectedHostIds, HostId)\r\n| join kind=leftouter newest on HostId\r\n| join kind=leftouter previous on HostId\r\n| join kind=leftouter collisions on HostId\r\n| join kind=leftouter hostCpu on HostId\r\n| join kind=leftouter memory on HostId\r\n| extend CpuStatus = case(isnull(CpuSampleTime), 'Missing VM CPU telemetry', ConflictingNames > 0, 'VM name on multiple machines', isnull(PreviousTime) or CpuSampleTime - PreviousTime > 2m or AggregateCount != 1 or PreviousAggregate != 1 or UnknownCount > 0 or PreviousUnknown > 0 or array_length(VcpuSet) == 0 or array_length(set_difference(VcpuSet, PreviousSet)) > 0 or array_length(set_difference(PreviousSet, VcpuSet)) > 0, 'Unconfirmed CPU snapshot', 'Observed')\r\n| extend ObservedVcpus = iff(CpuStatus == 'Observed', array_length(VcpuSet), long(null)), ValidMemory = HaveCommitted > 0 and HaveAvailable > 0 and InvalidMemorySamples == 0 and CommittedBytes >= 0 and AvailableBytes >= 0 and MemoryDenominator > 0\r\n| extend Ratio = iff(PhysicalCores > 0 and MappingCount == 1, todouble(ObservedVcpus) / PhysicalCores, real(null))\r\n| where minimumRatio == 0 or Ratio >= minimumRatio\r\n| extend Status = strcat(CpuStatus, iff(MappingCount != 1, '; ambiguous instance mapping', iff(isempty(ClusterId), '; instance unresolved', '')), iff(isnull(PhysicalCores) or PhysicalCores <= 0, '; physical cores unavailable', ''), iff(isnull(AvgCpu), '; host CPU unavailable', ''), iff(coalesce(ValidMemory, false), '', '; memory unavailable'))\r\n| project Machine, Cluster, ['Physical CPU Cores'] = PhysicalCores, ['Observed VM vCPUs'] = ObservedVcpus, ['V:P CPU Ratio'] = round(Ratio, 2), ['% of V:P Target'] = iff(targetRatio > 0, round(Ratio / targetRatio * 100.0, 0), real(null)), ['Avg CPU % (15 min)'] = round(AvgCpu, 1), ['Avg CPU Free %'] = round(100.0 - AvgCpu, 1), ['Memory Used %'] = iff(ValidMemory, round(100.0 * CommittedBytes / MemoryDenominator, 1), real(null)), ['Memory Total GiB'] = round(TotalMemoryGiB, 1), ['Memory Used GiB'] = round(iff(ValidMemory, CommittedBytes / 1073741824.0, real(null)), 1), ['Memory Free / Available GiB'] = round(iff(ValidMemory, AvailableBytes / 1073741824.0, real(null)), 1), Status, ['VM CPU Sample (UTC)'] = CpuSampleTime, ['Memory Sample (UTC)'] = MemorySampleTime, machineLink = strcat('https://portal.azure.com/#@/resource', HostId), clusterLink = iff(isempty(ClusterId), '', strcat('https://portal.azure.com/#@/resource', ClusterId))\r\n| order by ['V:P CPU Ratio'] desc nulls last, Machine asc",
+              "size": 0,
+              "title": "Physical Machine Capacity - CPU, Memory and VM Density",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "timeContext": {
+                "durationMs": 3600000
+              },
+              "showAnalytics": true,
+              "showExportToExcel": true,
+              "visualization": "table",
+              "noDataMessage": "No Arc-enabled Azure Local machines match the selected scope, Instance Name, Physical Host, and minimum ratio. Select All for Instance Name to include unresolved membership and All for Filter by Ratio to include unavailable ratios, then check the scope filters. If machines are expected, refresh the workbook; if it remains empty, reload the browser page to retry Azure Resource Graph inventory and parameter loading before investigating further.",
+              "noDataMessageStyle": 4,
+              "gridSettings": {
+                "rowLimit": 5000,
+                "filter": true,
+                "labelSettings": [
+                  {
+                    "columnId": "Cluster",
+                    "label": "Instance Name"
+                  }
+                ],
+                "sortBy": [
+                  {
+                    "itemKey": "V:P CPU Ratio",
+                    "sortOrder": 2
+                  }
+                ],
+                "formatters": [
+                  {
+                    "columnMatch": "Machine",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "machineLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "Cluster",
+                    "formatter": 7,
+                    "formatOptions": {
+                      "linkTarget": "Url",
+                      "linkColumn": "clusterLink"
+                    }
+                  },
+                  {
+                    "columnMatch": "machineLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "clusterLink",
+                    "formatter": 5
+                  },
+                  {
+                    "columnMatch": "Physical CPU Cores",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Observed VM vCPUs",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "V:P CPU Ratio",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "customColumnWidthSetting": "160px",
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}:1"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "% of V:P Target",
+                    "formatter": 8,
+                    "formatOptions": {
+                      "min": 0,
+                      "max": 200,
+                      "palette": "greenRedDark"
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 0
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Avg CPU % (15 min)",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Avg CPU Free %",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Memory Used %",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 1,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "^Memory (Total|Used|Free / Available) GiB$",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "minimumFractionDigits": 0,
+                        "maximumFractionDigits": 1
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "VM CPU Sample (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  },
+                  {
+                    "columnMatch": "Memory Sample (UTC)",
+                    "formatter": 6,
+                    "dateFormat": {
+                      "showUtcTime": true,
+                      "formatName": "shortDateTimePattern"
+                    }
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "V:P CPU Ratio",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "name": "hyperv-node-capacity"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "**Physical Machine Capacity:** V:P CPU Ratio compares observed guest vCPUs with physical CPU cores, not logical processors (SMT threads). Blank values mean unavailable, not zero. Average CPU free is utilization headroom, not unallocated vCPUs.\r\n\r\n**Memory Used %:** Committed Bytes / (Committed Bytes + Available Bytes) * 100, matching the other Capacity & Performance views. Memory Used GiB represents Committed Bytes; Memory Free / Available GiB represents Available Bytes. Memory Total GiB is installed physical memory, not the percentage denominator; Used plus Available need not equal Total.\r\n\r\nThe table uses a 15-minute window ending two minutes ago, independent of Historic Time Range. Memory uses counter averages from the latest one-minute bucket and requires both counters. Changing, aggregate-only, or conflicting VM-name snapshots remain unconfirmed. **[Calculations and limitations](https://github.com/Azure/AzureLocal-LENS-Workbook#hyper-v-node-capacity)**",
+              "style": "info"
+            },
+            "name": "hyperv-node-capacity-help"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "parameters": [
+                {
+                  "id": "hyperv-inv-vm-filter",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvVMFilter",
+                  "label": "VM Name (contains)",
+                  "type": 1,
+                  "description": "Filter the inventory table to VM names containing this text. Leave blank for all VMs.",
+                  "value": ""
                 },
                 {
                   "id": "hyperv-inv-activity-filter",
@@ -559,6 +980,36 @@
                   },
                   "jsonData": "[{\"value\":\"all\",\"label\":\"All VMs in window\",\"selected\":true},{\"value\":\"recent\",\"label\":\"Currently active (last 15 min)\"},{\"value\":\"hour\",\"label\":\"Active in last hour\"},{\"value\":\"stale\",\"label\":\"Stale (>1 hour since last sample)\"}]",
                   "value": "all"
+                },
+                {
+                  "id": "hyperv-inv-min-cpu",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvMinCpu",
+                  "label": "Min Avg CPU %",
+                  "type": 2,
+                  "description": "Minimum average VM CPU percentage over Historic Time Range. All includes unavailable values; selecting a threshold excludes them. Combines with the other VM inventory filters.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"25\",\"label\":\"≥ 25%\"},{\"value\":\"50\",\"label\":\"≥ 50%\"},{\"value\":\"75\",\"label\":\"≥ 75%\"},{\"value\":\"90\",\"label\":\"≥ 90%\"}]",
+                  "value": "0"
+                },
+                {
+                  "id": "hyperv-inv-min-memory",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVInvMinMemory",
+                  "label": "Min Avg Memory %",
+                  "type": 2,
+                  "description": "Minimum average Dynamic Memory pressure over Historic Time Range (demand / assigned memory * 100, which can exceed 100%). All includes unavailable values; selecting a threshold excludes them. Combines with the other VM inventory filters.",
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"50\",\"label\":\"≥ 50%\"},{\"value\":\"80\",\"label\":\"≥ 80%\"},{\"value\":\"100\",\"label\":\"≥ 100%\"}]",
+                  "value": "0"
                 }
               ],
               "style": "pills",
@@ -571,7 +1022,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "let vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\n// Two-tier cluster lookup:\r\n//  1. nodeMap   — authoritative per-host map from microsoft.azurestackhci/clusters reportedProperties.nodes (best, includes armId).\r\n//  2. clusterMap — RG-based fallback when a host is in a cluster RG but not yet listed in reportedProperties.nodes (e.g. recently re-imaged node, or the reported list lagging behind ARG).\r\n// armId is sourced from nodeMap.distinct(clusterName) so the portal link still works for tier-2 matches as long as ANY node of that cluster appears in reportedProperties.nodes.\r\nlet nodeMap = materialize(\r\n    print mapping = dynamic({ClusterNodeMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterNameNode = tostring(parts[1]), armId = tostring(parts[2]));\r\nlet clusterMap = materialize(\r\n    print mapping = dynamic({ClusterRGMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterNameRG = tostring(parts[1]));\r\nlet armIdByCluster = nodeMap | distinct clusterNameNode, armId | project clusterName = clusterNameNode, armId;\r\nlet hostRG = materialize(Heartbeat\r\n    | where OSType == \"Windows\"\r\n    | summarize arg_max(TimeGenerated, *) by Computer\r\n    | project hbComputer = Computer, nodeRG = tolower(ResourceGroup));\r\n// Arc-machine map (Hyper-V guest VMs) so the VM Name cell can link to its Azure Local VM / AVD / Arc-onboarded control-plane resource when one exists. Match is on the lowercased VM short name (parameter is pre-filtered to detectedProperties.model =~ 'Virtual Machine' to bound size).\r\nlet arcMap = materialize(\r\n    print mapping = dynamic({ArcMachineMap})\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project vmShort = tolower(tostring(parts[0])), vmArmId = tostring(parts[1]));\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where set_has_element(hosts, '*') or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0])\r\n    | extend vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter;\r\nlet cpuStats = perfRaw\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nlet memStats = Perf\r\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\r\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\r\nperfRaw\r\n| summarize\r\n    ['First Seen (UTC)'] = min(TimeGenerated),\r\n    ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)),\r\n    arg_max(TimeGenerated, Computer)\r\n  by VMName\r\n| project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| join kind=leftouter memStats on VMName\r\n| project-away VMName1\r\n| extend nodeShort = tolower(tostring(split(['Physical Host'], '.')[0]))\r\n| join kind=leftouter nodeMap on nodeShort\r\n| join kind=leftouter hostRG on $left.['Physical Host'] == $right.hbComputer\r\n| join kind=leftouter clusterMap on nodeRG\r\n| extend ['Cluster Name'] = coalesce(clusterNameNode, clusterNameRG, '')\r\n| join kind=leftouter armIdByCluster on $left.['Cluster Name'] == $right.clusterName\r\n| extend clusterLink = iff(isempty(armId), '', strcat('https://portal.azure.com/#@/resource', armId))\r\n| extend vmShort = tolower(tostring(VMName))\r\n| join kind=leftouter arcMap on vmShort\r\n| extend vmLink = iff(isempty(vmArmId), '', strcat('https://portal.azure.com/#@/resource', vmArmId))\r\n| extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\r\n| extend Activity = case(\r\n      AgeMinutes <= 15, \"\\u2705 Active (last 15 min)\",\r\n      AgeMinutes <= 60, \"\\ud83d\\udfe2 Active (last hour)\",\r\n      AgeMinutes <= 1440, \"\\ud83d\\udfe1 Idle (>1h)\",\r\n      \"\\ud83d\\udd34 Stale (>24h)\")\r\n| where activityMode == 'all'\r\n    or (activityMode == 'recent' and AgeMinutes <= 15)\r\n    or (activityMode == 'hour' and AgeMinutes <= 60)\r\n    or (activityMode == 'stale' and AgeMinutes > 60)\r\n| project ['VM Name'] = VMName, vmLink, Activity, ['Physical Host'], ['Cluster Name'], clusterLink, ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\r\n| order by ['Avg CPU %'] desc nulls last",
+              "query": "let clusterRGMapPayload = '{ClusterRGMap}';\r\nlet decodedClusterRGMap = parse_json(iff(isempty(clusterRGMapPayload), '[]', gzip_decompress_from_base64_string(clusterRGMapPayload)));\r\nlet clusterRGMapValid = assert(gettype(decodedClusterRGMap) == 'array', 'Capacity inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet clusterNodeMapPayload = '{ClusterNodeMap}';\r\nlet decodedClusterNodeMap = parse_json(iff(isempty(clusterNodeMapPayload), '[]', gzip_decompress_from_base64_string(clusterNodeMapPayload)));\r\nlet clusterNodeMapValid = assert(gettype(decodedClusterNodeMap) == 'array', 'Capacity inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet arcMachineMapPayload = '{ArcMachineMap}';\r\nlet decodedArcMachineMap = parse_json(iff(isempty(arcMachineMapPayload), '[]', gzip_decompress_from_base64_string(arcMachineMapPayload)));\r\nlet arcMachineMapValid = assert(gettype(decodedArcMachineMap) == 'array', 'Capacity inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet vmFilter = tolower('{HyperVInvVMFilter}');\r\nlet activityMode = '{HyperVInvActivity}';\r\nlet minimumCpu = todouble('{HyperVInvMinCpu}');\r\nlet minimumMemory = todouble('{HyperVInvMinMemory}');\r\nlet hosts = dynamic([{HyperVInvHostFilter}]);\r\nlet perfRaw = Perf\r\n    | where ObjectName == \"Hyper-V Hypervisor Virtual Processor\" and CounterName == \"% Guest Run Time\"\r\n    | where (set_has_element(hosts, '*') or set_has_element(hosts, 'value::all')) or set_has_element(hosts, Computer)\r\n    | extend VMName = tostring(split(InstanceName, \":\")[0]), vCpuId = tostring(split(InstanceName, \":\")[1])\r\n    | where isnotempty(VMName) and VMName != \"_Total\"\r\n    | where vmFilter == '' or VMName contains vmFilter\r\n    | project TimeGenerated, Computer, VMName, vCpuId, CounterValue;\r\nlet inventory = materialize(perfRaw\r\n    | summarize ['First Seen (UTC)'] = min(TimeGenerated), ['vCPUs (observed)'] = dcountif(vCpuId, vCpuId != \"_Total\" and isnotempty(vCpuId)), arg_max(TimeGenerated, Computer) by VMName\r\n    | project-rename ['Last Seen (UTC)'] = TimeGenerated, ['Physical Host'] = Computer\r\n    | extend AgeMinutes = datetime_diff('minute', now(), ['Last Seen (UTC)'])\r\n    | extend Activity = case(\r\n          AgeMinutes <= 15, \"✅ Active (last 15 min)\",\r\n          AgeMinutes <= 60, \"🟢 Active (last hour)\",\r\n          AgeMinutes <= 1440, \"🟡 Idle (>1h)\",\r\n          \"🔴 Stale (>24h)\")\r\n    | where activityMode == 'all'\r\n        or (activityMode == 'recent' and AgeMinutes <= 15)\r\n        or (activityMode == 'hour' and AgeMinutes <= 60)\r\n        or (activityMode == 'stale' and AgeMinutes > 60));\r\nlet cpuStats = perfRaw\r\n    | where VMName in (inventory | project VMName)\r\n    | where vCpuId != \"_Total\" and isnotempty(vCpuId)\r\n    | summarize hint.shufflekey=VMName VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)\r\n    | summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName;\r\nlet memStats = Perf\r\n    | where ObjectName == \"Hyper-V Dynamic Memory VM\" and CounterName == \"Current Pressure\"\r\n    | where InstanceName != \"_Total\" and isnotempty(InstanceName)\r\n    | where InstanceName in (inventory | project VMName)\r\n    | summarize ['Avg Memory %'] = round(avg(CounterValue), 1) by VMName = InstanceName;\r\n// Resolve instance metadata once per reporting host, not once per VM.\r\nlet nodeMap = materialize(\r\n    print mapping = decodedClusterNodeMap | where clusterNodeMapValid\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeShort = tolower(tostring(parts[0])), clusterNameNode = tostring(parts[1]), armId = tostring(parts[2]));\r\nlet clusterMap = print mapping = decodedClusterRGMap | where clusterRGMapValid\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project nodeRG = tolower(tostring(parts[0])), clusterNameRG = tostring(parts[1]);\r\nlet armIdByCluster = nodeMap | distinct clusterNameNode, armId | project clusterName = clusterNameNode, armId;\r\nlet hostRG = Heartbeat\r\n    | where OSType == \"Windows\"\r\n    | where Computer in (inventory | project ['Physical Host'])\r\n    | project TimeGenerated, Computer, ResourceGroup\r\n    | summarize arg_max(TimeGenerated, ResourceGroup) by Computer\r\n    | project hbComputer = Computer, nodeRG = tolower(ResourceGroup);\r\nlet hostMetadata = inventory\r\n    | distinct ['Physical Host']\r\n    | extend nodeShort = tolower(tostring(split(['Physical Host'], '.')[0]))\r\n    | join kind=leftouter nodeMap on nodeShort\r\n    | join kind=leftouter hostRG on $left.['Physical Host'] == $right.hbComputer\r\n    | join kind=leftouter clusterMap on nodeRG\r\n    | extend ['Cluster Name'] = coalesce(clusterNameNode, clusterNameRG, '')\r\n    | join kind=leftouter armIdByCluster on $left.['Cluster Name'] == $right.clusterName\r\n    | project ['Physical Host'], ['Cluster Name'], clusterLink = iff(isempty(armId), '', strcat('https://portal.azure.com/#@/resource', armId));\r\nlet arcMap = print mapping = decodedArcMachineMap | where arcMachineMapValid\r\n    | mv-expand mapping to typeof(string)\r\n    | extend parts = split(mapping, ':')\r\n    | project vmShort = tolower(tostring(parts[0])), vmArmId = tostring(parts[1]);\r\ninventory\r\n| join kind=leftouter cpuStats on VMName\r\n| project-away VMName1\r\n| join kind=leftouter memStats on VMName\r\n| project-away VMName1\r\n| where minimumCpu == 0 or ['Avg CPU %'] >= minimumCpu\r\n| where minimumMemory == 0 or ['Avg Memory %'] >= minimumMemory\r\n| join kind=leftouter hostMetadata on ['Physical Host']\r\n| extend vmShort = tolower(tostring(VMName))\r\n| join kind=leftouter arcMap on vmShort\r\n| extend vmLink = iff(isempty(vmArmId), '', strcat('https://portal.azure.com/#@/resource', vmArmId))\r\n| project ['VM Name'] = VMName, vmLink, Activity, ['Physical Host'], ['Cluster Name'], clusterLink, ['vCPUs (observed)'], ['Avg CPU %'], ['Avg Memory %'], ['First Seen (UTC)'], ['Last Seen (UTC)']\r\n| order by ['Avg CPU %'] desc nulls last",
               "size": 0,
               "showAnalytics": true,
               "showExportToExcel": true,
@@ -580,12 +1031,12 @@
               },
               "timeContextFromParameter": "HyperVTrendsTimeRange",
               "title": "📋 Hyper-V VM Inventory (Perf-derived)",
-              "noDataMessage": "No Hyper-V CPU telemetry matched the current filters, workspace, and time range. Open **Capacity > Overview > Show DCR Setup Guide** to verify the required counter is collected from every Azure Local node.",
+              "noDataMessage": "No Hyper-V VM inventory rows match the current filters and selected time range. Set Activity, Physical Host, Min Avg CPU %, and Min Avg Memory % to All, clear VM Name, or widen Historic Time Range.",
               "noDataMessageStyle": 4,
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "visualization": "table",
               "gridSettings": {
@@ -608,7 +1059,10 @@
                   },
                   {
                     "columnMatch": "Physical Host",
-                    "formatter": 1
+                    "formatter": 1,
+                    "tooltipFormat": {
+                      "tooltip": "Physical Machine is the last reporting Azure Local machine in the selected time range. A migrated VM appears once, on its last reporting machine."
+                    }
                   },
                   {
                     "columnMatch": "Cluster Name",
@@ -624,16 +1078,51 @@
                   },
                   {
                     "columnMatch": "vCPUs (observed)",
-                    "formatter": 8,
+                    "formatter": 18,
                     "formatOptions": {
-                      "palette": "purple"
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": null,
+                          "text": "{0}{1}"
+                        }
+                      ]
+                    },
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 0
+                      }
                     }
                   },
                   {
                     "columnMatch": "Avg CPU %",
-                    "formatter": 8,
+                    "formatter": 18,
                     "formatOptions": {
-                      "palette": "blue"
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "90",
+                          "representation": "4",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": ">=",
+                          "thresholdValue": "80",
+                          "representation": "2",
+                          "text": "{0}{1}"
+                        },
+                        {
+                          "operator": "Default",
+                          "thresholdValue": null,
+                          "representation": "success",
+                          "text": "{0}{1}"
+                        }
+                      ]
                     },
                     "numberFormat": {
                       "unit": 1,
@@ -647,24 +1136,24 @@
                     "columnMatch": "Avg Memory %",
                     "formatter": 18,
                     "formatOptions": {
-                      "thresholdsOptions": "colors",
+                      "thresholdsOptions": "icons",
                       "thresholdsGrid": [
                         {
                           "operator": ">=",
                           "thresholdValue": "100",
-                          "representation": "redBright",
+                          "representation": "4",
                           "text": "{0}{1}"
                         },
                         {
                           "operator": ">=",
                           "thresholdValue": "80",
-                          "representation": "yellow",
+                          "representation": "2",
                           "text": "{0}{1}"
                         },
                         {
                           "operator": "Default",
                           "thresholdValue": null,
-                          "representation": "green",
+                          "representation": "success",
                           "text": "{0}{1}"
                         }
                       ]
@@ -701,6 +1190,16 @@
                     "itemKey": "Avg CPU %",
                     "sortOrder": 2
                   }
+                ],
+                "labelSettings": [
+                  {
+                    "columnId": "Physical Host",
+                    "label": "Physical Machine"
+                  },
+                  {
+                    "columnId": "Cluster Name",
+                    "label": "Instance Name"
+                  }
                 ]
               },
               "sortBy": [
@@ -715,7 +1214,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Host** is the last reporting host, so a migrated VM appears once. **Cluster Name** uses Azure Local node membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. **Avg Memory %** is available only for Dynamic Memory VMs: below 80 is green, 80-99 yellow, and 100 or more red. First/last-seen values are UTC.",
+              "json": "💡 **Inventory notes:** This table represents VMs that emitted the Hyper-V CPU counter during the selected time range; stopped, paused, saved, or otherwise silent VMs do not appear. **VM Name** links to Azure when an Arc-enabled machine exists. AKS worker VMs normally remain unlinked; use **AKS Arc Clusters** for their control plane.\r\n\r\n**Physical Machine** is the last reporting Azure Local machine in the selected time range, so a migrated VM appears once. **Instance Name** uses Azure Local machine membership, then the host resource group; a blank value means the host is standalone or outside the current scope. **vCPUs (observed)** counts reported vCPU instances. First/last-seen values are UTC.\r\n\r\n**Avg Memory %** averages Dynamic Memory `Current Pressure` (demand / assigned memory * 100) over the selected time range. Demand reflects guest committed-memory requirements, not just resident RAM. Above 100% means demand exceeds assigned memory; this is not pagefile usage or paging I/O, and differs from host **Memory Used %**. Dynamic Memory VMs only; missing data is unavailable. Icons: green tick below 80%, warning from 80% to below 100%, red cross at 100% and above.",
               "style": "info"
             },
             "name": "hyperv-inv-help"
@@ -730,7 +1229,7 @@
           {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
+              "json": "💡 **Tip:** These charts use Hyper-V counters in the selected workspace and time range. If telemetry is missing, open **Capacity & Performance > Overview > Show DCR Setup Guide**. Storage series represent individual virtual disks (VHD/VHDX), not whole VMs.",
               "style": "upsell"
             },
             "name": "hyperv-perf-tip"
@@ -745,11 +1244,11 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by CPU Usage — % Guest Run Time (0-100% per vCPU)",
-              "noDataMessage": "No Hyper-V CPU data. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every node.",
+              "noDataMessage": "No Hyper-V CPU data. Ensure '\\Hyper-V Hypervisor Virtual Processor(*)\\% Guest Run Time' is in the DCR's counterSpecifiers and DCRAs exist on every machine.",
               "visualization": "linechart",
               "chartSettings": {
                 "xAxis": "TimeGenerated",
@@ -788,7 +1287,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by Memory Pressure (≤80 healthy · 100 = at limit · >100 under pressure)",
@@ -831,7 +1330,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage Throughput — Read+Write MB/s (per VHD/VHDX)",
@@ -874,7 +1373,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage IOPS — Read+Write Operations/sec (per VHD/VHDX)",
@@ -917,7 +1416,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top Virtual Disks by Storage Latency — ms (<10 healthy · 10-20 watch · >20 stressed)",
@@ -960,7 +1459,7 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "crossComponentResources": [
-                "{HyperVLogAnalyticsWorkspace}"
+                "{MachinesLogAnalyticsWorkspace}"
               ],
               "aggregation": 3,
               "title": "📈 Top VMs by Network Throughput — Send+Receive MB/s (guest vNICs only · host vNICs/physical NICs excluded)",
@@ -1000,6 +1499,309 @@
               "style": "warning"
             },
             "name": "hyperv-limitations-note"
+          },
+          {
+            "type": 1,
+            "name": "hyperv-detail-header",
+            "content": {
+              "json": "---\r\n## 🔎 Hyper-V VM Performance — Detailed Analysis\r\nSelect a VM, time range and metric to investigate performance beyond the Top 5. These controls affect only this section. VM choices include the reporting machine; migrated observations remain separate. For disk metrics, explicitly select a VHD/VHDX reported by that machine: **disk ownership is selected by you, not inferred from the VM name**."
+            }
+          },
+          {
+            "type": 9,
+            "name": "hyperv-detail-params",
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "style": "pills",
+              "parameters": [
+                {
+                  "id": "hyperv-detail-time",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "HyperVDetailTimeRange",
+                  "label": "Time Range",
+                  "type": 4,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 259200000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ],
+                    "allowCustom": false
+                  },
+                  "value": {
+                    "durationMs": 604800000
+                  }
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "type": 2,
+                  "isRequired": false,
+                  "multiSelect": false,
+                  "quote": "",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ],
+                  "id": "hyperv-detail-vm",
+                  "name": "HyperVDetailVM",
+                  "label": "VM",
+                  "value": "",
+                  "timeContextFromParameter": "HyperVDetailTimeRange",
+                  "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet hosts = materialize(print mapping = decodedNodeMetadata | where nodeMetadataValid\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nPerf\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| extend VMName=extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName), HostId=tolower(_ResourceId)\r\n| where isnotempty(VMName) and VMName != '_Total'\r\n| summarize by HostId, VMName\r\n| lookup kind=inner hosts on HostId\r\n| project value=base64_encode_tostring(tostring(pack_array(HostId, VMName))), label=strcat(VMName, ' — ', Machine, ' (', Instance, ')')\r\n| order by label asc",
+                  "description": "Select a VM observed on an in-scope physical machine. No VM is selected by default; identical names on different machines remain distinct."
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "type": 2,
+                  "isRequired": true,
+                  "multiSelect": false,
+                  "quote": "",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ],
+                  "id": "hyperv-detail-metric",
+                  "name": "HyperVDetailMetric",
+                  "label": "Metric",
+                  "value": "cpu",
+                  "jsonData": "[{\"value\":\"cpu\",\"label\":\"VM CPU (%)\"},{\"value\":\"memory\",\"label\":\"Memory Pressure (%)\"},{\"value\":\"disk-throughput\",\"label\":\"Disk Throughput (MB/s)\"},{\"value\":\"disk-iops\",\"label\":\"Disk IOPS (operations/sec)\"},{\"value\":\"disk-latency\",\"label\":\"Disk Latency (ms)\"},{\"value\":\"network\",\"label\":\"Network Throughput (MB/s)\"}]"
+                },
+                {
+                  "version": "KqlParameterItem/1.0",
+                  "type": 2,
+                  "isRequired": false,
+                  "multiSelect": true,
+                  "quote": "'",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": [
+                    "{MachinesLogAnalyticsWorkspace}"
+                  ],
+                  "id": "hyperv-detail-disk",
+                  "name": "HyperVDetailDisk",
+                  "label": "Virtual Disks (disk metrics only)",
+                  "value": "",
+                  "timeContextFromParameter": "HyperVDetailTimeRange",
+                  "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet selection = parse_json(base64_decode_tostring('{HyperVDetailVM}'));\r\nlet selectedHost = tostring(selection[0]);\r\nlet selectedVM = tostring(selection[1]);\r\nlet hosts = materialize(print mapping = decodedNodeMetadata | where nodeMetadataValid\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nPerf\r\n| where isnotempty(selectedHost) and isnotempty(selectedVM)\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where tolower(_ResourceId) == selectedHost\r\n| extend HostId=tolower(_ResourceId)\r\n| lookup kind=inner hosts on HostId\r\n| where ObjectName == 'Hyper-V Virtual Storage Device'\r\n| where InstanceName !contains '_Total'\r\n| where tolower(InstanceName) endswith '.vhd' or tolower(InstanceName) endswith '.vhdx' or tolower(InstanceName) endswith '.avhd' or tolower(InstanceName) endswith '.avhdx'\r\n| summarize by InstanceName\r\n| project value=base64_encode_tostring(InstanceName), label=InstanceName\r\n| order by label asc",
+                  "description": "Select one or more disks reported by the selected VM reporting physical machine, not the whole instance. The list does not establish VM disk ownership; confirm ownership first. Each selected disk has its own series and summary row.",
+                  "delimiter": ","
+                }
+              ]
+            }
+          },
+          {
+            "type": 1,
+            "name": "hyperv-detail-select-prompt",
+            "conditionalVisibility": {
+              "parameterName": "HyperVDetailVM",
+              "comparison": "isEqualTo",
+              "value": ""
+            },
+            "content": {
+              "json": "Select a VM to view performance. No detail chart query runs until a VM is selected.",
+              "style": "info"
+            }
+          },
+          {
+            "type": 11,
+            "name": "hyperv-detail-metric-info",
+            "content": {
+              "version": "LinkItem/1.0",
+              "style": "toolbar",
+              "links": [
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "VM CPU",
+                  "postText": "Average % Guest Run Time across observed vCPUs, not host CPU utilization. High guest CPU usage does not by itself prove host contention.",
+                  "icon": "Info",
+                  "style": "link"
+                },
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "Memory pressure",
+                  "postText": "Dynamic Memory requested / assigned memory x 100. Inventory icons use below 80%, 80 to below 100%, and 100% or above. Static-memory VMs do not report this counter.",
+                  "icon": "Info",
+                  "style": "link"
+                },
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "Disk throughput",
+                  "postText": "Read + write byte rates divided by 1048576 for the explicitly selected disk. Confirm VM ownership yourself; the machine-scoped picker does not infer ownership.",
+                  "icon": "Info",
+                  "style": "link"
+                },
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "Disk IOPS",
+                  "postText": "Read + write operations/second for the explicitly selected disk. Both counters must be present at the same sample time. Interpret alongside latency.",
+                  "icon": "Info",
+                  "style": "link"
+                },
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "Disk latency",
+                  "postText": "Milliseconds under the existing Hyper-V latency convention. The 10/20 ms guidance is workload dependent, not an automatic health verdict.",
+                  "icon": "Info",
+                  "style": "link"
+                },
+                {
+                  "cellValue": "https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md",
+                  "linkTarget": "Url",
+                  "linkLabel": "Network",
+                  "postText": "One series per matched guest virtual NIC. Prefer total byte rate; otherwise require both sent and received rates. Binary MB/s x 8.388608 gives decimal Mb/s.",
+                  "icon": "Info",
+                  "style": "link"
+                }
+              ]
+            }
+          },
+          {
+            "type": 3,
+            "name": "hyperv-detail-chart",
+            "customWidth": "100",
+            "conditionalVisibility": {
+              "parameterName": "HyperVDetailVM",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet selection = parse_json(base64_decode_tostring('{HyperVDetailVM}'));\r\nlet selectedHost = tostring(selection[0]);\r\nlet selectedVM = tostring(selection[1]);\r\nlet metric = '{HyperVDetailMetric}';\r\nlet selectedDisks = dynamic([{HyperVDetailDisk}]);\r\nlet step = case(trendEnd-trendStart <= 1d, 5m, trendEnd-trendStart <= 7d, 30m, trendEnd-trendStart <= 14d, 1h, 2h);\r\nlet hosts = materialize(print mapping = decodedNodeMetadata | where nodeMetadataValid\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nlet raw = materialize(Perf\r\n| where isnotempty(selectedHost) and isnotempty(selectedVM)\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where tolower(_ResourceId) == selectedHost\r\n| extend HostId=tolower(_ResourceId)\r\n| lookup kind=inner hosts on HostId\r\n| where (metric == 'cpu' and ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time')\r\n    or (metric == 'memory' and ObjectName == 'Hyper-V Dynamic Memory VM' and CounterName == 'Current Pressure')\r\n    or (metric startswith 'disk' and array_length(selectedDisks) > 0 and ObjectName == 'Hyper-V Virtual Storage Device' and set_has_element(selectedDisks, base64_encode_tostring(InstanceName)))\r\n    or (metric == 'network' and ObjectName in ('Hyper-V Virtual Network Adapter', 'Hyper-V Hypervisor Virtual Processor'))\r\n| where InstanceName !contains '_Total' and isnotempty(InstanceName)\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| summarize CounterValue=avg(CounterValue) by TimeGenerated, ObjectName, CounterName, InstanceName);\r\nlet cpu = raw\r\n| where metric == 'cpu'\r\n| where extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName) == selectedVM and CounterValue <= 100\r\n| summarize SampleValue=avg(CounterValue) by TimeGenerated\r\n| project TimeGenerated, Series=selectedVM, SampleValue;\r\nlet memory = raw\r\n| where metric == 'memory' and InstanceName == selectedVM\r\n| project TimeGenerated, Series=selectedVM, SampleValue=CounterValue;\r\nlet disk = raw\r\n| where metric startswith 'disk'\r\n| where (metric == 'disk-throughput' and CounterName in ('Read Bytes/sec', 'Write Bytes/sec'))\r\n    or (metric == 'disk-iops' and CounterName in ('Read Operations/Sec', 'Write Operations/Sec'))\r\n    or (metric == 'disk-latency' and CounterName in ('Latency', 'Average Latency', 'Read Latency', 'Write Latency'))\r\n| summarize ReadValue=sumif(CounterValue, CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteValue=sumif(CounterValue, CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    ReadCount=countif(CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteCount=countif(CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    CombinedCount=countif(CounterName in ('Latency', 'Average Latency')),\r\n    LatencyReadCount=countif(CounterName == 'Read Latency'), LatencyWriteCount=countif(CounterName == 'Write Latency'),\r\n    CombinedLatency=avgif(CounterValue, CounterName in ('Latency', 'Average Latency')),\r\n    ReadLatency=avgif(CounterValue, CounterName == 'Read Latency'),\r\n    WriteLatency=avgif(CounterValue, CounterName == 'Write Latency')\r\n    by TimeGenerated, InstanceName\r\n| extend SampleValue=case(metric == 'disk-latency' and CombinedCount > 0, CombinedLatency,\r\n    metric == 'disk-latency' and LatencyReadCount > 0 and LatencyWriteCount > 0, (ReadLatency+WriteLatency)/2.0,\r\n    ReadCount > 0 and WriteCount > 0, (ReadValue+WriteValue)/iff(metric == 'disk-throughput', 1048576.0, 1.0), real(null))\r\n| project TimeGenerated, Series=InstanceName, SampleValue;\r\nlet vmNames = toscalar(raw\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| extend VMName=extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName)\r\n| where isnotempty(VMName) and VMName != '_Total'\r\n| summarize make_set(VMName));\r\nlet network = raw\r\n| where metric == 'network' and ObjectName == 'Hyper-V Virtual Network Adapter'\r\n| where CounterName in ('Bytes/sec', 'Bytes Sent/sec', 'Bytes Received/sec')\r\n| mv-apply candidate=vmNames to typeof(string) on (\r\n    where InstanceName startswith strcat(candidate, '_')\r\n    | extend NameLength=strlen(candidate)\r\n    | top 1 by NameLength desc)\r\n| where candidate == selectedVM\r\n| summarize TotalCount=countif(CounterName == 'Bytes/sec'), SentCount=countif(CounterName == 'Bytes Sent/sec'), ReceivedCount=countif(CounterName == 'Bytes Received/sec'),\r\n    Total=avgif(CounterValue, CounterName == 'Bytes/sec'),\r\n    Sent=avgif(CounterValue, CounterName == 'Bytes Sent/sec'),\r\n    Received=avgif(CounterValue, CounterName == 'Bytes Received/sec') by TimeGenerated, InstanceName\r\n| project TimeGenerated, Series=InstanceName, SampleValue=case(TotalCount > 0, Total, SentCount > 0 and ReceivedCount > 0, Sent+Received, real(null))/1048576.0;\r\nunion cpu, memory, disk, network\r\n| where isnotnull(SampleValue)\r\n| make-series Value=avg(SampleValue) default=double(null) on TimeGenerated from trendStart to trendEnd step step by Series\r\n| mv-expand TimeGenerated to typeof(datetime), Value to typeof(double)\r\n| order by TimeGenerated asc",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "timeContextFromParameter": "HyperVDetailTimeRange",
+              "size": 0,
+              "showAnalytics": true,
+              "visualization": "linechart",
+              "aggregation": 3,
+              "title": "{HyperVDetailMetric:label} — {HyperVDetailVM:label}",
+              "noDataMessage": "No matching samples for this metric in the selected time range. For disk metrics, explicitly select one or more virtual disks. Dynamic Memory pressure requires Dynamic Memory telemetry. Verify the required counter pairs in Show DCR Setup Guide.",
+              "noDataMessageStyle": 4,
+              "chartSettings": {
+                "xAxis": "TimeGenerated",
+                "yAxis": [
+                  "Value"
+                ],
+                "group": "Series",
+                "showLegend": true,
+                "ySettings": {
+                  "min": 0,
+                  "numberFormatSettings": {
+                    "unit": 0,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2
+                    }
+                  }
+                },
+                "seriesLabelSettings": []
+              }
+            }
+          },
+          {
+            "type": 3,
+            "name": "hyperv-detail-summary",
+            "customWidth": "100",
+            "conditionalVisibility": {
+              "parameterName": "HyperVDetailVM",
+              "comparison": "isNotEqualTo",
+              "value": ""
+            },
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let decodedNodeMetadata = parse_json(gzip_decompress_from_base64_string('{HyperVNodeCapacityMap}'));\r\nlet nodeMetadataValid = assert(gettype(decodedNodeMetadata) == 'array', 'Hyper-V inventory metadata could not be decoded. Refresh the workbook and retry.');\r\nlet trendStart = {HyperVDetailTimeRange:start};\r\nlet trendEnd = {HyperVDetailTimeRange:end};\r\nlet selection = parse_json(base64_decode_tostring('{HyperVDetailVM}'));\r\nlet selectedHost = tostring(selection[0]);\r\nlet selectedVM = tostring(selection[1]);\r\nlet metric = '{HyperVDetailMetric}';\r\nlet selectedDisks = dynamic([{HyperVDetailDisk}]);\r\nlet step = case(trendEnd-trendStart <= 1d, 5m, trendEnd-trendStart <= 7d, 30m, trendEnd-trendStart <= 14d, 1h, 2h);\r\nlet hosts = materialize(print mapping = decodedNodeMetadata | where nodeMetadataValid\r\n| mv-expand mapping\r\n| project HostId=tolower(tostring(mapping.hostId)), Machine=tostring(mapping.machine), Instance=tostring(mapping.cluster)\r\n| summarize Machine=take_any(Machine), Instance=take_any(Instance) by HostId);\r\nlet raw = materialize(Perf\r\n| where isnotempty(selectedHost) and isnotempty(selectedVM)\r\n| where TimeGenerated between (trendStart .. trendEnd)\r\n| where tolower(_ResourceId) == selectedHost\r\n| extend HostId=tolower(_ResourceId)\r\n| lookup kind=inner hosts on HostId\r\n| where (metric == 'cpu' and ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time')\r\n    or (metric == 'memory' and ObjectName == 'Hyper-V Dynamic Memory VM' and CounterName == 'Current Pressure')\r\n    or (metric startswith 'disk' and array_length(selectedDisks) > 0 and ObjectName == 'Hyper-V Virtual Storage Device' and set_has_element(selectedDisks, base64_encode_tostring(InstanceName)))\r\n    or (metric == 'network' and ObjectName in ('Hyper-V Virtual Network Adapter', 'Hyper-V Hypervisor Virtual Processor'))\r\n| where InstanceName !contains '_Total' and isnotempty(InstanceName)\r\n| where isnotnull(CounterValue) and CounterValue >= 0\r\n| summarize CounterValue=avg(CounterValue) by TimeGenerated, ObjectName, CounterName, InstanceName);\r\nlet cpu = raw\r\n| where metric == 'cpu'\r\n| where extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName) == selectedVM and CounterValue <= 100\r\n| summarize SampleValue=avg(CounterValue) by TimeGenerated\r\n| project TimeGenerated, Series=selectedVM, SampleValue;\r\nlet memory = raw\r\n| where metric == 'memory' and InstanceName == selectedVM\r\n| project TimeGenerated, Series=selectedVM, SampleValue=CounterValue;\r\nlet disk = raw\r\n| where metric startswith 'disk'\r\n| where (metric == 'disk-throughput' and CounterName in ('Read Bytes/sec', 'Write Bytes/sec'))\r\n    or (metric == 'disk-iops' and CounterName in ('Read Operations/Sec', 'Write Operations/Sec'))\r\n    or (metric == 'disk-latency' and CounterName in ('Latency', 'Average Latency', 'Read Latency', 'Write Latency'))\r\n| summarize ReadValue=sumif(CounterValue, CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteValue=sumif(CounterValue, CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    ReadCount=countif(CounterName in ('Read Bytes/sec', 'Read Operations/Sec')),\r\n    WriteCount=countif(CounterName in ('Write Bytes/sec', 'Write Operations/Sec')),\r\n    CombinedCount=countif(CounterName in ('Latency', 'Average Latency')),\r\n    LatencyReadCount=countif(CounterName == 'Read Latency'), LatencyWriteCount=countif(CounterName == 'Write Latency'),\r\n    CombinedLatency=avgif(CounterValue, CounterName in ('Latency', 'Average Latency')),\r\n    ReadLatency=avgif(CounterValue, CounterName == 'Read Latency'),\r\n    WriteLatency=avgif(CounterValue, CounterName == 'Write Latency')\r\n    by TimeGenerated, InstanceName\r\n| extend SampleValue=case(metric == 'disk-latency' and CombinedCount > 0, CombinedLatency,\r\n    metric == 'disk-latency' and LatencyReadCount > 0 and LatencyWriteCount > 0, (ReadLatency+WriteLatency)/2.0,\r\n    ReadCount > 0 and WriteCount > 0, (ReadValue+WriteValue)/iff(metric == 'disk-throughput', 1048576.0, 1.0), real(null))\r\n| project TimeGenerated, Series=InstanceName, SampleValue;\r\nlet vmNames = toscalar(raw\r\n| where ObjectName == 'Hyper-V Hypervisor Virtual Processor' and CounterName == '% Guest Run Time'\r\n| extend VMName=extract('^(.*):Hv VP ([0-9]+)$', 1, InstanceName)\r\n| where isnotempty(VMName) and VMName != '_Total'\r\n| summarize make_set(VMName));\r\nlet network = raw\r\n| where metric == 'network' and ObjectName == 'Hyper-V Virtual Network Adapter'\r\n| where CounterName in ('Bytes/sec', 'Bytes Sent/sec', 'Bytes Received/sec')\r\n| mv-apply candidate=vmNames to typeof(string) on (\r\n    where InstanceName startswith strcat(candidate, '_')\r\n    | extend NameLength=strlen(candidate)\r\n    | top 1 by NameLength desc)\r\n| where candidate == selectedVM\r\n| summarize TotalCount=countif(CounterName == 'Bytes/sec'), SentCount=countif(CounterName == 'Bytes Sent/sec'), ReceivedCount=countif(CounterName == 'Bytes Received/sec'),\r\n    Total=avgif(CounterValue, CounterName == 'Bytes/sec'),\r\n    Sent=avgif(CounterValue, CounterName == 'Bytes Sent/sec'),\r\n    Received=avgif(CounterValue, CounterName == 'Bytes Received/sec') by TimeGenerated, InstanceName\r\n| project TimeGenerated, Series=InstanceName, SampleValue=case(TotalCount > 0, Total, SentCount > 0 and ReceivedCount > 0, Sent+Received, real(null))/1048576.0;\r\nunion cpu, memory, disk, network\r\n| where isnotnull(SampleValue)\r\n| make-series Value=avg(SampleValue) default=double(null) on TimeGenerated from trendStart to trendEnd step step by Series\r\n| mv-expand TimeGenerated to typeof(datetime), Value to typeof(double)\r\n| order by TimeGenerated asc\r\n| summarize Average=avg(Value), Min=min(Value), Max=max(Value) by Series\r\n| where isnotnull(Average)\r\n| order by Series asc",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": [
+                "{MachinesLogAnalyticsWorkspace}"
+              ],
+              "timeContextFromParameter": "HyperVDetailTimeRange",
+              "size": 0,
+              "visualization": "table",
+              "title": "Summary of plotted values — {HyperVDetailMetric:label}",
+              "noDataMessage": "No matching samples for this metric in the selected time range. For disk metrics, explicitly select one or more virtual disks. Dynamic Memory pressure requires Dynamic Memory telemetry. Verify the required counter pairs in Show DCR Setup Guide.",
+              "noDataMessageStyle": 4,
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Average",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 2
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Min",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 2
+                      }
+                    }
+                  },
+                  {
+                    "columnMatch": "Max",
+                    "formatter": 0,
+                    "numberFormat": {
+                      "unit": 0,
+                      "options": {
+                        "style": "decimal",
+                        "maximumFractionDigits": 2
+                      }
+                    }
+                  }
+                ],
+                "rowLimit": 2000
+              }
+            }
+          },
+          {
+            "type": 1,
+            "name": "hyperv-detail-help",
+            "content": {
+              "json": "💡 **Metric interpretation:** CPU is % Guest Run Time averaged across observed vCPUs; high guest utilization does not alone establish host contention. Memory Pressure is requested ÷ assigned memory × 100 (Dynamic Memory only): below 80% is green, 80–<100% yellow, and ≥100% red in inventory. Disk throughput and IOPS combine complete read/write pairs for the explicitly selected disk; latency follows the existing Hyper-V counter convention in milliseconds. The 10/20 ms bands are workload-dependent guidance, not universal health thresholds. Network shows each matched guest virtual NIC, preferring total bytes/sec over sent+received to avoid double counting. MB/s retains the existing binary divisor (1,048,576 bytes); decimal Mb/s = MB/s × 8.388608.\r\n\r\n**Memory Pressure above 100%:** Hyper-V reports that the VM's memory demand exceeds its currently assigned memory. For example, 120% means reported demand is approximately 1.2 times assigned memory, not that physical memory utilization is 120%. Brief spikes can occur while Dynamic Memory adjusts; sustained high pressure warrants checking the VM's configured memory limits and available host memory. This counter alone does not prove guest paging or host memory exhaustion. Values remain uncapped and are distinct from the host's Memory Used % metric.\r\n\r\n**Sampling:** 5-minute averages for one day, 30-minute averages through seven days, hourly through fourteen days, and two-hour averages for thirty days. Missing samples are not zero-filled. VM identity here is the reporting machine resource ID plus the VM name; renames and migration are not silently merged. A disk selection is a machine-scoped correlation chosen by the operator, not verified VM ownership.\r\n\r\n**Summary:** Average, Min, and Max describe the non-missing plotted time-bucket averages in the selected range, separately for each series and in the selected metric units. Min and Max are not instantaneous extremes within each bucket. Missing buckets are excluded, not treated as zero.\r\n\r\n**Disk selection:** Select one or more virtual disks from the selected VM reporting physical machine, not the entire Azure Local instance. The list can include disks belonging to other VMs; confirm ownership before selecting them. Each disk has a separate chart series and summary row. Disk latency is not summed across disks."
+            }
           }
         ]
       },

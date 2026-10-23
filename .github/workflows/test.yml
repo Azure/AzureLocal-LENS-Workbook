@@ -42,6 +42,14 @@ jobs:
       - name: Run unit tests
         run: node scripts/run-tests.js
 
+      - name: Test DCR deployment safety (mocked CLI)
+        shell: pwsh
+        run: ./scripts/test-dcr-deployment.ps1
+
+      - name: Test live-query authentication (mocked CLI and HTTP)
+        shell: pwsh
+        run: ./scripts/test-live-auth.ps1
+
       - name: Write test summary
         if: always()
         run: node scripts/generate-summary.js >> $GITHUB_STEP_SUMMARY

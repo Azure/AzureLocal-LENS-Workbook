@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -153,7 +153,7 @@
             "name": "ClusterRGMap",
             "type": 1,
             "description": "Hidden: maps resource group to cluster name for HCI clusters",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -167,7 +167,7 @@
             "name": "ClusterNodeMap",
             "type": 1,
             "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeShort:clusterName:armId per entry). nodeShort is the lowercased NetBIOS hostname (FQDN suffix stripped) so it matches tolower(split(Computer, '.')[0]) emitted by Heartbeat / Perf. Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -181,7 +181,7 @@
             "name": "ArcMachineMap",
             "type": 1,
             "description": "Hidden: maps Hyper-V guest VM short names to their Arc-enabled-server resource (microsoft.hybridcompute/machines). Format: vmShort:armId per entry. Used by the Hyper-V VM Inventory table to make the VM Name cell link to its Azure Local VM / AVD / Arc-onboarded VM control-plane resource when one exists. Filtered to detectedProperties.model =~ 'Virtual Machine' to bound parameter size to actual guest VMs (excludes physical hosts).",
-            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -216,7 +216,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },
@@ -277,12 +277,12 @@
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
-        "title": "Azure Local Nodes",
+        "title": "Azure Local Machines",
         "items": [
           {
             "type": 1,
             "content": {
-              "json": "## 🖥️ Azure Local Nodes\r\n**Actionable data:** Nodes that make up each Azure Local instance and connect to Azure through the Azure Arc-enabled servers agent. Review **Disconnected Nodes** and **Failed Machine Extensions** to find Arc connectivity or extension failures."
+              "json": "## 🖥️ Azure Local Machines\r\n**Actionable data:** Machines that make up each Azure Local instance and connect to Azure through the Azure Arc-enabled servers agent. Review **Disconnected Machines** and **Failed Machine Extensions** to find Arc connectivity or extension failures."
             },
             "name": "text-nodes-header"
           },
@@ -429,7 +429,7 @@
                 "showBorder": true,
                 "size": "auto"
               },
-              "noDataMessage": "No disconnected Arc machines — all nodes in scope appear to be connected.",
+              "noDataMessage": "No disconnected Arc machines — all machines in scope appear to be connected.",
               "noDataMessageStyle": 4
             },
             "customWidth": "15",
@@ -596,9 +596,9 @@
                   "id": "machines-node-name-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "MachinesNodeNameFilter",
-                  "label": "Filter by Node Name",
+                  "label": "Filter by Machine Name",
                   "type": 1,
-                  "description": "Optional: Filter by node name using wildcards. Example: *node01* or *hci*",
+                  "description": "Optional: Filter by machine name using wildcards. Example: *node01* or *hci*",
                   "isRequired": false,
                   "value": "",
                   "timeContext": {
@@ -609,9 +609,9 @@
                   "id": "machines-cluster-name-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "MachinesClusterNameFilter",
-                  "label": "Filter by Cluster Name",
+                  "label": "Filter by Instance Name",
                   "type": 1,
-                  "description": "Optional: Filter by cluster name using wildcards. Example: *prod* or *hci*",
+                  "description": "Optional: Filter by instance name using wildcards. Example: *prod* or *hci*",
                   "isRequired": false,
                   "value": "",
                   "timeContext": {
@@ -735,15 +735,15 @@
                   },
                   {
                     "columnId": "nodeLink",
-                    "label": "Node"
+                    "label": "Machine"
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "status",
@@ -759,7 +759,7 @@
                   },
                   {
                     "columnId": "currentVersion",
-                    "label": "Cluster Version"
+                    "label": "Instance Version"
                   },
                   {
                     "columnId": "logicalCoreCount",
@@ -803,7 +803,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No Azure Local nodes match the current filters.",
+              "noDataMessage": "No Azure Local machines match the current filters.",
               "noDataMessageStyle": 4
             },
             "name": "all-nodes-table"
@@ -815,7 +815,7 @@
               "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n) on $left.nodeScope == $right.nodeScope\r\n| where tostring(properties.status) != \"Connected\"\r\n| extend nodeName = name\r\n| extend status = tostring(properties.status)\r\n| extend osSku = tostring(properties.osSku)\r\n| extend osVersion = tostring(properties.osVersion)\r\n| extend lastStatusChange = todatetime(properties.lastStatusChange)\r\n| extend nodeLink = strcat('https://portal.azure.com/#@/resource', id)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| where '{MachinesNodeNameFilter}' == '' or nodeName matches regex strcat('(?i)', replace_string(replace_string('{MachinesNodeNameFilter}', '*', '.*'), '?', '.'))\r\n| where '{MachinesClusterNameFilter}' == '' or clusterName matches regex strcat('(?i)', replace_string(replace_string('{MachinesClusterNameFilter}', '*', '.*'), '?', '.'))\r\n| project nodeName, nodeLink, clusterName, clusterLink, status, osSku, osVersion, currentVersion = coalesce(currentVersion, ''), lastStatusChange, resourceGroup, subscriptionId\r\n| order by lastStatusChange asc",
               "size": 0,
               "showAnalytics": true,
-              "title": "⚠️ Disconnected Nodes",
+              "title": "⚠️ Disconnected Machines",
               "showRefreshButton": true,
               "showExportToExcel": true,
               "queryType": 1,
@@ -884,15 +884,15 @@
                   },
                   {
                     "columnId": "nodeLink",
-                    "label": "Node"
+                    "label": "Machine"
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "status",
@@ -908,7 +908,7 @@
                   },
                   {
                     "columnId": "currentVersion",
-                    "label": "Cluster Version"
+                    "label": "Instance Version"
                   },
                   {
                     "columnId": "lastStatusChange",
@@ -925,7 +925,7 @@
                 ],
                 "noDataMessage": "✅ All machines are connected"
               },
-              "noDataMessage": "No disconnected nodes — all nodes in the selected scope appear to be connected.",
+              "noDataMessage": "No disconnected machines — all machines in the selected scope appear to be connected.",
               "noDataMessageStyle": 4
             },
             "name": "disconnected-nodes-table"
@@ -933,7 +933,7 @@
           {
             "type": 1,
             "content": {
-              "json": "---\r\n## 🧩 Machine Extensions\r\nAzure Arc agent extensions installed on Azure Local nodes."
+              "json": "---\r\n## 🧩 Machine Extensions\r\nAzure Arc agent extensions installed on Azure Local machines."
             },
             "name": "text-extensions-divider"
           },
@@ -1098,7 +1098,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No Arc extension status data found for the nodes in scope.",
+              "noDataMessage": "No Arc extension status data found for the machines in scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "60",
@@ -1154,7 +1154,7 @@
                   "label": "Count"
                 }
               },
-              "noDataMessage": "No Arc extension data found for the nodes in scope.",
+              "noDataMessage": "No Arc extension data found for the machines in scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "40",
@@ -1170,7 +1170,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    ExtensibilityResources\r\n    | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n    | project machineId = tolower(id), machineName = name, machineResourceGroup = resourceGroup, osSku = tostring(properties.osSku), osVersion = tostring(properties.osVersion), machineStatus = tostring(properties.status), nodeNameLower, nodeScope\r\n) on $left.nodeScope == $right.nodeScope\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend status = properties.provisioningState\r\n    | where status == \"Failed\"\r\n    | extend errorDetails = tostring(properties.instanceView.status.message)\r\n    | extend errorDetailsFull = errorDetails\r\n    | parse id with * '/extensions/' extensionName\r\n    | extend parentMachineId = tolower(substring(id, 0, indexof(id, '/extensions/')))\r\n    | project extensionName, status, errorDetails, errorDetailsFull, parentMachineId, subscriptionId\r\n) on $left.machineId == $right.parentMachineId\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', machineId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend errorDetailsBlade = iff(strlen(errorDetailsFull) > 0, pack('Machine Name', machineName, 'Extension', extensionName, 'Status', tostring(status), 'Cluster Name', clusterName, 'Cluster Version', currentVersion, 'Resource Group', machineResourceGroup, 'Error Message', errorDetailsFull, 'Troubleshooting', 'https://learn.microsoft.com/azure/azure-arc/servers/troubleshoot-vm-extensions'), dynamic(null))\r\n| project machineName, machineLink, extensionName, machineStatus, osSku, osVersion, clusterName, clusterLink, errorDetails, errorDetailsFull, errorDetailsBlade, currentVersion, resourceGroup = machineResourceGroup, subscriptionId\r\n| order by clusterName asc, machineName asc",
+              "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend reportedNodeName = tolower(tostring(node.name))\r\n| where isnotempty(reportedNodeName)\r\n| extend nodeScope = strcat(tolower(subscriptionId), ':', reportedNodeName)\r\n| project nodeScope, reportedNodeName, clusterName = name, clusterResourceGroup = resourceGroup, clusterId = id\r\n| join kind=leftouter (\r\n    ExtensibilityResources\r\n    | where type =~ 'microsoft.azurestackhci/clusters/updateSummaries'\r\n    | extend cId = substring(id, 0, indexof(id, '/updateSummaries/'))\r\n    | project cId, currentVersion = tostring(properties.currentVersion)\r\n) on $left.clusterId == $right.cId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where properties.cloudMetadata.provider == \"AzSHCI\"\r\n    | where kind != \"HCI\"\r\n    | extend nodeNameLower = tolower(name)\r\n    | extend nodeScope = strcat(tolower(subscriptionId), ':', nodeNameLower)\r\n    | project machineId = tolower(id), machineName = name, machineResourceGroup = resourceGroup, osSku = tostring(properties.osSku), osVersion = tostring(properties.osVersion), machineStatus = tostring(properties.status), nodeNameLower, nodeScope\r\n) on $left.nodeScope == $right.nodeScope\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.hybridcompute/machines/extensions\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | extend status = properties.provisioningState\r\n    | where status == \"Failed\"\r\n    | extend errorDetails = tostring(properties.instanceView.status.message)\r\n    | extend errorDetailsFull = errorDetails\r\n    | parse id with * '/extensions/' extensionName\r\n    | extend parentMachineId = tolower(substring(id, 0, indexof(id, '/extensions/')))\r\n    | project extensionName, status, errorDetails, errorDetailsFull, parentMachineId, subscriptionId\r\n) on $left.machineId == $right.parentMachineId\r\n| extend machineLink = strcat('https://portal.azure.com/#@/resource', machineId)\r\n| extend clusterLink = strcat('https://portal.azure.com/#@/resource', clusterId)\r\n| extend errorDetailsBlade = iff(strlen(errorDetailsFull) > 0, pack('Machine Name', machineName, 'Extension', extensionName, 'Status', tostring(status), 'Instance Name', clusterName, 'Instance Version', currentVersion, 'Resource Group', machineResourceGroup, 'Error Message', errorDetailsFull, 'Troubleshooting', 'https://learn.microsoft.com/azure/azure-arc/servers/troubleshoot-vm-extensions'), dynamic(null))\r\n| project machineName, machineLink, extensionName, machineStatus, osSku, osVersion, clusterName, clusterLink, errorDetails, errorDetailsFull, errorDetailsBlade, currentVersion, resourceGroup = machineResourceGroup, subscriptionId\r\n| order by clusterName asc, machineName asc",
               "size": 0,
               "showAnalytics": true,
               "title": "⚠️ Failed Machine Extensions",
@@ -1284,7 +1284,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
@@ -1301,7 +1301,7 @@
                   },
                   {
                     "columnId": "currentVersion",
-                    "label": "Cluster Version"
+                    "label": "Instance Version"
                   },
                   {
                     "columnId": "resourceGroup",
@@ -1316,7 +1316,7 @@
                   "type": 1,
                   "title": "Error Details",
                   "content": {
-                    "json": "### ⚠️ Node Extension Error Details\r\n\r\n| Property | Value |\r\n|:--|:--|\r\n| **Machine Name** | {machineName} |\r\n| **Extension** | {extensionName} |\r\n| **Status** | {status} |\r\n| **Cluster Name** | {clusterName} |\r\n| **Cluster Version** | {currentVersion} |\r\n| **Resource Group** | {resourceGroup} |\r\n\r\n---\r\n\r\n#### Full Error Message\r\n\r\n```\r\n{errorDetailsFull}\r\n```\r\n\r\n---\r\n\r\n💡 **Tip:** Click on the Machine Name link to view the extension in the Azure Portal for additional details and remediation options."
+                    "json": "### ⚠️ Machine Extension Error Details\r\n\r\n| Property | Value |\r\n|:--|:--|\r\n| **Machine Name** | {machineName} |\r\n| **Extension** | {extensionName} |\r\n| **Status** | {status} |\r\n| **Instance Name** | {clusterName} |\r\n| **Instance Version** | {currentVersion} |\r\n| **Resource Group** | {resourceGroup} |\r\n\r\n---\r\n\r\n#### Full Error Message\r\n\r\n```\r\n{errorDetailsFull}\r\n```\r\n\r\n---\r\n\r\n💡 **Tip:** Click on the Machine Name link to view the extension in the Azure Portal for additional details and remediation options."
                   },
                   "conditionalVisibility": {
                     "parameterName": "errorDetails",
@@ -1341,7 +1341,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🌐 Network Adapter Details\r\n\r\nNetwork adapter (NIC) information from Azure Local edge devices, including driver versions and network configuration.\r\n\r\n> **Note:** Cluster Tag filtering is not supported for this section due to Azure Resource Graph query limitations."
+              "json": "## 🌐 Network Adapter Details\r\n\r\nNetwork adapter (NIC) information from Azure Local edge devices, including driver versions and network configuration.\r\n\r\n> **Note:** Instance Tag filtering is not supported for this section due to Azure Resource Graph query limitations."
             },
             "name": "text-nic-status-header"
           },
@@ -1448,7 +1448,7 @@
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No NIC status data found for the nodes in scope.",
+              "noDataMessage": "No NIC status data found for the machines in scope.",
               "noDataMessageStyle": 4
             },
             "customWidth": "50",
@@ -1677,11 +1677,11 @@
                   },
                   {
                     "columnId": "ClusterName",
-                    "label": "Cluster Name"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "ClusterLink",
-                    "label": "Cluster Link"
+                    "label": "Instance Link"
                   },
                   {
                     "columnId": "NicName",
@@ -1729,7 +1729,7 @@
                   }
                 ]
               },
-              "noDataMessage": "No NIC inventory data found for the nodes in scope.",
+              "noDataMessage": "No NIC inventory data found for the machines in scope.",
               "noDataMessageStyle": 4
             },
             "name": "nic-status-table"

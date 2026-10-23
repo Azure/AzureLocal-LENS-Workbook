@@ -77,7 +77,7 @@
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagName",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag name. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag name. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| project tags\r\n| mv-expand bagexpansion=array tags\r\n| extend tagName = tostring(tags[0])\r\n| where isnotempty(tagName)\r\n| distinct tagName\r\n| order by tagName asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -89,14 +89,14 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Name"
+            "label": "Instance Tag Name"
           },
           {
             "id": "tag-value-001",
             "version": "KqlParameterItem/1.0",
             "name": "ClusterTagValue",
             "type": 2,
-            "description": "Optional: Filter Azure Local clusters by tag value. Select from dropdown or type custom value.",
+            "description": "Optional: Filter Azure Local instances by tag value. Select from dropdown or type custom value.",
             "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ClusterTagName}' != ''\r\n| extend tagValue = tostring(tags['{ClusterTagName}'])\r\n| where isnotempty(tagValue)\r\n| distinct tagValue\r\n| order by tagValue asc",
             "crossComponentResources": [
               "{Subscriptions}"
@@ -108,7 +108,7 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null,
-            "label": "Cluster Tag Value"
+            "label": "Instance Tag Value"
           },
           {
             "id": "time-range-001",
@@ -153,7 +153,7 @@
             "name": "ClusterRGMap",
             "type": 1,
             "description": "Hidden: maps resource group to cluster name for HCI clusters",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| project value = strcat(tolower(resourceGroup), ':', name)\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -167,7 +167,7 @@
             "name": "ClusterNodeMap",
             "type": 1,
             "description": "Hidden: authoritative node-to-cluster map from microsoft.azurestackhci/clusters reportedProperties.nodes (format: nodeShort:clusterName:armId per entry). nodeShort is the lowercased NetBIOS hostname (FQDN suffix stripped) so it matches tolower(split(Computer, '.')[0]) emitted by Heartbeat / Perf. Used to constrain cluster-level aggregations to true cluster member nodes (excludes guest VMs that share the cluster resource group).",
-            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type == \"microsoft.azurestackhci/clusters\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend nodes = todynamic(properties.reportedProperties.nodes)\r\n| mv-expand node = nodes\r\n| extend nodeShort = tolower(tostring(split(tostring(node.name), '.')[0]))\r\n| where isnotempty(nodeShort)\r\n| project value = strcat(nodeShort, ':', name, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -181,7 +181,7 @@
             "name": "ArcMachineMap",
             "type": 1,
             "description": "Hidden: maps Hyper-V guest VM short names to their Arc-enabled-server resource (microsoft.hybridcompute/machines). Format: vmShort:armId per entry. Used by the Hyper-V VM Inventory table to make the VM Name cell link to its Azure Local VM / AVD / Arc-onboarded VM control-plane resource when one exists. Filtered to detectedProperties.model =~ 'Virtual Machine' to bound parameter size to actual guest VMs (excludes physical hosts).",
-            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = tostring(result)",
+            "query": "resources\r\n| where type =~ \"microsoft.hybridcompute/machines\"\r\n| where tostring(properties.detectedProperties.model) =~ 'Virtual Machine'\r\n| extend vmShort = tolower(tostring(split(name, '.')[0]))\r\n| where isnotempty(vmShort)\r\n| project value = strcat(vmShort, ':', tostring(id))\r\n| summarize result = make_list(value)\r\n| project value = gzip_compress_to_base64_string(tostring(result))",
             "crossComponentResources": [
               "{Subscriptions}"
             ],
@@ -216,7 +216,7 @@
             "id": "capacity-tab-001",
             "cellValue": "selectedTab",
             "linkTarget": "parameter",
-            "linkLabel": "🏗️ Capacity",
+            "linkLabel": "🏗️ Capacity & Performance",
             "subTarget": "7",
             "style": "link"
           },
@@ -282,7 +282,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 💻 Azure Local Virtual Machines\r\n**Reporting data:** Virtual machines running on Azure Local (Azure Stack HCI) clusters managed through Azure Arc."
+              "json": "## 💻 Azure Local Virtual Machines\r\n**Reporting data:** Virtual machines running on Azure Local (Azure Stack HCI) instances managed through Azure Arc."
             },
             "name": "text-vm-header"
           },
@@ -585,9 +585,9 @@
                   "id": "vm-cluster-name-filter",
                   "version": "KqlParameterItem/1.0",
                   "name": "VMClusterNameFilter",
-                  "label": "Cluster Name",
+                  "label": "Instance Name",
                   "type": 2,
-                  "description": "Filter by Azure Local cluster name",
+                  "description": "Filter by Azure Local instance name",
                   "isRequired": true,
                   "multiSelect": true,
                   "quote": "'",
@@ -776,7 +776,7 @@
                   },
                   {
                     "columnId": "clusterName",
-                    "label": "Cluster"
+                    "label": "Instance Name"
                   },
                   {
                     "columnId": "clusterLink"
@@ -836,7 +836,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🥧 Top Clusters by VM Count"
+              "json": "## 🥧 Top Instances by VM Count"
             },
             "name": "text-vm-top-clusters"
           },
@@ -844,10 +844,10 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| extend vmName = name, vmStatus = tostring(properties.status), osSku = tostring(properties.osSku)\r\n| project vmResourceId, vmName, vmStatus, osSku\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend hostResourceId = tolower(tostring(properties.hostResourceId))\r\n    | extend resourceGroupKey = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), resourceGroupKey\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, resourceGroupKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n) on resourceGroupKey\r\n| where '{VMNameFilter}' == '' or vmName matches regex strcat('(?i)', replace_string(replace_string('{VMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterNameFilter}) or resourceGroupKey in ({VMClusterNameFilter})\r\n| where '*' in ({VMStatusFilter}) or vmStatus in ({VMStatusFilter})\r\n| where '*' in ({VMOsSkuFilter}) or osSku in ({VMOsSkuFilter})\r\n// v1.0.4: dedup Arc VMs after RG-fanout join (multi-cluster-in-RG hardening); attribute each VM to one candidate cluster for top-N\r\n| summarize clusterNames = make_set(clusterName), resourceGroupKey = take_any(resourceGroupKey) by vmResourceId\r\n| extend ClusterName = coalesce(strcat_array(clusterNames, ', '), 'Unknown')\r\n| summarize VMCount = count() by resourceGroupKey, ClusterName\r\n| order by VMCount desc\r\n| extend rn = row_number()\r\n| extend bucket = iff(rn <= 5, ClusterName, 'Other')\r\n| summarize VMCount = sum(VMCount), ClusterCount = count() by bucket\r\n| extend ClusterName = iff(bucket == 'Other', strcat('Other (', tostring(ClusterCount), ' clusters)'), bucket)\r\n| order by VMCount desc\r\n| project ClusterName, VMCount",
+              "query": "resources\r\n| where type == \"microsoft.hybridcompute/machines\"\r\n| where kind == \"HCI\"\r\n| extend vmResourceId = tolower(id)\r\n| extend vmName = name, vmStatus = tostring(properties.status), osSku = tostring(properties.osSku)\r\n| project vmResourceId, vmName, vmStatus, osSku\r\n| join kind=inner (\r\n    extensibilityresources\r\n    | where type == \"microsoft.azurestackhci/virtualmachineinstances\"\r\n    | extend parentId = tolower(substring(id, 0, indexof(tolower(id), \"/providers/microsoft.azurestackhci\")))\r\n    | extend customLocId = tolower(trim_end(\"/\", tostring(extendedLocation.name)))\r\n    | project parentId, customLocId\r\n) on $left.vmResourceId == $right.parentId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.extendedlocation/customlocations\"\r\n    | extend hostResourceId = tolower(tostring(properties.hostResourceId))\r\n    | extend resourceGroupKey = strcat(tostring(split(hostResourceId, '/')[2]), ':', tostring(split(hostResourceId, '/')[4]))\r\n    | project customLocId = tolower(trim_end(\"/\", id)), resourceGroupKey\r\n) on customLocId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterName = name, resourceGroupKey = strcat(tolower(subscriptionId), ':', tolower(resourceGroup))\r\n) on resourceGroupKey\r\n| where '{VMNameFilter}' == '' or vmName matches regex strcat('(?i)', replace_string(replace_string('{VMNameFilter}', '*', '.*'), '?', '.'))\r\n| where '*' in ({VMClusterNameFilter}) or resourceGroupKey in ({VMClusterNameFilter})\r\n| where '*' in ({VMStatusFilter}) or vmStatus in ({VMStatusFilter})\r\n| where '*' in ({VMOsSkuFilter}) or osSku in ({VMOsSkuFilter})\r\n// v1.0.4: dedup Arc VMs after RG-fanout join (multi-cluster-in-RG hardening); attribute each VM to one candidate cluster for top-N\r\n| summarize clusterNames = make_set(clusterName), resourceGroupKey = take_any(resourceGroupKey) by vmResourceId\r\n| extend ClusterName = coalesce(strcat_array(clusterNames, ', '), 'Unknown')\r\n| summarize VMCount = count() by resourceGroupKey, ClusterName\r\n| order by VMCount desc\r\n| extend rn = row_number()\r\n| extend bucket = iff(rn <= 5, ClusterName, 'Other')\r\n| summarize VMCount = sum(VMCount), ClusterCount = count() by bucket\r\n| extend ClusterName = iff(bucket == 'Other', strcat('Other (', tostring(ClusterCount), ' instances)'), bucket)\r\n| order by VMCount desc\r\n| project ClusterName, VMCount",
               "size": 0,
               "showAnalytics": true,
-              "title": "Top 5 Clusters by VM Count (remainder grouped as Other)",
+              "title": "Top 5 Instances by VM Count (remainder grouped as Other)",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
@@ -859,7 +859,7 @@
                 "legendPosition": "bottom",
                 "seriesLabelSettings": []
               },
-              "noDataMessage": "No VM-by-cluster data — no Arc-enabled VMs match the filters.",
+              "noDataMessage": "No VM-by-instance data — no Arc-enabled VMs match the filters.",
               "noDataMessageStyle": 4
             },
             "name": "vm-top-clusters-pie"

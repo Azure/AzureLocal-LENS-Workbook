@@ -56,11 +56,15 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 | `scripts/lint-accessibility.js` | Flags inline-style HTML in markdown (`<div style=...>`, `<span style=...>`, `<font color=...>`). Use the workbook text `style` field (`info`/`warning`/`success`/`error`/`upsell`) instead. |
 | `scripts/add-no-data-messages.js` | Adds `noDataMessage` + `noDataMessageStyle: 4` to visible KqlItems missing one. Operates on the per-tab source files. |
 | `scripts/analyze-workbook.js` | Reports KqlItem visualizations missing `noDataMessage` (informational; reads the monolithic build artifact). |
-| `scripts/run-tests.js` | Unit tests (390 tests across 36 suites) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, DCR deployment guidance, content style, and accessibility. |
-| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for all 11 Capacity storage usage, storage performance, and network throughput charts. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
+| `scripts/run-tests.js` | Unit tests (501 tests) validating workbook structure, KQL, version consistency, split-architecture invariants, ARG runtime constraints, machine capacity, storage sources, query scaling shapes, VM detail controls, DCR deployment guidance, instance naming, content style, and accessibility. |
+| `scripts/test-dcr-deployment.ps1` | Offline PowerShell tests for DCR discovery, deployment, preview, and rollback safety. Shadows Azure CLI with a mock; never contacts Azure. |
+| `scripts/test-live-auth.ps1` | Offline PowerShell checks that each live query acquires its current CLI-managed token, retains the confirmed target/body and propagates authentication, partial-query and HTTP errors. Mocks CLI and HTTP; never contacts Azure. |
+| `scripts/run-live-tests.ps1` | Opt-in Azure integration tests for 51 exact Capacity performance/coverage/forecast/VM queries, 102 unset/empty-map cases, the live machine picker, 59 synthetic storage cases, 33 VM-detail checks and 11 VM-inventory checks (257 total), or 65 machine-capacity/discovery checks with `-NodeCapacityOnly`. Storage checks include four 2,048-host fixtures (1,474,560 generated counter rows each) for exact CSV trend and coverage pipelines. VM-detail checks execute the pickers and all six metrics plus identity, counter pairing, null gaps, units, deduplication, and time-resolution fixtures. Inventory checks execute the exact optimized query against fixtures for CPU weighting, memory scope, migration, missing values, filters and links. Requires a user-confirmed subscription and a live Log Analytics workspace; never runs in CI. |
 | `scripts/live-test-queries.json` | Manifest of exact split-workbook queries exercised by the opt-in live integration suite. |
 | `README.md` | Documentation, import instructions, and version changelog |
 | `.github/workflows/test.yml` | CI/CD pipeline that runs tests on push/PR to `main` |
+| `.github/skills/release-validation/SKILL.md` | On-demand release workflow for coding agents; references this guide rather than private session memory. |
+| `.github/pull_request_template.md` | Validation evidence and the mandatory friendly-customer preview gate for new LENS versions. |
 
 ### Editing workflow
 
@@ -81,6 +85,14 @@ If you have been asked to submit a PR, or have discussed the change in an issue:
 
 The monolithic `AzureLocal-LENS-Workbook.json` MUST be committed alongside any source edit — CI runs `node scripts/build-monolithic.js --check` and fails the PR if it is out of sync.
 
+Capacity owns its shared `MachinesLogAnalyticsWorkspace` selector in `workbooks/Capacity/Capacity.workbook`, immediately after the sub-navigation. Its hidden `CapacityWorkspaceSubscriptions` subscription picker defaults to All and provides independent workspace discovery across accessible subscriptions; do not bind workspace discovery to the inventory `Subscriptions`, `ResourceGroupFilter`, or instance-tag filters. Each Capacity section keeps identical fallbacks for both parameters in `items[1]` (`cap-shared-params`), outside its section content group. The monolithic build drops that standalone block; gallery template groups merge matching parameter names into the parent selection. Keep all five definitions identical and do not add another workspace selector inside a section group. The Managed Prometheus `AzureMonitorWorkspace` parameter remains separate.
+
+The same Capacity parameter row owns `ShowDCRSetupSection`, defaulting to `no`, with one shared `dcr-setup-group` below the scope note. Each standalone section keeps an identical toggle in `items[1]` and an identical guide as the first item in `items[2].content.items`. Both workbook builders omit those section-guide copies when embedding sections; gallery parameter merging reuses the parent toggle. Keep the five guide and toggle definitions synchronized rather than adding section-local controls.
+
+Hyper-V's hidden `HyperVNodeCapacityMap` carries gzip-compressed, base64-encoded JSON, not a raw JSON array. Its ARG producer uses `gzip_compress_to_base64_string`; all six consumers decode and validate the array before expanding it. Preserve the canonical metadata fields and inventory completeness. Keep the live harness's PowerShell fixture codec aligned with this transport, and retain the offline 5,000-machine request-size regression (256 KiB budget per consumer including JSON or URL encoding). That budget is a regression safeguard, not a claim about an Azure service limit or portal-rendering performance.
+
+The canonical shared `ClusterRGMap`, `ClusterNodeMap` and `ArcMachineMap` producers also return gzip-compressed, base64-encoded JSON arrays. Edit their definitions in `shared/parameters.json` and synchronize every sub-template. All 53 Capacity consumers, including the storage-detail machine picker and both VM inventories, bind each required encoded parameter once, decode it once, and validate its array type before expansion. Preserve empty/unset scope behavior, duplicate/ambiguous entries, existing producer filters, identities and metric semantics; reject malformed nonempty payloads explicitly rather than treating them as empty inventory. Reuse the live harness's gzip fixture helpers and keep real-data, synthetic and unset/empty substitutions aligned. Retain the combined 5,000-host/10,000-VM regression and the 256 KiB JSON/URL-encoded request budget for every consumer. A decoded map is query-local, not a shared server-side cache across Workbook charts.
+
 ### Working with the Workbook JSON
 
 The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When making changes:
@@ -93,7 +105,7 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
 
 ### Customer-facing content
 
-- Use **Azure Local node** for a managed cluster host. Use **physical machine** only when the text must distinguish host hardware from guest VMs, such as DCR association guidance.
+- Use **Azure Local machine** for a managed host and **instance** for an Azure Local deployment. Use **Single instance** / **Multi-instance** for Capacity & Performance navigation labels. Keep AKS cluster/node terminology and CSV cluster wording (including **Cluster CSVFS** and **Cluster Shared Volumes**). Internal field names, parameter IDs, resource types, and technical identifiers may retain cluster/node terminology. Use **physical machine** when distinguishing host hardware from guest VMs, such as DCR association guidance.
 - Expand **Azure Resource Bridge (ARB)** at first use on every independently reachable tab.
 - Use **Connected / Disconnected** for Azure Arc connectivity. Reserve **Offline** for a distinct resource state reported by the service.
 - Keep the decision and next action inline. Put long procedures, complete counter lists, formulas, and edge cases in progressive help or maintained repository documentation.
@@ -103,6 +115,37 @@ The split files follow the Azure Monitor Workbook `Notebook/1.0` format. When ma
    - **Missing telemetry**: name the required table, counter, event, permission, or setup action.
    - **Insufficient history**: name the required time range or sample history and suggest widening it.
 - Do not combine possible empty-state causes with "or" when the query cannot distinguish them. Avoid generic messages such as "No data available" or "No results found".
+
+### Column and metric consistency
+
+- Use **Instance Name**, **Instance Count**, and **Affected Instances** for Azure Local display headings. Keep AKS cluster terminology, including the **AKS Arc Clusters** tab. Query fields and resource identities may retain cluster terminology; prefer display-label settings over renaming fields when filters, formatters, exports, or links depend on them. Preserve **Memory Used %**.
+- Keep numeric results numeric for sorting, filtering, and export. Apply `%` and `:1` presentation through column formatters; preserve each metric's documented units and scale, including percentage values on a 0-100 scale and binary GiB conversions.
+- For host performance memory, collect **Committed Bytes** and **Available Bytes** and preserve the accepted formula and **Memory Used %** heading documented in [Hyper-V Machine Capacity](README.md#hyper-v-node-capacity). Its "Accepted memory calculation and rationale" subsection records the issue/PR decisions. Consult that history before proposing changes; reopening the decision requires reproducible evidence and explicit maintainer agreement. Do not replace it with physical-total-minus-available or percent-of-commit-limit calculations. This convention does not redefine ARM workload-allocation or guest-specific memory metrics.
+- Keep installed physical memory distinct from committed and available memory. In the machine table, Memory Used GiB represents committed memory; Memory Total GiB is installed physical memory, not the percentage denominator. Explain these distinctions in help or supported tooltips without changing the established display headings.
+- Missing or invalid telemetry is unavailable, not zero. Preserve the required counter-presence checks, nonnegative-value checks, and positive-denominator guards. A valid zero reading must remain distinguishable from missing data.
+- Preserve each view's intentional sampling window, aggregation scope, thresholds, and filter behavior. Matching formulas do not imply identical values across a latest-machine snapshot and a historical instance chart. Do not copy one view's thresholds or aggregation into another merely for visual consistency.
+- Preserve the physical-core denominator for V:P CPU Ratio; logical processors and CPU utilization are different measures. Keep target comparison separate from observed ratios and row filtering.
+- Before changing an established metric's meaning, explain the proposed change and obtain explicit maintainer agreement. Check the nearest implementation, existing tests, and relevant documented rationale. Update the calculation documentation and focused regression coverage with the change.
+
+### Repository knowledge
+
+Use these existing sources instead of relying on private agent memory or duplicating long explanations:
+
+- [README](README.md): feature behavior, scope filters, resource-join information, operational knowledge links, and release notes. [Machine capacity calculations](README.md#hyper-v-node-capacity) define the machine table's metrics and limitations; [previous-version notes](README.md#appendix-previous-versions-change-log) preserve the rationale for earlier fixes. Historical notes provide context, not an override of current source and tests.
+- [Historical v1.1.0 content audit](CONTENT-AUDIT.md): rationale for earlier content, terminology, navigation, and empty-state decisions, plus unverified recommendations from that snapshot. It is not current guidance or release-validation evidence. Run `node scripts/audit-content.js` for fresh measurements; keep active conventions in this guide.
+- [DCR setup and deployment guide](example-dcr-template/README.md): maintained counter lists, prerequisites, collection and association guidance, overlap considerations, validation, and troubleshooting.
+- [Regression tests](scripts/run-tests.js): executable structural and behavioral invariants. Extend nearby assertions when changing an existing feature.
+- [Live-test harness](scripts/run-live-tests.ps1) and [query manifest](scripts/live-test-queries.json): opt-in query execution and synthetic scenarios; follow the [environment-confirmation procedure](#optional-live-azure-integration-tests).
+- [Security policy](SECURITY.md): responsible reporting of security concerns.
+
+The [Copilot instructions](.github/copilot-instructions.md) point agents to these shared conventions. Keep the detailed rules here and metric definitions in their maintained documentation; agent memory is supplementary, not authoritative.
+
+### Public-repository privacy
+
+- Do not copy personally identifiable information, private correspondence, agent memory, session transcripts, or raw customer telemetry into documentation, instructions, fixtures, comments, issues, or pull requests.
+- Do not publish credentials, access tokens, tenant or subscription IDs, workspace IDs, customer resource IDs, hostnames, IP addresses, or local user-profile paths. Use generic placeholders or synthetic fixture values instead.
+- Keep real environment identifiers as runtime inputs to explicitly approved live checks. Report only sanitized query names, counts, and outcomes; inspect generated output before staging it.
+- Link to maintained public knowledge rather than copying private troubleshooting records. Review additions and linked material for sensitive information before publishing. Report security-sensitive findings through the security policy, not a public issue.
 
 ### KQL Query Best Practices
 
@@ -122,6 +165,97 @@ When preparing a release:
 4. Move the previous version's changes to the `## Appendix: Previous Versions Change Log` section
 5. Run `node scripts/build-monolithic.js` to regenerate `AzureLocal-LENS-Workbook.json`
 
+### Release validation and approval
+
+Use this workflow for every new LENS version before merging the release candidate
+from the development branch into `main`. The
+[release-validation skill](.github/skills/release-validation/SKILL.md) helps agents
+follow it, but this guide remains authoritative. Skills and instructions guide
+behavior; existing CI checks enforce automated invariants, and maintainers must
+verify the manual evidence. Private agent memory and historical test results are
+not substitutes for current release evidence.
+
+1. **Define the candidate and test scope.** Identify the version, development
+   branch and commit, changed features, affected query/parameter consumers and
+   acceptance expectations. Preserve established metric semantics, time windows,
+   filtering and missing-data behavior. Discuss intentional changes before
+   implementing them.
+2. **Build from authoritative sources.** Follow the [editing workflow](#editing-workflow)
+   and [version-bumping procedure](#version-bumping). Synchronize shared parameters
+   when changed, regenerate the root JSON and review the resulting scope.
+3. **Pass the automated checks.** Run the commands used by
+   [CI](.github/workflows/test.yml): shared-parameter validation, gallery build and
+   validation, monolithic consistency, accessibility lint, Node.js regressions,
+   mocked DCR deployment safety and mocked live-query authentication. Record
+   actual results, not expected counts. Review changed text, fixtures, logs and
+   images for [public-repository privacy](#public-repository-privacy) before publishing.
+4. **Validate applicable live behavior.** Follow the
+   [live-test confirmation procedure](#optional-live-azure-integration-tests).
+   For Capacity/Hyper-V query, discovery or map-transport changes, run both full
+   live cohorts; targeted checks help debugging but do not replace these release
+   cohorts. Record the tested commit, scope and results. Keep query acceptance,
+   telemetry coverage, DCR lifecycle testing and portal rendering as separate
+   claims. Check counter applicability during known workload activity; absent
+   data is not zero, and shared-workspace overlap does not prove unique DCR attribution.
+5. **Review DCR changes safely, when applicable.** For deployment-script or
+   template changes, agree an end-to-end lifecycle plan with the environment
+   owner: deployment, replacement guard, intentional update/restoration,
+   idempotency, rollback and verified cleanup. Confirm the exact host scope,
+   workspace, existing collection overlap, agent readiness and inherited locks
+   before writes. Read-only test approval does not authorize Azure changes,
+   agent installation or lock removal. Obtain separate explicit authorization
+   for writes and any lock changes; preserve unrelated configuration and verify
+   restoration/cleanup. If a required check cannot run safely, report it as
+   blocked rather than substituting a mocked result.
+6. **Complete the mandatory friendly-customer preview below.**
+7. **Obtain maintainer release approval.** Review current CI results, the
+   commit-specific evidence, manual customer confirmation and unresolved issues.
+   Do not describe cancelled, failed, skipped or historical checks as current
+   passes. Do not merge or publish with missing mandatory validation or unresolved
+   release-blocking regressions. Commit, push, merge, tag and publish only when
+   explicitly authorized. The [release workflow](.github/workflows/release.yml)
+   can tag and publish a new version after it reaches `main`, so approval must
+   happen **before** that merge, not afterwards.
+
+#### Mandatory friendly-customer preview
+
+**Every new LENS version must be manually tested by at least one consenting
+friendly customer using that release candidate's generated
+`AzureLocal-LENS-Workbook.json` from the development branch, before release to
+`main`.** Maintainers should use existing trusted customer relationships to
+arrange this preview and agree an appropriate test environment and scope.
+Agents must not contact customers or make changes in their environments without
+explicit authorization.
+
+- Provide the development-branch JSON, its version, source commit and SHA-256
+  hash so the tested artifact is identifiable even if the branch moves. Do not
+  substitute the current `main` JSON, an older release or an untracked local edit.
+- Ask the customer to import/open the JSON in their approved environment and
+  manually exercise representative tabs, changed features, scope filters,
+  selectors and operational links. Check expected data and unavailable states,
+  query errors and observed loading/rendering times at their real environment
+  scale. Include affected Capacity/Hyper-V views when those features change.
+- A maintainer must confirm the customer-reported result. Record the version,
+  development commit, JSON hash, test date, sanitized test scope, outcomes,
+  limitations and maintainer confirmation in the release PR. Keep customer
+  identities, private correspondence, environment identifiers and raw telemetry
+  out of repository content and public discussions.
+- Fix failures and repeat the affected preview checks on the updated development
+  JSON. Workbook, parameter, query or setup changes after sign-off require a new
+  scope review and renewed customer confirmation for the changed candidate.
+  For documentation/test-only changes with identical JSON, record that the
+  artifact hash is unchanged and have a maintainer confirm whether the existing
+  preview evidence still applies; do not invent a new customer test.
+- **Pending, unavailable or unsuccessful customer validation blocks release.**
+  CI, lab integration tests, request-size fixtures, agent assertions and customer
+  validation of a previous version do not satisfy this manual gate. If no
+  friendly customer can participate, keep the candidate on the development
+  branch until the mandatory preview can be completed.
+
+Use the [PR template](.github/pull_request_template.md) to summarize evidence.
+Non-release PRs may mark the release-specific preview gate not applicable only
+with a reason; a PR introducing a new LENS version may not use that exemption.
+
 ### Running Tests
 
 The project uses a zero-dependency Node.js test runner that validates:
@@ -140,13 +274,26 @@ The project uses a zero-dependency Node.js test runner that validates:
 node scripts/run-tests.js
 ```
 
-All 390 tests must pass before a PR can be merged. The CI pipeline runs these automatically on every push and PR to `main`.
+All 501 Node.js tests, the offline DCR deployment checks and the offline live-query authentication checks must pass before a PR can be merged. Run the deployment checks with `pwsh -NoProfile -File scripts/test-dcr-deployment.ps1`. The CI pipeline runs all three automatically on every push and PR to `main`.
 
 #### Optional live Azure integration tests
 
 The structural test suite cannot prove that Log Analytics accepts a query or that
-the configured counters produce rows. Maintainers can run the opt-in 11-query
-Capacity integration suite against an approved test environment:
+the configured counters produce rows. Maintainers can run the opt-in Capacity
+integration suite against an approved test environment: 51 exact workbook queries,
+102 unset/empty-map query cases, the live storage-detail machine picker, and 59 synthetic KQL checks for storage scope, per-volume detail, picker isolation, Top 5 rankings, host aggregation, units, duplicate/partial samples,
+valid zero readings, invalid capacity, snapshot deduplication, volume identity, and same-name instance forecast isolation.
+It also includes 33 VM-detail checks and 11 exact-query VM-inventory fixtures covering
+minute-weighted CPU averages, duplicate samples, workspace-wide VM memory pressure,
+migration, unavailable metrics, independent filters, resource links and empty mappings.
+Successful query execution alone does not prove that every expected machine or storage
+I/O path is covered; verify the required counters during known activity. Four synthetic
+storage scale checks generate 1,474,560 counter rows each across 2,048 hosts and
+assert exact Top 5 values and complete host coverage while retaining the coverage
+tiles' existing approximate `dcount()` estimates. Live query and scale-fixture elapsed
+times include CLI token acquisition and request overhead; they are diagnostics,
+not customer-scale performance guarantees. Preserve fixed source filters, early
+host membership, minute-level counter pairing, and host weighting when optimizing.
 
 ```powershell
 # Discover available subscriptions first.
@@ -158,6 +305,11 @@ az account list --query "[?state=='Enabled'].{Name:name,Id:id}" -o table
    -WorkspaceResourceId '<log-analytics-workspace-resource-id>'
 ```
 
+Every Log Analytics request obtains a current token from Azure CLI using the
+confirmed subscription and verifies the returned subscription and tenant, allowing
+CLI-managed renewal during long runs instead of retaining a cohort-wide token.
+Run `pwsh -NoProfile -File scripts/test-live-auth.ps1` for its offline checks.
+
 The script displays the resolved subscription and workspace and requires `YES`
 before querying. Automation or coding agents may pass `-ConfirmEnvironment` only
 after the user has explicitly confirmed the subscription. Environment IDs must
@@ -166,6 +318,30 @@ or added to documentation. A successful run writes a sanitized query-name and
 row-count report to `test-results/live-integration-nunit.xml`. These tests are
 deliberately excluded from CI because they require Azure authentication, RBAC,
 a DCR, and current telemetry.
+
+For machine capacity, use the same confirmation procedure and add `-NodeCapacityOnly`:
+
+```powershell
+./scripts/run-live-tests.ps1 `
+   -SubscriptionId '<confirmed-subscription-id>' `
+   -WorkspaceResourceId '<log-analytics-workspace-resource-id>' `
+   -NodeCapacityOnly
+```
+
+This mode uses the exact Hyper-V machine metadata and table queries, a fixed snapshot
+time, and synthetic samples executed by Log Analytics. It validates physical-core
+ratios, CPU/memory arithmetic, numeric sorting, ratio/host filtering, duplicate
+samples, migration, ambiguous mappings, stale/missing data, invalid metrics,
+historical host selections by resource ID without widening the metric window,
+same-short-name host isolation, and fully qualified inventory/reported-machine names.
+The suite also exercises the literal All dropdown token for both physical-host and
+instance selection, including inventory rows without recent telemetry.
+Hardware mapping fixtures cover unique compatible matches on both sides, mismatched
+qualified names, duplicate reported entries, and tag filters that must not hide ambiguity.
+It also validates the deployment script's exact discovery query in Resource Graph
+and synthetic qualified-name collisions, ambiguous matches, and nested hosts in Log Analytics.
+It writes sanitized results to `test-results/node-capacity-integration-nunit.xml`.
+It does not move VMs, change a DCR, or verify host inventory using `Get-VM`.
 
 ## Code of Conduct
 

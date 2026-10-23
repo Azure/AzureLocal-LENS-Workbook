@@ -1029,7 +1029,7 @@ testSuite('KQL Query Robustness', () => {
         'all four cluster queries use equal host weighting',
         clusterQueriesUseEqualHostWeight ? 'all four' : 'missing daily host reduction');
 
-    const overviewIOPS = capacityPerformanceQueries.get('node-storage-iops-trend') || '';
+    const overviewIOPS = allQueries.find(query => query.name === 'node-logical-storage-iops-trend')?.query || '';
     const overviewSumsReadWriteIOPS = overviewIOPS.includes('Name in ("ReadsPerSecond", "WritesPerSecond")') &&
         overviewIOPS.includes('HostIOPS = sum(IOPS) by Computer, TimeGenerated = bin(TimeGenerated, 1m), StorageScope, method');
     assert(overviewSumsReadWriteIOPS,
@@ -1038,7 +1038,7 @@ testSuite('KQL Query Robustness', () => {
         overviewSumsReadWriteIOPS ? 'summed' : 'not summed');
 
     const performanceFallbackIsPerMinute = [...capacityPerformanceQueries.values()].every(query =>
-        /summarize arg_min\(method, Host\w+\) by (?:Computer|nodeName), TimeGenerated, StorageScope/.test(query) &&
+        /summarize hint\.shufflekey=(?:Computer|nodeName) arg_min\(method, Host\w+\) by (?:Computer|nodeName), TimeGenerated, StorageScope/.test(query) &&
         !query.includes('let bestLat =') &&
         !query.includes('let bestIOPS =')
     );
@@ -1046,6 +1046,38 @@ testSuite('KQL Query Robustness', () => {
         'Storage latency and IOPS deduplicate providers within each scope per host-minute',
         'all six queries preserve StorageScope in per-minute arg_min(method)',
         performanceFallbackIsPerMinute ? 'all six' : 'whole-range selector remains');
+
+    const storagePipelines = allQueries.filter(({ query }) => query?.includes('let perfSamples = Perf'));
+    assert(storagePipelines.length === 20 && storagePipelines.every(({ name, query }) => {
+        const logical = name.includes('-logical-');
+        const raw = query.slice(query.indexOf('let perfSamples = Perf'), query.indexOf('let perfSamples = Perf') + query.slice(query.indexOf('let perfSamples = Perf')).indexOf(';'));
+        return raw.includes(`| where ObjectName == "${logical ? 'LogicalDisk' : 'Cluster CSVFS'}" and`) &&
+            !raw.includes('| where (ObjectName') &&
+            (logical || !query.includes('= InsightsMetrics'));
+    }), 'All 20 storage latency/IOPS queries select their fixed source before aggregation; CSV never scans InsightsMetrics');
+    assert(storagePipelines.every(({ query }) => {
+        const raw = query.slice(query.indexOf('let perfSamples = Perf'));
+        const filter = raw.indexOf(query.includes('let hciNodes =') ?
+            '| where Computer in (hciNodes | project Computer)' :
+            '| where nodeName in (NodeToCluster | project nodeName)');
+        return filter >= 0 && filter < raw.indexOf('| summarize') &&
+            raw.includes('| lookup kind=inner ') &&
+            /summarize hint\.shufflekey=(Computer|nodeName) arg_max\(TimeGenerated, CounterValue\)/.test(raw);
+    }), 'Storage scopes hosts with membership before shuffle reductions while retaining late mapping lookups');
+    assert(storagePipelines.filter(({ name }) => name.startsWith('sc-storage-detail-')).every(({ query }) => {
+        const raw = query.slice(query.indexOf('let perfSamples = Perf'));
+        return raw.indexOf("and nodeName == tolower('{SCStorageDetailMachine}')") < raw.indexOf('| summarize');
+    }), 'Per-volume detail filters the selected machine before minute-level grouping');
+    assert(storagePipelines.filter(({ name }) => name.startsWith('node-') && name.endsWith('-trend')).every(({ query }) =>
+        query.includes('let dailySamples = materialize(hostSamples') &&
+        !query.includes('materialize(Perf') &&
+        query.includes('TimeGenerated = bin(TimeGenerated, step));')),
+        'Overview storage rankings reuse only reduced daily host samples, not raw telemetry');
+    const heartbeatMappings = allQueries.filter(({ query }) =>
+        query?.includes('arg_max(TimeGenerated, ResourceGroup) by Computer'));
+    assert(heartbeatMappings.length >= 40 && storagePipelines.every(({ query }) =>
+        !query.includes('arg_max(TimeGenerated, *) by Computer')),
+        'Optimized Heartbeat mappings retain only the latest resource group needed for host identity');
 
     const storageUsageQueryNames = [
         'node-storage-trend',
@@ -1226,7 +1258,7 @@ testSuite('KQL Query Robustness', () => {
         networkQueries.every(({ query }) =>
             query.includes('let bestNetObject =') &&
             query.includes('where netRank == bestNetRank') &&
-            query.includes('summarize arg_min(method, BytesPerSec)') &&
+            /summarize hint\.shufflekey=(Computer|nodeName) arg_min\(method, BytesPerSec\)/.test(query) &&
             !query.includes('let bestNet =') &&
             !query.includes('arg_min(netRank, BytesPerSec)')
         );
@@ -2693,7 +2725,7 @@ testSuite('Hyper-V Node Capacity', () => {
         cachedInventory.includes("or (activityMode == 'stale' and AgeMinutes > 60)") &&
         !cachedInventory.includes('join ') && !inventoryQuery.includes('materialize(Perf') &&
         inventoryQuery.includes('where VMName in (inventory | project VMName)') &&
-        inventoryQuery.includes('summarize VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)') &&
+        inventoryQuery.includes('summarize hint.shufflekey=VMName VMcpu = avg(CounterValue) by VMName, bin(TimeGenerated, 1m)') &&
         inventoryQuery.includes("summarize ['Avg CPU %'] = round(avg(VMcpu), 1) by VMName"),
         'VM inventory caches only per-VM summaries and filters activity before unchanged minute-weighted CPU averages');
     assert(hostLookup?.includes("where Computer in (inventory | project ['Physical Host'])") &&

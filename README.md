@@ -156,6 +156,8 @@ Capacity telemetry queries retain their existing ARG-derived instance/host scope
 
 **Show DCR Setup Guide**, beside the workspace selector, opens one shared Capacity Telemetry Readiness guide across all four views. Hidden by default, it covers AMA prerequisites, all 26 host and Hyper-V counter paths (including the 14 Hyper-V paths), Event 3002, association and overlap safeguards, and maintained deployment links. The first Overview capacity table is ARG-only; Managed Prometheus has separate collection setup. Independently opened Capacity sub-templates retain the same guide and control.
 
+**Large environments:** CSV and logical-disk latency/IOPS queries select their own counter source and eligible hosts before per-minute grouping; per-volume detail also filters the selected machine early. High-cardinality host/VM time-series aggregations use shuffle keys, and Overview storage Top 5 charts reuse reduced daily host results rather than caching raw telemetry. Heartbeat mappings retain only the columns needed for identity. These changes preserve counter pairing, deduplication, source precedence, host weighting, units, missing-data behavior, and existing time windows; they do not sample or truncate the fleet. Top 5 still ranks the full eligible scope. A query resource error is not evidence that DCR counters are missing: inspect the error in **Open last query** and compare a shorter time window. Lab regression/scale checks do not guarantee customer-scale latency or portal rendering performance.
+
 #### 📋 Overview sub-tab
 - **Instance Capacity Overview** table — one row per instance:
   - Physical Cores and Physical Memory (GB)

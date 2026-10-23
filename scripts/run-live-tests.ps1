@@ -153,7 +153,7 @@ function Test-StorageSources {
 
     $samples = [Collections.Generic.List[object]]::new()
     $csvCounters = @{ 'Reads/sec' = 10; 'Writes/sec' = 20; 'Avg. sec/Read' = 0.002; 'Avg. sec/Write' = 0.004 }
-    foreach ($hostName in @('both', 'duplicates', 'partial', 'zero', 'invalid', 'aggregate-only')) {
+    foreach ($hostName in @('both', 'duplicates', 'partial', 'zero', 'invalid', 'aggregate-only', 'outside-scope')) {
         foreach ($counter in $csvCounters.Keys) {
             if ($hostName -eq 'partial' -and $counter -like '*Write*') { continue }
             $counterValue = $csvCounters[$counter]
@@ -258,12 +258,13 @@ function Test-StorageSources {
     foreach ($tab in @('Capacity-Overview', 'Capacity-SingleCluster', 'Capacity-MultiCluster')) {
         $book = Get-Content -Raw (Join-Path $repoRoot "workbooks/$tab/$tab.workbook") | ConvertFrom-Json
         $items = @(Get-WorkbookItems -Items $book.items)
-        foreach ($item in @($items | Where-Object { $_.name -in @('node-storage-latency-trend', 'node-storage-iops-trend', 'sc-storage-latency-node', 'sc-storage-iops-node', 'mc-storage-latency', 'mc-storage-iops') })) {
+        foreach ($item in @($items | Where-Object { $_.name -match '^(node-(logical-)?storage-(latency|iops)-trend|sc-(logical-)?storage-(latency|iops)-node|mc-(logical-)?storage-(latency|iops))$' })) {
             $template = [string]$item.content.query
             $start = $template.IndexOf('let perfSamples = Perf')
             $end = $template.IndexOf('let dailySamples =')
             if ($start -lt 0 -or $end -le $start) { throw "Storage fixture boundary missing: $($item.name)" }
-            $query = $fixtureHeader + $template.Substring($start, $end - $start)
+            $scope = "let hciNodes=datatable(Computer:string)['both','both','duplicates','partial','zero','invalid','aggregate-only','logical-only']; let NodeToCluster=hciNodes | project nodeName=Computer; "
+            $query = $fixtureHeader + $scope + $template.Substring($start, $end - $start)
             $query = $query.Replace('let perfSamples = Perf', "let perfSamples = $perfSource")
             $query = $query.Replace('let insightsSamples = InsightsMetrics', "let insightsSamples = $insightsSource")
             $rows = @(Invoke-StorageFixture -Query ($query + 'hostSamples'))
@@ -275,11 +276,15 @@ function Test-StorageSources {
             $bothLogical = @($rows | Where-Object { $_.$hostColumn -eq 'both' -and $_.StorageScope -eq 'Logical disks' })
             $duplicate = @($rows | Where-Object { $_.$hostColumn -eq 'duplicates' })
             $zero = @($rows | Where-Object { $_.$hostColumn -eq 'zero' })
-            if ($bothCsv.Count -ne 1 -or $bothCsv[0].$metricColumn -ne $expectedCsv -or
-                $bothLogical.Count -ne 1 -or $bothLogical[0].$metricColumn -ne $expectedLogical -or
-                $duplicate.Count -ne 1 -or $duplicate[0].$metricColumn -ne $expectedCsv -or
-                $zero.Count -ne 1 -or $zero[0].$metricColumn -ne 0 -or
-                @($rows | Where-Object { $_.$hostColumn -in @('partial', 'invalid', 'aggregate-only') }).Count -ne 0) {
+            $logicalChart = $item.name.Contains('-logical-')
+            if (@($rows | Where-Object { $_.$hostColumn -in @('partial', 'invalid', 'aggregate-only', 'outside-scope') }).Count -ne 0) {
+                throw "Invalid or out-of-scope storage samples leaked into: $($item.name)"
+            }
+            if ((-not $logicalChart -and ($bothCsv.Count -ne 1 -or $bothCsv[0].$metricColumn -ne $expectedCsv -or
+                $bothLogical.Count -ne 0 -or $duplicate.Count -ne 1 -or $duplicate[0].$metricColumn -ne $expectedCsv -or
+                $zero.Count -ne 1 -or $zero[0].$metricColumn -ne 0)) -or
+                ($logicalChart -and ($bothCsv.Count -ne 0 -or $bothLogical.Count -ne 1 -or
+                $bothLogical[0].$metricColumn -ne $expectedLogical))) {
                 throw "Storage scope, units, deduplication or missing-data fixture failed: $($item.name)"
             }
             $logicalOnly = @($rows | Where-Object { $_.$hostColumn -eq 'logical-only' })
@@ -291,6 +296,54 @@ function Test-StorageSources {
             } elseif ($logicalOnly.Count -ne 0) { throw 'Unexpected Insights fallback.' }
             [pscustomobject]@{ Query = "$($item.name)-fixtures"; Rows = $rows.Count; Result = 'Passed' }
         }
+    }
+
+    $overviewBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-Overview/Capacity-Overview.workbook') | ConvertFrom-Json
+    $overviewItems = @(Get-WorkbookItems -Items $overviewBook.items)
+    # 2,048 hosts x 3 volumes x 60 minutes x 4 counters; no customer telemetry.
+    $scalePrelude = @'
+let trendStart=datetime(2026-01-01); let trendEnd=datetime(2026-01-02); let step=1d;
+let hciNodes=range Host from 0 to 2047 step 1
+| project Computer=strcat('host-', Host), clusterName=strcat('cluster-', tolong(Host / 2));
+let scalePerf=range Sample from 0 to 1474559 step 1
+| extend Counter=Sample % 4, Volume=tolong(Sample / 4) % 3, Minute=tolong(Sample / 12) % 60, Host=tolong(Sample / 720)
+| project TimeGenerated=trendStart + Minute * 1m, Computer=strcat('host-', Host), ObjectName='Cluster CSVFS',
+    InstanceName=strcat('Volume', Volume),
+    CounterName=case(Counter == 0, 'Avg. sec/Read', Counter == 1, 'Avg. sec/Write', Counter == 2, 'Reads/sec', 'Writes/sec'),
+    CounterValue=case(Counter == 0, 0.002, Counter == 1, 0.004, Counter == 2, 10.0, 20.0);
+'@
+    foreach ($name in @('node-storage-latency-trend', 'node-storage-iops-trend', 'node-storage-latency-count', 'node-storage-iops-count')) {
+        $template = [string]($overviewItems | Where-Object name -EQ $name).content.query
+        $start = $template.IndexOf('let perfSamples = Perf')
+        if ($start -lt 0) { throw "Storage scale fixture boundary missing: $name" }
+        $query = $scalePrelude + [Environment]::NewLine + $template.Substring($start).Replace('let perfSamples = Perf', 'let perfSamples = scalePerf')
+        if ($name.EndsWith('-count')) {
+            # Preserve the workbook's approximate dcount; independently prove
+            # that the metric pipeline retained every eligible host.
+            $query += @'
+
+| extend ExpectedEstimate = toscalar(hciNodes | summarize dcount(Computer)),
+    ExactHosts = toscalar(hostSamples | lookup kind=inner hciNodes on Computer
+        | where StorageScope == 'CSV' | summarize by Computer | count)
+'@
+        }
+        $timer = [Diagnostics.Stopwatch]::StartNew()
+        $rows = @(Invoke-StorageFixture -Query $query)
+        $timer.Stop()
+        if ($name.EndsWith('-count')) {
+            if ($rows.Count -ne 1 -or $rows[0].Nodes -ne $rows[0].ExpectedEstimate -or
+                $rows[0].ExactHosts -ne 2048 -or $rows[0].Label -ne 'CSV machines:') {
+                throw "Storage scale coverage fixture failed: $name"
+            }
+        } else {
+            $metric = if ($name.Contains('latency')) { 'Avg Latency (ms)' } else { 'Avg IOPS' }
+            $expected = if ($name.Contains('latency')) { 3 } else { 90 }
+            if ($rows.Count -ne 5 -or @($rows | Where-Object { $_.$metric -ne $expected }).Count -ne 0 -or
+                (@($rows.clusterName | Sort-Object) -join ',') -ne 'cluster-0,cluster-1,cluster-10,cluster-100,cluster-1000') {
+                throw "Storage scale Top 5, units or host-weighting fixture failed: $name"
+            }
+        }
+        [pscustomobject]@{ Query = "$name-scale-2048-hosts"; Rows = $rows.Count; Result = 'Passed'; Seconds = [math]::Round($timer.Elapsed.TotalSeconds, 3) }
     }
 
     $volumes = @(
@@ -1150,7 +1203,9 @@ resources
             query = $query
             timespan = "P$($Days)D"
         }
+        $timer = [Diagnostics.Stopwatch]::StartNew()
         $response = Invoke-LogAnalyticsQuery -WorkspaceId $workspace.customerId -Body $logBody
+        $timer.Stop()
         if ($response.error) {
             throw "Live Log Analytics query returned a partial error: $($spec.name)"
         }
@@ -1160,7 +1215,7 @@ resources
             throw "Live Log Analytics query returned no rows: $($spec.name)"
         }
 
-        [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed' }
+        [pscustomobject]@{ Query = $spec.name; Rows = $rowCount; Result = 'Passed'; Seconds = [math]::Round($timer.Elapsed.TotalSeconds, 3) }
         if ($item.content.query -match '\{Cluster(?:RG|Node)Map\}') {
             foreach ($mapJson in @('', '[]')) {
                 $mapValue = if ($mapJson -eq '') { '' } else { ConvertTo-CompressedNodeMetadata $mapJson }
@@ -1184,7 +1239,8 @@ resources
     $timestamp = [DateTime]::UtcNow.ToString('o')
     $testCases = @($results | ForEach-Object {
         $queryName = [Security.SecurityElement]::Escape([string]$_.Query)
-        '    <test-case name="{0}" result="Passed"><properties><property name="Rows" value="{1}" /></properties></test-case>' -f $queryName, $_.Rows
+        $duration = if ($null -ne $_.Seconds) { $_.Seconds } else { 0 }
+        '    <test-case name="{0}" result="Passed" duration="{2}"><properties><property name="Rows" value="{1}" /></properties></test-case>' -f $queryName, $_.Rows, $duration
     }) -join [Environment]::NewLine
     $nunitXml = @"
 <?xml version="1.0" encoding="utf-8"?>

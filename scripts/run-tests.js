@@ -2817,8 +2817,9 @@ testSuite('Overview Heartbeat Availability', () => {
     assert(position('capacity-overview-table') < position('capacity-ama-tip') &&
         position('capacity-ama-tip') < position('capacity-overview-availability') &&
         position('capacity-ratio-params') < position('capacity-overview-table') &&
-        position('capacity-overview-availability') < position('text-top5-charts-header'),
-        'Availability follows ARG capacity with setup guidance and historic range before the telemetry charts');
+        position('overview-availability-help') === position('capacity-overview-availability') + 1 &&
+        position('overview-availability-help') < position('text-top5-charts-header'),
+        'Availability follows ARG capacity with historic controls above and its guidance directly below the table');
     const overviewControls = items.find(item => item.name === 'capacity-ratio-params')?.content;
     const historicRange = overviewControls?.parameters.find(parameter => parameter.name === 'NodeTrendsTimeRange');
     assert(overviewControls?.style === 'pills' &&
@@ -2851,9 +2852,21 @@ testSuite('Overview Heartbeat Availability', () => {
         table.timeContextFromParameter === 'NodeTrendsTimeRange',
         'Availability shares the existing workspace and historic range using complete five-minute intervals');
     const formatters = table.gridSettings.formatters;
-    assert(formatters.some(formatter => formatter.columnMatch === 'MachineName' &&
-        formatter.formatOptions?.aggregation === 'Count' && formatter.formatOptions.linkColumn === 'machineLink'),
-        'Availability shows a machine-count summary on the existing linked machine-name column');
+    const machineCount = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityMachineCount');
+    const inventoryProjection = '| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)';
+    const inventoryDistinct = '| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus';
+    assert(items.find(item => item.name === 'overview-availability-machine-count')?.content.json === '**Machine Count:** {AvailabilityMachineCount}' &&
+        position('overview-availability-machine-count') === position('capacity-overview-availability') - 1 &&
+        machineCount?.isHiddenWhenLocked && machineCount.isRequired && machineCount.queryType === 0 &&
+        machineCount.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        machineCount.query.includes("gzip_decompress_from_base64_string('{AvailabilityNodeMap}')") &&
+        machineCount.query.includes('tolong(MapPayload.RowCount) == array_length(MapPayload.Rows)') &&
+        machineCount.query.includes('| where MapValid') && machineCount.query.includes(inventoryProjection) && table.query.includes(inventoryProjection) &&
+        machineCount.query.includes(inventoryDistinct) && table.query.includes(inventoryDistinct) &&
+        machineCount.query.endsWith('| summarize value = count()') && !machineCount.query.includes("| where MappingStatus == 'Mapped'") &&
+        !machineCount.query.includes('Heartbeat\r\n') &&
+        formatters.some(formatter => formatter.columnMatch === 'MachineName' && !formatter.formatOptions?.aggregation && formatter.formatOptions?.linkColumn === 'machineLink'),
+        'Availability displays an explicit machine count above the table using the same deduplicated inventory, including silent and unresolved entries');
     const availabilityIcons = [
         { operator: '>=', thresholdValue: '{AvailabilityGreenThreshold}', representation: 'success', text: '{0}{1}' },
         { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },
@@ -2882,14 +2895,15 @@ testSuite('Overview Heartbeat Availability', () => {
         'Green thresholds follow selected-period boundaries while measured availability and sorting stay unchanged');
     const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
     assert(help?.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
-        help.includes('Show DCR Setup Guide') && help.includes('DCR association') &&
+        !help.includes('Show DCR Setup Guide') && !help.includes('No heartbeats received:') &&
         help.includes('Planned updates and machine restarts') && help.includes('do not exclude maintenance') &&
         [97.5, 98.5, 99, 99.75].every(threshold => help.includes(`${threshold}%`)),
-        'Availability includes the agreed caveat and points to existing DCR setup guidance');
+        'Availability preserves heartbeat-specific caveats and thresholds without repeating shared setup guidance');
     const tips = items.filter(item => item.name === 'capacity-ama-tip');
     assert(tips.length === 1 && tips[0].content.style === 'upsell' && tips[0].content.json.startsWith('\u{1f4a1} **Tip:**') &&
         tips[0].content.json.includes('reporting machines') && tips[0].content.json.includes('reporting instances') &&
         tips[0].content.json.includes('Valid zero counter readings') && tips[0].content.json.includes('Managed Prometheus') &&
+        tips[0].content.json.includes('Show DCR Setup Guide') && tips[0].content.json.includes('Data Collection Rule (DCR)') &&
         tips[0].content.json.includes('https://github.com/Azure/AzureLocal-LENS-Workbook/tree/main/example-dcr-template#readme') &&
         !items.some(item => item.name === 'capacity-counter-coverage-tip'),
         'One purple lightbulb tip combines setup, coverage, LENS guide and valid-zero guidance without duplication');

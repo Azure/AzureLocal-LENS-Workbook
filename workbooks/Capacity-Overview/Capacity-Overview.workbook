@@ -972,6 +972,19 @@
                   "queryType": 0,
                   "resourceType": "microsoft.operationalinsights/workspaces",
                   "crossComponentResources": ["{MachinesLogAnalyticsWorkspace}"]
+                },
+                {
+                  "id": "overview-availability-machine-count",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AvailabilityMachineCount",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "isRequired": true,
+                  "description": "Hidden: count of the deduplicated inventory rows used by the heartbeat availability table, including silent and unresolved entries.",
+                  "query": "let MapPayload = parse_json(gzip_decompress_from_base64_string('{AvailabilityNodeMap}'));\r\nlet MapValid = assert(gettype(MapPayload.Rows) == 'array' and tolong(MapPayload.RowCount) == array_length(MapPayload.Rows), 'Availability inventory could not be decoded or was truncated. Refresh the workbook or narrow the instance filters.');\r\nprint Rows = MapPayload.Rows\r\n| where MapValid\r\n| mv-expand Row = Rows\r\n| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)\r\n| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus\r\n| summarize value = count()",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": ["{MachinesLogAnalyticsWorkspace}"]
                 }
               ],
               "style": "pills"
@@ -981,10 +994,9 @@
           {
             "type": 1,
             "content": {
-              "json": "### Machine Heartbeat Availability\r\n**Heartbeat availability is not a direct measure of service uptime**, but provides supporting availability insights. Missing heartbeats can reflect downtime or monitoring gaps, including AMA configuration or reporting failures and connectivity issues reaching Log Analytics. Current inventory defines scope for the entire selected period; unresolved machine mappings have no percentage.\r\n\r\n**Updates and restarts:** Planned updates and machine restarts can temporarily interrupt heartbeats and reduce the reported percentage. Colour tolerances allow for some interruption but do not distinguish planned maintenance from unexpected outages or monitoring gaps.\r\n\r\nGreen receipt tolerances depend on the selected period: up to 1 day, 97.5%; over 1 through 3 days, 98.5%; over 3 through 7 days, 99%; over 7 days, 99.75%. Below green, partial receipt is amber; zero receipt is red. These tolerances do not exclude maintenance.\r\n\r\n**No heartbeats received:** Use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify AMA, the machine's DCR association, and the workspace destination. Also check outbound connectivity. Missing heartbeats do not prove machine downtime.",
-              "style": "info"
+              "json": "**Machine Count:** {AvailabilityMachineCount}"
             },
-            "name": "overview-availability-help"
+            "name": "overview-availability-machine-count"
           },
           {
             "type": 3,
@@ -1017,7 +1029,7 @@
                   { "columnId": "PeriodEndExclusive", "label": "Period End (Exclusive)" }
                 ],
                 "formatters": [
-                  { "columnMatch": "MachineName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "machineLink", "aggregation": "Count" } },
+                  { "columnMatch": "MachineName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "machineLink" } },
                   { "columnMatch": "ClusterName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "clusterLink" } },
                   { "columnMatch": "machineLink", "formatter": 5 },
                   { "columnMatch": "clusterLink", "formatter": 5 },
@@ -1052,6 +1064,14 @@
               "noDataMessageStyle": 4
             },
             "name": "capacity-overview-availability"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### Machine Heartbeat Availability\r\n**Heartbeat availability is not a direct measure of service uptime**, but provides supporting availability insights. Missing heartbeats can reflect downtime or monitoring gaps, including AMA configuration or reporting failures and connectivity issues reaching Log Analytics. Current inventory defines scope for the entire selected period; unresolved machine mappings have no percentage.\r\n\r\n**Updates and restarts:** Planned updates and machine restarts can temporarily interrupt heartbeats and reduce the reported percentage. Colour tolerances allow for some interruption but do not distinguish planned maintenance from unexpected outages or monitoring gaps.\r\n\r\nGreen receipt tolerances depend on the selected period: up to 1 day, 97.5%; over 1 through 3 days, 98.5%; over 3 through 7 days, 99%; over 7 days, 99.75%. Below green, partial receipt is amber; zero receipt is red. These tolerances do not exclude maintenance.",
+              "style": "info"
+            },
+            "name": "overview-availability-help"
           },
           {
             "type": 1,

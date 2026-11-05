@@ -2855,8 +2855,8 @@ testSuite('Overview Heartbeat Availability', () => {
     const machineCount = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityMachineCount');
     const inventoryProjection = '| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)';
     const inventoryDistinct = '| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus';
-    assert(items.find(item => item.name === 'overview-availability-machine-count')?.content.json === '**Machine Count:** {AvailabilityMachineCount}' &&
-        position('overview-availability-machine-count') === position('capacity-overview-availability') - 1 &&
+    assert(table.title === 'Azure Local Machines - Monitor Heartbeat Availability - Machine Count: {AvailabilityMachineCount}' &&
+        !items.some(item => item.name === 'overview-availability-machine-count') &&
         machineCount?.isHiddenWhenLocked && machineCount.isRequired && machineCount.queryType === 0 &&
         machineCount.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
         machineCount.query.includes("gzip_decompress_from_base64_string('{AvailabilityNodeMap}')") &&
@@ -2866,7 +2866,7 @@ testSuite('Overview Heartbeat Availability', () => {
         machineCount.query.endsWith('| summarize value = count()') && !machineCount.query.includes("| where MappingStatus == 'Mapped'") &&
         !machineCount.query.includes('Heartbeat\r\n') &&
         formatters.some(formatter => formatter.columnMatch === 'MachineName' && !formatter.formatOptions?.aggregation && formatter.formatOptions?.linkColumn === 'machineLink'),
-        'Availability displays an explicit machine count above the table using the same deduplicated inventory, including silent and unresolved entries');
+        'Availability displays machine count inline in its title using the same deduplicated inventory, including silent and unresolved entries');
     const availabilityIcons = [
         { operator: '>=', thresholdValue: '{AvailabilityGreenThreshold}', representation: 'success', text: '{0}{1}' },
         { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },

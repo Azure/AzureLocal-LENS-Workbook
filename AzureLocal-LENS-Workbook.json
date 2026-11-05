@@ -2559,6 +2559,50 @@
                         },
                         "jsonData": "[{\"value\":\"0\",\"label\":\"All\"},{\"value\":\"1\",\"label\":\"≥ 1:1\"},{\"value\":\"2\",\"label\":\"≥ 2:1\"},{\"value\":\"3\",\"label\":\"≥ 3:1\"},{\"value\":\"4\",\"label\":\"≥ 4:1\"},{\"value\":\"5\",\"label\":\"≥ 5:1\"},{\"value\":\"6\",\"label\":\"≥ 6:1\"}]",
                         "value": "0"
+                      },
+                      {
+                        "id": "node-trends-time-range-ov",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "NodeTrendsTimeRange",
+                        "label": "Historic Time Range",
+                        "type": 4,
+                        "description": "Time range for machine heartbeat availability and the Top 5 resource usage charts. Does not affect the current Azure Resource Graph capacity table.",
+                        "isRequired": true,
+                        "typeSettings": {
+                          "selectableValues": [
+                            {
+                              "durationMs": 1800000
+                            },
+                            {
+                              "durationMs": 3600000
+                            },
+                            {
+                              "durationMs": 14400000
+                            },
+                            {
+                              "durationMs": 43200000
+                            },
+                            {
+                              "durationMs": 86400000
+                            },
+                            {
+                              "durationMs": 259200000
+                            },
+                            {
+                              "durationMs": 604800000
+                            },
+                            {
+                              "durationMs": 1209600000
+                            },
+                            {
+                              "durationMs": 2592000000
+                            }
+                          ],
+                          "allowCustom": true
+                        },
+                        "value": {
+                          "durationMs": 259200000
+                        }
                       }
                     ],
                     "style": "pills",
@@ -3070,65 +3114,6 @@
                     "style": "upsell"
                   },
                   "name": "capacity-ama-tip"
-                },
-                {
-                  "type": 9,
-                  "content": {
-                    "version": "KqlParameterItem/1.0",
-                    "crossComponentResources": [
-                      "{Subscriptions}"
-                    ],
-                    "parameters": [
-                      {
-                        "id": "node-trends-time-range-ov",
-                        "version": "KqlParameterItem/1.0",
-                        "name": "NodeTrendsTimeRange",
-                        "label": "Historic Time Range",
-                        "type": 4,
-                        "description": "Time range for machine heartbeat availability and the Top 5 resource usage charts below.",
-                        "isRequired": true,
-                        "typeSettings": {
-                          "selectableValues": [
-                            {
-                              "durationMs": 1800000
-                            },
-                            {
-                              "durationMs": 3600000
-                            },
-                            {
-                              "durationMs": 14400000
-                            },
-                            {
-                              "durationMs": 43200000
-                            },
-                            {
-                              "durationMs": 86400000
-                            },
-                            {
-                              "durationMs": 259200000
-                            },
-                            {
-                              "durationMs": 604800000
-                            },
-                            {
-                              "durationMs": 1209600000
-                            },
-                            {
-                              "durationMs": 2592000000
-                            }
-                          ],
-                          "allowCustom": true
-                        },
-                        "value": {
-                          "durationMs": 259200000
-                        }
-                      }
-                    ],
-                    "style": "pills",
-                    "queryType": 1,
-                    "resourceType": "microsoft.resourcegraph/resources"
-                  },
-                  "name": "overview-la-workspace-param"
                 },
                 {
                   "type": 9,

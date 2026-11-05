@@ -2816,9 +2816,20 @@ testSuite('Overview Heartbeat Availability', () => {
     const position = name => items.findIndex(item => item.name === name);
     assert(position('capacity-overview-table') < position('capacity-ama-tip') &&
         position('capacity-ama-tip') < position('capacity-overview-availability') &&
-        position('overview-la-workspace-param') < position('capacity-overview-availability') &&
+        position('capacity-ratio-params') < position('capacity-overview-table') &&
         position('capacity-overview-availability') < position('text-top5-charts-header'),
         'Availability follows ARG capacity with setup guidance and historic range before the telemetry charts');
+    const overviewControls = items.find(item => item.name === 'capacity-ratio-params')?.content;
+    const historicRange = overviewControls?.parameters.find(parameter => parameter.name === 'NodeTrendsTimeRange');
+    assert(overviewControls?.style === 'pills' &&
+        ['TargetRatio', 'RatioFilter', 'NodeTrendsTimeRange'].every(name => overviewControls.parameters.some(parameter => parameter.name === name)) &&
+        items.flatMap(item => item.content?.parameters || []).filter(parameter => parameter.id === 'node-trends-time-range-ov').length === 1 &&
+        !items.some(item => item.name === 'overview-la-workspace-param') &&
+        historicRange?.label === 'Historic Time Range' && historicRange.type === 4 && historicRange.isRequired &&
+        historicRange.typeSettings.allowCustom && historicRange.value.durationMs === 259200000 &&
+        historicRange.typeSettings.selectableValues.map(value => value.durationMs).join(',') === '1800000,3600000,14400000,43200000,86400000,259200000,604800000,1209600000,2592000000' &&
+        historicRange.description.includes('Does not affect the current Azure Resource Graph capacity table'),
+        'Overview groups its unchanged historic range with the top-level ratio controls instead of a separate mid-page row');
     const producer = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityNodeMap');
     assert(producer?.query.includes('{ResourceGroupFilter}') && producer.query.includes('{ClusterTagName}') &&
         producer.query.includes('{ClusterTagValue}') && producer.crossComponentResources.includes('{Subscriptions}') &&

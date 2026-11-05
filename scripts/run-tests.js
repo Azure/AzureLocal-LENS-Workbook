@@ -2840,8 +2840,11 @@ testSuite('Overview Heartbeat Availability', () => {
         table.timeContextFromParameter === 'NodeTrendsTimeRange',
         'Availability shares the existing workspace and historic range using complete five-minute intervals');
     const formatters = table.gridSettings.formatters;
+    assert(formatters.some(formatter => formatter.columnMatch === 'MachineName' &&
+        formatter.formatOptions?.aggregation === 'Count' && formatter.formatOptions.linkColumn === 'machineLink'),
+        'Availability shows a machine-count summary on the existing linked machine-name column');
     const availabilityIcons = [
-        { operator: '>=', thresholdValue: '100', representation: 'success', text: '{0}{1}' },
+        { operator: '>=', thresholdValue: '{AvailabilityGreenThreshold}', representation: 'success', text: '{0}{1}' },
         { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },
         { operator: '==', thresholdValue: '0', representation: '4', text: '{0}{1}' },
         { operator: 'Default', thresholdValue: null, representation: null, text: 'N/A' }
@@ -2852,10 +2855,25 @@ testSuite('Overview Heartbeat Availability', () => {
             formatter.formatOptions?.thresholdsOptions === 'icons' && !formatter.formatOptions.palette &&
             JSON.stringify(formatter.formatOptions.thresholdsGrid) === JSON.stringify(availabilityIcons) &&
             formatter.numberFormat?.unit === 1) && table.gridSettings.rowLimit >= 2000 && table.showExportToExcel,
-        'Availability preserves links and exports with compact full/partial/zero receipt icons and neutral unavailable values, not colour bars');
+        'Availability preserves links and exports with compact time-based green/partial/zero receipt icons and neutral unavailable values, not colour bars');
+    const greenThreshold = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityGreenThreshold');
+    const thresholdBands = [...(greenThreshold?.query || '').matchAll(/SelectedPeriod <= (\d+)d, ([\d.]+)/g)].map(match => ({ days: Number(match[1]), percent: Number(match[2]) }));
+    const fallbackThreshold = Number(greenThreshold?.query.match(/, ([\d.]+)\)$/)?.[1]);
+    const thresholdForDays = days => thresholdBands.find(band => days <= band.days)?.percent ?? fallbackThreshold;
+    assert(greenThreshold?.isHiddenWhenLocked && greenThreshold.isRequired && greenThreshold.queryType === 0 &&
+        greenThreshold.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        greenThreshold.query.includes('{NodeTrendsTimeRange:end} - {NodeTrendsTimeRange:start}') &&
+        JSON.stringify(thresholdBands) === JSON.stringify([{ days: 1, percent: 97.5 }, { days: 3, percent: 98.5 }, { days: 7, percent: 99 }]) &&
+        fallbackThreshold === 99.75 &&
+        [0.5, 1, 1.001, 3, 3.001, 7, 7.001, 14, 30].map(thresholdForDays).join(',') === '97.5,97.5,98.5,98.5,99,99,99.75,99.75,99.75' &&
+        table.query.includes('round(100.0 * todouble(AvailableIntervals) / todouble(TotalIntervals), 3)') &&
+        table.query.endsWith('| order by AvailabilityPercent asc nulls first, ClusterName asc, MachineName asc'),
+        'Green thresholds follow selected-period boundaries while measured availability and sorting stay unchanged');
     const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
     assert(help?.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
-        help.includes('Show DCR Setup Guide') && help.includes('DCR association'),
+        help.includes('Show DCR Setup Guide') && help.includes('DCR association') &&
+        help.includes('Planned updates and machine restarts') && help.includes('do not exclude maintenance') &&
+        [97.5, 98.5, 99, 99.75].every(threshold => help.includes(`${threshold}%`)),
         'Availability includes the agreed caveat and points to existing DCR setup guidance');
     const tips = items.filter(item => item.name === 'capacity-ama-tip');
     assert(tips.length === 1 && tips[0].content.style === 'upsell' && tips[0].content.json.startsWith('\u{1f4a1} **Tip:**') &&

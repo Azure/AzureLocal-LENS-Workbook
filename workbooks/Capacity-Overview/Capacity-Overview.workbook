@@ -974,6 +974,19 @@
                   "queryType": 1,
                   "resourceType": "microsoft.resourcegraph/resources",
                   "crossComponentResources": ["{Subscriptions}"]
+                },
+                {
+                  "id": "overview-availability-green-threshold",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AvailabilityGreenThreshold",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "isRequired": true,
+                  "description": "Hidden: green heartbeat receipt threshold for the selected historic time range. Does not adjust measured availability.",
+                  "query": "let SelectedPeriod = {NodeTrendsTimeRange:end} - {NodeTrendsTimeRange:start};\r\nprint value = case(SelectedPeriod <= 1d, 97.5, SelectedPeriod <= 3d, 98.5, SelectedPeriod <= 7d, 99.0, 99.75)",
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "crossComponentResources": ["{MachinesLogAnalyticsWorkspace}"]
                 }
               ],
               "style": "pills"
@@ -983,7 +996,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### Machine Heartbeat Availability\r\n**Heartbeat availability is not a direct measure of service uptime**, but provides supporting availability insights. Missing heartbeats can reflect downtime or monitoring gaps, including AMA configuration or reporting failures and connectivity issues reaching Log Analytics. Current inventory defines scope for the entire selected period; unresolved machine mappings have no percentage.\r\n\r\n**No heartbeats received:** Use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify AMA, the machine's DCR association, and the workspace destination. Also check outbound connectivity. Missing heartbeats do not prove machine downtime.",
+              "json": "### Machine Heartbeat Availability\r\n**Heartbeat availability is not a direct measure of service uptime**, but provides supporting availability insights. Missing heartbeats can reflect downtime or monitoring gaps, including AMA configuration or reporting failures and connectivity issues reaching Log Analytics. Current inventory defines scope for the entire selected period; unresolved machine mappings have no percentage.\r\n\r\n**Updates and restarts:** Planned updates and machine restarts can temporarily interrupt heartbeats and reduce the reported percentage. Colour tolerances allow for some interruption but do not distinguish planned maintenance from unexpected outages or monitoring gaps.\r\n\r\nGreen receipt tolerances depend on the selected period: up to 1 day, 97.5%; over 1 through 3 days, 98.5%; over 3 through 7 days, 99%; over 7 days, 99.75%. Below green, partial receipt is amber; zero receipt is red. These tolerances do not exclude maintenance.\r\n\r\n**No heartbeats received:** Use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify AMA, the machine's DCR association, and the workspace destination. Also check outbound connectivity. Missing heartbeats do not prove machine downtime.",
               "style": "info"
             },
             "name": "overview-availability-help"
@@ -1019,7 +1032,7 @@
                   { "columnId": "PeriodEndExclusive", "label": "Period End (Exclusive)" }
                 ],
                 "formatters": [
-                  { "columnMatch": "MachineName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "machineLink" } },
+                  { "columnMatch": "MachineName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "machineLink", "aggregation": "Count" } },
                   { "columnMatch": "ClusterName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "clusterLink" } },
                   { "columnMatch": "machineLink", "formatter": 5 },
                   { "columnMatch": "clusterLink", "formatter": 5 },
@@ -1029,7 +1042,7 @@
                     "formatOptions": {
                       "thresholdsOptions": "icons",
                       "thresholdsGrid": [
-                        { "operator": ">=", "thresholdValue": "100", "representation": "success", "text": "{0}{1}" },
+                        { "operator": ">=", "thresholdValue": "{AvailabilityGreenThreshold}", "representation": "success", "text": "{0}{1}" },
                         { "operator": ">", "thresholdValue": "0", "representation": "2", "text": "{0}{1}" },
                         { "operator": "==", "thresholdValue": "0", "representation": "4", "text": "{0}{1}" },
                         { "operator": "Default", "thresholdValue": null, "representation": null, "text": "N/A" }

@@ -3328,7 +3328,7 @@
                 {
                   "type": 1,
                   "content": {
-                    "json": "**Machine Count:** {AvailabilityMachineCount}"
+                    "json": "**Heartbeat Availability Table - Machine Count:** {AvailabilityMachineCount}"
                   },
                   "name": "overview-availability-machine-count"
                 },

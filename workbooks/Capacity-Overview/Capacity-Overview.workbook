@@ -327,6 +327,14 @@
                     "style": "info"
                   },
                   "name": "dcr-setup-readiness"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Workspace costs and retention\r\n**Commitment tiers:** Open **Log Analytics Workspace > Usage and estimated costs** to compare Pay-as-you-go and Commitment Tiers against sustained ingestion. Commitment tiers have a minimum daily charge and a 31-day commitment period.\r\n\r\n**Retention:** Review **Data Retention** and table-level overrides. The workspace default is normally **30 days**; Analytics ingestion pricing includes **31 days** of retention. Lowering retention below the included period does not reduce ingestion charges. Keep longer history where monitoring, forecasting or compliance requires it. See [LENS cost and retention guidance](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md#review-retention-and-costs).",
+                    "style": "info"
+                  },
+                  "name": "dcr-setup-costs"
                 }
               ]
             },
@@ -885,14 +893,7 @@
           {
             "type": 1,
             "content": {
-              "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 instances with the highest average usage for each resource type over the selected time range."
-            },
-            "name": "text-top5-charts-header"
-          },
-          {
-            "type": 1,
-            "content": {
-              "json": "💡 **Tip:** The six resource graphs below use data in Azure Log Analytics. Your instances must have the Azure Monitor Agent (AMA) extension installed; for more information, see [Azure Local Insights](https://learn.microsoft.com/azure/azure-local/concepts/monitoring-overview).\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity & Performance views. If it is set to **All** and your account cannot read a workspace in scope, these queries can return an access error. Select only workspaces you have permission to access.",
+              "json": "💡 **Tip:** The heartbeat availability table, performance charts below, and Log Analytics-based views across the other Capacity & Performance tabs require Azure Monitor Agent (AMA) and a correctly associated Data Collection Rule (DCR) targeting the selected workspace. **Instance Capacity Overview** uses Azure Resource Graph and does not require Log Analytics; Managed Prometheus charts use separate collection.\r\n\r\nThe **Log Analytics Workspace** selector is shared across Capacity & Performance views. **All** queries every discovered workspace and can cause access errors. Select only workspaces receiving your telemetry that you have permission to access.\r\n\r\nCoverage tiles count **reporting machines** for performance metrics and **reporting instances** for CSV volume capacity, within the selected workspace(s) and time range. If expected coverage is missing, check scope and time filters, then use **Show DCR Setup Guide** beside **Log Analytics Workspace**. See the [LENS DCR setup and deployment guide](https://github.com/Azure/AzureLocal-LENS-Workbook/tree/main/example-dcr-template#readme) for details. Valid zero counter readings do not indicate missing telemetry.",
               "style": "upsell"
             },
             "name": "capacity-ama-tip"
@@ -911,7 +912,7 @@
                   "name": "NodeTrendsTimeRange",
                   "label": "Historic Time Range",
                   "type": 4,
-                  "description": "Time range for the Top 5 resource usage charts below.",
+                  "description": "Time range for machine heartbeat availability and the Top 5 resource usage charts below.",
                   "isRequired": true,
                   "typeSettings": {
                     "selectableValues": [
@@ -957,12 +958,101 @@
             "name": "overview-la-workspace-param"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "overview-availability-node-map",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "AvailabilityNodeMap",
+                  "type": 1,
+                  "isHiddenWhenLocked": true,
+                  "isRequired": true,
+                  "description": "Hidden: scoped instance members with unique Arc machine IDs for heartbeat availability. Compressed JSON includes a row count to detect truncation.",
+                  "query": "resources\r\n| where type =~ 'microsoft.azurestackhci/clusters'\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n| extend ReportedNodes = properties.reportedProperties.nodes\r\n| extend ReportedNodes = iff(array_length(ReportedNodes) > 0, ReportedNodes, dynamic([{}]))\r\n| mv-expand Node = ReportedNodes limit 2000\r\n| extend NodeName = tostring(Node.name)\r\n| extend NodeKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(NodeName, '.')[0])))\r\n| project ClusterName = name, ClusterResourceId = tolower(id), NodeName, NodeKey\r\n| join kind=leftouter (\r\n    resources\r\n    | where type =~ 'microsoft.hybridcompute/machines'\r\n    | where properties.cloudMetadata.provider =~ 'AzSHCI'\r\n    | where tostring(properties.detectedProperties.model) !~ 'Virtual Machine'\r\n    | extend NodeKey = tolower(strcat(subscriptionId, '/', resourceGroup, '/', tostring(split(name, '.')[0])))\r\n    | summarize ArcIds = make_set(tolower(id), 2), ArcNames = make_set(tolower(name), 2) by NodeKey\r\n) on NodeKey\r\n| extend NameCompatible = tolower(NodeName) == tostring(ArcNames[0]) or indexof(NodeName, '.') < 0 or indexof(tostring(ArcNames[0]), '.') < 0\r\n| extend HostId = iff(array_length(ArcIds) == 1 and NameCompatible, tostring(ArcIds[0]), '')\r\n| extend MappingStatus = case(isempty(NodeName), 'No reported node inventory', array_length(ArcIds) > 1, 'Ambiguous Arc machine mapping', array_length(ArcIds) == 1 and not(NameCompatible), 'Qualified node name mismatch', isempty(HostId), 'Arc machine not resolved', 'Mapped')\r\n| summarize Rows = make_list(bag_pack('ClusterName', ClusterName, 'ClusterResourceId', ClusterResourceId, 'NodeName', NodeName, 'HostId', HostId, 'MappingStatus', MappingStatus), 10000), RowCount = count()\r\n| project value = gzip_compress_to_base64_string(tostring(bag_pack('Rows', Rows, 'RowCount', RowCount)))",
+                  "queryType": 1,
+                  "resourceType": "microsoft.resourcegraph/resources",
+                  "crossComponentResources": ["{Subscriptions}"]
+                }
+              ],
+              "style": "pills"
+            },
+            "name": "overview-availability-parameters"
+          },
+          {
             "type": 1,
             "content": {
-              "json": "💡 **Tip:** Coverage tiles below the charts count **reporting machines** for performance metrics and **reporting instances** for CSV volume capacity. Counts reflect the selected **Log Analytics workspace(s)** and time range. To investigate missing coverage, check the scope and time filters, then use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify collection.",
-              "style": "upsell"
+              "json": "### Machine Heartbeat Availability\r\n**Heartbeat availability is not a direct measure of service uptime**, but provides supporting availability insights. Missing heartbeats can reflect downtime or monitoring gaps, including AMA configuration or reporting failures and connectivity issues reaching Log Analytics. Current inventory defines scope for the entire selected period; unresolved machine mappings have no percentage.\r\n\r\n**No heartbeats received:** Use **Show DCR Setup Guide** beside **Log Analytics Workspace** to verify AMA, the machine's DCR association, and the workspace destination. Also check outbound connectivity. Missing heartbeats do not prove machine downtime.",
+              "style": "info"
             },
-            "name": "capacity-counter-coverage-tip"
+            "name": "overview-availability-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "title": "Machine Heartbeat Availability",
+              "query": "let Interval = 5m;\r\nlet RequestedStart = {NodeTrendsTimeRange:start};\r\nlet RequestedEnd = {NodeTrendsTimeRange:end};\r\nlet StartTime = bin(RequestedStart, Interval) + iff(RequestedStart == bin(RequestedStart, Interval), 0m, Interval);\r\nlet EndTime = bin(RequestedEnd, Interval);\r\nlet TotalIntervals = tolong((EndTime - StartTime) / Interval);\r\nlet ValidPeriod = assert(TotalIntervals > 0, 'Select a time range containing at least one complete five-minute interval.');\r\nlet MapPayload = parse_json(gzip_decompress_from_base64_string('{AvailabilityNodeMap}'));\r\nlet MapValid = assert(gettype(MapPayload.Rows) == 'array' and tolong(MapPayload.RowCount) == array_length(MapPayload.Rows), 'Availability inventory could not be decoded or was truncated. Refresh the workbook or narrow the instance filters.');\r\nlet RawInventory = materialize(\r\n    print Rows = MapPayload.Rows\r\n    | where MapValid and ValidPeriod\r\n    | mv-expand Row = Rows\r\n    | project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)\r\n    | distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus\r\n);\r\nlet ClusterClaims = RawInventory\r\n    | where isnotempty(HostId)\r\n    | summarize Claims = make_set(ClusterResourceId, 2), NodeClaims = count() by HostId\r\n    | project HostId, ClaimCount = array_length(Claims), NodeClaims;\r\nlet Inventory = materialize(\r\n    RawInventory\r\n    | join kind=leftouter ClusterClaims on HostId\r\n    | extend MappingStatus = iff(ClaimCount > 1 or NodeClaims > 1, 'Ambiguous instance membership', MappingStatus)\r\n);\r\nlet HostScope = Inventory | where MappingStatus == 'Mapped' | distinct HostId;\r\nlet Available = Heartbeat\r\n    | where TimeGenerated >= StartTime and TimeGenerated < EndTime\r\n    | extend HostId = tolower(_ResourceId)\r\n    | where HostId in (HostScope)\r\n    | summarize HeartbeatCount = count(), FirstHeartbeat = min(TimeGenerated), LastHeartbeat = max(TimeGenerated) by HostId, TimeSlot = bin(TimeGenerated, Interval)\r\n    | summarize AvailableIntervals = count(), TotalHeartbeats = sum(HeartbeatCount), FirstHeartbeat = min(FirstHeartbeat), LastHeartbeat = max(LastHeartbeat) by HostId;\r\nInventory\r\n| join kind=leftouter Available on HostId\r\n| extend IsMapped = MappingStatus == 'Mapped'\r\n| extend AvailableIntervals = iff(IsMapped, coalesce(AvailableIntervals, tolong(0)), long(null)), TotalHeartbeats = iff(IsMapped, coalesce(TotalHeartbeats, tolong(0)), long(null))\r\n| extend MissingIntervals = TotalIntervals - AvailableIntervals\r\n| extend AvailabilityPercent = round(100.0 * todouble(AvailableIntervals) / todouble(TotalIntervals), 3), MissingHeartbeatHours = round(todouble(MissingIntervals) * 5.0 / 60.0, 2)\r\n| extend Status = case(not(IsMapped), MappingStatus, isnull(LastHeartbeat), 'No heartbeats in period', 'Heartbeat data present')\r\n| extend machineLink = iff(isnotempty(HostId), strcat('https://portal.azure.com/#@/resource', HostId), ''), clusterLink = strcat('https://portal.azure.com/#@/resource', ClusterResourceId)\r\n| project MachineName = NodeName, ClusterName, Status, AvailabilityPercent, MissingHeartbeatHours, LastHeartbeat, TotalHeartbeats, FirstHeartbeat, PeriodStart = StartTime, PeriodEndExclusive = EndTime, machineLink, clusterLink\r\n| order by AvailabilityPercent asc nulls first, ClusterName asc, MachineName asc",
+              "size": 0,
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "crossComponentResources": ["{MachinesLogAnalyticsWorkspace}"],
+              "timeContext": { "durationMs": 0 },
+              "timeContextFromParameter": "NodeTrendsTimeRange",
+              "visualization": "table",
+              "showAnalytics": true,
+              "showRefreshButton": true,
+              "showExportToExcel": true,
+              "gridSettings": {
+                "rowLimit": 10000,
+                "filter": true,
+                "labelSettings": [
+                  { "columnId": "MachineName", "label": "Machine Name" },
+                  { "columnId": "ClusterName", "label": "Instance Name" },
+                  { "columnId": "AvailabilityPercent", "label": "Heartbeat Availability %" },
+                  { "columnId": "MissingHeartbeatHours", "label": "Missing Heartbeat Hours" },
+                  { "columnId": "LastHeartbeat", "label": "Last Heartbeat" },
+                  { "columnId": "TotalHeartbeats", "label": "Total Heartbeats" },
+                  { "columnId": "FirstHeartbeat", "label": "First Heartbeat" },
+                  { "columnId": "PeriodStart", "label": "Period Start" },
+                  { "columnId": "PeriodEndExclusive", "label": "Period End (Exclusive)" }
+                ],
+                "formatters": [
+                  { "columnMatch": "MachineName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "machineLink" } },
+                  { "columnMatch": "ClusterName", "formatter": 7, "formatOptions": { "linkTarget": "Url", "linkColumn": "clusterLink" } },
+                  { "columnMatch": "machineLink", "formatter": 5 },
+                  { "columnMatch": "clusterLink", "formatter": 5 },
+                  {
+                    "columnMatch": "AvailabilityPercent",
+                    "formatter": 8,
+                    "formatOptions": { "min": 0, "max": 100, "palette": "redGreenDark" },
+                    "numberFormat": { "unit": 1, "options": { "style": "decimal", "minimumFractionDigits": 1, "maximumFractionDigits": 3 } }
+                  },
+                  {
+                    "columnMatch": "Status",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        { "operator": "==", "thresholdValue": "Heartbeat data present", "representation": "info", "text": "{0}{1}" },
+                        { "operator": "Default", "thresholdValue": null, "representation": "warning", "text": "{0}{1}" }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "noDataMessage": "No Azure Local machines match the selected inventory scope. Adjust the subscription, resource group or instance tag filters.",
+              "noDataMessageStyle": 4
+            },
+            "name": "capacity-overview-availability"
+          },
+          {
+            "type": 1,
+            "content": {
+              "json": "### 📊 Top 5 Azure Local Instances by Resource Capacity Usage\r\nShowing the 5 instances with the highest average usage for each resource type over the selected time range."
+            },
+            "name": "text-top5-charts-header"
           },
           {
             "type": 3,

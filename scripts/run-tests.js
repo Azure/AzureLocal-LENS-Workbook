@@ -2162,9 +2162,9 @@ testSuite('DCR Deployment Guidance', () => {
         'dcr-setup-portal-method'
     ];
     const retainedProcedureNames = removedProcedureNames.filter(name => overviewItems.some(item => item.name === name));
-    assert(dcrGroup?.content?.items?.length === 2 && readiness && retainedProcedureNames.length === 0,
-        'Capacity standalone help uses one heading and consolidated DCR checklist with embedded links',
-        'two-item help group with no embedded procedures', JSON.stringify({
+    assert(dcrGroup?.content?.items?.length === 3 && readiness && retainedProcedureNames.length === 0,
+        'Capacity standalone help uses one heading, consolidated DCR checklist and workspace cost note',
+        'three-item help group with no embedded procedures', JSON.stringify({
             groupItems: dcrGroup?.content?.items?.map(item => item.name),
             retainedProcedureNames
         }));
@@ -2175,6 +2175,16 @@ testSuite('DCR Deployment Guidance', () => {
         readinessText.includes('remediation task') && readinessText.includes('does not deduplicate'),
         'Capacity DCR checklist stays concise while retaining deployment safeguards',
         '<=240 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
+
+    const costNote = dcrGroup?.content.items.find(item => item.name === 'dcr-setup-costs')?.content;
+    const costText = costNote?.json || '';
+    assert(costNote?.style === 'info' && costText.trim().split(/\s+/).length <= 120 &&
+        costText.includes('Usage and estimated costs') && costText.includes('minimum daily charge') &&
+        costText.includes('31-day commitment period') && costText.includes('**30 days**') &&
+        costText.includes('**31 days**') && costText.includes('table-level overrides') &&
+        costText.includes('does not reduce ingestion charges') && costText.includes('monitoring, forecasting or compliance') &&
+        costText.includes('example-dcr-template/README.md#review-retention-and-costs'),
+        'Hidden DCR guide concisely explains commitment obligations and default versus included retention without prescribing changes');
 
     const requiredDcrLinks = [
         'https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md',
@@ -2797,6 +2807,84 @@ testSuite('Hyper-V Node Capacity', () => {
 // ============================================================================
 // RESULTS
 // ============================================================================
+testSuite('Overview Heartbeat Availability', () => {
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-Overview/Capacity-Overview.workbook'), 'utf8'));
+    const items = collectAllItems(source.items);
+    const table = items.find(item => item.name === 'capacity-overview-availability')?.content;
+    assert(!!table, 'Overview includes the machine heartbeat availability table');
+    if (!table) return;
+    const position = name => items.findIndex(item => item.name === name);
+    assert(position('capacity-overview-table') < position('capacity-ama-tip') &&
+        position('capacity-ama-tip') < position('capacity-overview-availability') &&
+        position('overview-la-workspace-param') < position('capacity-overview-availability') &&
+        position('capacity-overview-availability') < position('text-top5-charts-header'),
+        'Availability follows ARG capacity with setup guidance and historic range before the telemetry charts');
+    const producer = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityNodeMap');
+    assert(producer?.query.includes('{ResourceGroupFilter}') && producer.query.includes('{ClusterTagName}') &&
+        producer.query.includes('{ClusterTagValue}') && producer.crossComponentResources.includes('{Subscriptions}') &&
+        producer.query.includes('gzip_compress_to_base64_string') && producer.query.includes('RowCount = count()') &&
+        producer.query.includes('limit 2000') && producer.query.includes('NameCompatible'),
+        'Availability inventory preserves subscription, RG and instance-tag scope with mapping and truncation checks');
+    assert(table.query.includes('tolower(_ResourceId)') && table.query.includes('Inventory\r\n| join kind=leftouter Available on HostId') &&
+        table.query.includes('long(null)') && table.query.includes('coalesce(AvailableIntervals, tolong(0))') &&
+        table.query.includes('NodeClaims > 1'),
+        'Availability uses ARM IDs, retains silent machines and rejects ambiguous mappings');
+    assert(table.query.split('{AvailabilityNodeMap}').length === 2 &&
+        table.query.includes("gettype(MapPayload.Rows) == 'array'") &&
+        table.query.includes('tolong(MapPayload.RowCount) == array_length(MapPayload.Rows)') &&
+        table.query.includes('assert('),
+        'Availability decodes inventory once and rejects malformed or truncated nonempty maps');
+    assert(table.query.includes('{NodeTrendsTimeRange:start}') && table.query.includes('{NodeTrendsTimeRange:end}') &&
+        table.query.includes('TimeGenerated >= StartTime and TimeGenerated < EndTime') &&
+        table.query.includes('assert(TotalIntervals > 0') && table.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        table.timeContextFromParameter === 'NodeTrendsTimeRange',
+        'Availability shares the existing workspace and historic range using complete five-minute intervals');
+    const formatters = table.gridSettings.formatters;
+    assert(formatters.some(formatter => formatter.columnMatch === 'MachineName' && formatter.formatOptions?.linkColumn === 'machineLink') &&
+        formatters.some(formatter => formatter.columnMatch === 'ClusterName' && formatter.formatOptions?.linkColumn === 'clusterLink') &&
+        formatters.some(formatter => formatter.columnMatch === 'AvailabilityPercent' && formatter.formatter === 8 &&
+            formatter.formatOptions?.min === 0 && formatter.formatOptions?.max === 100 && formatter.formatOptions?.palette === 'redGreenDark' &&
+            formatter.numberFormat?.unit === 1) && table.gridSettings.rowLimit >= 2000 && table.showExportToExcel,
+        'Availability preserves resource links and exports with higher-is-greener percentage bars');
+    const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
+    assert(help?.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
+        help.includes('Show DCR Setup Guide') && help.includes('DCR association'),
+        'Availability includes the agreed caveat and points to existing DCR setup guidance');
+    const tips = items.filter(item => item.name === 'capacity-ama-tip');
+    assert(tips.length === 1 && tips[0].content.style === 'upsell' && tips[0].content.json.startsWith('\u{1f4a1} **Tip:**') &&
+        tips[0].content.json.includes('reporting machines') && tips[0].content.json.includes('reporting instances') &&
+        tips[0].content.json.includes('Valid zero counter readings') && tips[0].content.json.includes('Managed Prometheus') &&
+        tips[0].content.json.includes('https://github.com/Azure/AzureLocal-LENS-Workbook/tree/main/example-dcr-template#readme') &&
+        !items.some(item => item.name === 'capacity-counter-coverage-tip'),
+        'One purple lightbulb tip combines setup, coverage, LENS guide and valid-zero guidance without duplication');
+    const interval = 5 * 60 * 1000;
+    const requestedEnd = Date.UTC(2026, 0, 31, 12, 3);
+    const requestedStart = requestedEnd - 30 * 24 * 60 * 60 * 1000;
+    const start = Math.ceil(requestedStart / interval) * interval;
+    const end = Math.floor(requestedEnd / interval) * interval;
+    const expected = (end - start) / interval;
+    const timestamps = [start - 1, start, start + 1, end - 1, end];
+    const received = new Set(timestamps.filter(timestamp => timestamp >= start && timestamp < end).map(timestamp => Math.floor(timestamp / interval))).size;
+    assert(expected === 8639 && received === 2 && 100 * expected / expected === 100 &&
+        100 * 0 / expected === 0 && (expected - received) * 5 + received * 5 === expected * 5,
+        'Reference interval math excludes partial endpoints, deduplicates buckets and preserves zero/full coverage');
+    const rows = Array.from({ length: 5000 }, (_, index) => ({
+        ClusterName: `instance-${Math.floor(index / 16)}`,
+        ClusterResourceId: `/subscriptions/synthetic/resourceGroups/rg-${Math.floor(index / 16)}/providers/Microsoft.AzureStackHCI/clusters/instance-${Math.floor(index / 16)}`,
+        NodeName: `host-${index}.example.invalid`,
+        HostId: `/subscriptions/synthetic/resourceGroups/rg-${Math.floor(index / 16)}/providers/Microsoft.HybridCompute/machines/host-${index}`,
+        MappingStatus: 'Mapped'
+    }));
+    const payload = { Rows: rows, RowCount: rows.length };
+    const encoded = zlib.gzipSync(Buffer.from(JSON.stringify(payload), 'utf8')).toString('base64');
+    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded);
+    const decoded = JSON.parse(zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8'));
+    assert(decoded.RowCount === 5000 && decoded.Rows.length === 5000 &&
+        Buffer.byteLength(JSON.stringify({ query: expandedQuery }), 'utf8') < 256 * 1024 &&
+        Buffer.byteLength(encodeURIComponent(expandedQuery), 'utf8') < 256 * 1024,
+        'Availability preserves 5000 inventory rows within the compressed JSON and URL request regression budget');
+});
+
 testSuite('Azure Local Instance Display Naming', () => {
     const tabs = fs.readdirSync(path.resolve(__dirname, '../workbooks')).filter(tab => tab !== 'AksArc');
     const displayLabels = [];

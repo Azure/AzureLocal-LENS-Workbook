@@ -2817,9 +2817,10 @@ testSuite('Overview Heartbeat Availability', () => {
     assert(position('capacity-overview-table') < position('capacity-ama-tip') &&
         position('capacity-ama-tip') < position('capacity-overview-availability') &&
         position('capacity-ratio-params') < position('capacity-overview-table') &&
-        position('overview-availability-help') === position('capacity-overview-availability') + 1 &&
+        position('overview-availability-machine-count') === position('capacity-overview-availability') + 1 &&
+        position('overview-availability-help') === position('overview-availability-machine-count') + 1 &&
         position('overview-availability-help') < position('text-top5-charts-header'),
-        'Availability follows ARG capacity with historic controls above and its guidance directly below the table');
+        'Availability follows ARG capacity with historic controls above and machine count then guidance directly below the table');
     const overviewControls = items.find(item => item.name === 'capacity-ratio-params')?.content;
     const historicRange = overviewControls?.parameters.find(parameter => parameter.name === 'NodeTrendsTimeRange');
     assert(overviewControls?.style === 'pills' &&
@@ -2855,8 +2856,9 @@ testSuite('Overview Heartbeat Availability', () => {
     const machineCount = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityMachineCount');
     const inventoryProjection = '| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)';
     const inventoryDistinct = '| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus';
-    assert(table.title === 'Azure Local Machines - Monitor Heartbeat Availability - Machine Count: {AvailabilityMachineCount}' &&
-        !items.some(item => item.name === 'overview-availability-machine-count') &&
+    assert(table.title === 'Azure Local Machines - Monitor Heartbeat Availability' &&
+        items.find(item => item.name === 'overview-availability-machine-count')?.content.json === '**Machine Count:** {AvailabilityMachineCount}' &&
+        items.filter(item => item.name === 'overview-availability-machine-count').length === 1 &&
         machineCount?.isHiddenWhenLocked && machineCount.isRequired && machineCount.queryType === 0 &&
         machineCount.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
         machineCount.query.includes("gzip_decompress_from_base64_string('{AvailabilityNodeMap}')") &&
@@ -2866,7 +2868,7 @@ testSuite('Overview Heartbeat Availability', () => {
         machineCount.query.endsWith('| summarize value = count()') && !machineCount.query.includes("| where MappingStatus == 'Mapped'") &&
         !machineCount.query.includes('Heartbeat\r\n') &&
         formatters.some(formatter => formatter.columnMatch === 'MachineName' && !formatter.formatOptions?.aggregation && formatter.formatOptions?.linkColumn === 'machineLink'),
-        'Availability displays machine count inline in its title using the same deduplicated inventory, including silent and unresolved entries');
+        'Availability displays a separate machine count below the table using the same deduplicated inventory, including silent and unresolved entries');
     const availabilityIcons = [
         { operator: '>=', thresholdValue: '{AvailabilityGreenThreshold}', representation: 'success', text: '{0}{1}' },
         { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },
@@ -2894,7 +2896,8 @@ testSuite('Overview Heartbeat Availability', () => {
         table.query.endsWith('| order by AvailabilityPercent asc nulls first, ClusterName asc, MachineName asc'),
         'Green thresholds follow selected-period boundaries while measured availability and sorting stay unchanged');
     const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
-    assert(help?.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
+    assert(help?.startsWith('### Machine Heartbeat Availability - Knowledge information\r\n') &&
+        help.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
         !help.includes('Show DCR Setup Guide') && !help.includes('No heartbeats received:') &&
         help.includes('Planned updates and machine restarts') && help.includes('do not exclude maintenance') &&
         [97.5, 98.5, 99, 99.75].every(threshold => help.includes(`${threshold}%`)),

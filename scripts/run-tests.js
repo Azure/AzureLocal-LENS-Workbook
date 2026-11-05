@@ -2840,12 +2840,19 @@ testSuite('Overview Heartbeat Availability', () => {
         table.timeContextFromParameter === 'NodeTrendsTimeRange',
         'Availability shares the existing workspace and historic range using complete five-minute intervals');
     const formatters = table.gridSettings.formatters;
+    const availabilityIcons = [
+        { operator: '>=', thresholdValue: '100', representation: 'success', text: '{0}{1}' },
+        { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },
+        { operator: '==', thresholdValue: '0', representation: '4', text: '{0}{1}' },
+        { operator: 'Default', thresholdValue: null, representation: null, text: 'N/A' }
+    ];
     assert(formatters.some(formatter => formatter.columnMatch === 'MachineName' && formatter.formatOptions?.linkColumn === 'machineLink') &&
         formatters.some(formatter => formatter.columnMatch === 'ClusterName' && formatter.formatOptions?.linkColumn === 'clusterLink') &&
-        formatters.some(formatter => formatter.columnMatch === 'AvailabilityPercent' && formatter.formatter === 8 &&
-            formatter.formatOptions?.min === 0 && formatter.formatOptions?.max === 100 && formatter.formatOptions?.palette === 'redGreenDark' &&
+        formatters.some(formatter => formatter.columnMatch === 'AvailabilityPercent' && formatter.formatter === 18 &&
+            formatter.formatOptions?.thresholdsOptions === 'icons' && !formatter.formatOptions.palette &&
+            JSON.stringify(formatter.formatOptions.thresholdsGrid) === JSON.stringify(availabilityIcons) &&
             formatter.numberFormat?.unit === 1) && table.gridSettings.rowLimit >= 2000 && table.showExportToExcel,
-        'Availability preserves resource links and exports with higher-is-greener percentage bars');
+        'Availability preserves links and exports with compact full/partial/zero receipt icons and neutral unavailable values, not colour bars');
     const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
     assert(help?.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
         help.includes('Show DCR Setup Guide') && help.includes('DCR association'),

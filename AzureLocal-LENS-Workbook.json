@@ -3251,11 +3251,35 @@
                         },
                         {
                           "columnMatch": "AvailabilityPercent",
-                          "formatter": 8,
+                          "formatter": 18,
                           "formatOptions": {
-                            "min": 0,
-                            "max": 100,
-                            "palette": "redGreenDark"
+                            "thresholdsOptions": "icons",
+                            "thresholdsGrid": [
+                              {
+                                "operator": ">=",
+                                "thresholdValue": "100",
+                                "representation": "success",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": ">",
+                                "thresholdValue": "0",
+                                "representation": "2",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "==",
+                                "thresholdValue": "0",
+                                "representation": "4",
+                                "text": "{0}{1}"
+                              },
+                              {
+                                "operator": "Default",
+                                "thresholdValue": null,
+                                "representation": null,
+                                "text": "N/A"
+                              }
+                            ]
                           },
                           "numberFormat": {
                             "unit": 1,

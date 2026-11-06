@@ -127,6 +127,138 @@ function ConvertFrom-CompressedNodeMetadata {
     }
 }
 
+function Test-HeartbeatAvailability {
+    param([string]$WorkspaceId)
+
+    function Invoke-AvailabilityQuery {
+        param([string]$Query)
+        $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $Query }
+        $table = $response.tables[0]
+        foreach ($row in $table.rows) {
+            $record = [ordered]@{}
+            for ($columnIndex = 0; $columnIndex -lt $table.columns.Count; $columnIndex++) {
+                $record[$table.columns[$columnIndex].name] = $row[$columnIndex]
+            }
+            [pscustomobject]$record
+        }
+    }
+
+    function Assert-Availability {
+        param([bool]$Condition, [string]$Name)
+        if (-not $Condition) { throw "Heartbeat availability fixture failed: $Name" }
+        [pscustomobject]@{ Query = "availability-$Name"; Rows = 1; Result = 'Passed' }
+    }
+
+    function Expand-AvailabilityQuery {
+        param([string]$Query, [string]$Start, [string]$End, [string]$TagName = '', [string]$TagValue = '')
+        $Query.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', $TagName).Replace('{ClusterTagValue}', $TagValue).
+            Replace('{NodeTrendsTimeRange:start}', "datetime($Start)").Replace('{NodeTrendsTimeRange:end}', "datetime($End)")
+    }
+
+    function Get-AvailabilityEnvelope {
+        param([string]$Encoded)
+        $payload = ConvertFrom-CompressedNodeMetadata $Encoded | ConvertFrom-Json
+        if ($null -eq $payload.Rows -or $payload.RowCount -ne @($payload.Rows).Count) {
+            throw 'Availability producer returned incomplete metadata.'
+        }
+        $payload
+    }
+
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-Overview/Capacity-Overview.workbook') | ConvertFrom-Json
+    $items = @(Get-WorkbookItems -Items $book.items)
+    $parameters = ($items | Where-Object name -EQ 'overview-availability-parameters').content.parameters
+    $nodeProducer = ($parameters | Where-Object name -EQ 'AvailabilityNodeMap').query
+    $updateProducer = ($parameters | Where-Object name -EQ 'AvailabilityUpdateMap').query
+    $tableQuery = ($items | Where-Object name -EQ 'capacity-overview-availability').content.query
+    $countQuery = ($parameters | Where-Object name -EQ 'AvailabilityMachineCount').query
+    $liveEnd = [DateTime]::UtcNow.ToString('o')
+    $liveStart = [DateTime]::Parse($liveEnd).AddDays(-$Days).ToString('o')
+    $maps = @{}
+    foreach ($entry in @(@{ Name = 'inventory'; Query = $nodeProducer }, @{ Name = 'updates'; Query = $updateProducer })) {
+        $query = Expand-AvailabilityQuery $entry.Query $liveStart $liveEnd
+        $json = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
+            --graph-query ($query -replace '\r?\n', ' ') --first 1000 --output json --only-show-errors
+        if ($LASTEXITCODE -ne 0) { throw "Availability ARG producer failed: $($entry.Name)" }
+        $response = $json -join [Environment]::NewLine | ConvertFrom-Json
+        if (@($response.data).Count -ne 1 -or $response.resultTruncated -eq $true -or $response.resultTruncated -eq 'true') {
+            throw 'Availability ARG response was missing or truncated.'
+        }
+        $maps[$entry.Name] = [string]$response.data[0].value
+        $payload = Get-AvailabilityEnvelope $maps[$entry.Name]
+        [pscustomobject]@{ Query = "availability-$($entry.Name)-producer-live"; Rows = $payload.RowCount; Result = 'Passed' }
+    }
+    $liveQuery = (Expand-AvailabilityQuery $tableQuery $liveStart $liveEnd).
+        Replace('{AvailabilityNodeMap}', $maps.inventory).Replace('{AvailabilityUpdateMap}', $maps.updates)
+    $liveRows = @(Invoke-AvailabilityQuery $liveQuery)
+    $liveCount = @(Invoke-AvailabilityQuery ($countQuery.Replace('{AvailabilityNodeMap}', $maps.inventory)))
+    Assert-Availability ($liveRows.Count -eq $liveCount[0].value -and $liveRows.Count -gt 0) 'table-and-inventory-count-live'
+
+    $prefix = '/subscriptions/synthetic/resourceGroups/fixture/providers/'
+    $instanceA = $prefix + 'Microsoft.AzureStackHCI/clusters/same-name'
+    $instanceB = $instanceA.Replace('resourceGroups/fixture', 'resourceGroups/other')
+    $instanceHidden = $prefix + 'Microsoft.AzureStackHCI/clusters/hidden'
+    $resourceSamples = @(
+        @{ id = $instanceA; name = 'same-name'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'synthetic'; resourceGroup = 'fixture'; tags = @{ preview = 'yes' }; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'host.alpha.example.invalid' }, @{ name = 'nested' }, @{ name = 'shared' }, @{ name = 'unresolved' }) } } },
+        @{ id = $instanceB; name = 'same-name'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'synthetic'; resourceGroup = 'other'; tags = @{ preview = 'yes' }; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'silent' }) } } },
+        @{ id = $instanceHidden; name = 'hidden'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'synthetic'; resourceGroup = 'fixture'; tags = @{ preview = 'no' }; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'shared' }) } } }
+    )
+    foreach ($hostName in @('host.alpha.example.invalid', 'host.beta.example.invalid', 'nested', 'shared', 'silent')) {
+        $group = if ($hostName -eq 'silent') { 'other' } else { 'fixture' }
+        $resourceSamples += @{ id = ($prefix + "Microsoft.HybridCompute/machines/$hostName").Replace('resourceGroups/fixture', "resourceGroups/$group"); name = $hostName; type = 'microsoft.hybridcompute/machines'; subscriptionId = 'synthetic'; resourceGroup = $group; properties = @{ cloudMetadata = @{ provider = 'AzSHCI' }; detectedProperties = @{ model = 'Virtual Machine' } } }
+    }
+    $resourcesJson = ConvertTo-Json -InputObject $resourceSamples -Depth 12 -Compress
+    $resourcePrelude = "let resources = print fixtureRows = dynamic($resourcesJson) | mv-expand fixtureRow = fixtureRows | project id = tostring(fixtureRow.id), name = tostring(fixtureRow.name), type = tostring(fixtureRow.type), subscriptionId = tostring(fixtureRow.subscriptionId), resourceGroup = tostring(fixtureRow.resourceGroup), tags = fixtureRow.tags, properties = fixtureRow.properties;`n"
+    $start = '2026-01-01T00:02:00Z'
+    $end = '2026-01-01T00:18:00Z'
+    $fixtureQuery = $resourcePrelude + (Expand-AvailabilityQuery $nodeProducer $start $end 'preview' 'yes')
+    $fixtureResult = @(Invoke-AvailabilityQuery $fixtureQuery)
+    $fixtureInventory = Get-AvailabilityEnvelope $fixtureResult[0].value
+    Assert-Availability (@($fixtureInventory.Rows).Count -eq 5) 'unresolved-and-silent-members-retained'
+    Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'host.alpha.example.invalid' -and $_.MappingStatus -eq 'Mapped' }).Count -eq 1) 'qualified-name-collision'
+    Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'nested' -and $_.MappingStatus -eq 'Mapped' }).Count -eq 1) 'nested-member'
+    Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'shared' -and $_.MappingStatus -eq 'Ambiguous instance membership' }).Count -eq 1) 'tag-hidden-membership-claim'
+    $scalePrelude = "let resources = range fixtureIndex from 1 to 2500 step 1 | project id = strcat('/subscriptions/synthetic/resourceGroups/fixture/providers/Microsoft.AzureStackHCI/clusters/instance-', fixtureIndex), name = strcat('instance-', fixtureIndex), type = 'microsoft.azurestackhci/clusters', subscriptionId = 'synthetic', resourceGroup = 'fixture', tags = dynamic({}), properties = bag_pack('reportedProperties', bag_pack('nodes', pack_array(bag_pack('name', strcat('unresolved-', fixtureIndex)))));`n"
+    $scaleResult = @(Invoke-AvailabilityQuery ($scalePrelude + (Expand-AvailabilityQuery $nodeProducer $start $end)))
+    $scaleInventory = Get-AvailabilityEnvelope $scaleResult[0].value
+    Assert-Availability ($scaleInventory.RowCount -eq 2500) 'unresolved-fleet-not-truncated'
+
+    $runs = @(
+        @{ id = "$instanceA/updates/package/updateruns/first"; properties = @{ timeStarted = $start } },
+        @{ id = "$instanceA/updates/package/updateruns/first"; properties = @{ timeStarted = $start } },
+        @{ id = "$instanceA/updates/package/updateruns/retry"; properties = @{ timeStarted = '2026-01-01T00:10:00Z' } },
+        @{ id = "$instanceA/updates/package/updateruns/before"; properties = @{ timeStarted = '2026-01-01T00:01:59Z' } },
+        @{ id = "$instanceA/updates/package/updateruns/end"; properties = @{ timeStarted = $end } },
+        @{ id = "$instanceHidden/updates/package/updateruns/hidden"; properties = @{ timeStarted = $start } }
+    )
+    $runsJson = ConvertTo-Json -InputObject $runs -Depth 8 -Compress
+    $runsPrelude = "let extensibilityresources = print fixtureRows = dynamic($runsJson) | mv-expand fixtureRow = fixtureRows | project id = tostring(fixtureRow.id), properties = fixtureRow.properties, type = 'microsoft.azurestackhci/clusters/updates/updateruns', resourceGroup = 'fixture';`n"
+    $fixtureUpdates = @(Invoke-AvailabilityQuery ($resourcePrelude + $runsPrelude + (Expand-AvailabilityQuery $updateProducer $start $end 'preview' 'yes')))
+    $updateEnvelope = Get-AvailabilityEnvelope $fixtureUpdates[0].value
+    Assert-Availability ($updateEnvelope.RowCount -eq 1 -and $updateEnvelope.Rows[0].InstanceUpdateAttemptsStarted -eq 2) 'distinct-retries-and-period-boundaries'
+    $hostId = ($fixtureInventory.Rows | Where-Object NodeName -EQ 'host.alpha.example.invalid').HostId
+    $heartbeatPrelude = "let Heartbeat = datatable(TimeGenerated:datetime, _ResourceId:string) [datetime(2026-01-01T00:04:59Z), '$hostId', datetime(2026-01-01T00:05:00Z), '$hostId', datetime(2026-01-01T00:05:01Z), '$hostId', datetime(2026-01-01T00:15:00Z), '$hostId'];`n"
+    $expandedTable = (Expand-AvailabilityQuery $tableQuery $start $end).
+        Replace('{AvailabilityNodeMap}', [string]$fixtureResult[0].value).Replace('{AvailabilityUpdateMap}', [string]$fixtureUpdates[0].value)
+    $tableRows = @(Invoke-AvailabilityQuery ($heartbeatPrelude + $expandedTable))
+    $mapped = $tableRows | Where-Object MachineName -EQ 'host.alpha.example.invalid'
+    Assert-Availability ($tableRows.Count -eq 5 -and $mapped.AvailabilityPercent -eq 50 -and $mapped.TotalHeartbeats -eq 2) 'complete-intervals-and-duplicate-heartbeats'
+    Assert-Availability (@($tableRows | Where-Object { $_.MachineName -eq 'silent' -and $_.AvailabilityPercent -eq 0 -and $_.InstanceUpdateAttemptsStarted -eq 0 }).Count -eq 1) 'silent-same-name-instance-zero-updates'
+    Assert-Availability (@($tableRows | Where-Object { $_.MachineName -in @('unresolved', 'shared') -and $null -eq $_.AvailabilityPercent }).Count -eq 2) 'unresolved-and-ambiguous-percentages-unavailable'
+    Assert-Availability (@($tableRows | Where-Object { $_.MachineName -ne 'silent' -and $_.InstanceUpdateAttemptsStarted -eq 2 }).Count -eq 4) 'instance-context-repeated-on-members'
+    $emptyUpdates = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject @{ Rows = @(); RowCount = 0; PeriodStart = $start; PeriodEnd = $end } -Compress)
+    $emptyRows = @(Invoke-AvailabilityQuery ($heartbeatPrelude + $expandedTable.Replace([string]$fixtureUpdates[0].value, $emptyUpdates)))
+    Assert-Availability ($emptyRows.Count -eq 5 -and @($emptyRows | Where-Object InstanceUpdateAttemptsStarted -NE 0).Count -eq 0) 'empty-update-history-retains-all-members'
+    foreach ($invalid in @(
+        @{ Rows = @(); RowCount = 1; PeriodStart = $start; PeriodEnd = $end },
+        @{ Rows = @(); RowCount = 0; PeriodStart = $start; PeriodEnd = $start }
+    )) {
+        $invalidValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $invalid -Compress)
+        $rejected = $false
+        try { $null = @(Invoke-AvailabilityQuery ($heartbeatPrelude + $expandedTable.Replace([string]$fixtureUpdates[0].value, $invalidValue))) } catch { $rejected = $true }
+        Assert-Availability $rejected $(if ($invalid.RowCount -eq 1) { 'truncated-updates-rejected' } else { 'stale-period-rejected' })
+    }
+}
+
 function Test-StorageSources {
     param([string]$WorkspaceId)
 
@@ -1228,7 +1360,7 @@ resources
             }
         }
     }
-    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId)
+    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId) + @(Test-HeartbeatAvailability -WorkspaceId $workspace.customerId)
     }
 
     $results | Format-Table -AutoSize

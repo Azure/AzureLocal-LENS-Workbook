@@ -2838,6 +2838,29 @@ testSuite('Overview Heartbeat Availability', () => {
         producer.query.includes('gzip_compress_to_base64_string') && producer.query.includes('RowCount = count()') &&
         producer.query.includes('limit 2000') && producer.query.includes('NameCompatible'),
         'Availability inventory preserves subscription, RG and instance-tag scope with mapping and truncation checks');
+    assert(producer.query.indexOf('| extend NameCompatible') < producer.query.indexOf('make_set_if(ArcId, NameCompatible, 2)') &&
+        !producer.query.includes('detectedProperties.model') &&
+        producer.query.indexOf('MembershipCount > 1') < producer.query.indexOf('| where tobool(Member.TagMatch)') &&
+        producer.query.includes('| join kind=leftouter'),
+        'Availability resolves compatible qualified names and nested hosts before uniqueness and display-tag filtering');
+    const updateProducer = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityUpdateMap');
+    assert(updateProducer?.isRequired && updateProducer.isHiddenWhenLocked && updateProducer.queryType === 1 &&
+        updateProducer.crossComponentResources.includes('{Subscriptions}') &&
+        updateProducer.query.includes('TimeStarted >= {NodeTrendsTimeRange:start} and TimeStarted < {NodeTrendsTimeRange:end}') &&
+        updateProducer.query.includes('| distinct ClusterResourceId, RunId') &&
+        updateProducer.query.includes('InstanceUpdateAttemptsStarted = count() by ClusterResourceId') &&
+        updateProducer.query.includes('gzip_compress_to_base64_string') &&
+        table.query.includes('| join kind=leftouter UpdateCounts on ClusterResourceId') &&
+        table.query.includes('coalesce(InstanceUpdateAttemptsStarted, tolong(0))'),
+        'Instance update context counts distinct started attempts in the selected period and retains rows with zero observed attempts');
+    assert(table.query.split('{AvailabilityUpdateMap}').length === 2 &&
+        table.query.includes("gettype(UpdatePayload.Rows) == 'array'") &&
+        table.query.includes('tolong(UpdatePayload.RowCount) == array_length(UpdatePayload.Rows)') &&
+        table.query.includes('todatetime(UpdatePayload.PeriodStart) == RequestedStart') &&
+        table.query.includes('todatetime(UpdatePayload.PeriodEnd) == RequestedEnd') &&
+        table.query.includes('| where UpdateMapValid') &&
+        table.gridSettings.labelSettings.some(setting => setting.columnId === 'InstanceUpdateAttemptsStarted' && setting.label === 'Instance Update Attempts Started'),
+        'Update metadata is decoded once with completeness and period guards and a numeric context column');
     assert(table.query.includes('tolower(_ResourceId)') && table.query.includes('Inventory\r\n| join kind=leftouter Available on HostId') &&
         table.query.includes('long(null)') && table.query.includes('coalesce(AvailableIntervals, tolong(0))') &&
         table.query.includes('NodeClaims > 1'),
@@ -2930,12 +2953,16 @@ testSuite('Overview Heartbeat Availability', () => {
     }));
     const payload = { Rows: rows, RowCount: rows.length };
     const encoded = zlib.gzipSync(Buffer.from(JSON.stringify(payload), 'utf8')).toString('base64');
-    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded);
+    const updateRows = [...new Set(rows.map(row => row.ClusterResourceId))].map(ClusterResourceId => ({ ClusterResourceId, InstanceUpdateAttemptsStarted: 3 }));
+    const updatePayload = { Rows: updateRows, RowCount: updateRows.length, PeriodStart: '2026-01-01T00:00:00Z', PeriodEnd: '2026-01-31T00:00:00Z' };
+    const encodedUpdates = zlib.gzipSync(Buffer.from(JSON.stringify(updatePayload), 'utf8')).toString('base64');
+    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded).replace('{AvailabilityUpdateMap}', encodedUpdates);
     const decoded = JSON.parse(zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8'));
     assert(decoded.RowCount === 5000 && decoded.Rows.length === 5000 &&
+        JSON.parse(zlib.gunzipSync(Buffer.from(encodedUpdates, 'base64')).toString('utf8')).Rows.length === updateRows.length &&
         Buffer.byteLength(JSON.stringify({ query: expandedQuery }), 'utf8') < 256 * 1024 &&
         Buffer.byteLength(encodeURIComponent(expandedQuery), 'utf8') < 256 * 1024,
-        'Availability preserves 5000 inventory rows within the compressed JSON and URL request regression budget');
+        'Availability preserves 5000 inventory rows plus instance update context within the combined compressed JSON and URL request regression budget');
 });
 
 testSuite('Azure Local Instance Display Naming', () => {

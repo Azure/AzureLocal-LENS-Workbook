@@ -2856,7 +2856,7 @@ testSuite('Overview Heartbeat Availability', () => {
     const machineCount = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityMachineCount');
     const inventoryProjection = '| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)';
     const inventoryDistinct = '| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus';
-    assert(table.title === 'Azure Local Machines - Monitor Heartbeat Availability' &&
+    assert(table.title === 'Azure Local Machine Availability' &&
         items.find(item => item.name === 'overview-availability-machine-count')?.content.json === '**Heartbeat Availability Table - Machine Count:** {AvailabilityMachineCount}' &&
         items.filter(item => item.name === 'overview-availability-machine-count').length === 1 &&
         machineCount?.isHiddenWhenLocked && machineCount.isRequired && machineCount.queryType === 0 &&

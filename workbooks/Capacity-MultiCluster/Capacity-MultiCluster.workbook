@@ -312,6 +312,14 @@
                     "style": "info"
                   },
                   "name": "dcr-setup-readiness"
+                },
+                {
+                  "type": 1,
+                  "content": {
+                    "json": "### Workspace costs and retention\r\n**Commitment tiers:** Open **Log Analytics Workspace > Usage and estimated costs** to compare Pay-as-you-go and Commitment Tiers against sustained ingestion. Commitment tiers have a minimum daily charge and a 31-day commitment period.\r\n\r\n**Retention:** Review **Data Retention** and table-level overrides. The workspace default is normally **30 days**; Analytics ingestion pricing includes **31 days** of retention. Lowering retention below the included period does not reduce ingestion charges. Keep longer history where monitoring, forecasting or compliance requires it. See [LENS cost and retention guidance](https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md#review-retention-and-costs).",
+                    "style": "info"
+                  },
+                  "name": "dcr-setup-costs"
                 }
               ]
             },

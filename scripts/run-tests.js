@@ -2162,9 +2162,9 @@ testSuite('DCR Deployment Guidance', () => {
         'dcr-setup-portal-method'
     ];
     const retainedProcedureNames = removedProcedureNames.filter(name => overviewItems.some(item => item.name === name));
-    assert(dcrGroup?.content?.items?.length === 2 && readiness && retainedProcedureNames.length === 0,
-        'Capacity standalone help uses one heading and consolidated DCR checklist with embedded links',
-        'two-item help group with no embedded procedures', JSON.stringify({
+    assert(dcrGroup?.content?.items?.length === 3 && readiness && retainedProcedureNames.length === 0,
+        'Capacity standalone help uses one heading, consolidated DCR checklist and workspace cost note',
+        'three-item help group with no embedded procedures', JSON.stringify({
             groupItems: dcrGroup?.content?.items?.map(item => item.name),
             retainedProcedureNames
         }));
@@ -2175,6 +2175,16 @@ testSuite('DCR Deployment Guidance', () => {
         readinessText.includes('remediation task') && readinessText.includes('does not deduplicate'),
         'Capacity DCR checklist stays concise while retaining deployment safeguards',
         '<=240 words with coverage, Policy remediation, and overlap safeguards', `${readinessWordCount} words`);
+
+    const costNote = dcrGroup?.content.items.find(item => item.name === 'dcr-setup-costs')?.content;
+    const costText = costNote?.json || '';
+    assert(costNote?.style === 'info' && costText.trim().split(/\s+/).length <= 120 &&
+        costText.includes('Usage and estimated costs') && costText.includes('minimum daily charge') &&
+        costText.includes('31-day commitment period') && costText.includes('**30 days**') &&
+        costText.includes('**31 days**') && costText.includes('table-level overrides') &&
+        costText.includes('does not reduce ingestion charges') && costText.includes('monitoring, forecasting or compliance') &&
+        costText.includes('example-dcr-template/README.md#review-retention-and-costs'),
+        'Hidden DCR guide concisely explains commitment obligations and default versus included retention without prescribing changes');
 
     const requiredDcrLinks = [
         'https://github.com/Azure/AzureLocal-LENS-Workbook/blob/main/example-dcr-template/README.md',
@@ -2797,6 +2807,196 @@ testSuite('Hyper-V Node Capacity', () => {
 // ============================================================================
 // RESULTS
 // ============================================================================
+testSuite('Overview Heartbeat Availability', () => {
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Capacity-Overview/Capacity-Overview.workbook'), 'utf8'));
+    const items = collectAllItems(source.items);
+    const table = items.find(item => item.name === 'capacity-overview-availability')?.content;
+    assert(!!table, 'Overview includes the machine heartbeat availability table');
+    if (!table) return;
+    const position = name => items.findIndex(item => item.name === name);
+    assert(position('capacity-overview-table') < position('capacity-ama-tip') &&
+        position('capacity-ama-tip') < position('capacity-overview-availability') &&
+        position('capacity-ratio-params') < position('capacity-overview-table') &&
+        position('overview-availability-machine-count') === position('capacity-overview-availability') + 1 &&
+        position('overview-availability-help') === position('overview-availability-machine-count') + 1 &&
+        position('overview-availability-help') < position('text-top5-charts-header'),
+        'Availability follows ARG capacity with historic controls above and machine count then guidance directly below the table');
+    const overviewControls = items.find(item => item.name === 'capacity-ratio-params')?.content;
+    const historicRange = overviewControls?.parameters.find(parameter => parameter.name === 'NodeTrendsTimeRange');
+    assert(overviewControls?.style === 'pills' &&
+        ['TargetRatio', 'RatioFilter', 'NodeTrendsTimeRange'].every(name => overviewControls.parameters.some(parameter => parameter.name === name)) &&
+        items.flatMap(item => item.content?.parameters || []).filter(parameter => parameter.id === 'node-trends-time-range-ov').length === 1 &&
+        !items.some(item => item.name === 'overview-la-workspace-param') &&
+        historicRange?.label === 'Historic Time Range' && historicRange.type === 4 && historicRange.isRequired &&
+        historicRange.typeSettings.allowCustom && historicRange.value.durationMs === 259200000 &&
+        historicRange.typeSettings.selectableValues.map(value => value.durationMs).join(',') === '1800000,3600000,14400000,43200000,86400000,259200000,604800000,1209600000,2592000000' &&
+        historicRange.description.includes('Does not affect the current Azure Resource Graph capacity table'),
+        'Overview groups its unchanged historic range with the top-level ratio controls instead of a separate mid-page row');
+    const producer = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityNodeMap');
+    assert(producer?.query.includes('{ResourceGroupFilter}') && producer.query.includes('{ClusterTagName}') &&
+        producer.query.includes('{ClusterTagValue}') && producer.crossComponentResources.includes('{Subscriptions}') &&
+        producer.query.includes('gzip_compress_to_base64_string') && producer.query.includes('RowCount = count()') &&
+        producer.query.includes('limit 2000') && producer.query.includes('NameCompatible'),
+        'Availability inventory preserves subscription, RG and instance-tag scope with mapping and truncation checks');
+    assert(producer.query.indexOf('| extend NameCompatible') < producer.query.indexOf('make_set_if(ArcId, NameCompatible, 2001)') &&
+        !producer.query.includes('detectedProperties.model') &&
+        producer.query.indexOf('MembershipCount > 1') < producer.query.indexOf('| where TagMatch') &&
+        producer.query.includes('| join kind=leftouter'),
+        'Availability resolves compatible qualified names and nested hosts before uniqueness and display-tag filtering');
+    const updateProducer = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityUpdateMap');
+    assert(producer.query.includes('ClaimId = ClaimIds') && producer.query.includes('HasCompetingClaim = countif(') &&
+        producer.query.indexOf('HasCompetingClaim = countif(') < producer.query.indexOf('| where TagMatch') &&
+        producer.query.includes('CandidateListIncomplete') && producer.query.includes('countif(MetadataIncomplete)'),
+        'Availability preserves all compatible Arc claims until reverse validation and fails closed on candidate truncation');
+    assert(updateProducer.query.includes("RunSegments = split(id, '/')") &&
+        updateProducer.query.includes('RunSegments[2]') && updateProducer.query.includes('RunSegments[4]') && updateProducer.query.includes('RunSegments[8]') &&
+        !updateProducer.query.includes("indexof(tolower(id), '/updates/')"),
+        'Availability update parent IDs use fixed ARM segments even when resource groups or instances are named updates');
+    const availabilityPeriod = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityPeriod');
+    assert(availabilityPeriod?.isRequired && availabilityPeriod.isHiddenWhenLocked && availabilityPeriod.queryType === 0 &&
+        availabilityPeriod.query.includes('{NodeTrendsTimeRange:start}') && availabilityPeriod.query.includes('{NodeTrendsTimeRange:end}') &&
+        updateProducer.query.includes('{AvailabilityPeriod}') && table.query.includes('{AvailabilityPeriod}') &&
+        !updateProducer.query.includes('{NodeTrendsTimeRange:start}') && !table.query.includes('{NodeTrendsTimeRange:start}'),
+        'Availability captures relative time bounds once so ARG and LA share the identical period despite separate execution times');
+    assert(updateProducer?.isRequired && updateProducer.isHiddenWhenLocked && updateProducer.queryType === 1 &&
+        updateProducer.crossComponentResources.includes('{Subscriptions}') &&
+        updateProducer.query.includes('TimeStarted >= todatetime(SelectedPeriod.Start) and TimeStarted < todatetime(SelectedPeriod.End)') &&
+        updateProducer.query.includes('| distinct ClusterResourceId, RunId') &&
+        updateProducer.query.includes('InstanceUpdateAttemptsStarted = count() by ClusterResourceId') &&
+        updateProducer.query.includes('gzip_compress_to_base64_string') &&
+        table.query.includes('| join kind=leftouter UpdateCounts on ClusterResourceId') &&
+        table.query.includes('coalesce(InstanceUpdateAttemptsStarted, tolong(0))'),
+        'Instance update context counts distinct started attempts in the selected period and retains rows with zero observed attempts');
+    assert(table.query.split('{AvailabilityUpdateMap}').length === 2 &&
+        table.query.includes("gettype(UpdatePayload.Rows) == 'array'") &&
+        table.query.includes('tolong(UpdatePayload.RowCount) == array_length(UpdatePayload.Rows)') &&
+        table.query.includes('todatetime(UpdatePayload.PeriodStart) == RequestedStart') &&
+        table.query.includes('todatetime(UpdatePayload.PeriodEnd) == RequestedEnd') &&
+        table.query.includes('| where UpdateMapValid') &&
+        table.gridSettings.labelSettings.some(setting => setting.columnId === 'InstanceUpdateAttemptsStarted' && setting.label === 'Solution / SBE Updates Started'),
+        'Update metadata is decoded once with completeness and period guards and a numeric context column');
+    assert(!JSON.stringify(table.gridSettings).includes('customColumnAlign') &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'AvailabilityPercent').numberFormat.options.minimumFractionDigits === 2 &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'AvailabilityPercent').numberFormat.options.maximumFractionDigits === 2 &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Status').formatOptions.thresholdsGrid.some(threshold => threshold.thresholdValue === 'Heartbeat data present' && threshold.representation === 'success'),
+        'Availability avoids unsupported alignment settings, displays two decimal places and uses a green heartbeat-present tick');
+    const overviewCountFormatter = items.find(item => item.name === 'capacity-overview-table').content.gridSettings.formatters.find(formatter => formatter.columnMatch === 'physicalCores');
+    assert(['InstanceUpdateAttemptsStarted', 'TotalHeartbeats', 'MissingHeartbeatHours', 'FirstHeartbeat', 'LastHeartbeat', 'PeriodStart', 'PeriodEndExclusive'].every(column => {
+        const formatter = table.gridSettings.formatters.find(candidate => candidate.columnMatch === column);
+        return formatter?.formatter === overviewCountFormatter.formatter &&
+            JSON.stringify(formatter.formatOptions) === JSON.stringify(overviewCountFormatter.formatOptions);
+    }) && ['InstanceUpdateAttemptsStarted', 'TotalHeartbeats'].every(column =>
+        JSON.stringify(table.gridSettings.formatters.find(formatter => formatter.columnMatch === column).numberFormat) === JSON.stringify(overviewCountFormatter.numberFormat)),
+        'Availability plain numeric and date columns reuse the overview neutral left-aligned text style without changing numeric values');
+    assert(table.query.includes('| project MachineName = NodeName, ClusterName, Status, InstanceUpdateAttemptsStarted, AvailabilityPercent, TotalHeartbeats, MissingHeartbeatHours, FirstHeartbeat, LastHeartbeat,') &&
+        items.find(item => item.name === 'overview-availability-help').content.json.includes('**Solution / SBE Updates Started:**') &&
+        items.find(item => item.name === 'overview-availability-help').content.json.includes('not continuous availability or a healthy platform'),
+        'Availability preserves requested column order and explains update context and the heartbeat-presence tick');
+    assert(table.query.includes('tolower(_ResourceId)') && table.query.includes('Inventory\r\n| join kind=leftouter Available on HostId') &&
+        table.query.includes('long(null)') && table.query.includes('coalesce(AvailableIntervals, tolong(0))') &&
+        table.query.includes('NodeClaims > 1'),
+        'Availability uses ARM IDs, retains silent machines and rejects ambiguous mappings');
+    assert(table.query.split('{AvailabilityNodeMap}').length === 2 &&
+        table.query.includes("gettype(MapPayload.Rows) == 'array'") &&
+        table.query.includes('tolong(MapPayload.RowCount) == array_length(MapPayload.Rows)') &&
+        table.query.includes('assert('),
+        'Availability decodes inventory once and rejects malformed or truncated nonempty maps');
+    assert(table.query.includes('let RequestedStart = todatetime(SelectedPeriod.Start)') && table.query.includes('let RequestedEnd = todatetime(SelectedPeriod.End)') &&
+        table.query.includes('TimeGenerated >= StartTime and TimeGenerated < EndTime') &&
+        table.query.includes('assert(TotalIntervals > 0') && table.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        table.timeContextFromParameter === 'NodeTrendsTimeRange',
+        'Availability shares the existing workspace and historic range using complete five-minute intervals');
+    const formatters = table.gridSettings.formatters;
+    const machineCount = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityMachineCount');
+    const inventoryProjection = '| project ClusterName = tostring(Row.ClusterName), ClusterResourceId = tostring(Row.ClusterResourceId), NodeName = tostring(Row.NodeName), HostId = tostring(Row.HostId), MappingStatus = tostring(Row.MappingStatus)';
+    const inventoryDistinct = '| distinct ClusterName, ClusterResourceId, NodeName, HostId, MappingStatus';
+    assert(table.title === 'Azure Local Machine Availability' &&
+        items.find(item => item.name === 'overview-availability-machine-count')?.content.json === '**Heartbeat Availability Table - Machine Count:** {AvailabilityMachineCount}' &&
+        items.filter(item => item.name === 'overview-availability-machine-count').length === 1 &&
+        machineCount?.isHiddenWhenLocked && machineCount.isRequired && machineCount.queryType === 0 &&
+        machineCount.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        machineCount.query.includes("gzip_decompress_from_base64_string('{AvailabilityNodeMap}')") &&
+        machineCount.query.includes('tolong(MapPayload.RowCount) == array_length(MapPayload.Rows)') &&
+        machineCount.query.includes('| where MapValid') && machineCount.query.includes(inventoryProjection) && table.query.includes(inventoryProjection) &&
+        machineCount.query.includes(inventoryDistinct) && table.query.includes(inventoryDistinct) &&
+        machineCount.query.endsWith('| summarize value = count()') && !machineCount.query.includes("| where MappingStatus == 'Mapped'") &&
+        !machineCount.query.includes('Heartbeat\r\n') &&
+        formatters.some(formatter => formatter.columnMatch === 'MachineName' && !formatter.formatOptions?.aggregation && formatter.formatOptions?.linkColumn === 'machineLink'),
+        'Availability displays a separate machine count below the table using the same deduplicated inventory, including silent and unresolved entries');
+    const availabilityIcons = [
+        { operator: '>=', thresholdValue: '{AvailabilityGreenThreshold}', representation: 'success', text: '{0}{1}' },
+        { operator: '>', thresholdValue: '0', representation: '2', text: '{0}{1}' },
+        { operator: '==', thresholdValue: '0', representation: '4', text: '{0}{1}' },
+        { operator: 'Default', thresholdValue: null, representation: null, text: 'N/A' }
+    ];
+    assert(formatters.some(formatter => formatter.columnMatch === 'MachineName' && formatter.formatOptions?.linkColumn === 'machineLink') &&
+        formatters.some(formatter => formatter.columnMatch === 'ClusterName' && formatter.formatOptions?.linkColumn === 'clusterLink') &&
+        formatters.some(formatter => formatter.columnMatch === 'AvailabilityPercent' && formatter.formatter === 18 &&
+            formatter.formatOptions?.thresholdsOptions === 'icons' && !formatter.formatOptions.palette &&
+            JSON.stringify(formatter.formatOptions.thresholdsGrid) === JSON.stringify(availabilityIcons) &&
+            formatter.numberFormat?.unit === 1) && table.gridSettings.rowLimit >= 2000 && table.showExportToExcel,
+        'Availability preserves links and exports with compact time-based green/partial/zero receipt icons and neutral unavailable values, not colour bars');
+    const greenThreshold = items.find(item => item.name === 'overview-availability-parameters')?.content.parameters.find(parameter => parameter.name === 'AvailabilityGreenThreshold');
+    const thresholdBands = [...(greenThreshold?.query || '').matchAll(/SelectedPeriod <= (\d+)d, ([\d.]+)/g)].map(match => ({ days: Number(match[1]), percent: Number(match[2]) }));
+    const fallbackThreshold = Number(greenThreshold?.query.match(/, ([\d.]+)\)$/)?.[1]);
+    const thresholdForDays = days => thresholdBands.find(band => days <= band.days)?.percent ?? fallbackThreshold;
+    assert(greenThreshold?.isHiddenWhenLocked && greenThreshold.isRequired && greenThreshold.queryType === 0 &&
+        greenThreshold.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
+        greenThreshold.query.includes('{NodeTrendsTimeRange:end} - {NodeTrendsTimeRange:start}') &&
+        JSON.stringify(thresholdBands) === JSON.stringify([{ days: 1, percent: 97.5 }, { days: 3, percent: 98.5 }, { days: 7, percent: 99 }]) &&
+        fallbackThreshold === 99.75 &&
+        [0.5, 1, 1.001, 3, 3.001, 7, 7.001, 14, 30].map(thresholdForDays).join(',') === '97.5,97.5,98.5,98.5,99,99,99.75,99.75,99.75' &&
+        table.query.includes('round(100.0 * todouble(AvailableIntervals) / todouble(TotalIntervals), 3)') &&
+        table.query.endsWith('| order by AvailabilityPercent asc nulls first, ClusterName asc, MachineName asc'),
+        'Green thresholds follow selected-period boundaries while measured availability and sorting stay unchanged');
+    const help = items.find(item => item.name === 'overview-availability-help')?.content.json;
+    assert(help?.startsWith('### Machine Heartbeat Availability - Knowledge information\r\n') &&
+        help.includes('not a direct measure of service uptime') && help.includes('unresolved machine mappings have no percentage') &&
+        !help.includes('Show DCR Setup Guide') && !help.includes('No heartbeats received:') &&
+        help.includes('Planned updates and machine restarts') && help.includes('do not exclude maintenance') &&
+        [97.5, 98.5, 99, 99.75].every(threshold => help.includes(`${threshold}%`)),
+        'Availability preserves heartbeat-specific caveats and thresholds without repeating shared setup guidance');
+    const tips = items.filter(item => item.name === 'capacity-ama-tip');
+    assert(tips.length === 1 && tips[0].content.style === 'upsell' && tips[0].content.json.startsWith('\u{1f4a1} **Tip:**') &&
+        tips[0].content.json.includes('reporting machines') && tips[0].content.json.includes('reporting instances') &&
+        tips[0].content.json.includes('Valid zero counter readings') && tips[0].content.json.includes('Managed Prometheus') &&
+        tips[0].content.json.includes('Show DCR Setup Guide') && tips[0].content.json.includes('Data Collection Rule (DCR)') &&
+        tips[0].content.json.includes('https://github.com/Azure/AzureLocal-LENS-Workbook/tree/main/example-dcr-template#readme') &&
+        !items.some(item => item.name === 'capacity-counter-coverage-tip'),
+        'One purple lightbulb tip combines setup, coverage, LENS guide and valid-zero guidance without duplication');
+    const interval = 5 * 60 * 1000;
+    const requestedEnd = Date.UTC(2026, 0, 31, 12, 3);
+    const requestedStart = requestedEnd - 30 * 24 * 60 * 60 * 1000;
+    const start = Math.ceil(requestedStart / interval) * interval;
+    const end = Math.floor(requestedEnd / interval) * interval;
+    const expected = (end - start) / interval;
+    const timestamps = [start - 1, start, start + 1, end - 1, end];
+    const received = new Set(timestamps.filter(timestamp => timestamp >= start && timestamp < end).map(timestamp => Math.floor(timestamp / interval))).size;
+    assert(expected === 8639 && received === 2 && 100 * expected / expected === 100 &&
+        100 * 0 / expected === 0 && (expected - received) * 5 + received * 5 === expected * 5,
+        'Reference interval math excludes partial endpoints, deduplicates buckets and preserves zero/full coverage');
+    const rows = Array.from({ length: 5000 }, (_, index) => ({
+        ClusterName: `instance-${Math.floor(index / 16)}`,
+        ClusterResourceId: `/subscriptions/synthetic/resourceGroups/rg-${Math.floor(index / 16)}/providers/Microsoft.AzureStackHCI/clusters/instance-${Math.floor(index / 16)}`,
+        NodeName: `host-${index}.example.invalid`,
+        HostId: `/subscriptions/synthetic/resourceGroups/rg-${Math.floor(index / 16)}/providers/Microsoft.HybridCompute/machines/host-${index}`,
+        MappingStatus: 'Mapped'
+    }));
+    const payload = { Rows: rows, RowCount: rows.length };
+    const encoded = zlib.gzipSync(Buffer.from(JSON.stringify(payload), 'utf8')).toString('base64');
+    const updateRows = [...new Set(rows.map(row => row.ClusterResourceId))].map(ClusterResourceId => ({ ClusterResourceId, InstanceUpdateAttemptsStarted: 3 }));
+    const updatePayload = { Rows: updateRows, RowCount: updateRows.length, PeriodStart: '2026-01-01T00:00:00Z', PeriodEnd: '2026-01-31T00:00:00Z' };
+    const encodedUpdates = zlib.gzipSync(Buffer.from(JSON.stringify(updatePayload), 'utf8')).toString('base64');
+    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded).replace('{AvailabilityUpdateMap}', encodedUpdates)
+        .replace('{AvailabilityPeriod}', zlib.gzipSync(Buffer.from(JSON.stringify({ Start: updatePayload.PeriodStart, End: updatePayload.PeriodEnd }), 'utf8')).toString('base64'));
+    const decoded = JSON.parse(zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8'));
+    assert(decoded.RowCount === 5000 && decoded.Rows.length === 5000 &&
+        JSON.parse(zlib.gunzipSync(Buffer.from(encodedUpdates, 'base64')).toString('utf8')).Rows.length === updateRows.length &&
+        Buffer.byteLength(JSON.stringify({ query: expandedQuery }), 'utf8') < 256 * 1024 &&
+        Buffer.byteLength(encodeURIComponent(expandedQuery), 'utf8') < 256 * 1024,
+        'Availability preserves 5000 inventory rows plus instance update context within the combined compressed JSON and URL request regression budget');
+});
+
 testSuite('Azure Local Instance Display Naming', () => {
     const tabs = fs.readdirSync(path.resolve(__dirname, '../workbooks')).filter(tab => tab !== 'AksArc');
     const displayLabels = [];

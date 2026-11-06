@@ -2844,9 +2844,15 @@ testSuite('Overview Heartbeat Availability', () => {
         producer.query.includes('| join kind=leftouter'),
         'Availability resolves compatible qualified names and nested hosts before uniqueness and display-tag filtering');
     const updateProducer = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityUpdateMap');
+    const availabilityPeriod = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityPeriod');
+    assert(availabilityPeriod?.isRequired && availabilityPeriod.isHiddenWhenLocked && availabilityPeriod.queryType === 0 &&
+        availabilityPeriod.query.includes('{NodeTrendsTimeRange:start}') && availabilityPeriod.query.includes('{NodeTrendsTimeRange:end}') &&
+        updateProducer.query.includes('{AvailabilityPeriod}') && table.query.includes('{AvailabilityPeriod}') &&
+        !updateProducer.query.includes('{NodeTrendsTimeRange:start}') && !table.query.includes('{NodeTrendsTimeRange:start}'),
+        'Availability captures relative time bounds once so ARG and LA share the identical period despite separate execution times');
     assert(updateProducer?.isRequired && updateProducer.isHiddenWhenLocked && updateProducer.queryType === 1 &&
         updateProducer.crossComponentResources.includes('{Subscriptions}') &&
-        updateProducer.query.includes('TimeStarted >= {NodeTrendsTimeRange:start} and TimeStarted < {NodeTrendsTimeRange:end}') &&
+        updateProducer.query.includes('TimeStarted >= todatetime(SelectedPeriod.Start) and TimeStarted < todatetime(SelectedPeriod.End)') &&
         updateProducer.query.includes('| distinct ClusterResourceId, RunId') &&
         updateProducer.query.includes('InstanceUpdateAttemptsStarted = count() by ClusterResourceId') &&
         updateProducer.query.includes('gzip_compress_to_base64_string') &&
@@ -2859,8 +2865,17 @@ testSuite('Overview Heartbeat Availability', () => {
         table.query.includes('todatetime(UpdatePayload.PeriodStart) == RequestedStart') &&
         table.query.includes('todatetime(UpdatePayload.PeriodEnd) == RequestedEnd') &&
         table.query.includes('| where UpdateMapValid') &&
-        table.gridSettings.labelSettings.some(setting => setting.columnId === 'InstanceUpdateAttemptsStarted' && setting.label === 'Instance Update Attempts Started'),
+        table.gridSettings.labelSettings.some(setting => setting.columnId === 'InstanceUpdateAttemptsStarted' && setting.label === 'Solution / SBE Updates Started'),
         'Update metadata is decoded once with completeness and period guards and a numeric context column');
+    assert(!JSON.stringify(table.gridSettings).includes('customColumnAlign') &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'AvailabilityPercent').numberFormat.options.minimumFractionDigits === 2 &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'AvailabilityPercent').numberFormat.options.maximumFractionDigits === 2 &&
+        table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Status').formatOptions.thresholdsGrid.some(threshold => threshold.thresholdValue === 'Heartbeat data present' && threshold.representation === 'success'),
+        'Availability avoids unsupported alignment settings, displays two decimal places and uses a green heartbeat-present tick');
+    assert(table.query.includes('| project MachineName = NodeName, ClusterName, Status, InstanceUpdateAttemptsStarted, AvailabilityPercent, TotalHeartbeats, MissingHeartbeatHours, FirstHeartbeat, LastHeartbeat,') &&
+        items.find(item => item.name === 'overview-availability-help').content.json.includes('**Solution / SBE Updates Started:**') &&
+        items.find(item => item.name === 'overview-availability-help').content.json.includes('not continuous availability or a healthy platform'),
+        'Availability preserves requested column order and explains update context and the heartbeat-presence tick');
     assert(table.query.includes('tolower(_ResourceId)') && table.query.includes('Inventory\r\n| join kind=leftouter Available on HostId') &&
         table.query.includes('long(null)') && table.query.includes('coalesce(AvailableIntervals, tolong(0))') &&
         table.query.includes('NodeClaims > 1'),
@@ -2870,7 +2885,7 @@ testSuite('Overview Heartbeat Availability', () => {
         table.query.includes('tolong(MapPayload.RowCount) == array_length(MapPayload.Rows)') &&
         table.query.includes('assert('),
         'Availability decodes inventory once and rejects malformed or truncated nonempty maps');
-    assert(table.query.includes('{NodeTrendsTimeRange:start}') && table.query.includes('{NodeTrendsTimeRange:end}') &&
+    assert(table.query.includes('let RequestedStart = todatetime(SelectedPeriod.Start)') && table.query.includes('let RequestedEnd = todatetime(SelectedPeriod.End)') &&
         table.query.includes('TimeGenerated >= StartTime and TimeGenerated < EndTime') &&
         table.query.includes('assert(TotalIntervals > 0') && table.crossComponentResources.includes('{MachinesLogAnalyticsWorkspace}') &&
         table.timeContextFromParameter === 'NodeTrendsTimeRange',
@@ -2956,7 +2971,8 @@ testSuite('Overview Heartbeat Availability', () => {
     const updateRows = [...new Set(rows.map(row => row.ClusterResourceId))].map(ClusterResourceId => ({ ClusterResourceId, InstanceUpdateAttemptsStarted: 3 }));
     const updatePayload = { Rows: updateRows, RowCount: updateRows.length, PeriodStart: '2026-01-01T00:00:00Z', PeriodEnd: '2026-01-31T00:00:00Z' };
     const encodedUpdates = zlib.gzipSync(Buffer.from(JSON.stringify(updatePayload), 'utf8')).toString('base64');
-    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded).replace('{AvailabilityUpdateMap}', encodedUpdates);
+    const expandedQuery = table.query.replace('{AvailabilityNodeMap}', encoded).replace('{AvailabilityUpdateMap}', encodedUpdates)
+        .replace('{AvailabilityPeriod}', zlib.gzipSync(Buffer.from(JSON.stringify({ Start: updatePayload.PeriodStart, End: updatePayload.PeriodEnd }), 'utf8')).toString('base64'));
     const decoded = JSON.parse(zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8'));
     assert(decoded.RowCount === 5000 && decoded.Rows.length === 5000 &&
         JSON.parse(zlib.gunzipSync(Buffer.from(encodedUpdates, 'base64')).toString('utf8')).Rows.length === updateRows.length &&

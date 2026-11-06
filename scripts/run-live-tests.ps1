@@ -150,9 +150,10 @@ function Test-HeartbeatAvailability {
     }
 
     function Expand-AvailabilityQuery {
-        param([string]$Query, [string]$Start, [string]$End, [string]$TagName = '', [string]$TagValue = '')
+        param([string]$Query, [string]$Start, [string]$End, [string]$TagName = '', [string]$TagValue = '', [string]$Period = '')
+        if (-not $Period) { $Period = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject @{ Start = $Start; End = $End } -Compress) }
         $Query.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', $TagName).Replace('{ClusterTagValue}', $TagValue).
-            Replace('{NodeTrendsTimeRange:start}', "datetime($Start)").Replace('{NodeTrendsTimeRange:end}', "datetime($End)")
+            Replace('{NodeTrendsTimeRange:start}', "datetime($Start)").Replace('{NodeTrendsTimeRange:end}', "datetime($End)").Replace('{AvailabilityPeriod}', $Period)
     }
 
     function Get-AvailabilityEnvelope {
@@ -173,9 +174,14 @@ function Test-HeartbeatAvailability {
     $countQuery = ($parameters | Where-Object name -EQ 'AvailabilityMachineCount').query
     $liveEnd = [DateTime]::UtcNow.ToString('o')
     $liveStart = [DateTime]::Parse($liveEnd).AddDays(-$Days).ToString('o')
+    $periodQuery = ($parameters | Where-Object name -EQ 'AvailabilityPeriod').query
+    $periodResult = @(Invoke-AvailabilityQuery ($periodQuery.Replace('{NodeTrendsTimeRange:start}', "ago($($Days)d)").Replace('{NodeTrendsTimeRange:end}', 'now()')))
+    $livePeriod = [string]$periodResult[0].value
+    $capturedPeriod = ConvertFrom-CompressedNodeMetadata $livePeriod | ConvertFrom-Json
+    Assert-Availability (([DateTime]$capturedPeriod.End - [DateTime]$capturedPeriod.Start).TotalDays -eq $Days) 'relative-period-snapshot-live'
     $maps = @{}
     foreach ($entry in @(@{ Name = 'inventory'; Query = $nodeProducer }, @{ Name = 'updates'; Query = $updateProducer })) {
-        $query = Expand-AvailabilityQuery $entry.Query $liveStart $liveEnd
+        $query = Expand-AvailabilityQuery $entry.Query $liveStart $liveEnd -Period $livePeriod
         $json = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
             --graph-query ($query -replace '\r?\n', ' ') --first 1000 --output json --only-show-errors
         if ($LASTEXITCODE -ne 0) { throw "Availability ARG producer failed: $($entry.Name)" }
@@ -187,7 +193,7 @@ function Test-HeartbeatAvailability {
         $payload = Get-AvailabilityEnvelope $maps[$entry.Name]
         [pscustomobject]@{ Query = "availability-$($entry.Name)-producer-live"; Rows = $payload.RowCount; Result = 'Passed' }
     }
-    $liveQuery = (Expand-AvailabilityQuery $tableQuery $liveStart $liveEnd).
+    $liveQuery = (Expand-AvailabilityQuery $tableQuery $liveStart $liveEnd -Period $livePeriod).
         Replace('{AvailabilityNodeMap}', $maps.inventory).Replace('{AvailabilityUpdateMap}', $maps.updates)
     $liveRows = @(Invoke-AvailabilityQuery $liveQuery)
     $liveCount = @(Invoke-AvailabilityQuery ($countQuery.Replace('{AvailabilityNodeMap}', $maps.inventory)))

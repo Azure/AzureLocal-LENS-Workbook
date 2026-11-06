@@ -223,6 +223,25 @@ function Test-HeartbeatAvailability {
     Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'host.alpha.example.invalid' -and $_.MappingStatus -eq 'Mapped' }).Count -eq 1) 'qualified-name-collision'
     Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'nested' -and $_.MappingStatus -eq 'Mapped' }).Count -eq 1) 'nested-member'
     Assert-Availability (@($fixtureInventory.Rows | Where-Object { $_.NodeName -eq 'shared' -and $_.MappingStatus -eq 'Ambiguous instance membership' }).Count -eq 1) 'tag-hidden-membership-claim'
+    $mixedResources = @(
+        @{ id = $instanceA; name = 'same-name'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'synthetic'; resourceGroup = 'fixture'; tags = @{ preview = 'yes' }; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'mixed.a.example.invalid' }) } } },
+        @{ id = $instanceHidden; name = 'hidden'; type = 'microsoft.azurestackhci/clusters'; subscriptionId = 'synthetic'; resourceGroup = 'fixture'; tags = @{ preview = 'no' }; properties = @{ reportedProperties = @{ nodes = @(@{ name = 'mixed' }) } } }
+    )
+    foreach ($hostName in @('mixed.a.example.invalid', 'mixed.b.example.invalid')) {
+        $mixedResources += @{ id = $prefix + "Microsoft.HybridCompute/machines/$hostName"; name = $hostName; type = 'microsoft.hybridcompute/machines'; subscriptionId = 'synthetic'; resourceGroup = 'fixture'; properties = @{ cloudMetadata = @{ provider = 'AzSHCI' } } }
+    }
+    $mixedJson = ConvertTo-Json -InputObject $mixedResources -Depth 12 -Compress
+    $mixedPrelude = $resourcePrelude.Replace($resourcesJson, $mixedJson)
+    $mixedResult = @(Invoke-AvailabilityQuery ($mixedPrelude + (Expand-AvailabilityQuery $nodeProducer $start $end)))
+    $mixedInventory = Get-AvailabilityEnvelope $mixedResult[0].value
+    Assert-Availability ($mixedInventory.RowCount -eq 2 -and @($mixedInventory.Rows | Where-Object MappingStatus -EQ 'Mapped').Count -eq 0 -and @($mixedInventory.Rows | Where-Object NodeName -EQ 'mixed').Count -eq 1) 'mixed-name-competing-claims'
+    $mixedHiddenResult = @(Invoke-AvailabilityQuery ($mixedPrelude + (Expand-AvailabilityQuery $nodeProducer $start $end 'preview' 'yes')))
+    $mixedHiddenInventory = Get-AvailabilityEnvelope $mixedHiddenResult[0].value
+    Assert-Availability ($mixedHiddenInventory.RowCount -eq 1 -and $mixedHiddenInventory.Rows[0].NodeName -eq 'mixed.a.example.invalid' -and $mixedHiddenInventory.Rows[0].MappingStatus -eq 'Ambiguous instance membership') 'tag-hidden-mixed-name-competing-claim'
+    $candidateOverflowPrelude = "let resources = (print id = '$instanceA', name = 'same-name', type = 'microsoft.azurestackhci/clusters', subscriptionId = 'synthetic', resourceGroup = 'fixture', tags = dynamic({}), properties = dynamic({`"reportedProperties`":{`"nodes`":[{`"name`":`"overflow`"}]}})) | union (range candidateIndex from 1 to 2001 step 1 | project id = strcat('${prefix}Microsoft.HybridCompute/machines/overflow.', candidateIndex, '.example.invalid'), name = strcat('overflow.', candidateIndex, '.example.invalid'), type = 'microsoft.hybridcompute/machines', subscriptionId = 'synthetic', resourceGroup = 'fixture', tags = dynamic({}), properties = dynamic({`"cloudMetadata`":{`"provider`":`"AzSHCI`"}}));`n"
+    $candidateOverflowResult = @(Invoke-AvailabilityQuery ($candidateOverflowPrelude + (Expand-AvailabilityQuery $nodeProducer $start $end)))
+    $candidateOverflowPayload = ConvertFrom-CompressedNodeMetadata ([string]$candidateOverflowResult[0].value) | ConvertFrom-Json
+    Assert-Availability ($candidateOverflowPayload.RowCount -gt @($candidateOverflowPayload.Rows).Count) 'truncated-candidate-claims-rejected'
     $scalePrelude = "let resources = range fixtureIndex from 1 to 2500 step 1 | project id = strcat('/subscriptions/synthetic/resourceGroups/fixture/providers/Microsoft.AzureStackHCI/clusters/instance-', fixtureIndex), name = strcat('instance-', fixtureIndex), type = 'microsoft.azurestackhci/clusters', subscriptionId = 'synthetic', resourceGroup = 'fixture', tags = dynamic({}), properties = bag_pack('reportedProperties', bag_pack('nodes', pack_array(bag_pack('name', strcat('unresolved-', fixtureIndex)))));`n"
     $scaleResult = @(Invoke-AvailabilityQuery ($scalePrelude + (Expand-AvailabilityQuery $nodeProducer $start $end)))
     $scaleInventory = Get-AvailabilityEnvelope $scaleResult[0].value
@@ -241,6 +260,22 @@ function Test-HeartbeatAvailability {
     $fixtureUpdates = @(Invoke-AvailabilityQuery ($resourcePrelude + $runsPrelude + (Expand-AvailabilityQuery $updateProducer $start $end 'preview' 'yes')))
     $updateEnvelope = Get-AvailabilityEnvelope $fixtureUpdates[0].value
     Assert-Availability ($updateEnvelope.RowCount -eq 1 -and $updateEnvelope.Rows[0].InstanceUpdateAttemptsStarted -eq 2) 'distinct-retries-and-period-boundaries'
+    foreach ($collision in @(
+        @{ Name = 'resource-group-named-updates'; InstanceId = $instanceA.Replace('resourceGroups/fixture', 'resourceGroups/updates') },
+        @{ Name = 'instance-named-updates'; InstanceId = $prefix + 'Microsoft.AzureStackHCI/clusters/updates' }
+    )) {
+        $collisionResources = @(@{ id = $collision.InstanceId; type = 'microsoft.azurestackhci/clusters'; tags = @{ preview = 'yes' } })
+        $collisionResourcesJson = ConvertTo-Json -InputObject $collisionResources -Depth 8 -Compress
+        $collisionRuns = @(
+            @{ id = "$($collision.InstanceId)/updates/package/updateruns/first"; properties = @{ timeStarted = $start } },
+            @{ id = "$($collision.InstanceId)/updates/package/updateruns/retry"; properties = @{ timeStarted = $start } }
+        )
+        $collisionRunsJson = ConvertTo-Json -InputObject $collisionRuns -Depth 8 -Compress
+        $collisionQuery = $resourcePrelude.Replace($resourcesJson, $collisionResourcesJson) + $runsPrelude.Replace($runsJson, $collisionRunsJson) + (Expand-AvailabilityQuery $updateProducer $start $end 'preview' 'yes')
+        $collisionResult = @(Invoke-AvailabilityQuery $collisionQuery)
+        $collisionEnvelope = Get-AvailabilityEnvelope $collisionResult[0].value
+        Assert-Availability ($collisionEnvelope.RowCount -eq 1 -and $collisionEnvelope.Rows[0].ClusterResourceId -eq $collision.InstanceId.ToLowerInvariant() -and $collisionEnvelope.Rows[0].InstanceUpdateAttemptsStarted -eq 2) $collision.Name
+    }
     $hostId = ($fixtureInventory.Rows | Where-Object NodeName -EQ 'host.alpha.example.invalid').HostId
     $heartbeatPrelude = "let Heartbeat = datatable(TimeGenerated:datetime, _ResourceId:string) [datetime(2026-01-01T00:04:59Z), '$hostId', datetime(2026-01-01T00:05:00Z), '$hostId', datetime(2026-01-01T00:05:01Z), '$hostId', datetime(2026-01-01T00:15:00Z), '$hostId'];`n"
     $expandedTable = (Expand-AvailabilityQuery $tableQuery $start $end).

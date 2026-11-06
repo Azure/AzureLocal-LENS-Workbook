@@ -2838,12 +2838,20 @@ testSuite('Overview Heartbeat Availability', () => {
         producer.query.includes('gzip_compress_to_base64_string') && producer.query.includes('RowCount = count()') &&
         producer.query.includes('limit 2000') && producer.query.includes('NameCompatible'),
         'Availability inventory preserves subscription, RG and instance-tag scope with mapping and truncation checks');
-    assert(producer.query.indexOf('| extend NameCompatible') < producer.query.indexOf('make_set_if(ArcId, NameCompatible, 2)') &&
+    assert(producer.query.indexOf('| extend NameCompatible') < producer.query.indexOf('make_set_if(ArcId, NameCompatible, 2001)') &&
         !producer.query.includes('detectedProperties.model') &&
-        producer.query.indexOf('MembershipCount > 1') < producer.query.indexOf('| where tobool(Member.TagMatch)') &&
+        producer.query.indexOf('MembershipCount > 1') < producer.query.indexOf('| where TagMatch') &&
         producer.query.includes('| join kind=leftouter'),
         'Availability resolves compatible qualified names and nested hosts before uniqueness and display-tag filtering');
     const updateProducer = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityUpdateMap');
+    assert(producer.query.includes('ClaimId = ClaimIds') && producer.query.includes('HasCompetingClaim = countif(') &&
+        producer.query.indexOf('HasCompetingClaim = countif(') < producer.query.indexOf('| where TagMatch') &&
+        producer.query.includes('CandidateListIncomplete') && producer.query.includes('countif(MetadataIncomplete)'),
+        'Availability preserves all compatible Arc claims until reverse validation and fails closed on candidate truncation');
+    assert(updateProducer.query.includes("RunSegments = split(id, '/')") &&
+        updateProducer.query.includes('RunSegments[2]') && updateProducer.query.includes('RunSegments[4]') && updateProducer.query.includes('RunSegments[8]') &&
+        !updateProducer.query.includes("indexof(tolower(id), '/updates/')"),
+        'Availability update parent IDs use fixed ARM segments even when resource groups or instances are named updates');
     const availabilityPeriod = items.flatMap(item => item.content?.parameters || []).find(parameter => parameter.name === 'AvailabilityPeriod');
     assert(availabilityPeriod?.isRequired && availabilityPeriod.isHiddenWhenLocked && availabilityPeriod.queryType === 0 &&
         availabilityPeriod.query.includes('{NodeTrendsTimeRange:start}') && availabilityPeriod.query.includes('{NodeTrendsTimeRange:end}') &&

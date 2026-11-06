@@ -2880,6 +2880,14 @@ testSuite('Overview Heartbeat Availability', () => {
         table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'AvailabilityPercent').numberFormat.options.maximumFractionDigits === 2 &&
         table.gridSettings.formatters.find(formatter => formatter.columnMatch === 'Status').formatOptions.thresholdsGrid.some(threshold => threshold.thresholdValue === 'Heartbeat data present' && threshold.representation === 'success'),
         'Availability avoids unsupported alignment settings, displays two decimal places and uses a green heartbeat-present tick');
+    const overviewCountFormatter = items.find(item => item.name === 'capacity-overview-table').content.gridSettings.formatters.find(formatter => formatter.columnMatch === 'physicalCores');
+    assert(['InstanceUpdateAttemptsStarted', 'TotalHeartbeats', 'MissingHeartbeatHours', 'FirstHeartbeat', 'LastHeartbeat', 'PeriodStart', 'PeriodEndExclusive'].every(column => {
+        const formatter = table.gridSettings.formatters.find(candidate => candidate.columnMatch === column);
+        return formatter?.formatter === overviewCountFormatter.formatter &&
+            JSON.stringify(formatter.formatOptions) === JSON.stringify(overviewCountFormatter.formatOptions);
+    }) && ['InstanceUpdateAttemptsStarted', 'TotalHeartbeats'].every(column =>
+        JSON.stringify(table.gridSettings.formatters.find(formatter => formatter.columnMatch === column).numberFormat) === JSON.stringify(overviewCountFormatter.numberFormat)),
+        'Availability plain numeric and date columns reuse the overview neutral left-aligned text style without changing numeric values');
     assert(table.query.includes('| project MachineName = NodeName, ClusterName, Status, InstanceUpdateAttemptsStarted, AvailabilityPercent, TotalHeartbeats, MissingHeartbeatHours, FirstHeartbeat, LastHeartbeat,') &&
         items.find(item => item.name === 'overview-availability-help').content.json.includes('**Solution / SBE Updates Started:**') &&
         items.find(item => item.name === 'overview-availability-help').content.json.includes('not continuous availability or a healthy platform'),

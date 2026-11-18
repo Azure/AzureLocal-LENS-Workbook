@@ -1517,7 +1517,7 @@
                   "label": "Time Range",
                   "type": 2,
                   "isRequired": true,
-                  "value": "12",
+                  "value": "18",
                   "typeSettings": {
                     "additionalResourceOptions": [],
                     "showDefault": false

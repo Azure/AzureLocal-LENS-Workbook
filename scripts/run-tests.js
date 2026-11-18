@@ -1886,9 +1886,11 @@ testSuite('Fleet Identity Regression Backstops', () => {
 
     const vmList = allQueries.find(query => query.name === 'vm-all-list');
     assert(vmList && vmList.query.includes("clusterName = strcat_array(make_set(clusterName), ', ')") &&
-        vmList.query.includes("clusterLink = strcat_array(make_set(clusterLink), ', ')"),
-    'VM inventory preserves shared-RG sibling disclosure',
-    'comma-joined cluster names and links', vmList ? vmList.query : 'query missing');
+        vmList.query.includes('clusterLinks = make_set(clusterLink)') &&
+        vmList.query.includes("clusterLink = iff(array_length(clusterLinks) == 1, tostring(clusterLinks[0]), '')") &&
+        !vmList.query.includes('clusterLink = take_any(clusterLink)'),
+    'VM inventory preserves shared-RG sibling names and links only one unambiguous instance',
+    'all candidate names, one link only for one distinct candidate', vmList ? vmList.query : 'query missing');
 
     const aksMapping = allQueries.find(query => query.name === 'aks-azurelocal-mapping');
     assert(aksMapping && aksMapping.query.includes('make_set(coalesce(azureLocalClusterName') &&
@@ -3199,6 +3201,34 @@ testSuite('Reviewed time ranges and health snapshot wording', () => {
         health.find(item => item.name === 'text - health failures 128-cap note').content.json.includes(
             'some entries may be excluded depending on source array ordering.'),
         'Health snapshot help does not promise 24-hour filtering or chronological truncation');
+});
+testSuite('Multi-instance storage forecast scope', () => {
+    const book = JSON.parse(fs.readFileSync(path.resolve(__dirname,
+        '../workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook'), 'utf8'));
+    const items = collectAllItems(book.items);
+    const parameters = items.flatMap(item => item.content?.parameters || []);
+    const scope = parameters.find(parameter => parameter.name === 'McForecastClusterScope');
+    const picker = parameters.find(parameter => parameter.name === 'ChartClusterFilter');
+    assert(scope?.isHiddenWhenLocked && scope.queryType === 1 &&
+        JSON.stringify(scope.crossComponentResources) === JSON.stringify(picker.crossComponentResources) &&
+        scope.query.split(/\r?\n/).slice(0, 4).join('\n') === picker.query.split(/\r?\n/).slice(0, 4).join('\n') &&
+        scope.query.includes('| project value = tolower(tostring(id))') &&
+        scope.query.endsWith('| project value = gzip_compress_to_base64_string(tostring(result))') &&
+        !/\{ChartClusterFilter\}|reportedProperties|InsightsMetrics|Heartbeat/.test(scope.query),
+        'Forecast scope uses the picker inventory filters without requiring selected IDs, nodes or telemetry');
+    const forecasts = ['mc-stor-pct-forecast', 'mc-stor-tb-forecast'].map(name =>
+        items.find(item => item.name === name).content.query);
+    assert(forecasts.every(query =>
+        query.includes("let mcForecastClusterScopePayload = '{McForecastClusterScope}';") &&
+        query.includes("parse_json(iff(isempty(mcForecastClusterScopePayload), '[]', gzip_decompress_from_base64_string(mcForecastClusterScopePayload)))") &&
+        query.includes("assert(gettype(decodedMcForecastClusterScope) == 'array'") &&
+        query.includes('print ids = decodedMcForecastClusterScope | where mcForecastClusterScopeValid') &&
+        query.includes('| distinct ArmId;') &&
+        query.includes('tolower(tostring(x.DataItem.UserData.EventData["ArmId"]))') &&
+        query.includes('| where ArmId in (scopedClusterArmIds)') &&
+        query.indexOf('| where ArmId in (scopedClusterArmIds)') <
+            query.indexOf('| where isAllClusters or ArmId in~ ({ChartClusterFilter})')),
+        'Both storage forecasts enforce normalized independent inventory membership before optional selection');
 });
 testSuite('Capacity shared-map parameter expansion', () => {
     const liveHarness = fs.readFileSync(path.resolve(__dirname, 'run-live-tests.ps1'), 'utf8');

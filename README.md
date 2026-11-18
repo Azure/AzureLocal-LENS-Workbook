@@ -505,8 +505,12 @@ Azure Local LENS v1.1.4 updates the dependency-free solution-update support esti
 2. **Honest, dependency-free guidance.** Overview help, tile tooltips, and Update Progress guidance explain that this is a calendar-based estimate, not live release tracking. Release timing and skipped release months can affect accuracy; boundary cases should be checked against the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations). No external feed, additional service, or fixed monthly release day is introduced.
 3. **Aligned regression coverage.** Offline checks protect the revised thresholds, separate boundary and unknown classifications, and continued independence from the tenant's offered-update catalogue. They do not execute live KQL or validate portal rendering.
 4. **Longer instance registration history.** Azure Local Instances Deployment Over Time adds **36 months** and **48 months** to its time-range filter and changes the default from **12 months** to **18 months**. The chart and monthly table continue to use current instances' registration timestamps and the existing 30-days-per-month approximation; deleted instances are not included.
+5. **Scoped storage forecasts.** Multi-instance CSV free-space forecasts in both percent and TB now restrict **All** and explicit instance selections to the subscription, resource-group and tag-filtered Azure Resource Graph inventory. Instances elsewhere in a shared Log Analytics workspace are excluded without requiring additional telemetry. The instance-forecast empty-state grammar is also corrected.
+6. **Unambiguous VM instance links.** Azure Local VM inventory retains one row per VM and lists all candidate instance names when instances share a resource group. The instance link is provided only for a single distinct candidate, avoiding concatenated URLs or an arbitrary instance destination.
 
 The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
+
+**Reissued build:** This v1.1.4 artifact supersedes the initially published build with corrected storage-forecast scoping and VM instance links.
 
 ## v1.1.5 — Planned (subject to managed gallery availability)
 

@@ -505,8 +505,6 @@ Azure Local LENS v1.1.4 updates the dependency-free solution-update support esti
 2. **Honest, dependency-free guidance.** Overview help, tile tooltips, and Update Progress guidance explain that this is a calendar-based estimate, not live release tracking. Release timing and skipped release months can affect accuracy; boundary cases should be checked against the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations). No external feed, additional service, or fixed monthly release day is introduced.
 3. **Aligned regression coverage.** Offline checks protect the revised thresholds, separate boundary and unknown classifications, and continued independence from the tenant's offered-update catalogue. They do not execute live KQL or validate portal rendering.
 
-**Release candidate validation:** Maintainer-confirmed friendly-customer testing of the development-branch candidate is required before release to `main`; automated checks do not replace this gate.
-
 The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
 
 ## v1.1.5 — Planned (subject to managed gallery availability)

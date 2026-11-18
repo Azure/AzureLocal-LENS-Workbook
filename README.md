@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.3
+## Latest Version: v1.1.4
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,7 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.1.3)](#whats-new-v113)
+- [What's New (v1.1.4)](#whats-new-v114)
 - [v1.1.5 — Planned (subject to managed gallery availability)](#v115--planned-subject-to-managed-gallery-availability)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -130,7 +130,7 @@ A high-level overview of your entire Azure Local estate, including:
 - **Health and Patching Status**: Healthy instances, health warnings, failed prechecks, failed extensions, and health percentage
 - **Update Compliance**: 
   - Tiles showing instances on supported release (green), unsupported release (red), updates available, updates in progress, and update failures
-  - Version compliance estimated from the YYMM release month (e.g., `xx.2512.x.x` = December 2025), independently of which updates are currently offered to the instance. The official release date governs the six-month support window; because ARG does not expose the release day, LENS marks the current and previous five months as Supported, the six-month boundary as **Nearing end of support**, and older months as Unsupported. Boundary-month releases may already be unsupported; verify their official release dates. A separate **Unknown version** tile covers missing, invalid, or future-dated release months in reported Update Summaries.
+  - Version compliance is a calendar-based estimate of Microsoft's [N-6 released-build support window](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations), using the YYMM release month (e.g., `xx.2512.x.x` = December 2025), independently of which updates are currently offered to the instance. LENS marks the current and previous six calendar months as Supported, seven months behind as **Nearing end of support**, and older months as Unsupported. Release timing or skipped release months can affect accuracy; verify boundary cases against the official release information. No external release feed or fixed monthly release day is required. A separate **Unknown version** tile covers missing, invalid, or future-dated release months in reported Update Summaries.
   - Links to Lifecycle cadence and Latest releases documentation
   - Solution Version Distribution bar chart showing instance counts by version
 - **Workload Summary**: Total Azure Local VMs and AKS Arc clusters
@@ -319,7 +319,7 @@ Track ongoing and historical updates across your instances:
   - Direct link to apply One Time Update in Azure Update Manager
   - Link to Azure Local Known Issues documentation
   - SBE (Solution Builder Extension) dependency details
-- **🔄 All Instance Update Status** table with information about the 6-month support window
+- **🔄 All Instance Update Status** table with information about the N-6 released-build support window and the calendar-based support estimate
 - **📜 Update Run History and Error Details** table:
   - Default filter: `Update State = Failed` (unresolved failures are surfaced regardless of Time Range; once a later Succeeded run exists for the same instance, the older Failed run is hidden)
   - Direct link to view the update run in Azure portal
@@ -497,21 +497,17 @@ Understanding how Azure Local resources are linked across Azure Resource Graph (
 
 > **Key concept:** The Arc Resource Bridge appliance and the HCI instance are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI instance.
 
-## What's New (v1.1.3)
+## What's New (v1.1.4)
 
-Azure Local LENS v1.1.3 adds heartbeat availability reporting and clearer monitoring setup guidance in Capacity & Performance.
+Azure Local LENS v1.1.4 updates the dependency-free solution-update support estimate for Microsoft's N-6 released-build window, addressing [Issue #119](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/119).
 
-Feature request: [#115 - Add Dashboard for 30-Day Azure Local Machine Availability](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/115).
+1. **Updated support thresholds.** Azure Local Instances estimates releases from the current and previous six calendar months as **Supported**, seven months behind as **Nearing end of support**, and older releases as **Unsupported**. The three thresholds move together, keeping the categories separate. **Unknown version** continues to cover missing, invalid, or future-dated release months.
+2. **Honest, dependency-free guidance.** Overview help, tile tooltips, and Update Progress guidance explain that this is a calendar-based estimate, not live release tracking. Release timing and skipped release months can affect accuracy; boundary cases should be checked against the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations). No external feed, additional service, or fixed monthly release day is introduced.
+3. **Aligned regression coverage.** Offline checks protect the revised thresholds, separate boundary and unknown classifications, and continued independence from the tenant's offered-update catalogue. They do not execute live KQL or validate portal rendering.
 
-1. **Machine Heartbeat Availability in Overview.** A new table below Instance Capacity Overview uses the existing subscription, resource-group, instance-tag, workspace and historic time-range controls. Complete five-minute intervals with at least one heartbeat count as available. Machine Name and Instance Name link to Azure resources; compact icons use time-dependent green receipt thresholds, without implying SLA thresholds or excluding update-related restarts.
-2. **Conservative identity and missing-data handling.** Current ARM instance membership defines scope for the entire selected period. Unique, compatible machine mappings join to `Heartbeat._ResourceId`; mapped machines with no heartbeats remain visible at 0%, while unresolved or ambiguous mappings have no percentage. Heartbeat receipt is not a direct measure of service uptime.
-3. **Consolidated collection and coverage guidance.** One purple lightbulb tip explains AMA and DCR workspace configuration, shared workspace permissions, reporting-machine and reporting-instance coverage, and valid zero counter readings. The shared tip references **Show DCR Setup Guide** and the maintained [LENS DCR guide](example-dcr-template/README.md); the knowledge section below the heartbeat table retains interpretation notes without repeating setup instructions. The hidden guide also prompts a review of commitment-tier pricing, obligations, workspace retention and table overrides without prescribing billing or retention changes.
-4. **Focused offline regression coverage.** Checks protect scope filters, resource-ID joins, null values, interval boundaries, links, presentation, guidance, and compressed-map request size for 5,000 machines. These checks do not execute live KQL or validate portal rendering.
-5. **Instance update-attempt context.** The availability table includes numeric **Solution / SBE Updates Started** for the same selected historic period. Distinct run IDs count attempts, including retries, without removing machines when no update history matches. Compatible-name matching supports nested hosts and preserves membership ambiguity before display-tag filtering. The live harness covers these identity cases, heartbeat boundaries, silent machines, empty update history, period/completeness guards and a 2,500-member unresolved fleet.
+**Release candidate validation:** Maintainer-confirmed friendly-customer testing of the development-branch candidate is required before release to `main`; automated checks do not replace this gate.
 
-**Release candidate validation:** Live query validation and maintainer-confirmed friendly-customer testing of the development-branch candidate are required before release to `main`; offline tests do not replace these gates.
-
-The workbook header banner bumps from `v1.1.2` to `v1.1.3`.
+The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
 
 ## v1.1.5 — Planned (subject to managed gallery availability)
 
@@ -591,6 +587,22 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.1.3
+
+Azure Local LENS v1.1.3 adds heartbeat availability reporting and clearer monitoring setup guidance in Capacity & Performance.
+
+Feature request: [#115 - Add Dashboard for 30-Day Azure Local Machine Availability](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/115).
+
+1. **Machine Heartbeat Availability in Overview.** A new table below Instance Capacity Overview uses the existing subscription, resource-group, instance-tag, workspace and historic time-range controls. Complete five-minute intervals with at least one heartbeat count as available. Machine Name and Instance Name link to Azure resources; compact icons use time-dependent green receipt thresholds, without implying SLA thresholds or excluding update-related restarts.
+2. **Conservative identity and missing-data handling.** Current ARM instance membership defines scope for the entire selected period. Unique, compatible machine mappings join to `Heartbeat._ResourceId`; mapped machines with no heartbeats remain visible at 0%, while unresolved or ambiguous mappings have no percentage. Heartbeat receipt is not a direct measure of service uptime.
+3. **Consolidated collection and coverage guidance.** One purple lightbulb tip explains AMA and DCR workspace configuration, shared workspace permissions, reporting-machine and reporting-instance coverage, and valid zero counter readings. The shared tip references **Show DCR Setup Guide** and the maintained [LENS DCR guide](example-dcr-template/README.md); the knowledge section below the heartbeat table retains interpretation notes without repeating setup instructions. The hidden guide also prompts a review of commitment-tier pricing, obligations, workspace retention and table overrides without prescribing billing or retention changes.
+4. **Focused offline regression coverage.** Checks protect scope filters, resource-ID joins, null values, interval boundaries, links, presentation, guidance, and compressed-map request size for 5,000 machines. These checks do not execute live KQL or validate portal rendering.
+5. **Instance update-attempt context.** The availability table includes numeric **Solution / SBE Updates Started** for the same selected historic period. Distinct run IDs count attempts, including retries, without removing machines when no update history matches. Compatible-name matching supports nested hosts and preserves membership ambiguity before display-tag filtering. The live harness covers these identity cases, heartbeat boundaries, silent machines, empty update history, period/completeness guards and a 2,500-member unresolved fleet.
+
+**Release candidate validation:** Live query validation and maintainer-confirmed friendly-customer testing of the development-branch candidate are required before release to `main`; offline tests do not replace these gates.
+
+The workbook header banner bumps from `v1.1.2` to `v1.1.3`.
 
 ### v1.1.2
 

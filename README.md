@@ -27,7 +27,8 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
 - [What's New (v1.1.4)](#whats-new-v114)
-- [v1.1.5 — Planned (subject to managed gallery availability)](#v115--planned-subject-to-managed-gallery-availability)
+- [v1.1.5 — Planned fixes](#v115--planned-fixes)
+- [v1.2.0 (or later) — Planned Azure Monitor gallery publication](#v120-or-later--planned-azure-monitor-gallery-publication)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
 - [License](#license)
@@ -508,18 +509,23 @@ Azure Local LENS v1.1.4 updates the dependency-free solution-update support esti
 
 The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
 
-## v1.1.5 — Planned (subject to managed gallery availability)
+## v1.1.5 — Planned fixes
 
-Not yet released. The following changes are planned for v1.1.5, subject to acceptance of the upstream `microsoft/Application-Insights-Workbooks` contribution and availability of the `community-Workbooks/Azure Local/LENS-*` templates in the Azure Monitor gallery. Release scope and timing may change:
+Not yet released. The following fixes are queued for v1.1.5, independently of future Azure Monitor gallery publication. Release scope and timing may change:
 
 - **Scoped storage forecasts.** Multi-instance CSV free-space forecasts in both percent and TB restrict **All** and explicit instance selections to the subscription, resource-group and tag-filtered Azure Resource Graph inventory. Instances elsewhere in a shared Log Analytics workspace are excluded without requiring additional telemetry. The instance-forecast empty-state grammar is also corrected.
 - **Unambiguous VM instance links.** Azure Local VM inventory retains one row per VM and lists all candidate instance names when instances share a resource group. The instance link is provided only for a single distinct candidate, avoiding concatenated URLs or an arbitrary instance destination.
+
+## v1.2.0 (or later) — Planned Azure Monitor gallery publication
+
+Not yet released. The following gallery-related changes are planned for **v1.2.0 (or later)**, subject to acceptance of the upstream `microsoft/Application-Insights-Workbooks` contribution and availability of the `community-Workbooks/Azure Local/LENS-*` templates in the Azure Monitor gallery. Release scope and timing may change:
+
 - **Header banner rewrite in [`shared/header.json`](shared/header.json)** — the current `workbook-title-version` markdown describes the workbook as *"a community-driven / open-source project, it is not a Microsoft-supported service offering."* Once the workbook is published in the Azure Monitor gallery, that disclaimer is no longer accurate. It will be replaced with positive ownership phrasing along the lines of *"A Microsoft-published community workbook. Found a bug, have feedback, or want a new feature? Please [open an issue on GitHub](https://aka.ms/AzureLocalLENS/issues) — we triage every one."* The "raise an Issue" call-to-action is preserved.
 - **Version banner reframed from manual upgrade to gallery discoverability.** The current `version-update-banner` tells users to *"copy/paste, then Apply to update if needed"* — only valid while the sole distribution channel is the raw JSON in this repo. Once gallery publication is live, the banner will instead point users at **Workbooks → New → Public Templates → Azure Local → LENS Overview** and note that gallery updates roll out automatically (no manual copy/paste required). The link to the GitHub source repo (via [aka.ms/AzureLocalLENS](https://aka.ms/AzureLocalLENS)) is preserved for users who want to follow source changes or open issues.
 - **README "Latest Version" call-out** at the top of this file will be similarly toned down (the gallery becomes the canonical install path; the raw JSON link stays as a fallback for air-gapped / paste-into-Advanced-Editor scenarios).
 - **Gallery package publication** — `scripts/build-gallery.js` already derives each runtime template ID from its final upstream folder (`community-Workbooks/Azure Local/<galleryFolderName>`), clears stale generated output, and emits the 12-folder package. The upstream PR will copy those folders into `Workbooks/Azure Local/` and add `LENS-Overview` to the shared Azure Monitor gallery file.
 
-**Trigger:** v1.1.5 ships in the same change-set as bumping the workbook version banner from the current release to `v1.1.5` once the upstream gallery PR has merged. No code changes are required ahead of that point — the current wording remains accurate while the gallery PR is in flight.
+**Trigger:** Ship the gallery-related changes in **v1.2.0 (or later)** once the upstream gallery PR has merged and the templates are available. Update the workbook version banner to the actual release version in that change-set; keep the current support and installation wording until gallery publication is live.
 
 ## Contributing
 

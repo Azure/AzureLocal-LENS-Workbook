@@ -1621,22 +1621,22 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
 
     const supportedVersion = allQueries.find(query => query.name === 'tile-supported-version');
     const unsupportedVersion = allQueries.find(query => query.name === 'tile-unsupported-version');
+    const boundaryVersion = allQueries.find(query => query.name === 'tile-nearing-end-of-support');
     const unknownVersion = allQueries.find(query => query.name === 'tile-unknown-version');
-    const complianceQueries = [supportedVersion, unsupportedVersion, unknownVersion];
+    const complianceQueries = [supportedVersion, unsupportedVersion, boundaryVersion, unknownVersion];
     complianceQueries.forEach(item => {
         assert(item && item.query.includes("releaseMonth = todatetime(strcat('20'") &&
             item.query.includes("monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)") &&
-            !item.query.includes('isSupportedYymm') && !item.query.includes('| take 6'),
+            !item.query.includes('isSupportedYymm') && !/\|\s*take\s+[67]\b/.test(item.query),
         `${item?.name || 'Update compliance tile'} derives support from calendar age, not offered updates`,
         'calendar-month calculation without tenant update catalog', item ? item.query : 'query missing');
     });
-    assert(supportedVersion?.query.includes('monthsSinceRelease between (0 .. 5)'),
-        'Supported release tile includes the current and previous five calendar months',
-        'monthsSinceRelease between (0 .. 5)', supportedVersion ? supportedVersion.query : 'query missing');
-    assert(unsupportedVersion?.query.includes('monthsSinceRelease > 6'),
-        'Unsupported release tile includes only releases definitely beyond six months',
-        'monthsSinceRelease > 6', unsupportedVersion ? unsupportedVersion.query : 'query missing');
-    const boundaryVersion = allQueries.find(query => query.name === 'tile-nearing-end-of-support');
+    assert(supportedVersion?.query.includes('monthsSinceRelease between (0 .. 6)'),
+        'Supported release tile estimates N-6 using the current and previous six calendar months',
+        'monthsSinceRelease between (0 .. 6)', supportedVersion ? supportedVersion.query : 'query missing');
+    assert(unsupportedVersion?.query.includes('monthsSinceRelease > 7'),
+        'Unsupported release tile excludes the seven-month uncertainty boundary',
+        'monthsSinceRelease > 7', unsupportedVersion ? unsupportedVersion.query : 'query missing');
     const overviewSource = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../workbooks/Overview/Overview.workbook'), 'utf8'));
     assert(['tile-nearing-end-of-support', 'tile-unknown-version'].every(name => {
         const content = collectAllItems(overviewSource.items).find(item => item.name === name)?.content;
@@ -1645,13 +1645,13 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
             !/collection|ingestion|no matching instances/i.test(content.noDataMessage);
     }), 'Compliance count tiles distinguish a missing result from a valid zero without diagnosing ingestion');
     assert(unknownVersion?.query.includes('not(hasValidYymm) or monthsSinceRelease < 0') &&
-        !unknownVersion.query.includes('monthsSinceRelease == 6') &&
-        boundaryVersion?.query.includes('hasValidYymm and monthsSinceRelease == 6') &&
+        !unknownVersion.query.includes('monthsSinceRelease == 7') &&
+        boundaryVersion?.query.includes('hasValidYymm and monthsSinceRelease == 7') &&
         boundaryVersion.query.includes("Label = 'Nearing end of support'") &&
         boundaryVersion.query.includes('summarize NearingEndOfSupport = count()') &&
         boundaryVersion.query.includes('summarize properties = take_any(properties) by clusterId') &&
         boundaryVersion.query.includes(') on clusterId'),
-        'Boundary releases have a separate Nearing end of support tile; Unknown includes only invalid or future release months',
+        'Seven-month boundary releases have a separate Nearing end of support tile; Unknown includes only invalid or future release months',
         'disjoint boundary and unknown classifications', unknownVersion ? unknownVersion.query : 'query missing');
 
     ['pie-arb-status', 'tile-arb-offline', 'tile-total-vms', 'tile-total-aks-arc'].forEach(queryName => {

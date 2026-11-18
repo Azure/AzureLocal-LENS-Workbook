@@ -1001,7 +1001,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 🔄 All Instance Update Status\r\n\r\n💡 **Information:** Apply updates to keep your instances within the six month support window."
+              "json": "## 🔄 All Instance Update Status\r\n\r\n💡 **Information:** Apply updates to remain within Microsoft's N-6 released-build support window. LENS estimates support from calendar months; confirm boundary cases using the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations)."
             },
             "name": "text-all-update-status"
           },

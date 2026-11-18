@@ -1026,7 +1026,7 @@
           {
             "type": 1,
             "content": {
-              "json": "_Azure Local updates are supported for six months from each update's actual release date. Azure Resource Graph reports the `YYMM` release month but not the official release day. LENS marks the current and previous five months as Supported, the six-month boundary as Nearing end of support, and older months as Unsupported. Boundary-month releases may already be unsupported; confirm their exact status using the Latest Releases link below. Unknown version covers missing, invalid, or future-dated release months in reported Update Summaries._"
+              "json": "_Support status is a calendar-based estimate of Microsoft's N-6 released-build window, using the reported `YYMM` release month and today's month. LENS estimates 0-6 months behind as Supported, seven months as Nearing end of support, and older releases as Unsupported. Release timing or skipped release months can affect accuracy; verify boundary cases using Latest Releases below. Unknown version covers missing, invalid, or future-dated release months in reported Update Summaries._"
             },
             "name": "update-compliance-info"
           },
@@ -1058,7 +1058,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease between (0 .. 5)\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease between (0 .. 6)\r\n| summarize Supported = count()\r\n| extend Label = 'Supported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1082,7 +1082,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Instances definitely within six months based on the reported YYMM release month"
+                    "tooltip": "Estimated supported instances: the reported YYMM release month is 0-6 calendar months behind the current month. Verify boundary cases using Latest Releases."
                   }
                 },
                 "leftContent": {
@@ -1109,7 +1109,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease > 6\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease > 7\r\n| summarize Unsupported = count()\r\n| extend Label = 'Unsupported release'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1133,7 +1133,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Instances definitely older than six months based on the reported YYMM release month"
+                    "tooltip": "Estimated unsupported instances: the reported YYMM release month is more than seven calendar months behind the current month. Verify boundary cases using Latest Releases."
                   }
                 },
                 "leftContent": {
@@ -1160,7 +1160,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease == 6\r\n| summarize NearingEndOfSupport = count()\r\n| extend Label = 'Nearing end of support'",
+              "query": "extensibilityresources\r\n| where type == \"microsoft.azurestackhci/clusters/updatesummaries\"\r\n| where '{ResourceGroupFilter}' == '' or resourceGroup matches regex strcat('(?i)', replace_string(replace_string('{ResourceGroupFilter}', '*', '.*'), '?', '.'))\r\n| extend clusterId = tolower(substring(id, 0, indexof(tolower(id), '/updatesummaries/')))\r\n| summarize properties = take_any(properties) by clusterId\r\n| join kind=inner (\r\n    resources\r\n    | where type == \"microsoft.azurestackhci/clusters\"\r\n    | where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')\r\n    | project clusterId = tolower(id)\r\n) on clusterId\r\n| extend currentVersion = tostring(properties.currentVersion)\r\n| extend yymm = tostring(split(currentVersion, '.')[1])\r\n| extend releaseMonth = todatetime(strcat('20', substring(yymm, 0, 2), '-', substring(yymm, 2, 2), '-01'))\r\n| extend hasValidYymm = (yymm matches regex '^[0-9]{4}$' and isnotnull(releaseMonth))\r\n| extend monthsSinceRelease = datetime_diff('month', startofmonth(now()), releaseMonth)\r\n| where hasValidYymm and monthsSinceRelease == 7\r\n| summarize NearingEndOfSupport = count()\r\n| extend Label = 'Nearing end of support'",
               "size": 4,
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
@@ -1184,7 +1184,7 @@
                     ]
                   },
                   "tooltipFormat": {
-                    "tooltip": "Instances in the six-month release boundary. Some may already be unsupported; verify the official release date and plan an update."
+                    "tooltip": "Instances seven calendar months behind the current month. Support status is uncertain around release timing; verify Latest Releases and plan an update."
                   }
                 },
                 "leftContent": {
@@ -1419,12 +1419,12 @@
                   "label": "Time Range",
                   "type": 2,
                   "isRequired": true,
-                  "value": "12",
+                  "value": "18",
                   "typeSettings": {
                     "additionalResourceOptions": [],
                     "showDefault": false
                   },
-                  "jsonData": "[{\"value\":\"24\",\"label\":\"24 months\"},{\"value\":\"18\",\"label\":\"18 months\"},{\"value\":\"12\",\"label\":\"12 months\"},{\"value\":\"9\",\"label\":\"9 months\"},{\"value\":\"6\",\"label\":\"6 months\"},{\"value\":\"3\",\"label\":\"3 months\"},{\"value\":\"1\",\"label\":\"1 month\"},{\"value\":\"0.5\",\"label\":\"2 weeks\"},{\"value\":\"0.25\",\"label\":\"1 week\"}]"
+                  "jsonData": "[{\"value\":\"48\",\"label\":\"48 months\"},{\"value\":\"36\",\"label\":\"36 months\"},{\"value\":\"24\",\"label\":\"24 months\"},{\"value\":\"18\",\"label\":\"18 months\"},{\"value\":\"12\",\"label\":\"12 months\"},{\"value\":\"9\",\"label\":\"9 months\"},{\"value\":\"6\",\"label\":\"6 months\"},{\"value\":\"3\",\"label\":\"3 months\"},{\"value\":\"1\",\"label\":\"1 month\"},{\"value\":\"0.5\",\"label\":\"2 weeks\"},{\"value\":\"0.25\",\"label\":\"1 week\"}]"
                 }
               ],
               "style": "pills",

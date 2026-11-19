@@ -300,6 +300,51 @@ function Test-HeartbeatAvailability {
     }
 }
 
+function Test-ArcVMInstanceLinks {
+    param([string]$WorkspaceId)
+
+    $book = Get-Content -Raw (Join-Path $repoRoot 'workbooks/VMs/VMs.workbook') | ConvertFrom-Json
+    $template = [string](@(Get-WorkbookItems -Items $book.items) | Where-Object name -EQ 'vm-all-list').content.query
+    $start = $template.IndexOf('| summarize vmLink =')
+    if ($start -lt 0) { throw 'Arc VM inventory aggregation fixture boundary missing.' }
+    $fixture = @'
+datatable(vmResourceId:string, name:string, clusterName:string, clusterLink:string)
+[
+    '/single', 'single', 'instance-a', 'https://portal.azure.com/#@/resource/example-instance-a',
+    '/duplicate', 'duplicate', 'instance-a', 'https://portal.azure.com/#@/resource/example-instance-a',
+    '/duplicate', 'duplicate', 'instance-a', 'https://portal.azure.com/#@/resource/example-instance-a',
+    '/ambiguous', 'ambiguous', 'instance-a', 'https://portal.azure.com/#@/resource/example-instance-a',
+    '/ambiguous', 'ambiguous', 'instance-b', 'https://portal.azure.com/#@/resource/example-instance-b'
+]
+| extend vmLink='https://portal.azure.com/#@/resource/example-vm', resourceGroup='example',
+    status='Connected', osSku='example', osVersion='', vCPUs=2, memoryGB=8, ipAddress='', domainName='',
+    agentVersion='', osInstallDate=datetime(null), lastStatusChange=datetime(null), location='example', statusSort=0
+'@
+    $response = Invoke-LogAnalyticsQuery -WorkspaceId $WorkspaceId -Body @{ query = $fixture + "`n" + $template.Substring($start) }
+    $table = $response.tables[0]
+    $nameIndex = [array]::IndexOf(@($table.columns.name), 'VMName')
+    $candidateIndex = [array]::IndexOf(@($table.columns.name), 'clusterName')
+    $linkIndex = [array]::IndexOf(@($table.columns.name), 'clusterLink')
+    if ($nameIndex -lt 0 -or $candidateIndex -lt 0 -or $linkIndex -lt 0 -or @($table.rows).Count -ne 3) {
+        throw 'Arc VM link fixture changed the output schema or one-row-per-VM behavior.'
+    }
+    foreach ($row in $table.rows) {
+        if ($row[$nameIndex] -eq 'ambiguous') {
+            $names = @($row[$candidateIndex] -split ', ' | Sort-Object)
+            if (($names -join ',') -cne 'instance-a,instance-b' -or -not [string]::IsNullOrEmpty($row[$linkIndex])) {
+                throw 'Ambiguous VM instance attribution lost candidate names or retained a misleading link.'
+            }
+        } elseif ($row[$nameIndex] -in @('single', 'duplicate')) {
+            if ($row[$candidateIndex] -ne 'instance-a' -or $row[$linkIndex] -ne 'https://portal.azure.com/#@/resource/example-instance-a') {
+                throw 'Unambiguous VM instance attribution lost its single valid link.'
+            }
+        } else {
+            throw 'Unexpected VM row in the instance-link fixture.'
+        }
+    }
+    [pscustomobject]@{ Query = 'arc-vm-instance-link-ambiguity'; Rows = @($table.rows).Count; Result = 'Passed' }
+}
+
 function Test-StorageSources {
     param([string]$WorkspaceId)
 
@@ -630,6 +675,63 @@ let scalePerf=range Sample from 0 to 1474559 step 1
             if ($declining.Count -ne 1 -or $declining[0].'Current Avg %%' -ne 70 -or $declining[0].SlopePerDay -ne -10) { throw 'Same-name cluster forecast values were blended.' }
         }
         [pscustomobject]@{ Query = "storage-forecast-resource-identity-$selectedCluster"; Rows = $rows.Count; Result = 'Passed' }
+    }
+
+    $forecastItems = @(Get-WorkbookItems -Items $book.items)
+    $scopeSamples = [Collections.Generic.List[object]]::new()
+    $scopeIds = @{}
+    foreach ($instance in @('instance-a', 'instance-b', 'outside-scope')) {
+        $scopeIds[$instance] = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/example/providers/Microsoft.AzureStackHCI/clusters/$instance"
+        foreach ($dayIndex in 0..29) {
+            $scopeSamples.Add(@{
+                TimeGenerated = ([datetime]'2026-01-01').AddDays($dayIndex).ToString('o')
+                EventLog = 'Microsoft-Windows-SDDC-Management/Operational'; EventID = 3002
+                EventData = "<DataItem><UserData><EventData><ClusterName>$instance</ClusterName><ArmId>$($scopeIds[$instance].ToUpperInvariant())</ArmId></EventData></UserData></DataItem>"
+                RenderedDescription = (@{ VolumeList = @(@{
+                    m_Size = 1000000000000L
+                    m_SizeUsed = $(if ($instance -eq 'instance-a') { 200000000000L } else { 600000000000L })
+                }) } | ConvertTo-Json -Depth 5 -Compress)
+            })
+        }
+    }
+    $scopeJson = ConvertTo-Json -InputObject $scopeSamples.ToArray() -Depth 6 -Compress
+    $eventSource = "let Event = print fixtureRow=dynamic($scopeJson) | mv-expand fixtureRow | project TimeGenerated=todatetime(fixtureRow.TimeGenerated), EventLog=tostring(fixtureRow.EventLog), EventID=toint(fixtureRow.EventID), EventData=tostring(fixtureRow.EventData), RenderedDescription=tostring(fixtureRow.RenderedDescription); "
+    $scopeCases = @(
+        @{ Name = 'all'; Ids = @($scopeIds['instance-a'], $scopeIds['instance-b']); Selection = "'value::all'"; Expected = @('instance-a', 'instance-b') },
+        @{ Name = 'selected'; Ids = @($scopeIds['instance-a'], $scopeIds['instance-b']); Selection = "'$($scopeIds['instance-a'])'"; Expected = @('instance-a') },
+        @{ Name = 'outside-selection'; Ids = @($scopeIds['instance-a'], $scopeIds['instance-b']); Selection = "'$($scopeIds['outside-scope'])'"; Expected = @() },
+        @{ Name = 'mixed-selection'; Ids = @($scopeIds['instance-a'], $scopeIds['instance-b']); Selection = "'$($scopeIds['instance-a'])','$($scopeIds['outside-scope'])'"; Expected = @('instance-a') },
+        @{ Name = 'empty'; Ids = @(); Selection = "'value::all'"; Expected = @() },
+        @{ Name = 'unset'; Ids = @(); Selection = "'value::all'"; Expected = @() },
+        @{ Name = 'duplicate-case'; Ids = @($scopeIds['instance-a'], $scopeIds['instance-a'].ToUpperInvariant()); Selection = "'value::all'"; Expected = @('instance-a') }
+    )
+    foreach ($chartName in @('mc-stor-pct-forecast', 'mc-stor-tb-forecast')) {
+        $template = [string]($forecastItems | Where-Object name -EQ $chartName).content.query
+        foreach ($case in $scopeCases) {
+            $scopeValue = if ($case.Name -eq 'unset') { '' } else {
+                ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject @($case.Ids) -Compress)
+            }
+            $query = $eventSource + $template.Replace('{McForecastClusterScope}', $scopeValue).
+                Replace('{ChartClusterFilter}', $case.Selection).
+                Replace('{McForecastTimeRange:start}', 'datetime(2026-01-01)').
+                Replace('{McForecastTimeRange:end}', 'datetime(2026-01-31)').
+                Replace('{ForecastHorizonDays}', '7')
+            $rows = @(Invoke-StorageFixture -Query $query)
+            $actual = @($rows | ForEach-Object { $_.Series -replace ' - (Actual|Forecast)$', '' } | Sort-Object -Unique)
+            $expected = @($case.Expected | Sort-Object)
+            if (($actual -join ',') -cne ($expected -join ',')) {
+                throw "Storage forecast inventory scope failed: $chartName/$($case.Name)"
+            }
+            foreach ($instance in $expected) {
+                $actualRows = @($rows | Where-Object Series -EQ "$instance - Actual")
+                $expectedFree = if ($instance -eq 'instance-a') { 0.8 } else { 0.4 }
+                if ($chartName -eq 'mc-stor-pct-forecast') { $expectedFree *= 100 }
+                if ($actualRows.Count -eq 0 -or @($actualRows | Where-Object { [math]::Abs($_.Value - $expectedFree) -gt 0.0001 }).Count -gt 0) {
+                    throw "Storage forecast values changed under scoped membership: $chartName/$($case.Name)"
+                }
+            }
+            [pscustomobject]@{ Query = "$chartName-inventory-$($case.Name)"; Rows = $rows.Count; Result = 'Passed' }
+        }
     }
 
     $clusterSamples = [Collections.Generic.List[object]]::new()
@@ -1322,6 +1424,23 @@ resources
     $clusterRGValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterRGMap -Compress)
     $clusterNodeValue = ConvertTo-CompressedNodeMetadata (ConvertTo-Json -InputObject $clusterNodeMap -Compress)
 
+    $multiBook = Get-Content -Raw (Join-Path $repoRoot 'workbooks/Capacity-MultiCluster/Capacity-MultiCluster.workbook') | ConvertFrom-Json
+    $scopeParameter = @(Get-WorkbookItems -Items $multiBook.items).content.parameters |
+        Where-Object name -EQ 'McForecastClusterScope'
+    if (@($scopeParameter).Count -ne 1) { throw 'Forecast inventory scope producer is missing or duplicated.' }
+    $scopeQuery = $scopeParameter.query.Replace('{ResourceGroupFilter}', '').Replace('{ClusterTagName}', '').Replace('{ClusterTagValue}', '')
+    if ($IsWindows) { $scopeQuery = $scopeQuery.Replace('"', '\"') }
+    $scopeResponse = az graph query --subscription $SubscriptionId --subscriptions $SubscriptionId `
+        --graph-query ($scopeQuery -replace '\r?\n', ' ') --output json --only-show-errors
+    if ($LASTEXITCODE -ne 0) { throw 'Forecast inventory scope query failed.' }
+    $scopeRows = @(($scopeResponse -join [Environment]::NewLine | ConvertFrom-Json).data)
+    if ($scopeRows.Count -ne 1 -or -not $scopeRows[0].value) { throw 'Forecast inventory scope query did not return one compressed array.' }
+    $forecastScopeValue = [string]$scopeRows[0].value
+    $forecastScopeIds = @(ConvertFrom-CompressedNodeMetadata $forecastScopeValue | ConvertFrom-Json)
+    if ($forecastScopeIds.Count -eq 0 -or $selectedCluster.armId -notin $forecastScopeIds) {
+        throw 'Forecast inventory scope does not include the selected live instance.'
+    }
+
     $manifestPath = Join-Path $PSScriptRoot 'live-test-queries.json'
     $querySpecs = @((Get-Content -Raw $manifestPath | ConvertFrom-Json).queries)
     if ($querySpecs.Count -eq 0) {
@@ -1355,6 +1474,7 @@ resources
         }
         $query = $query.Replace('{ClusterRGMap}', $clusterRGValue)
         $query = $query.Replace('{ClusterNodeMap}', $clusterNodeValue)
+        $query = $query.Replace('{McForecastClusterScope}', $forecastScopeValue)
         # Guest resource links are outside this suite's inventory/metric coverage.
         $query = $query.Replace('{ArcMachineMap}', (ConvertTo-CompressedNodeMetadata '[]'))
         $query = $query.Replace('{ChartClusterFilter}', "'value::all'")
@@ -1401,7 +1521,7 @@ resources
             }
         }
     }
-    $results = @($results) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId) + @(Test-HeartbeatAvailability -WorkspaceId $workspace.customerId)
+    $results = @($results) + @([pscustomobject]@{ Query = 'mc-storage-forecast-scope-producer-live'; Rows = $forecastScopeIds.Count; Result = 'Passed' }) + @([pscustomobject]@{ Query = 'sc-storage-detail-machine-picker-live'; Rows = @($pickerResponse.tables[0].rows).Count; Result = 'Passed' }) + @(Test-StorageSources -WorkspaceId $workspace.customerId) + @(Test-ArcVMInstanceLinks -WorkspaceId $workspace.customerId) + @(Test-HyperVDetail -WorkspaceId $workspace.customerId) + @(Test-HyperVInventory -WorkspaceId $workspace.customerId) + @(Test-HeartbeatAvailability -WorkspaceId $workspace.customerId)
     }
 
     $results | Format-Table -AutoSize

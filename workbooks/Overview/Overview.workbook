@@ -938,7 +938,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## 💼 Azure Local Workloads"
+              "json": "## 💼 Azure Local Workloads\r\n\r\n> **Shared resource groups:** VM and AKS totals are deduplicated, but resource-group joins do not prove which instance owns a workload. When instances share a resource group, tag-filtered totals and per-instance workload counts can include sibling instances' workloads. Treat these as resource-group associations, not proven placement."
             },
             "name": "section-header-workloads"
           },

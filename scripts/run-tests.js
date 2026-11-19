@@ -3144,7 +3144,7 @@ testSuite('Hyper-V VM performance detailed analysis', () => {
         }
     }
     checkDisplayReferences(workbook, 'root');
-    const activeReadme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8').split('## v1.1.5')[0];
+    const activeReadme = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf8').split('## Appendix: Previous Versions Change Log')[0];
     const dcrReadme = fs.readFileSync(path.resolve(__dirname, '../example-dcr-template/README.md'), 'utf8');
     assert(staleDisplayReferences.length === 0 && !staleCapacityLabel.test(activeReadme) &&
         !staleCapacityLabel.test(dcrReadme),

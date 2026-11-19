@@ -5,7 +5,7 @@
 [![Auto Release](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Azure/AzureLocal-LENS-Workbook/actions/workflows/release.yml)
 [![Latest Release](https://img.shields.io/github/v/release/Azure/AzureLocal-LENS-Workbook?display_name=tag&sort=semver)](https://github.com/Azure/AzureLocal-LENS-Workbook/releases/latest)
 
-## Latest Version: v1.1.4
+## Latest Version: v1.1.5
 
 📥 **[Copy / Paste (or download) the latest Workbook JSON](https://raw.githubusercontent.com/Azure/AzureLocal-LENS-Workbook/refs/heads/main/AzureLocal-LENS-Workbook.json)**
 
@@ -26,8 +26,7 @@ Azure Local Lifecycle, Events & Notification Status (LENS) workbook brings toget
 - [Quick Actions and Knowledge Links](#quick-actions-and-knowledge-links)
 - [Usage Tips](#usage-tips)
 - [Azure Resource Graph — Resource Joins Reference](#azure-resource-graph--azure-local-resource-joins--useful-information)
-- [What's New (v1.1.4)](#whats-new-v114)
-- [v1.1.5 — Planned fixes](#v115--planned-fixes)
+- [What's New (v1.1.5)](#whats-new-v115)
 - [v1.2.0 (or later) — Planned Azure Monitor gallery publication](#v120-or-later--planned-azure-monitor-gallery-publication)
 - [Contributing](#contributing)
 - [CI/CD Validation](#cicd-validation)
@@ -489,35 +488,28 @@ The workbook provides several filtering options to help you focus on specific re
 
 ## Azure Resource Graph | Azure Local Resource Joins | Useful Information
 
-Understanding how Azure Local resources are linked across Azure Resource Graph (ARG) is essential for building accurate queries. The workbook uses the following join chains to associate workload resources with their parent HCI instance:
+Understanding how Azure Local resources are linked across Azure Resource Graph (ARG) is essential for interpreting workload counts. These join chains associate workloads with candidate Azure Local instances; they do not prove which instance owns a workload when multiple instances share a resource group:
 
-- **Azure Local VMs:** `machine.id` → `microsoft.azurestackhci/virtualmachineinstances` (extensibility, joined by extracting machineId before `/providers/Microsoft.AzureStackHCI`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI instance
+- **Azure Local VMs:** `machine.id` → `microsoft.azurestackhci/virtualmachineinstances` (extensibility, joined by extracting machineId before `/providers/Microsoft.AzureStackHCI`) → `extendedLocation.name` → custom location → host subscription/resource group → candidate instances
 
-- **AKS Arc Clusters:** `connectedcluster.id` → `microsoft.hybridcontainerservice/provisionedclusterinstances` (extensibility, joined by extracting aksId before `/providers/Microsoft.HybridContainerService`) → `extendedLocation.name` → custom location → `arcBridgeRG` → HCI instance
+- **AKS Arc Clusters:** `connectedcluster.id` → `microsoft.hybridcontainerservice/provisionedclusterinstances` (extensibility, joined by extracting aksId before `/providers/Microsoft.HybridContainerService`) → `extendedLocation.name` → custom location → host subscription/resource group → candidate instances
 
-- **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location (joined by extracting `arcBridgeRG` from `hostResourceId`) → HCI instance (joined by `resourceGroup`)
+- **Storage Volumes:** `microsoft.azurestackhci/storagecontainers` (joined by `extendedLocation.name`) → custom location → host subscription/resource group → candidate instances
 
-> **Key concept:** The Arc Resource Bridge appliance and the HCI instance are always deployed in the same resource group (`arcBridgeRG`). Custom locations reference the Arc Bridge via `properties.hostResourceId`, and the bridge's resource group is extracted with `split(hostResourceId, '/')[4]`. This resource group is then used to join to the HCI instance.
+> **Association scope:** LENS derives a subscription-qualified resource-group key from the custom location's `properties.hostResourceId`. This property identifies the custom-location host, such as an Arc Resource Bridge appliance, not necessarily an Azure Local instance.
 
-## What's New (v1.1.4)
+> **Shared-resource-group limitation:** Deduplicating VM/AKS resource IDs prevents repeated totals but does not establish ownership. Tag-filtered totals and per-instance workload counts can include sibling instances' workloads when instances share a resource group. Treat these as resource-group associations, not proven placement.
 
-Azure Local LENS v1.1.4 updates the dependency-free solution-update support estimate for Microsoft's N-6 released-build window, addressing [Issue #119](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/119).
+## What's New (v1.1.5)
 
-1. **Updated support thresholds.** Azure Local Instances estimates releases from the current and previous six calendar months as **Supported**, seven months behind as **Nearing end of support**, and older releases as **Unsupported**. The three thresholds move together, keeping the categories separate. **Unknown version** continues to cover missing, invalid, or future-dated release months.
-2. **Honest, dependency-free guidance.** Overview help, tile tooltips, and Update Progress guidance explain that this is a calendar-based estimate, not live release tracking. Release timing and skipped release months can affect accuracy; boundary cases should be checked against the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations). No external feed, additional service, or fixed monthly release day is introduced.
-3. **Aligned regression coverage.** Offline checks protect the revised thresholds, separate boundary and unknown classifications, and continued independence from the tenant's offered-update catalogue. They do not execute live KQL or validate portal rendering.
-4. **Longer instance registration history.** Azure Local Instances Deployment Over Time adds **36 months** and **48 months** to its time-range filter and changes the default from **12 months** to **18 months**. The chart and monthly table continue to use current instances' registration timestamps and the existing 30-days-per-month approximation; deleted instances are not included.
-
-The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
-
-## v1.1.5 — Planned fixes
-
-Not yet released. The following fixes are queued for v1.1.5, independently of future Azure Monitor gallery publication. Release scope and timing may change:
+Azure Local LENS v1.1.5 corrects storage-forecast scope, VM instance links and update-attempt tag filtering, and clarifies workload-attribution limits. These fixes are independent of future Azure Monitor gallery publication.
 
 - **Scoped storage forecasts.** Multi-instance CSV free-space forecasts in both percent and TB restrict **All** and explicit instance selections to the subscription, resource-group and tag-filtered Azure Resource Graph inventory. Instances elsewhere in a shared Log Analytics workspace are excluded without requiring additional telemetry. The instance-forecast empty-state grammar is also corrected.
 - **Unambiguous VM instance links.** Azure Local VM inventory retains one row per VM and lists all candidate instance names when instances share a resource group. The instance link is provided only for a single distinct candidate, avoiding concatenated URLs or an arbitrary instance destination.
 - **Consistent update-attempt tag scope.** The attempt chart, duration statistics, outcome analysis, details, status summaries and solution-update choices honor the global instance-tag filter by normalized parent instance resource ID. Outcome percentages and status rows share their filtered cohort without repeating ARG right-table references. No-tag historical visibility, outcome classification, time windows and duration calculations are preserved.
 - **Explicit workload-attribution limits.** Overview now warns that shared-resource-group joins cannot establish workload ownership: tag-filtered VM/AKS totals and per-instance workload counts can include sibling instances' workloads. Deduplication is not an ownership fix; existing counts are preserved rather than dropping valid resource-bridge-backed workloads or inventing placement.
+
+The workbook header banner bumps from `v1.1.4` to `v1.1.5`.
 
 ## v1.2.0 (or later) — Planned Azure Monitor gallery publication
 
@@ -597,6 +589,17 @@ Licensed under the [MIT License](LICENSE). See the repository's `LICENSE` file f
 ---
 
 ## Appendix: Previous Versions Change Log
+
+### v1.1.4
+
+Azure Local LENS v1.1.4 updates the dependency-free solution-update support estimate for Microsoft's N-6 released-build window, addressing [Issue #119](https://github.com/Azure/AzureLocal-LENS-Workbook/issues/119).
+
+1. **Updated support thresholds.** Azure Local Instances estimates releases from the current and previous six calendar months as **Supported**, seven months behind as **Nearing end of support**, and older releases as **Unsupported**. The three thresholds move together, keeping the categories separate. **Unknown version** continues to cover missing, invalid, or future-dated release months.
+2. **Honest, dependency-free guidance.** Overview help, tile tooltips, and Update Progress guidance explain that this is a calendar-based estimate, not live release tracking. Release timing and skipped release months can affect accuracy; boundary cases should be checked against the [official release information](https://learn.microsoft.com/azure/azure-local/release-information-23h2#key-considerations). No external feed, additional service, or fixed monthly release day is introduced.
+3. **Aligned regression coverage.** Offline checks protect the revised thresholds, separate boundary and unknown classifications, and continued independence from the tenant's offered-update catalogue. They do not execute live KQL or validate portal rendering.
+4. **Longer instance registration history.** Azure Local Instances Deployment Over Time adds **36 months** and **48 months** to its time-range filter and changes the default from **12 months** to **18 months**. The chart and monthly table continue to use current instances' registration timestamps and the existing 30-days-per-month approximation; deleted instances are not included.
+
+The workbook header banner bumps from `v1.1.3` to `v1.1.4`.
 
 ### v1.1.3
 

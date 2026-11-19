@@ -1727,9 +1727,9 @@ testSuite('Fleet-Wide Subscription-Scoped Identity', () => {
     const clusterIdDefinitions = successAnalysis
         ? successAnalysis.query.match(/extend clusterId = tolower\(substring\(id, 0, indexof\(tolower\(id\), '\/updates\/'\)\)\)/g) || []
         : [];
-    assert(successAnalysis && clusterIdDefinitions.length === 2,
-        'First Time Success Analysis defines clusterId in both updateKey branches',
-        '2 clusterId definitions', clusterIdDefinitions.length);
+    assert(successAnalysis && clusterIdDefinitions.length === 1,
+        'First Time Success Analysis retains normalized cluster identity in its single updateKey cohort',
+        '1 clusterId definition', clusterIdDefinitions.length);
     const updatesMerge = allQueries.find(query => query.name === 'clusters-updates-available');
     assert(updatesMerge && updatesMerge.query.includes('"leftColumn":"clusterId","rightColumn":"clusterId"'),
         'Updates available merge uses full cluster IDs',
@@ -1810,6 +1810,54 @@ testSuite('Workload Attribution Subscription Scope', () => {
         arbStatus.query.includes('ArcBridgeCount = dcount(arcbridgename)'),
     'ARB summary counts appliances once and discloses ambiguous sibling clusters',
     'appliance-ID collapse with sibling disclosure', arbStatus ? arbStatus.query : 'query missing');
+});
+
+testSuite('Update Attempt Tag Scope', () => {
+    const attemptQueries = [
+        'update-attempts-by-day-chart', 'update-duration-statistics',
+        'update-duration-statistics-by-solution', 'update-success-analysis',
+        'update-outcomes-pie', 'update-attempts-details-table',
+        'update-attempts-status-pie', 'update-attempts-summary-table'
+    ].map(name => allQueries.find(query => query.name === name));
+    attemptQueries.push(allParams.find(parameter => parameter.name === 'SolutionUpdateFilter'));
+    attemptQueries.forEach(item => {
+        const query = item?.query || '';
+        assert(query.includes("| extend clusterResourceId = tolower(substring(id, 0, indexof(tolower(id), '/updates/')))") &&
+            query.includes('| join kind=leftouter (') &&
+            query.includes('| project taggedClusterResourceId = tolower(id)') &&
+            query.includes(') on $left.clusterResourceId == $right.taggedClusterResourceId') &&
+            query.includes("| where '{ClusterTagName}' == '' or ('{ClusterTagValue}' != '' and tostring(tags['{ClusterTagName}']) =~ '{ClusterTagValue}')") &&
+            query.includes("| where '{ClusterTagName}' == '' or isnotempty(taggedClusterResourceId)") &&
+            (query.match(/where type == "microsoft\.azurestackhci\/clusters\/updates\/updateruns"/g) || []).length === 1 &&
+            (query.match(/resources\r?\n\s*\| where type == "microsoft\.azurestackhci\/clusters"/g) || []).length === 1,
+        `${item?.name || 'missing attempt query'} applies normalized parent-ID tag scope without dropping untagged history when no tag is selected`,
+        'one filtered cluster join and one update-run cohort', query);
+    });
+
+    const success = allQueries.find(query => query.name === 'update-success-analysis');
+    assert(success?.query.includes('Total = sum(Count), Outcomes = make_list(') &&
+        success.query.includes('| mv-expand Outcome = Outcomes') &&
+        success.query.includes('Count = tolong(Outcome.Count)') &&
+        !success.query.includes('JoinKey'),
+    'Outcome percentages derive their denominator from the same tagged cohort without repeated ARG right tables');
+
+    const daily = allQueries.find(query => query.name === 'update-attempts-by-day-chart');
+    assert(daily?.query.startsWith('resources\r\n| take 1\r\n') &&
+        daily.query.indexOf('| union (') < daily.query.indexOf('extensibilityresources') &&
+        daily.query.includes('Succeeded = sum(Succeeded), Failed = sum(Failed), InProgress = sum(InProgress) by TimeBucket'),
+    'Attempt calendar scaffold is the left union leg so the tag lookup is the only right-table resources reference');
+
+    const summary = allQueries.find(query => query.name === 'update-attempts-summary-table');
+    assert(summary?.query.includes('| mv-expand Status to typeof(string)') &&
+        summary.query.includes("Count = iff(Status == 'Succeeded', Succeeded, Failed)") &&
+        !summary.query.includes('| union ('),
+    'Succeeded and failed summary rows share one filtered aggregate rather than independently scoped union branches');
+
+    const workloadHelp = allItems.find(item => item.name === 'section-header-workloads')?.content?.json || '';
+    assert(workloadHelp.includes('tag-filtered totals') &&
+        workloadHelp.includes('sibling instances') &&
+        workloadHelp.includes('not proven placement'),
+    'Overview discloses unresolved shared-resource-group ownership, including tag-filtered workload totals');
 });
 
 testSuite('Capacity Subscription-Scoped Shared-RG Semantics', () => {

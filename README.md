@@ -315,6 +315,7 @@ Track ongoing and historical updates across your instances:
 - **Updates - First Time Success Analysis** — first-time success rate per instance/solution version
 - **Update Outcomes Distribution** and **Update Attempts by Status Percentages** charts
 - **Update Attempts Details** table with instance, update name, state, status, and link to the run
+- Update-attempt panels and the **Solution Update** picker honor the global instance-tag filter using each run's normalized parent instance resource ID. With no tag selected, historical runs remain visible even if their instance resource is no longer present; a selected tag requires a matching current instance.
 - **⏳ Instances Currently Updating** — live status with current step description
 - **📦 Instances with Updates Available** table with:
   - Direct link to apply One Time Update in Azure Update Manager
@@ -515,6 +516,8 @@ Not yet released. The following fixes are queued for v1.1.5, independently of fu
 
 - **Scoped storage forecasts.** Multi-instance CSV free-space forecasts in both percent and TB restrict **All** and explicit instance selections to the subscription, resource-group and tag-filtered Azure Resource Graph inventory. Instances elsewhere in a shared Log Analytics workspace are excluded without requiring additional telemetry. The instance-forecast empty-state grammar is also corrected.
 - **Unambiguous VM instance links.** Azure Local VM inventory retains one row per VM and lists all candidate instance names when instances share a resource group. The instance link is provided only for a single distinct candidate, avoiding concatenated URLs or an arbitrary instance destination.
+- **Consistent update-attempt tag scope.** The attempt chart, duration statistics, outcome analysis, details, status summaries and solution-update choices honor the global instance-tag filter by normalized parent instance resource ID. Outcome percentages and status rows share their filtered cohort without repeating ARG right-table references. No-tag historical visibility, outcome classification, time windows and duration calculations are preserved.
+- **Explicit workload-attribution limits.** Overview now warns that shared-resource-group joins cannot establish workload ownership: tag-filtered VM/AKS totals and per-instance workload counts can include sibling instances' workloads. Deduplication is not an ownership fix; existing counts are preserved rather than dropping valid resource-bridge-backed workloads or inventing placement.
 
 ## v1.2.0 (or later) — Planned Azure Monitor gallery publication
 
